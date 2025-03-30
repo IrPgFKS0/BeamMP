@@ -17,6 +17,13 @@ local socket = require('socket')
 local TCPLauncherSocket = nop
 local launcherConnected = false
 local isConnecting = false
+
+--[[ Format
+	["eventname"] = table
+		[1..n] = table
+			[source] = path to source
+			[func] = function
+]]
 local eventTriggers = {}
 
 --keypress handling
@@ -154,12 +161,13 @@ end
 --- Handles events triggered by MP.TriggerClientEvent send from the Server or localy with TriggerClientEvent.
 -- @tparam string p The event data to be parsed and handled. Should be in the format ":<NAME>:<DATA>"
 -- @usage MPGameNetwork.CallEvent(`<event data string>`)
-local function handleEvents(p)  --- code=E  p=:<NAME>:<DATA>
-	local eventName, eventData = string.match(p,"^%:([^%:]+)%:(.*)")
-	if not eventName then quitMP(p) return end
-	for i=1,#eventTriggers do
-		if eventTriggers[i].name == eventName then
-			if type(eventTriggers[i].func) == "function" then eventTriggers[i].func(eventData) end
+local function handleEvents(p)
+	local name, data = string.match(p,"^%:([^%:]+)%:(.*)")
+	if not name then quitMP(p) return end
+	for _, calls in ipairs(eventTriggers[name] or {}) do
+		local ok, err = pcall(calls.func, data)
+		if not ok then
+			log('E', 'BeamMP - handleEvents', err)
 		end
 	end
 end
@@ -181,17 +189,55 @@ function TriggerClientEvent(name, data)
 end
 
 --- Adds an event handler for the specified event name and function.
--- @tparam string n - The name of the event
--- @tparam function f - The event handler function
+-- @tparam string name - The name of the event
+-- @tparam function func - The event handler function
 -- @usage AddEventHandler(`<name>`, `<function>`)
 -- @usage if AddEventHandler then AddEventHandler(`<name>`, `<function>`) end -- if your mod is also singleplayer available
-function AddEventHandler(n, f)
-	log('M', 'AddEventHandler', "Adding Event Handler: Name = "..tostring(n))
-	if type(f) ~= "function" or f == nop then
-		log('W', 'AddEventHandler', "Event handler function can not be nil")
-	else
-		table.insert(eventTriggers, {name = n, func = f})
+function AddEventHandler(name, func)
+	if name == nil or type(name) ~= "string" or (type(name) == "string" and name:len() == 0) then
+		log('E', 'BeamMP - AddEventHandler', 'Error, given name is not a valid string name')
+		return
 	end
+	if (func == nil or func == nop) or type(func) ~= "function" then
+		log('E', 'BeamMP - AddEventHandler', 'Error, given function is not a valid function')
+		return
+	end
+	
+	local source = debug.getinfo(2).source
+	if source == nil or source:len() == 0 then
+		log('E', 'BeamMP - AddEventHandler', 'Error, invalid source of event')
+		return
+	end
+	
+	local calls = eventTriggers[name]
+	if not calls then
+		calls = {}
+		eventTriggers[name] = calls
+	end
+	
+	local patch = false
+	for index, call in ipairs(calls) do
+		if call.source == source then
+			patch = true
+			local max = #calls
+			calls[index] = calls[max]
+			if max > 1 then
+				calls[max] = nil
+			end
+			break
+		end
+	end
+	
+	if not patch then
+		log('M', 'BeamMP - AddEventHandler', 'Adding new Event Handler to "' .. name .. '"')
+	else
+		log('M', 'BeamMP - AddEventHandler', 'Patching Event Handler from "' .. name .. '"')
+	end
+	
+	table.insert(calls, {
+		source = source,
+		func = func
+	})
 end
 
 -- -----------------------------------------------------------------------------
