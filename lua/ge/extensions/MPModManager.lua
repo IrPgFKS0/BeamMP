@@ -12,6 +12,7 @@ local M = {}
 local serverMods = {} -- multiplayerModName1, multiplayerModName2
 local whitelist = {"multiplayerbeammp", "beammp", "translations"} -- these mods won't be activated or deactivated
 local hasMods = false
+local deactivateMod = core_modmanager.deactivateMod
 
 --TODO: build handler for repo mod downloads
 
@@ -100,7 +101,7 @@ local function checkMod(mod) --TODO: might have a flaw with repo mods as their n
 
 	if not modAllowed and mod.active then
 		log('W', 'checkMod', "This mod should not be running: "..modname)
-		core_modmanager.deactivateMod(modname)
+		deactivateMod(modname)
 		if mod.dirname == '/mods/multiplayer/' then
 			core_modmanager.deleteMod(modname)
 		end
