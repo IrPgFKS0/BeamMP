@@ -189,13 +189,14 @@ function TriggerClientEvent(name, data)
 end
 
 --- Adds an event handler for the specified event name and function.
--- @tparam string name - The name of the event
+-- @tparam string event_name - The name of the event
 -- @tparam function func - The event handler function
+-- @tparam string name - The internal name (optional)
 -- @usage AddEventHandler(`<name>`, `<function>`)
 -- @usage if AddEventHandler then AddEventHandler(`<name>`, `<function>`) end -- if your mod is also singleplayer available
-function AddEventHandler(name, func)
-	if name == nil or type(name) ~= "string" or (type(name) == "string" and name:len() == 0) then
-		log('E', 'BeamMP - AddEventHandler', 'Error, given name is not a valid string name')
+function AddEventHandler(event_name, func, name)
+	if event_name == nil or type(event_name) ~= "string" or (type(event_name) == "string" and event_name:len() == 0) then
+		log('E', 'BeamMP - AddEventHandler', 'Error, given event_name is not a valid string name')
 		return
 	end
 	if (func == nil or func == nop) or type(func) ~= "function" then
@@ -203,16 +204,16 @@ function AddEventHandler(name, func)
 		return
 	end
 	
-	local source = debug.getinfo(2).source
+	local source = name or debug.getinfo(2).source
 	if source == nil or source:len() == 0 then
 		log('E', 'BeamMP - AddEventHandler', 'Error, invalid source of event')
 		return
 	end
 	
-	local calls = eventTriggers[name]
+	local calls = eventTriggers[event_name]
 	if not calls then
 		calls = {}
-		eventTriggers[name] = calls
+		eventTriggers[event_name] = calls
 	end
 	
 	local patch = false
@@ -229,15 +230,48 @@ function AddEventHandler(name, func)
 	end
 	
 	if not patch then
-		log('M', 'BeamMP - AddEventHandler', 'Adding new Event Handler to "' .. name .. '"')
+		log('M', 'BeamMP - AddEventHandler', 'Adding new Event Handler to "' .. event_name .. '" from source "' .. source .. '"')
 	else
-		log('M', 'BeamMP - AddEventHandler', 'Patching Event Handler from "' .. name .. '"')
+		log('M', 'BeamMP - AddEventHandler', 'Patching Event Handler from "' .. event_name .. '" from source "' .. source .. '"')
 	end
 	
 	table.insert(calls, {
 		source = source,
 		func = func
 	})
+end
+
+--- Removes an event handler for the specified event name
+-- @tparam string event_name - The name of the event
+-- @tparam string name - The internal name (optional)
+-- @usage RemoveEventHandler(`<name>`, `<function>`)
+function RemoveEventHandler(event_name, name)
+	if event_name == nil or type(event_name) ~= "string" or (type(event_name) == "string" and event_name:len() == 0) then
+		log('E', 'BeamMP - RemoveEventHandler', 'Error, given event_name is not a valid string name')
+		return
+	end
+	local source = name or debug.getinfo(2).source
+	if source == nil or source:len() == 0 then
+		log('E', 'BeamMP - RemoveEventHandler', 'Error, invalid source of event')
+		return
+	end
+	
+	local calls = eventTriggers[event_name]
+	if not calls then
+		log('E', 'BeamMP - RemoveEventHandler', '"' .. event_name .. '" is unknown')
+		return
+	end
+	
+	for index, call in ipairs(calls) do
+		if call.source == source then
+			local max = #calls
+			calls[index] = calls[max]
+			calls[max] = nil
+			log('I', 'BeamMP - RemoveEventHandler', '"' .. event_name .. '" has been removed from source "' .. source .. '"')
+			return
+		end
+	end
+	log('E', 'BeamMP - RemoveEventHandler', '"' .. event_name .. '" is unknown from source "' .. source .. '"')
 end
 
 -- -----------------------------------------------------------------------------
