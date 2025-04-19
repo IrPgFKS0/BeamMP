@@ -2513,6 +2513,10 @@ local function onVehicleReady(gameVehicleID)
 		return
 	end
 
+	if getOwnMap()[gameVehicleID] then
+		commands.setGameCamera()
+	end
+
 	if veh.mpVehicleType then
 		veh:queueLuaCommand("MPVehicleVE.setVehicleType(mime.unb64(\'".. MPHelpers.b64encode(veh.mpVehicleType) .."\'))")
 	end
