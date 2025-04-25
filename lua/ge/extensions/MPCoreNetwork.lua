@@ -641,7 +641,11 @@ local function onUpdate(dt)
 					log('M', 'onUpdate', 'Receiving Data ([' .. code .. ']' .. #received .. '): ' .. received)
 				end
 				
-				if HandleNetwork[code] then HandleNetwork[code](data) end
+				if not HandleNetwork[code] then
+					log('E', 'onUpdate', 'Received corrupted packet fragment. Ignoring data.')
+				else
+					HandleNetwork[code](data)
+				end
 			end
 		end
 		--================================ SECONDS TIMER ================================
