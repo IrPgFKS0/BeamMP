@@ -629,17 +629,19 @@ local function onUpdate(dt)
 		if TCPLauncherSocket ~= nop then
 			while(true) do
 				local received, stat, partial = TCPLauncherSocket:receive()
-				if not received or received == "" then
+				if not received or received:len() == 0 then
 					break
-				end
-				if settings.getValue("showDebugOutput") then -- TODO: add option to filter out heartbeat packets
-					log('M', 'onUpdate', 'Receiving Data ('..#received..'): '..received)
 				end
 
 				-- break it up into code + data
 				local code = string.sub(received, 1, 1)
 				local data = string.sub(received, 2)
-				HandleNetwork[code](data)
+				
+				if settings.getValue("showDebugOutput") and code ~= 'A' then
+					log('M', 'onUpdate', 'Receiving Data ([' .. code .. ']' .. #received .. '): ' .. received)
+				end
+				
+				if HandleNetwork[code] then HandleNetwork[code](data) end
 			end
 		end
 		--================================ SECONDS TIMER ================================
