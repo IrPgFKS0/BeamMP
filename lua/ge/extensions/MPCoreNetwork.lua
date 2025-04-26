@@ -637,12 +637,12 @@ local function onUpdate(dt)
 				local code = string.sub(received, 1, 1)
 				local data = string.sub(received, 2)
 				
-				if settings.getValue("showDebugOutput") and code ~= 'A' then
-					log('M', 'onUpdate', 'Receiving Data ([' .. code .. ']' .. #received .. '): ' .. received)
+				if settings.getValue("showDebugOutput") then -- TODO: add option to filter out heartbeat packets
+					log('M', 'onUpdate', 'Receiving Data ([' .. code .. '] ' .. #received .. '): ' .. received)
 				end
 				
 				if not HandleNetwork[code] then
-					log('E', 'onUpdate', 'Received corrupted packet fragment. Ignoring data.')
+					log('E', 'onUpdate', 'Received corrupted packet fragment ([' .. code .. '] ' .. #received .. '): ' .. received)
 				else
 					HandleNetwork[code](data)
 				end
