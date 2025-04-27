@@ -121,54 +121,16 @@
 				</tr>
 			</thead>
 			<tbody id="serversTableBody">
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
-				<tr><td class="loading-shimmer" colspan="4"></td></tr>
+				<tr ng-repeat="n in [].constructor(48) track by $index">
+					<td class="loading-shimmer" colspan="4"></td>
+				</tr>	
+
+				<!-- <tr ng-repeat="server in serversTable" ng-if="serversTable.length > 0">
+					<td ngStyle="background-color:server.bgcolor; font-size: initial; padding-left: 3px; text-align: right; padding-right: 10px;"><img src="local://local/ui/modModules/multiplayer/flags/${server.location.toLowerCase()}.png" class="flag"></img> ${server.server.location}</td>
+					<td ngStyle="background-color:server.bgcolor;">${formatServerName(server.sname)}</td>
+					<td ngStyle="background-color:server.bgcolor; font-size: initial;">${SmoothMapName(server.server.map)}</td>
+					<td ngStyle="background-color:server.bgcolor; font-size: initial;">${server.server.players}/${server.server.maxplayers}</td>
+				</tr> -->
 			</tbody>
 		</table>
 	</div>

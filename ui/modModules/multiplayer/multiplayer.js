@@ -856,6 +856,7 @@ function($scope, $state, $timeout, $filter) {
 			if (serverListOptions.checkIsNotEmpty && vm.checkIsEmpty) vm.checkIsNotEmpty = false;
 		}
 
+		// OLD POPULATE TABLE
 		await populateTable(
 			document.getElementById("serversTableBody"),
 			servers,
@@ -872,6 +873,23 @@ function($scope, $state, $timeout, $filter) {
 			vm.serverLocations,
 			bngApi
 		);
+
+		// NEW POPULATE TABLE
+		// await populateTable(
+		// 	servers,
+		// 	serverView,
+		// 	vm.searchText,
+		// 	vm.checkIsEmpty,
+		// 	vm.checkIsNotEmpty,
+		// 	vm.checkIsNotFull,
+		// 	vm.checkModSlider,
+		// 	vm.sliderMaxModSize,
+		// 	vm.selectMap,
+		// 	vm.serverVersions,
+		// 	vm.tags,
+		// 	vm.serverLocations,
+		// 	bngApi
+		// );
 
 		serverListOptions = {
 			checkIsEmpty: vm.checkIsEmpty,
@@ -1468,6 +1486,100 @@ async function populateTable(tableTbody, servers, tab, searchText = '', checkIsE
 	tableTbody.parentNode.replaceChild(newTbody, tableTbody);
 	if (type == 2) sortTable("recent", true, -1);
 }
+
+//new populateTable function
+// async function populateTable(servers, tab, searchText = '', checkIsEmpty, checkIsNotEmpty, checkIsNotFull, checkModSlider, sliderMaxModSize, selectMap = 'Any map', SelectedServerVersions = [], tags = [], SelectedServerLocations = [], bngApi) {
+// 	$scope.serversTable = [];
+// 	var type = 0
+// 	if (tab == "favorites") type = 1;
+// 	else if (tab == "recents") type = 2;
+
+// 	for (const server of servers) {
+// 		if (!server) {
+// 			break;
+// 		}
+
+// 		if (tab == "official" && !server.official) continue;
+// 		if (tab == "featured" && !server.featured) continue;
+// 		if (tab == "partner" && !server.partner) continue;
+
+// 		//server.tags = "tag1,tag2"
+// 		var serverTags = server.tags.toLowerCase().split(",").map(tag => tag.trim());
+
+// 		var missingTag = false;
+// 		for (let tag of tags) {
+// 			if (!serverTags.includes(tag.toLowerCase())) missingTag = true;
+// 		}
+
+// 		if (missingTag) continue;
+
+// 		var shown = true;
+// 		var smoothMapName = SmoothMapName(server.map);
+// 		var isFavorite = false;
+// 		var isRecent = false;
+
+// 		// Filter by search
+// 		if (!server.strippedName.toLowerCase().includes(searchText.toLowerCase())) continue;
+		
+// 		// Filter by empty or full
+// 		else if(checkIsEmpty && server.players > 0) continue;
+// 		else if(checkIsNotEmpty && server.players == 0) continue;
+// 		else if(checkIsNotFull && server.players >= parseInt(server.maxplayers)) continue;
+		
+// 		// Filter by mod size
+// 		else if(checkModSlider && sliderMaxModSize * 1048576 < server.modstotalsize) continue;
+	
+// 		// Filter by map
+// 		else if((selectMap != "Any map" && selectMap != smoothMapName)) continue;
+
+// 		else if (SelectedServerVersions.length > 0 && !SelectedServerVersions.includes("v" + server.version)) continue;
+
+// 		else if (SelectedServerLocations.length > 0 && !SelectedServerLocations.includes(server.location)) continue;
+
+// 		// Favorite
+// 		for (let tmpServer of favorites) if (tmpServer.ip == server.ip && tmpServer.port == server.port) isFavorite = tmpServer.addTime;
+// 		if (type == 1 && !isFavorite) continue; // If it's favorite tab, we only show favorites
+
+// 		// Recents
+// 		for (let tmpServer of recents) if (tmpServer.ip == server.ip && tmpServer.port == server.port) isRecent = tmpServer.addTime;
+// 		if (type == 2 && !isRecent) continue; // Everything happens underneath for recents
+
+// 		// If the server passed the filter
+// 		// Set the color relative to either favorite, featured, official or normal
+// 		var bgcolor = isFavorite && type == 0 ? 'rgba(255, 215, 0, 0.35)!important' : server.featured ? 'rgba(0, 128, 0, 0.25)!important' : server.official ? 'rgba(255, 106, 0, 0.25)!important' : server.partner ? 'rgba(0, 123, 195, 0.3)!important' : 'rgba(0, 0, 0, 0)!important';
+
+// 		$scope.serversTable.push(["server"=server, "bgcolor"=bgcolor, "isFavorite"=isFavorite, "isRecent"=isRecent, "sname"=server.sname]);
+// 		// createRow(newTbody, server, bgcolor, bngApi, isFavorite, isRecent, server.sname);
+// 		if (isFavorite) addFav(server, true);
+// 		if (isRecent) addRecent(server, true);
+// 	}
+	
+// 	// Here we check if some favorited / recents servers are offline or not
+// 	if (type == 1 || type == 2) {
+// 		var toCheck = type == 1 ? favorites : recents
+// 		for (let tmpServer1 of toCheck) {
+// 			let stillOk = true;
+// 			for (let i = 0; i < servers.length; i++) {
+// 				var tmpServer2 = servers[i];
+// 				if (tmpServer1.ip == tmpServer2.ip && tmpServer1.port == tmpServer2.port) { stillOk = true; break; }
+// 				else stillOk = false;
+// 			}
+// 			if (!stillOk) {
+// 				var bgcolor = "";
+// 				var name = tmpServer1.sname;
+// 				if (!tmpServer1.custom) { name += " [OFFLINE]"; bgcolor = "rgba(0, 0, 0, 0.35)!important"; }
+// 				else { name += " [CUSTOM]"; bgcolor = "rgba(255, 215, 0, 0.35)!important" }
+
+// 				$scope.serversTable.push(["server"=tmpServer1, "bgcolor"=bgcolor, type == 1, type == 2, "sname"=name]);
+// 				// createRow(newTbody, tmpServer1, bgcolor, bngApi, type == 1, type == 2, name);
+
+
+// 			}
+// 		}
+// 	}
+// 	// tableTbody.parentNode.replaceChild(newTbody, tableTbody);
+// 	if (type == 2) sortTable("recent", true, -1);
+// }
 
 // Used to connect to the backend with ids
 function connect(ip, port, name, skipModWarning = false) {
