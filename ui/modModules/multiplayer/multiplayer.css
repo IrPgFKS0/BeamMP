@@ -420,3 +420,26 @@ md-slider.ng-pristine.ng-untouched.ng-valid.md-default-theme.ng-empty {
   top: 2px;
   max-width: 34px;
 }
+
+
+.color-0 { color: #000000; }
+.color-1 { color: #0000AA; }
+.color-2 { color: #00AA00; }
+.color-3 { color: #00AAAA; }
+.color-4 { color: #AA0000; }
+.color-5 { color: #AA00AA; }
+.color-6 { color: #FFAA00; }
+.color-7 { color: #AAAAAA; }
+.color-8 { color: #555555; }
+.color-9 { color: #5555FF; }
+.color-a { color: #55FF55; }
+.color-b { color: #55FFFF; }
+.color-c { color: #FF5555; }
+.color-d { color: #FF55FF; }
+.color-e { color: #FFFF55; }
+.color-f { color: #FFFFFF; }
+
+.bold { font-weight: bold; }
+.line-through { text-decoration: line-through; }
+.underline { text-decoration: underline; }
+.italic { font-style: italic; }

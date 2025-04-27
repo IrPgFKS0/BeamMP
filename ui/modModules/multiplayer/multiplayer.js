@@ -794,6 +794,52 @@ function($scope, $state, $timeout, $filter) {
 		$state.go('menu.mainmenu');
 	};
 
+
+
+	$scope.select = function(event, server) {
+		$scope.selection = server;
+		let row = event.target.closest('tr');
+		var table = document.getElementById("serversTable");
+		// Deselect the old row
+		deselect($scope, table.selectedRow);
+
+		// Select the new one
+
+		row.classList.add("highlight");
+		row.selected = true;
+		table.selectedRow = row;
+		
+		// Add the highlight menu
+		highlightedServer = server; // Set it as the selected server
+		//Create and insert the server info tr
+		var serverInfoRow = document.createElement("tr");
+		serverInfoRow.innerHTML = getServerInfoHTML(server);
+		serverInfoRow.setAttribute("id", "ServerInfoRow");
+		serverInfoRow.server = server;
+		row.parentNode.insertBefore(serverInfoRow, row.nextSibling);
+
+		// Add the connect button
+		var connectToServerButton = document.getElementById('serverconnect-button');
+		connectToServerButton.onclick = function() { connect(server.ip, server.port, server.strippedName, server.isOfficial) };
+		
+		if (server.favorite) {
+			var removeFavButton = document.getElementById('removeFav-button');
+			removeFavButton.onclick = function() { removeFav(server); }
+		}
+		else {
+			// Add the favorite button
+			var addFavButton = document.getElementById('addFav-button');
+			addFavButton.onclick = function() { addFav(server) };
+		}
+	};
+	$scope.formatServerName = formatServerName;
+	$scope.SmoothMapName = SmoothMapName;
+	$scope.officialMark = officialMark;
+	$scope.formatDescriptionName = formatDescriptionName;
+	$scope.modCount = modCount;
+	$scope.modList = modList;
+	$scope.formatBytes = formatBytes;
+	$scope.connect = connect;
 	// Page loading timeout
 	var timeOut = $timeout(function () {
 		if (vm.loadingPage === true) {
@@ -813,6 +859,7 @@ function($scope, $state, $timeout, $filter) {
 	});
 	
 	$scope.$on('onServerListReceived', async function (event, data) {
+		
 		servers = await receiveServers(data);
 		recents = await getRecents();
 		favorites = await getFavorites();
@@ -856,9 +903,9 @@ function($scope, $state, $timeout, $filter) {
 			if (serverListOptions.checkIsNotEmpty && vm.checkIsEmpty) vm.checkIsNotEmpty = false;
 		}
 
-		// OLD POPULATE TABLE
+
 		await populateTable(
-			document.getElementById("serversTableBody"),
+			$scope,
 			servers,
 			serverView,
 			vm.searchText,
@@ -870,26 +917,8 @@ function($scope, $state, $timeout, $filter) {
 			vm.selectMap,
 			vm.serverVersions,
 			vm.tags,
-			vm.serverLocations,
-			bngApi
+			vm.serverLocations		
 		);
-
-		// NEW POPULATE TABLE
-		// await populateTable(
-		// 	servers,
-		// 	serverView,
-		// 	vm.searchText,
-		// 	vm.checkIsEmpty,
-		// 	vm.checkIsNotEmpty,
-		// 	vm.checkIsNotFull,
-		// 	vm.checkModSlider,
-		// 	vm.sliderMaxModSize,
-		// 	vm.selectMap,
-		// 	vm.serverVersions,
-		// 	vm.tags,
-		// 	vm.serverLocations,
-		// 	bngApi
-		// );
 
 		serverListOptions = {
 			checkIsEmpty: vm.checkIsEmpty,
@@ -1033,26 +1062,26 @@ function formatBytes(bytes = 0, decimals = 2) {
 }
 
 globalThis.serverStyleMap = {
-    '^0': 'color:#000000',
-    '^1': 'color:#0000AA',
-    '^2': 'color:#00AA00',
-    '^3': 'color:#00AAAA',
-    '^4': 'color:#AA0000',
-    '^5': 'color:#AA00AA',
-    '^6': 'color:#FFAA00',
-    '^7': 'color:#AAAAAA',
-    '^8': 'color:#555555',
-    '^9': 'color:#5555FF',
-    '^a': 'color:#55FF55',
-    '^b': 'color:#55FFFF',
-    '^c': 'color:#FF5555',
-    '^d': 'color:#FF55FF',
-    '^e': 'color:#FFFF55',
-    '^f': 'color:#FFFFFF',
-    '^l': 'font-weight:bold',
-    '^m': 'text-decoration:line-through',
-    '^n': 'text-decoration:underline',
-    '^o': 'font-style:italic'
+    '^0': 'color-0',
+    '^1': 'color-1',
+    '^2': 'color-2',
+    '^3': 'color-3',
+    '^4': 'color-4',
+    '^5': 'color-5',
+    '^6': 'color-6',
+    '^7': 'color-7',
+    '^8': 'color-8',
+    '^9': 'color-9',
+    '^a': 'color-a',
+    '^b': 'color-b',
+    '^c': 'color-c',
+    '^d': 'color-d',
+    '^e': 'color-e',
+    '^f': 'color-f',
+    '^l': 'bold',
+    '^m': 'line-through',
+    '^n': 'underline',
+    '^o': 'italic'
 };
 
 var descStyleMap = {
@@ -1144,45 +1173,45 @@ function applyCode(string, codes) {
 }
 
 function formatServerName(string) {
-    var codes = string.match(/\^.{1}/g) || [],
-        indexes = [],
-        apply = [],
-        tmpStr,
-        indexDelta,
-        final = document.createDocumentFragment(),
-        i,
-				len;
-    for(i = 0, len = codes.length; i < len; i++) {
-        indexes.push( string.indexOf(codes[i]) );
-        string = string.replace(codes[i], '\x00\x00');
-    }
-    if(indexes[0] !== 0) {
-        final.appendChild( applyCode( string.substring(0, indexes[0]), [] ) );
-    }
-    for(i = 0; i < len; i++) {
-    	indexDelta = indexes[i + 1] - indexes[i];
-        if(indexDelta === 2) {
-            while(indexDelta === 2) {
-                apply.push ( codes[i] );
-                i++;
-                indexDelta = indexes[i + 1] - indexes[i];
+    let activeClasses = []; 
+    let result = '';
+    let currentText = '';
+    
+    const tokens = string.split(/(\^.)/g);
+
+    tokens.forEach((token, index) => {
+        if (token.startsWith('^')) { 
+   
+            if (currentText) {
+                result += activeClasses.length 
+                    ? `<span class="${activeClasses.join(' ')}">${currentText}</span>` 
+                    : currentText;
+                currentText = '';
             }
-            apply.push ( codes[i] );
-        } else {
-            apply.push( codes[i] );
+           
+            if (token === '^r') {
+                activeClasses = []; 
+            } else {
+          
+                const cssClass = globalThis.serverStyleMap?.[token];
+                if (cssClass && !activeClasses.includes(cssClass)) {
+                    activeClasses.push(cssClass);
+                }
+            }
+        } else if (token) { 
+            currentText += token;
         }
-        if( apply.lastIndexOf('^r') > -1) {
-            apply = apply.slice( apply.lastIndexOf('^r') + 1 );
+
+        if (index === tokens.length - 1 && currentText) {
+            result += activeClasses.length 
+                ? `<span class="${activeClasses.join(' ')}">${currentText}</span>` 
+                : currentText;
         }
-        tmpStr = string.substring( indexes[i], indexes[i + 1] );
-        final.appendChild( applyCode(tmpStr, apply) );
-    }
-		//$('#TEMPAREA').html(final);
-		document.getElementById('TEMPAREA').innerHTML = final;
-		var innerHTML = [...final.childNodes].map( n=> n.outerHTML ).join('\n')
-		//console.log(innerHTML)
-    return innerHTML; //$('#TEMPAREA').html();
+    });
+
+    return result;
 }
+
 
 function officialMark(o, s) {
 	if (o) {
@@ -1395,12 +1424,9 @@ function createRow(table, server, bgcolor, bngApi, isFavorite, isRecent, sname) 
 	newRow.onclick = function() { select(this, bngApi, server.official); };
 }
 
-// /!\ IMPORTANT /!\ //// TYPE 0 = Normal / 1 = Favorites / 2 = Recents
-async function populateTable(tableTbody, servers, tab, searchText = '', checkIsEmpty, checkIsNotEmpty, checkIsNotFull, checkModSlider, sliderMaxModSize, selectMap = 'Any map', SelectedServerVersions = [], tags = [], SelectedServerLocations = [], bngApi) {
-	var newTbody = document.createElement('tbody');
-	newTbody.id = "serversTableBody";
-
-	var type = 0
+async function populateTable($scope, servers, tab, searchText = '', checkIsEmpty, checkIsNotEmpty, checkIsNotFull, checkModSlider, sliderMaxModSize, selectMap = 'Any map', SelectedServerVersions = [], tags = [], SelectedServerLocations = []) {
+	$scope.serversTable = {}; 
+	var type = 0;
 	if (tab == "favorites") type = 1;
 	else if (tab == "recents") type = 2;
 
@@ -1456,10 +1482,11 @@ async function populateTable(tableTbody, servers, tab, searchText = '', checkIsE
 
 		// If the server passed the filter
 		// Set the color relative to either favorite, featured, official or normal
-		var bgcolor = isFavorite && type == 0 ? 'rgba(255, 215, 0, 0.35)!important' : server.featured ? 'rgba(0, 128, 0, 0.25)!important' : server.official ? 'rgba(255, 106, 0, 0.25)!important' : server.partner ? 'rgba(0, 123, 195, 0.3)!important' : 'rgba(0, 0, 0, 0)!important';
+		var bgcolor = isFavorite && type == 0 ? 'rgba(255, 215, 0, 0.35)' : server.featured ? 'rgba(0, 128, 0, 0.25)' : server.official ? 'rgba(255, 106, 0, 0.25)' : server.partner ? 'rgba(0, 123, 195, 0.3)' : 'rgba(0, 0, 0, 0)';
+		// $scope.serversTable.push(["server"=server, "bgcolor"=bgcolor, "isFavorite"=isFavorite, "isRecent"=isRecent, "sname"=server.sname]);
+		$scope.serversTable[server.ip + ":" + server.port] = {server: server, bgcolor: bgcolor, isFavorite: isFavorite, isRecent: isRecent, name: server.sname};
 
-
-		createRow(newTbody, server, bgcolor, bngApi, isFavorite, isRecent, server.sname);
+		// createRow(newTbody, server, bgcolor, bngApi, isFavorite, isRecent, server.sname);
 		if (isFavorite) addFav(server, true);
 		if (isRecent) addRecent(server, true);
 	}
@@ -1477,109 +1504,19 @@ async function populateTable(tableTbody, servers, tab, searchText = '', checkIsE
 			if (!stillOk) {
 				var bgcolor = "";
 				var name = tmpServer1.sname;
-				if (!tmpServer1.custom) { name += " [OFFLINE]"; bgcolor = "rgba(0, 0, 0, 0.35)!important"; }
-				else { name += " [CUSTOM]"; bgcolor = "rgba(255, 215, 0, 0.35)!important" }
-				createRow(newTbody, tmpServer1, bgcolor, bngApi, type == 1, type == 2, name);
+				if (!tmpServer1.custom) { name += " [OFFLINE]"; bgcolor = "rgba(0, 0, 0, 0.35)"; }
+				else { name += " [CUSTOM]"; bgcolor = "rgba(255, 215, 0, 0.35)" }
+
+				$scope.serversTable[tmpServer1.ip + ":" + tmpServer1.port] = {server: tmpServer1, bgcolor: bgcolor, isFavorite: type == 1, isRecent: type == 2, name: name};
+				// createRow(newTbody, tmpServer1, bgcolor, bngApi, type == 1, type == 2, name);
+
+
 			}
 		}
 	}
-	tableTbody.parentNode.replaceChild(newTbody, tableTbody);
+	// tableTbody.parentNode.replaceChild(newTbody, tableTbody);
 	if (type == 2) sortTable("recent", true, -1);
 }
-
-//new populateTable function
-// async function populateTable(servers, tab, searchText = '', checkIsEmpty, checkIsNotEmpty, checkIsNotFull, checkModSlider, sliderMaxModSize, selectMap = 'Any map', SelectedServerVersions = [], tags = [], SelectedServerLocations = [], bngApi) {
-// 	$scope.serversTable = [];
-// 	var type = 0
-// 	if (tab == "favorites") type = 1;
-// 	else if (tab == "recents") type = 2;
-
-// 	for (const server of servers) {
-// 		if (!server) {
-// 			break;
-// 		}
-
-// 		if (tab == "official" && !server.official) continue;
-// 		if (tab == "featured" && !server.featured) continue;
-// 		if (tab == "partner" && !server.partner) continue;
-
-// 		//server.tags = "tag1,tag2"
-// 		var serverTags = server.tags.toLowerCase().split(",").map(tag => tag.trim());
-
-// 		var missingTag = false;
-// 		for (let tag of tags) {
-// 			if (!serverTags.includes(tag.toLowerCase())) missingTag = true;
-// 		}
-
-// 		if (missingTag) continue;
-
-// 		var shown = true;
-// 		var smoothMapName = SmoothMapName(server.map);
-// 		var isFavorite = false;
-// 		var isRecent = false;
-
-// 		// Filter by search
-// 		if (!server.strippedName.toLowerCase().includes(searchText.toLowerCase())) continue;
-		
-// 		// Filter by empty or full
-// 		else if(checkIsEmpty && server.players > 0) continue;
-// 		else if(checkIsNotEmpty && server.players == 0) continue;
-// 		else if(checkIsNotFull && server.players >= parseInt(server.maxplayers)) continue;
-		
-// 		// Filter by mod size
-// 		else if(checkModSlider && sliderMaxModSize * 1048576 < server.modstotalsize) continue;
-	
-// 		// Filter by map
-// 		else if((selectMap != "Any map" && selectMap != smoothMapName)) continue;
-
-// 		else if (SelectedServerVersions.length > 0 && !SelectedServerVersions.includes("v" + server.version)) continue;
-
-// 		else if (SelectedServerLocations.length > 0 && !SelectedServerLocations.includes(server.location)) continue;
-
-// 		// Favorite
-// 		for (let tmpServer of favorites) if (tmpServer.ip == server.ip && tmpServer.port == server.port) isFavorite = tmpServer.addTime;
-// 		if (type == 1 && !isFavorite) continue; // If it's favorite tab, we only show favorites
-
-// 		// Recents
-// 		for (let tmpServer of recents) if (tmpServer.ip == server.ip && tmpServer.port == server.port) isRecent = tmpServer.addTime;
-// 		if (type == 2 && !isRecent) continue; // Everything happens underneath for recents
-
-// 		// If the server passed the filter
-// 		// Set the color relative to either favorite, featured, official or normal
-// 		var bgcolor = isFavorite && type == 0 ? 'rgba(255, 215, 0, 0.35)!important' : server.featured ? 'rgba(0, 128, 0, 0.25)!important' : server.official ? 'rgba(255, 106, 0, 0.25)!important' : server.partner ? 'rgba(0, 123, 195, 0.3)!important' : 'rgba(0, 0, 0, 0)!important';
-
-// 		$scope.serversTable.push(["server"=server, "bgcolor"=bgcolor, "isFavorite"=isFavorite, "isRecent"=isRecent, "sname"=server.sname]);
-// 		// createRow(newTbody, server, bgcolor, bngApi, isFavorite, isRecent, server.sname);
-// 		if (isFavorite) addFav(server, true);
-// 		if (isRecent) addRecent(server, true);
-// 	}
-	
-// 	// Here we check if some favorited / recents servers are offline or not
-// 	if (type == 1 || type == 2) {
-// 		var toCheck = type == 1 ? favorites : recents
-// 		for (let tmpServer1 of toCheck) {
-// 			let stillOk = true;
-// 			for (let i = 0; i < servers.length; i++) {
-// 				var tmpServer2 = servers[i];
-// 				if (tmpServer1.ip == tmpServer2.ip && tmpServer1.port == tmpServer2.port) { stillOk = true; break; }
-// 				else stillOk = false;
-// 			}
-// 			if (!stillOk) {
-// 				var bgcolor = "";
-// 				var name = tmpServer1.sname;
-// 				if (!tmpServer1.custom) { name += " [OFFLINE]"; bgcolor = "rgba(0, 0, 0, 0.35)!important"; }
-// 				else { name += " [CUSTOM]"; bgcolor = "rgba(255, 215, 0, 0.35)!important" }
-
-// 				$scope.serversTable.push(["server"=tmpServer1, "bgcolor"=bgcolor, type == 1, type == 2, "sname"=name]);
-// 				// createRow(newTbody, tmpServer1, bgcolor, bngApi, type == 1, type == 2, name);
-
-
-// 			}
-// 		}
-// 	}
-// 	// tableTbody.parentNode.replaceChild(newTbody, tableTbody);
-// 	if (type == 2) sortTable("recent", true, -1);
-// }
 
 // Used to connect to the backend with ids
 function connect(ip, port, name, skipModWarning = false) {
@@ -1596,41 +1533,7 @@ function connect(ip, port, name, skipModWarning = false) {
 }
 
 // Used to select a row (when it's clicked)
-function select(row, bngApi, isOfficial) {
-	var table = document.getElementById("serversTable");
-	// Deselect the old row
-	deselect(table.selectedRow);
 
-	// Select the new one
-	row.classList.add("highlight");
-	row.selected = true;
-	table.selectedRow = row;
-	
-	// Add the highlight menu
-	var server = row.server;
-	highlightedServer = server; // Set it as the selected server
-
-	// Create and insert the server info tr
-	var serverInfoRow = document.createElement("tr");
-	serverInfoRow.innerHTML = getServerInfoHTML(server);
-	serverInfoRow.setAttribute("id", "ServerInfoRow");
-	serverInfoRow.server = row.server;
-	row.parentNode.insertBefore(serverInfoRow, row.nextSibling);
-
-	// Add the connect button
-	var connectToServerButton = document.getElementById('serverconnect-button');
-	connectToServerButton.onclick = function() { connect(row.server.ip, row.server.port, row.server.strippedName, isOfficial) };
-	
-	if (server.favorite) {
-		var removeFavButton = document.getElementById('removeFav-button');
-		removeFavButton.onclick = function() { removeFav(server); }
-	}
-	else {
-		// Add the favorite button
-		var addFavButton = document.getElementById('addFav-button');
-		addFavButton.onclick = function() { addFav(server) };
-	}
-}
 
 async function receiveServers(data) {
 	var serversArray = new Array();
@@ -1658,7 +1561,8 @@ async function receiveServers(data) {
 };
 
 // Used to deselect a row
-function deselect(row) {
+function deselect($scope, row) {
+	$scope.selection = null;
 	// Deselected the row
 	if (!row) return;
 	row.classList.remove("highlight");
