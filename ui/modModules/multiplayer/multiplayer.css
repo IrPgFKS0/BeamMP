@@ -36,6 +36,7 @@
 }
 
 table#serversTable {
+  height: fit-content;
   width: 100%;
   color: white;
   position: relative;
@@ -421,7 +422,27 @@ md-slider.ng-pristine.ng-untouched.ng-valid.md-default-theme.ng-empty {
   max-width: 34px;
 }
 
-
+.favorite {
+  background-color: rgba(255, 215, 0, 0.35);
+}
+.featured {
+  background-color: rgba(0, 128, 0, 0.25);
+}
+.official {
+  background-color: rgba(255, 106, 0, 0.25);
+}
+.partner {
+  background-color: rgba(0, 123, 195, 0.3);
+}
+.normal {
+  background-color: rgba(0, 0, 0, 0);
+}
+.offline {
+  background-color: rgba(0, 0, 0, 0.35);
+}
+.custom {
+  background-color: rgba(255, 215, 0, 0.35);
+}
 .color-0 { color: #000000; }
 .color-1 { color: #0000AA; }
 .color-2 { color: #00AA00; }
