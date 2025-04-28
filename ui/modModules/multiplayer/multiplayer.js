@@ -2,6 +2,7 @@
 // Licensed under AGPL-3.0 (or later), see <https://www.gnu.org/licenses/>.
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import '/ui/modModules/multiplayer/angular-inview.js';
 var highlightedServer;
 var servers = [];
 var official = [];
@@ -29,8 +30,7 @@ let repopulateServerList = async function() {
 
 };
 
-export default angular.module('multiplayer', ['ui.router'])
-
+export default angular.module('multiplayer', ['ui.router', "angular-inview"])
 .config(['$stateProvider', function($stateProvider) {
   $stateProvider.state('menu.multiplayer', {
 		url: '/multiplayer',
@@ -748,7 +748,26 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		//console.log('[MultiplayerController] destroyed.');
 	});
 }])
+.filter('toArray', function() {		//prevent too much digest
+  const cache = new WeakMap(); 
+  
+  return function(obj) {
+    if (!obj) return [];		
 
+    if (cache.has(obj)) {
+      return cache.get(obj);
+    }
+    
+
+    const result = Object.keys(obj).map(key => ({
+      $key: key,
+      ...obj[key]
+    }));
+    
+    cache.set(obj, result);
+    return result;
+  };
+})
 
 /* //////////////////////////////////////////////////////////////////////////////////////////////
 *	SERVERS TAB
@@ -832,6 +851,11 @@ function($scope, $state, $timeout, $filter) {
 			addFavButton.onclick = function() { addFav(server) };
 		}
 	};
+
+
+
+
+
 	$scope.formatServerName = formatServerName;
 	$scope.SmoothMapName = SmoothMapName;
 	$scope.officialMark = officialMark;
@@ -980,9 +1004,7 @@ function($scope, $state, $timeout, $filter) {
 	}
 
 	repopulateServerList = function () { vm.repopulate().then(() => { }); }
-}])
-
-
+}]).controller('infinitScrollController', infinitScrollController)
 
 /* //////////////////////////////////////////////////////////////////////////////////////////////
 *	DIRECT CONNECT TAB
@@ -1029,6 +1051,7 @@ function($scope, $state, $timeout) {
 		);
 	};
 }])
+
 
 
 
@@ -1161,16 +1184,6 @@ function formatDescriptionName(string) {
     return innerHTML; //$('#TEMPAREA').html();
 }
 
-function applyCode(string, codes) {
-    var elem = document.createElement('span');
-		elem.style.fontSize = 'initial';
-    string = string.replace(/\x00*/g, '');
-    for(var i = 0, len = codes.length; i < len; i++) {
-        elem.style.cssText += serverStyleMap[codes[i]] + ';';
-    }
-    elem.innerHTML = string;
-    return elem;
-}
 
 function formatServerName(string) {
     let activeClasses = []; 
@@ -1264,6 +1277,22 @@ function returnDefault(data, type) {
 	else return data;
 }
 
+function infinitScrollController($scope) {
+
+  $scope.limit = 10;
+
+  $scope.loadMore = function (last, inview) {
+	//if theres no digest, load
+
+		console.log($scope.limit)
+		console.log(last, inview)
+		if (last && inview) {
+			$scope.limit += 10;
+		}
+	
+  }
+}
+
 function listPlayers(s) {
 	if (s != undefined || s != "") {
 		var re = new RegExp(";", 'g');
@@ -1308,6 +1337,7 @@ function stripCustomFormatting(name){
 	}
 	return name;
 }
+
 
 async function getFavorites() {
 	return new Promise(function(resolve, reject) {
@@ -1403,34 +1433,14 @@ function getServerInfoHTML(d) {
 };
 
 
-function createRow(table, server, bgcolor, bngApi, isFavorite, isRecent, sname) {
-	let newRow = table.insertRow(table.length);
-	newRow.style.fontSize = 0;
-	newRow.server = server;
-	newRow.server.favorite = isFavorite;
-	newRow.server.recent = isRecent;
-	/*newRow.innerHTML = `
-		<td style="background-color:${bgcolor}; font-size: initial;"><i class="flag flag-${server.location}"></i> ${server.location}</td>
-		<td style="background-color:${bgcolor};">${formatServerName(sname)}</td>
-		<td style="background-color:${bgcolor}; font-size: initial;">${SmoothMapName(server.map)}</td>
-		<td style="background-color:${bgcolor}; font-size: initial;">${server.players}/${server.maxplayers}</td>
-	`;*/
-	newRow.innerHTML = `
-		<td style="background-color:${bgcolor}; font-size: initial; padding-left: 3px; text-align: right; padding-right: 10px;"><img src="local://local/ui/modModules/multiplayer/flags/${server.location.toLowerCase()}.png" class="flag"></img> ${server.location}</td>
-		<td style="background-color:${bgcolor};">${formatServerName(sname)}</td>
-		<td style="background-color:${bgcolor}; font-size: initial;">${SmoothMapName(server.map)}</td>
-		<td style="background-color:${bgcolor}; font-size: initial;">${server.players}/${server.maxplayers}</td>
-	`;
-	newRow.onclick = function() { select(this, bngApi, server.official); };
-}
-
 async function populateTable($scope, servers, tab, searchText = '', checkIsEmpty, checkIsNotEmpty, checkIsNotFull, checkModSlider, sliderMaxModSize, selectMap = 'Any map', SelectedServerVersions = [], tags = [], SelectedServerLocations = []) {
 	$scope.serversTable = {}; 
 	var type = 0;
 	if (tab == "favorites") type = 1;
 	else if (tab == "recents") type = 2;
-
+	let i = 0;
 	for (const server of servers) {
+		i += 1;
 		if (!server) {
 			break;
 		}
@@ -1484,7 +1494,7 @@ async function populateTable($scope, servers, tab, searchText = '', checkIsEmpty
 		// Set the color relative to either favorite, featured, official or normal
 		var bgcolor = isFavorite && type == 0 ? 'rgba(255, 215, 0, 0.35)' : server.featured ? 'rgba(0, 128, 0, 0.25)' : server.official ? 'rgba(255, 106, 0, 0.25)' : server.partner ? 'rgba(0, 123, 195, 0.3)' : 'rgba(0, 0, 0, 0)';
 		// $scope.serversTable.push(["server"=server, "bgcolor"=bgcolor, "isFavorite"=isFavorite, "isRecent"=isRecent, "sname"=server.sname]);
-		$scope.serversTable[server.ip + ":" + server.port] = {server: server, bgcolor: bgcolor, isFavorite: isFavorite, isRecent: isRecent, name: server.sname};
+		$scope.serversTable[i] = {server: server, bgcolor: bgcolor, isFavorite: isFavorite, isRecent: isRecent, name: server.sname};
 
 		// createRow(newTbody, server, bgcolor, bngApi, isFavorite, isRecent, server.sname);
 		if (isFavorite) addFav(server, true);
@@ -1507,7 +1517,7 @@ async function populateTable($scope, servers, tab, searchText = '', checkIsEmpty
 				if (!tmpServer1.custom) { name += " [OFFLINE]"; bgcolor = "rgba(0, 0, 0, 0.35)"; }
 				else { name += " [CUSTOM]"; bgcolor = "rgba(255, 215, 0, 0.35)" }
 
-				$scope.serversTable[tmpServer1.ip + ":" + tmpServer1.port] = {server: tmpServer1, bgcolor: bgcolor, isFavorite: type == 1, isRecent: type == 2, name: name};
+				$scope.serversTable[i] = {server: tmpServer1, bgcolor: bgcolor, isFavorite: type == 1, isRecent: type == 2, name: name};
 				// createRow(newTbody, tmpServer1, bgcolor, bngApi, type == 1, type == 2, name);
 
 

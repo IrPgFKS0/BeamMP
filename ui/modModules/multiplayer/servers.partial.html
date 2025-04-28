@@ -1,4 +1,6 @@
+
 <md-content>
+
 	<div id="serverListHeader" layout="row" layout-padding="">
 		<input ng-model="multiplayermenu.searchText" ng-change="multiplayermenu.repopulate();" type="text" id="search" name="search" placeholder="Search" />
 		<md-button id="refresh-button" class="button servers-button" ng-class="" ng-click="multiplayer.refreshList()">{{:: 'ui.multiplayer.refresh' | translate}}</md-button>
@@ -110,7 +112,7 @@
 	</div>
 	<md-divider></md-divider>
 	
-	<div id="serversTableContainer">
+	<div id="serversTableContainer" ng-controller="infinitScrollController">
 		<table id="serversTable">
 			<thead id="serversTableHead">
 				<tr id="header">
@@ -125,7 +127,7 @@
 					<td class="loading-shimmer" colspan="4"></td>
 				</tr>	
 
-				<tr ng-repeat="(key, server) in serversTable track by key" ng-show="serversTable" ng-click="select($event, server.server)">
+				<tr ng-repeat="server in (serversArray = (serversTable | toArray | limitTo:limit)) track by $index" in-view="loadMore($last, $inview)" ng-show="serversTable" ng-click="select($event, server.server)">
 					<td ng-style="{'background-color': '{{server.bgcolor}}','font-size': 'initial','padding-left': '3px','text-align': 'right','padding-right': '10px'}" ><img ng-src="local://local/ui/modModules/multiplayer/flags/{{server.server.location.toLowerCase()}}.png" class="flag"></img> {{server.server.location}}</td>
 					<td ng-style="{'background-color': '{{server.bgcolor}}'}" ng-bind-html="formatServerName(server.name)" ></td>
 					<td ng-style="{'background-color': '{{server.bgcolor}}','font-size': 'initial'}">{{SmoothMapName(server.server.map)}}</td>
