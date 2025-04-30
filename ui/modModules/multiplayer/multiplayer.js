@@ -1278,11 +1278,11 @@ function returnDefault(data, type) {
 
 function infinitScrollController($scope) {
 
-  $scope.limit = 10;
+  $scope.limit = 30;
 
   $scope.loadMore = function (last, inview) {
 	if (last && inview) {
-		$scope.limit += 10;
+		$scope.limit += 30;
 	}
   }
 }

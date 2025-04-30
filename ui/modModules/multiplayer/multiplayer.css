@@ -421,7 +421,14 @@ md-slider.ng-pristine.ng-untouched.ng-valid.md-default-theme.ng-empty {
   top: 2px;
   max-width: 34px;
 }
-
+.server-item {
+    height: 24px;
+}
+.server-item td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .featured {
   background-color: rgba(0, 128, 0, 0.25);
 }
