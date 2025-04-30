@@ -2,7 +2,7 @@
 // Licensed under AGPL-3.0 (or later), see <https://www.gnu.org/licenses/>.
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import '/ui/modModules/multiplayer/angular-inview.js';
+import '/ui/lib/ext/angular-inview.js';
 var highlightedServer;
 var servers = [];
 var official = [];
@@ -775,7 +775,6 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 .controller('MultiplayerServersController', ['$scope', '$state', '$timeout', '$filter',
 function($scope, $state, $timeout, $filter) {
 
-	// document.getElementById('serverList').parentElement.style.overflow = "hidden";
 	var vm = this;
 	let serverListOptions = JSON.parse(localStorage.getItem("serverListOptions"))
 
@@ -803,8 +802,6 @@ function($scope, $state, $timeout, $filter) {
 		vm.searchText = ""
 	}
 
-	// Resize the server list
-	// setServersTableHeight();
 
 	bngApi.engineLua('MPCoreNetwork.requestServerList()');
 
@@ -1284,10 +1281,9 @@ function infinitScrollController($scope) {
   $scope.limit = 10;
 
   $scope.loadMore = function (last, inview) {
-		if (last && inview) {
-			$scope.limit += 10;
-		}
-	
+	if (last && inview) {
+		$scope.limit += 10;
+	}
   }
 }
 
@@ -1393,12 +1389,12 @@ globalThis.openExternalLink = function(url){
 	bngApi.engineLua(`MPCoreNetwork.openURL("`+url+`")`);
 }
 
-function getServerInfoHTML(c) {
+function getServerInfoHTML(row) {
+		let d = row.server; 
 		// `d` is the original data object for the row
-		let d = c.server; 
 		var favButton;
 		//console.log(d);
-		if (c.isFavorite) favButton = `<md-button id="removeFav-button" class="button servers-button md-button md-default-theme" ng-class="" ng-click="removeFav()" style="margin-left: 10px; background-color: #FF6961;">Remove Favorite</md-button>`;
+		if (row.isFavorite) favButton = `<md-button id="removeFav-button" class="button servers-button md-button md-default-theme" ng-class="" ng-click="removeFav()" style="margin-left: 10px; background-color: #FF6961;">Remove Favorite</md-button>`;
 		else favButton = `<md-button id="addFav-button" class="button servers-button md-button md-default-theme" ng-class="" ng-click="addFav(this)" style="margin-left: 10px; background-color: #FFB646">Add Favorite</md-button>`;
 		return `
 				<td colspan="5">
@@ -1491,10 +1487,8 @@ async function populateTable($scope, servers, tab, searchText = '', checkIsEmpty
 
 		// If the server passed the filter
 
-		// $scope.serversTable.push(["server"=server, "bgcolor"=bgcolor, "isFavorite"=isFavorite, "isRecent"=isRecent, "sname"=server.sname]);
 		$scope.serversTable[i] = {server: server, isFavorite: isFavorite, isRecent: isRecent, name: server.sname, offline: false, custom: false};
 
-		// createRow(newTbody, server, bgcolor, bngApi, isFavorite, isRecent, server.sname);
 		if (isFavorite) addFav(server, true);
 		if (isRecent) addRecent(server, true);
 	}
@@ -1517,13 +1511,9 @@ async function populateTable($scope, servers, tab, searchText = '', checkIsEmpty
 				else { name += " [CUSTOM]"; custom = true }
 
 				$scope.serversTable[i] = {server: tmpServer1, isFavorite: type == 1, isRecent: type == 2, name: name, offline: offline, custom: custom};
-				// createRow(newTbody, tmpServer1, bgcolor, bngApi, type == 1, type == 2, name);
-
-				
 			}
 		}
 	}
-	// tableTbody.parentNode.replaceChild(newTbody, tableTbody);
 	if (type == 2) sortTable("recent", true, -1);
 }
 
@@ -1617,13 +1607,6 @@ globalThis.sortTable = function(sortType, isNumber, dir) {
     for(var i = 0; i < tr.length; ++i) tb.appendChild(tr[i]); // append each row in order
 	reverse = -((+reverse) || -1);
 }
-
-// function setServersTableHeight() {
-// 	let topDistance = document.getElementById("serversTableContainer").getBoundingClientRect().top;
-// 	let navBarHeight = document.querySelector("#vue-app > div.vue-app-main.click-through > div").getBoundingClientRect().top;
-// 	document.getElementById("serversTableContainer").style.maxHeight = (window.innerHeight - topDistance - (window.innerHeight - navBarHeight)) + 'px';
-// }
-
 
 /**
 *
