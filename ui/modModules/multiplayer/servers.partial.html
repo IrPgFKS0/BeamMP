@@ -127,7 +127,7 @@
 					<td class="loading-shimmer" colspan="4"></td>
 				</tr>	
 
-				<tr class="server-item" ng-repeat="server in (serversArray = (serversTable | toArray | limitTo:limit)) track by $index" in-view="loadMore($last, $inview)" ng-show="serversTable" ng-click="select($event, server)">
+				<tr class="server-item" ng-repeat="server in serversArray | limitTo:limit track by server.server.ip + ':' + server.server.port" in-view="loadMore($last, $inview)" ng-show="serversTable" ng-click="select($event, server)">
 					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" style="width: 100px; max-width: 100px; font-size: initial; padding-left: 3px; text-align: right; padding-right: 10px" ><img ng-src="local://local/ui/modModules/multiplayer/flags/{{server.server.location.toLowerCase()}}.png" class="flag"></img> {{server.server.location}}</td>
 					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" style="width: 900px; max-width: 900px;" ng-bind-html="formatServerName(server.name)" ></td>
 					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" style="width: 200px; max-width: 200px; font-size: initial">{{SmoothMapName(server.server.map)}}</td>

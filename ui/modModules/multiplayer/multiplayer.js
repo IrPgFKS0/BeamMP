@@ -436,6 +436,10 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	mdDialog = $mdDialog;
 
 	$scope.switchServerView = function(view) {
+		var serverTable = document.getElementById("serversTable");
+		if (serverTable && serverTable.selectedRow){
+			deselect(serverTable.selectedRow);
+		}
 		serverView = view;
 		$state.go('menu.multiplayer.servers');
 		repopulateServerList();
@@ -748,32 +752,12 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		//console.log('[MultiplayerController] destroyed.');
 	});
 }])
-.filter('toArray', function() {		//prevent too much digest
-  const cache = new WeakMap(); 
-  
-  return function(obj) {
-    if (!obj) return [];		
-
-    if (cache.has(obj)) {
-      return cache.get(obj);
-    }
-    
-
-    const result = Object.keys(obj).map(key => ({
-      $key: key,
-      ...obj[key]
-    }));
-    
-    cache.set(obj, result);
-    return result;
-  };
-})
 
 /* //////////////////////////////////////////////////////////////////////////////////////////////
 *	SERVERS TAB
 */ //////////////////////////////////////////////////////////////////////////////////////////////
-.controller('MultiplayerServersController', ['$scope', '$state', '$timeout', '$filter',
-function($scope, $state, $timeout, $filter) {
+.controller('MultiplayerServersController', ['$scope', '$state', '$timeout', '$filter','$compile',
+function($scope, $state, $timeout, $filter, $compile) {
 
 	var vm = this;
 	let serverListOptions = JSON.parse(localStorage.getItem("serverListOptions"))
@@ -814,12 +798,11 @@ function($scope, $state, $timeout, $filter) {
 
 
 	$scope.select = function(event, finalserver) {
-		let server = finalserver.server
-		$scope.selection = server;
+		let server = finalserver.server;
 		let row = event.target.closest('tr');
 		var table = document.getElementById("serversTable");
 		// Deselect the old row
-		deselect($scope, table.selectedRow);
+		deselect(table.selectedRow);
 
 		// Select the new one
 
@@ -831,29 +814,52 @@ function($scope, $state, $timeout, $filter) {
 		highlightedServer = server; // Set it as the selected server
 		//Create and insert the server info tr
 		var serverInfoRow = document.createElement("tr");
-		serverInfoRow.innerHTML = getServerInfoHTML(finalserver);
 		serverInfoRow.setAttribute("id", "ServerInfoRow");
 		serverInfoRow.server = server;
-		row.parentNode.insertBefore(serverInfoRow, row.nextSibling);
+		var compiledTD = angular.element(getServerInfoHTML($scope, finalserver));
 
-		// Add the connect button
-		var connectToServerButton = document.getElementById('serverconnect-button');
-		connectToServerButton.onclick = function() { connect(server.ip, server.port, server.strippedName, server.isOfficial) };
-		if (finalserver.isFavorite) {
-			var removeFavButton = document.getElementById('removeFav-button');
-			removeFavButton.onclick = function() { removeFav(server); }
-		}
-		else {
-			// Add the favorite button
-			var addFavButton = document.getElementById('addFav-button');
-			addFavButton.onclick = function() { addFav(server) };
-		}
+		var compiledElement = $compile(compiledTD)($scope);	//compile so its tracked by angularjs
+
+		angular.element(serverInfoRow).append(compiledElement);
+
+		angular.element(row).after(serverInfoRow);
 	};
 
 
 
 
+	$scope.addFav = function(server) {
+		if ($scope.selected_row){
+			$scope.selected_row.isFavorite = true;
+		}
+		addFav(server);	
+		const index = $scope.serversArray.findIndex(s => 
+			s.server.ip === server.ip && s.server.port === server.port
+		);
 
+		if (index !== -1) {
+			$scope.serversArray[index].isFavorite = true;
+			
+			$scope.$applyAsync(); 
+
+		}
+	};
+	$scope.removeFav = function(server) {
+		if ($scope.selected_row){
+			$scope.selected_row.isFavorite = false;
+		}
+		removeFav(server);
+		const index = $scope.serversArray.findIndex(s => 
+			s.server.ip === server.ip && s.server.port === server.port
+		);
+
+		if (index !== -1) {
+			$scope.serversArray[index].isFavorite = false;
+			
+			$scope.$applyAsync(); 
+
+		}
+	};
 	$scope.formatServerName = formatServerName;
 	$scope.SmoothMapName = SmoothMapName;
 	$scope.officialMark = officialMark;
@@ -928,6 +934,7 @@ function($scope, $state, $timeout, $filter) {
 
 
 		await populateTable(
+			$filter,
 			$scope,
 			servers,
 			serverView,
@@ -1389,13 +1396,10 @@ globalThis.openExternalLink = function(url){
 	bngApi.engineLua(`MPCoreNetwork.openURL("`+url+`")`);
 }
 
-function getServerInfoHTML(row) {
+function getServerInfoHTML($scope, row) {
 		let d = row.server; 
+		$scope.selected_row = row;
 		// `d` is the original data object for the row
-		var favButton;
-		//console.log(d);
-		if (row.isFavorite) favButton = `<md-button id="removeFav-button" class="button servers-button md-button md-default-theme" ng-class="" ng-click="removeFav()" style="margin-left: 10px; background-color: #FF6961;">Remove Favorite</md-button>`;
-		else favButton = `<md-button id="addFav-button" class="button servers-button md-button md-default-theme" ng-class="" ng-click="addFav(this)" style="margin-left: 10px; background-color: #FFB646">Add Favorite</md-button>`;
 		return `
 				<td colspan="5">
 					<h1 style="padding-left:10px;">`+officialMark(d.official, true)+formatServerName(d.sname)+`</h1>
@@ -1416,9 +1420,14 @@ function getServerInfoHTML(row) {
 							</ul>
 						</div>
 					</div>
-					<div class="row" style="padding-left: 10px;">
-						<md-button id="serverconnect-button" class="button servers-button md-button md-default-theme" ng-class="" ng-click="multiplayer.connect(` + d.ip + `, ` + d.port + `)" style="margin-left: 10px;">Connect</md-button>
-						` + favButton + `
+					<div class="row" style="padding-left: 10px;" ng-switch="selected_row.isFavorite">
+						<md-button id="serverconnect-button" class="button servers-button md-button md-default-theme" ng-class="" ng-click="connect(selected_row.server.ip, selected_row.server.port, selected_row.server.strippedName, selected_row.server.isOfficial)" style="margin-left: 10px;">Connect</md-button>
+						<div ng-switch-when="true">
+							<md-button id="removeFav-button" class="button servers-button md-button md-default-theme" ng-class="" ng-click="removeFav(selected_row.server)" style="margin-left: 10px; background-color: #FF6961;">Remove Favorite</md-button>
+						</div>
+						<div ng-switch-when="false">
+							<md-button id="addFav-button" class="button servers-button md-button md-default-theme" ng-class="" ng-click="addFav(selected_row.server, true)" style="margin-left: 10px; background-color: #FFB646">Add Favorite</md-button>
+						</div>
 					</div>
 					<div class="row">
 						<h4></h4>
@@ -1427,8 +1436,8 @@ function getServerInfoHTML(row) {
 			</td>`;
 };
 
-
-async function populateTable($scope, servers, tab, searchText = '', checkIsEmpty, checkIsNotEmpty, checkIsNotFull, checkModSlider, sliderMaxModSize, selectMap = 'Any map', SelectedServerVersions = [], tags = [], SelectedServerLocations = []) {
+// /!\ IMPORTANT /!\ //// TYPE 0 = Normal / 1 = Favorites / 2 = Recents
+async function populateTable($filter, $scope, servers, tab, searchText = '', checkIsEmpty, checkIsNotEmpty, checkIsNotFull, checkModSlider, sliderMaxModSize, selectMap = 'Any map', SelectedServerVersions = [], tags = [], SelectedServerLocations = []) {
 	$scope.serversTable = {}; 
 	var type = 0;
 	if (tab == "favorites") type = 1;
@@ -1478,7 +1487,7 @@ async function populateTable($scope, servers, tab, searchText = '', checkIsEmpty
 		else if (SelectedServerLocations.length > 0 && !SelectedServerLocations.includes(server.location)) continue;
 
 		// Favorite
-		for (let tmpServer of favorites) if (tmpServer.ip == server.ip && tmpServer.port == server.port) isFavorite = tmpServer.addTime;
+		for (let tmpServer of favorites) if (tmpServer.ip == server.ip && tmpServer.port == server.port) isFavorite = true;
 		if (type == 1 && !isFavorite) continue; // If it's favorite tab, we only show favorites
 
 		// Recents
@@ -1487,7 +1496,10 @@ async function populateTable($scope, servers, tab, searchText = '', checkIsEmpty
 
 		// If the server passed the filter
 
-		$scope.serversTable[i] = {server: server, isFavorite: isFavorite, isRecent: isRecent, name: server.sname, offline: false, custom: false};
+		$scope.serversTable[server.ip + ":" + server.port] = {server: server, isFavorite: isFavorite, isRecent: isRecent, name: server.sname, offline: false, custom: false};
+		$scope.serversArray = Object.keys($scope.serversTable).map(function(key) {
+			return $scope.serversTable[key];
+		});
 
 		if (isFavorite) addFav(server, true);
 		if (isRecent) addRecent(server, true);
@@ -1509,8 +1521,10 @@ async function populateTable($scope, servers, tab, searchText = '', checkIsEmpty
 				var name = tmpServer1.sname;
 				if (!tmpServer1.custom) { name += " [OFFLINE]"; offline = true; }
 				else { name += " [CUSTOM]"; custom = true }
-
-				$scope.serversTable[i] = {server: tmpServer1, isFavorite: type == 1, isRecent: type == 2, name: name, offline: offline, custom: custom};
+				$scope.serversTable[tmpServer1.ip + ":" + tmpServer1.port] = {server: tmpServer1, isFavorite: type == 1, isRecent: type == 2, name: name, offline: offline, custom: custom};
+				$scope.serversArray = Object.keys($scope.serversTable).map(function(key) {
+					return $scope.serversTable[key];
+				});
 			}
 		}
 	}
@@ -1560,8 +1574,7 @@ async function receiveServers(data) {
 };
 
 // Used to deselect a row
-function deselect($scope, row) {
-	$scope.selection = null;
+function deselect(row) {
 	// Deselected the row
 	if (!row) return;
 	row.classList.remove("highlight");
