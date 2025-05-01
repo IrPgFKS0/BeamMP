@@ -435,9 +435,9 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	mdDialog = $mdDialog;
 
 	$scope.switchServerView = function(view) {
-		var serverListMainContainerParent = document.getElementById("serverListMainContainer").parentElement;
-		if (serverListMainContainerParent) {
-			serverListMainContainerParent.scrollTop = 0;
+		var serverListMainContainer = document.getElementById("serverListMainContainer");
+		if (serverListMainContainer) {
+			serverListMainContainer.parentElement.scrollTop = 0;
 		}
 		var serverTable = document.getElementById("serversTable");
 		if (serverTable && serverTable.selectedRow){
