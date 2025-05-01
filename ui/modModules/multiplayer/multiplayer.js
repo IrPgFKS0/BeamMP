@@ -435,6 +435,10 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	mdDialog = $mdDialog;
 
 	$scope.switchServerView = function(view) {
+		var serverListMainContainerParent = document.getElementById("serverListMainContainer").parentElement;
+		if (serverListMainContainerParent) {
+			serverListMainContainerParent.scrollTop = 0;
+		}
 		var serverTable = document.getElementById("serversTable");
 		if (serverTable && serverTable.selectedRow){
 			deselect(serverTable.selectedRow);
@@ -835,8 +839,18 @@ function($scope, $state, $timeout, $filter, $compile) {
 		const newLimit = scrolledRows + 50;
 		if (newLimit > $scope.limit) {
 			$scope.limit = newLimit;
-			$scope.$apply();
 		}
+		window.requestAnimationFrame(() => {
+            $scope.limit = newLimit;
+            
+            // 4. Calcul direct sans Math.max (plus rapide)
+            const remainingHeight = ($scope.serversArray.length - newLimit) * rowHeight;
+            document.getElementById('TEMPSERVERITEM').style.height = 
+                (remainingHeight > 0 ? remainingHeight : 0) + "px";
+            
+            // 5. Forçage ciblé de la mise à jour
+            if (!$scope.$$phase) $scope.$digest();
+        });
 	};
 
 	document.getElementById('serverListMainContainer').parentElement.addEventListener('scroll', () => {
@@ -1535,13 +1549,9 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 		}
 	}
 
-	// add height to serverListContainer parent depending on the number of servers
-	var serversTableContainer = document.getElementById("serversTableContainer");
-	if (serversTableContainer) {
-		if ($scope.serversArray.length > 0) {
-			serversTableContainer.style.height = $scope.serversArray.length * 24 + "px";
-		}
-	}
+	document.getElementById('TEMPSERVERITEM').style.height = $scope.serversArray.length * 24 + "px";
+
+	
 	if (type == 2) sortTable("recent", true, -1);
 }
 
