@@ -2,7 +2,6 @@
 // Licensed under AGPL-3.0 (or later), see <https://www.gnu.org/licenses/>.
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import '/ui/lib/ext/angular-inview.js';
 var highlightedServer;
 var servers = [];
 var official = [];
@@ -30,7 +29,7 @@ let repopulateServerList = async function() {
 
 };
 
-export default angular.module('multiplayer', ['ui.router', "angular-inview"])
+export default angular.module('multiplayer', ['ui.router'])
 .config(['$stateProvider', function($stateProvider) {
   $stateProvider.state('menu.multiplayer', {
 		url: '/multiplayer',
@@ -796,7 +795,6 @@ function($scope, $state, $timeout, $filter, $compile) {
 	};
 
 
-
 	$scope.select = function(event, finalserver) {
 		let server = finalserver.server;
 		let row = event.target.closest('tr');
@@ -826,6 +824,24 @@ function($scope, $state, $timeout, $filter, $compile) {
 	};
 
 
+	$scope.limit = 48;
+	$scope.loadMore = function () {
+		const rowHeight = 24;
+		const container = document.getElementById('serverListMainContainer').parentElement;
+		if (!container) return;
+
+		const scrolledRows = Math.floor(container.scrollTop / rowHeight);
+
+		const newLimit = scrolledRows + 50;
+		if (newLimit > $scope.limit) {
+			$scope.limit = newLimit;
+			$scope.$apply();
+		}
+	};
+
+	document.getElementById('serverListMainContainer').parentElement.addEventListener('scroll', () => {
+		$scope.loadMore();
+	});
 
 
 	$scope.addFav = function(server) {
@@ -1010,7 +1026,7 @@ function($scope, $state, $timeout, $filter, $compile) {
 	}
 
 	repopulateServerList = function () { vm.repopulate().then(() => { }); }
-}]).controller('infinitScrollController', infinitScrollController)
+}])
 
 /* //////////////////////////////////////////////////////////////////////////////////////////////
 *	DIRECT CONNECT TAB
@@ -1283,16 +1299,6 @@ function returnDefault(data, type) {
 	else return data;
 }
 
-function infinitScrollController($scope) {
-
-  $scope.limit = 30;
-
-  $scope.loadMore = function (last, inview) {
-	if (last && inview) {
-		$scope.limit += 30;
-	}
-  }
-}
 
 function listPlayers(s) {
 	if (s != undefined || s != "") {
@@ -1526,6 +1532,14 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 					return $scope.serversTable[key];
 				});
 			}
+		}
+	}
+
+	// add height to serverListContainer parent depending on the number of servers
+	var serversTableContainer = document.getElementById("serversTableContainer");
+	if (serversTableContainer) {
+		if ($scope.serversArray.length > 0) {
+			serversTableContainer.style.height = $scope.serversArray.length * 24 + "px";
 		}
 	}
 	if (type == 2) sortTable("recent", true, -1);
