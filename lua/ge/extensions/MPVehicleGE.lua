@@ -1228,6 +1228,19 @@ local function core_vehicle_partmgmt_saveLocal_overwrite(p1)
 	end
 end
 
+local core_vehicle_partmgmnt_savedefault = extensions.core_vehicle_partmgmt.savedefault
+local function core_vehicle_partmgmnt_savedefault_overwrite(p1)
+	local vehicle = be:getPlayerVehicle(0)
+	if vehicle:getField("protected", 0) == "1" then
+		local title = MPTranslate("ui.multiplayer.configprotection.save.title", "Vehicle Save Error")
+		local msg = MPTranslate("ui.multiplayer.configprotection.save.message", "Sorry, you cannot save this vehicle.")
+		guihooks.trigger("toastrMsg", {type="error", title=title, msg=msg})
+		return
+	else
+		core_vehicle_partmgmnt_savedefault(p1)
+	end
+end
+
 
 
 -- applying section
@@ -1562,6 +1575,7 @@ end
 --============================ ON VEHICLE SWITCHED (CLIENT) ============================
 local function onVehicleSwitched(oldGameVehicleID, newGameVehicleID)
 	extensions.core_vehicle_partmgmt.saveLocal = core_vehicle_partmgmt_saveLocal_overwrite
+	extensions.core_vehicle_partmgmt.savedefault = core_vehicle_partmgmnt_savedefault_overwrite
 	if MPCoreNetwork.isMPSession() then
 		log('I', "onVehicleSwitched", "Vehicle switched from "..oldGameVehicleID or "unknown".." to "..newGameVehicleID or "unknown")
 
@@ -2511,6 +2525,10 @@ local function onVehicleReady(gameVehicleID)
 	if not veh then
 		log('E', 'onVehicleReady', 'Vehicle does not exist!')
 		return
+	end
+
+	if getOwnMap()[gameVehicleID] then
+		commands.setGameCamera()
 	end
 
 	if veh.mpVehicleType then

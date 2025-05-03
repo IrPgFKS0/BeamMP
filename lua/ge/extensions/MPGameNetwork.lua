@@ -423,6 +423,12 @@ end
 
 detectGlobalWrites() -- reenable global write notifications
 
+local simTimeAuthority_set = simTimeAuthority.set
+simTimeAuthority.set = function(...)
+	if debug.getinfo(2, "Sl").source ~= "lua/ge/extensions/core/quickAccess.lua" then
+		simTimeAuthority_set(...)
+	end
+end
 
 --events
 M.onUpdate = onUpdate
