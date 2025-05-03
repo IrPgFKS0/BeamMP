@@ -803,18 +803,16 @@ function($scope, $state, $timeout, $filter, $compile) {
 		let server = finalserver.server;
 		let row = event.target.closest('tr');
 		var table = document.getElementById("serversTable");
-		// Deselect the old row
-		deselect(table.selectedRow);
 
-		// Select the new one
+		deselect(table.selectedRow);
 
 		row.classList.add("highlight");
 		row.selected = true;
 		table.selectedRow = row;
 		
-		// Add the highlight menu
-		highlightedServer = server; // Set it as the selected server
-		//Create and insert the server info tr
+
+		highlightedServer = server;
+
 		var serverInfoRow = document.createElement("tr");
 		serverInfoRow.setAttribute("id", "ServerInfoRow");
 		serverInfoRow.server = server;
@@ -828,7 +826,7 @@ function($scope, $state, $timeout, $filter, $compile) {
 	};
 
 
-	$scope.limit = 48;
+	$scope.limit = window.innerHeight / 24; // calculate the limit depending of the screen height
 	$scope.loadMore = function () {
 		const rowHeight = 24;
 		const container = document.getElementById('serverListMainContainer').parentElement;
@@ -841,14 +839,9 @@ function($scope, $state, $timeout, $filter, $compile) {
 			$scope.limit = newLimit;
 		}
 		window.requestAnimationFrame(() => {
-            $scope.limit = newLimit;
-            
-            // 4. Calcul direct sans Math.max (plus rapide)
-            const remainingHeight = ($scope.serversArray.length - newLimit) * rowHeight;
-            document.getElementById('TEMPSERVERITEM').style.height = 
-                (remainingHeight > 0 ? remainingHeight : 0) + "px";
-            
-            // 5. Forçage ciblé de la mise à jour
+			$scope.limit = newLimit;
+			const remainingHeight = ($scope.serversArray.length - newLimit) * rowHeight;
+            document.getElementById('TEMPSERVERITEM').style.height = (remainingHeight > 0 ? remainingHeight : 0) + "px";
             if (!$scope.$$phase) $scope.$digest();
         });
 	};
@@ -956,7 +949,6 @@ function($scope, $state, $timeout, $filter, $compile) {
 	});
 
 	vm.repopulate = async function () {
-		console.log("Repopulating server list")
 		if (serverListOptions != null) {
 			if (serverListOptions.checkIsEmpty && vm.checkIsNotEmpty) vm.checkIsEmpty = false;
 			if (serverListOptions.checkIsNotEmpty && vm.checkIsEmpty) vm.checkIsNotEmpty = false;
