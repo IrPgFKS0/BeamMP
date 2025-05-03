@@ -232,7 +232,7 @@ local _pairs = pairs
 function pairs (value) 
 	local g = getmetatable(value) 
 	if g then 
-		if type(g.__pairs) == "function" then 
+		if type(rawget(g, "__pairs")) == "function" then 
 			return g.__pairs(value) 
 		else 
 			return _pairs(value) 
