@@ -841,9 +841,9 @@ function($scope, $state, $timeout, $filter, $compile) {
 		window.requestAnimationFrame(() => {
 			$scope.limit = newLimit;
 			const remainingHeight = ($scope.serversArray.length - newLimit) * rowHeight;
-            document.getElementById('TEMPSERVERITEM').style.height = (remainingHeight > 0 ? remainingHeight : 0) + "px";
-            if (!$scope.$$phase) $scope.$digest();
-        });
+            		document.getElementById('TEMPSERVERITEM').style.height = (remainingHeight > 0 ? remainingHeight : 0) + "px";
+            	if (!$scope.$$phase) $scope.$digest();
+        	});
 	};
 
 	document.getElementById('serverListMainContainer').parentElement.addEventListener('scroll', () => {
