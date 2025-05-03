@@ -435,9 +435,9 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	mdDialog = $mdDialog;
 
 	$scope.switchServerView = function(view) {
-		var serverListMainContainer = document.getElementById("serverListMainContainer");
-		if (serverListMainContainer) {
-			serverListMainContainer.parentElement.scrollTop = 0;
+		var serversTableContainer = document.getElementById("serversTableContainer");
+		if (serversTableContainer) {
+			serversTableContainer.scrollTop = 0;
 		}
 		var serverTable = document.getElementById("serversTable");
 		if (serverTable && serverTable.selectedRow){
@@ -825,29 +825,46 @@ function($scope, $state, $timeout, $filter, $compile) {
 		angular.element(row).after(serverInfoRow);
 	};
 
+	const container = document.getElementById('serversTableContainer');
 
-	$scope.limit = window.innerHeight / 24; // calculate the limit depending of the screen height
-	$scope.loadMore = function () {
-		const rowHeight = 24;
-		const container = document.getElementById('serverListMainContainer').parentElement;
-		if (!container) return;
+	$scope.limit = Math.ceil(container.clientHeight / 24);
+	$scope.startIndex = 0;
 
-		const scrolledRows = Math.floor(container.scrollTop / rowHeight);
-
-		const newLimit = scrolledRows + 50;
-		if (newLimit > $scope.limit) {
-			$scope.limit = newLimit;
+	$scope.getVisibleServers = function() {
+		if (!Array.isArray($scope.serversArray)) {
+			return [];
 		}
-		window.requestAnimationFrame(() => {
-			$scope.limit = newLimit;
-			const remainingHeight = ($scope.serversArray.length - newLimit) * rowHeight;
-            document.getElementById('TEMPSERVERITEM').style.height = (remainingHeight > 0 ? remainingHeight : 0) + "px";
-            if (!$scope.$$phase) $scope.$digest();
-        });
+		return $scope.serversArray.slice($scope.startIndex, $scope.startIndex + $scope.limit);
 	};
 
-	document.getElementById('serverListMainContainer').parentElement.addEventListener('scroll', () => {
-		$scope.loadMore();
+	$scope.loadVisibleRows = function () {
+		const rowHeight = 24;
+		const bufferRows = 5;
+
+		const container = document.getElementById('serversTableContainer');
+		if (!container) return;
+
+		const scrollTop = container.scrollTop;
+		const containerHeight = container.clientHeight;
+
+		const startIndex = Math.floor(scrollTop / rowHeight);
+		const visibleRows = Math.ceil(containerHeight / rowHeight);
+		const totalToShow = visibleRows + bufferRows * 2;
+
+		$scope.startIndex = Math.max(0, startIndex - bufferRows);
+		$scope.limit = totalToShow;
+
+		const beforeHeight = $scope.startIndex * rowHeight;
+		const afterHeight = Math.max(0, ($scope.serversArray.length - $scope.startIndex - $scope.limit) * rowHeight);
+
+		document.getElementById('TEMPSERVERITEM-BEFORE').style.height = beforeHeight + "px";
+		document.getElementById('TEMPSERVERITEM-AFTER').style.height = afterHeight + "px";
+
+		if (!$scope.$$phase) $scope.$digest();
+	};
+
+	document.getElementById('serversTableContainer').addEventListener('scroll', () => {
+		$scope.loadVisibleRows();
 	});
 
 
@@ -1541,8 +1558,8 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 		}
 	}
 
-	document.getElementById('TEMPSERVERITEM').style.height = $scope.serversArray.length * 24 + "px";
-
+	document.getElementById('TEMPSERVERITEM-AFTER').style.height = $scope.serversArray.length * 24 + "px";
+	document.getElementById('TEMPSERVERITEM-BEFORE').style.height = "0px";
 	
 	if (type == 2) sortTable("recent", true, -1);
 }

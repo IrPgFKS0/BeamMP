@@ -1,5 +1,5 @@
 
-<md-content id="serverListMainContainer">
+<md-content id="serverListMainContainer" style="display: flex; flex-direction: column; height: 100%;">
 
 	<div id="serverListHeader" layout="row" layout-padding="">
 		<input ng-model="multiplayermenu.searchText" ng-change="multiplayermenu.repopulate();" type="text" id="search" name="search" placeholder="Search" />
@@ -112,7 +112,7 @@
 	</div>
 	<md-divider></md-divider>
 	
-	<div id="serversTableContainer" style="overflow: hidden;">
+	<div id="serversTableContainer" style="overflow-y: auto; flex:1;">
 		<table id="serversTable">
 			<thead id="serversTableHead">
 				<tr id="header">
@@ -126,15 +126,16 @@
 				<tr ng-repeat="n in [].constructor(48) track by $index" ng-show="!serversTable">
 					<td class="loading-shimmer" colspan="4"></td>
 				</tr>	
+				<tr id="TEMPSERVERITEM-BEFORE"></tr>
 
-				<tr class="server-item" ng-repeat="server in serversArray | limitTo:limit track by server.server.ip + ':' + server.server.port" ng-show="serversTable" ng-click="select($event, server)">
+				<tr class="server-item" ng-repeat="server in getVisibleServers() track by server.server.ip + ':' + server.server.port" ng-show="serversTable" ng-click="select($event, server)">
 					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" style="width: 100px; max-width: 100px; font-size: initial; padding-left: 3px; text-align: right; padding-right: 10px" ><img ng-src="local://local/ui/modModules/multiplayer/flags/{{server.server.location.toLowerCase()}}.png" class="flag"></img> {{server.server.location}}</td>
 					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" style="width: 900px; max-width: 900px;" ng-bind-html="formatServerName(server.name)" ></td>
 					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" style="width: 200px; max-width: 200px; font-size: initial">{{SmoothMapName(server.server.map)}}</td>
 					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" style="width: 100px; max-width: 100px; font-size: initial">{{server.server.players}}/{{server.server.maxplayers}}</td>
 				</tr>
 
-				<tr id="TEMPSERVERITEM"></tr>
+				<tr id="TEMPSERVERITEM-AFTER"></tr>
 			</tbody>
 		</table>
 	</div>
