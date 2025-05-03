@@ -1433,7 +1433,7 @@ function getServerInfoHTML($scope, row) {
 						</div>
 					</div>
 					<div class="row" style="padding-left: 10px;" ng-switch="selected_row.isFavorite">
-						<md-button id="serverconnect-button" class="button servers-button md-button md-default-theme" ng-class="" ng-click="connect(selected_row.server.ip, selected_row.server.port, selected_row.server.strippedName, selected_row.server.isOfficial)" style="margin-left: 10px;">Connect</md-button>
+						<md-button id="serverconnect-button" class="button servers-button md-button md-default-theme" ng-class="" ng-click="connect(selected_row.server.ip, selected_row.server.port, selected_row.server.strippedName, selected_row.server.official)" style="margin-left: 10px;">Connect</md-button>
 						<div ng-switch-when="true">
 							<md-button id="removeFav-button" class="button servers-button md-button md-default-theme" ng-class="" ng-click="removeFav(selected_row.server)" style="margin-left: 10px; background-color: #FF6961;">Remove Favorite</md-button>
 						</div>
