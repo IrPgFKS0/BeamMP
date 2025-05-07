@@ -169,7 +169,7 @@
   "ui.multiplayer.filters.empty": "Pusty",
   "ui.multiplayer.filters.notEmpty": "Nie pusty",
   "ui.multiplayer.filters.notFull": "Niezapełniony",
-  "ui.multiplayer.filters.modSize": "Rozmiar modyfikacji\n",
+  "ui.multiplayer.filters.modSize": "Rozmiar modyfikacji",
   "ui.multiplayer.filters.map": "Mapa",
   "ui.multiplayer.filters.serverVersions": "Wersja(e) serwera:",
   "ui.multiplayer.filters.tags": "Tagi:",
