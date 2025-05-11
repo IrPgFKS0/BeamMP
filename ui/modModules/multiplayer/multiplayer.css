@@ -36,6 +36,8 @@
 }
 
 table#serversTable {
+  border-collapse: collapse;
+  table-layout: fixed;
   height: fit-content;
   width: 100%;
   color: white;
@@ -421,6 +423,24 @@ md-slider.ng-pristine.ng-untouched.ng-valid.md-default-theme.ng-empty {
   top: 2px;
   max-width: 34px;
 }
+
+
+.server-maxplayers {
+  width: 8%; 
+}
+.server-mapname {
+  width: 20%; 
+}
+.server-servername {
+  width: 64%; 
+}
+.server-flag {
+  width: 8%; 
+}
+
+
+
+
 .server-item {
     height: 24px;
 }
