@@ -754,7 +754,21 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		$timeout.cancel(timeOut);
 		//console.log('[MultiplayerController] destroyed.');
 	});
-}])
+}]).directive('elementInit', function() {
+  return {
+    restrict: 'A', 
+    link: function(scope, element, attrs) {
+      const callback = scope.$eval(attrs.elementInit);
+      
+      const customArg = scope.$eval(attrs.elementArg) || attrs.elementArg;
+
+
+      if (typeof callback === 'function') {
+        callback(element[0], customArg);
+      }
+    }
+  };
+})
 
 /* //////////////////////////////////////////////////////////////////////////////////////////////
 *	SERVERS TAB
@@ -797,11 +811,23 @@ function($scope, $state, $timeout, $filter, $compile) {
 		if ($event) console.log('[MultiplayerServersController] exiting by keypress event %o', $event);
 		$state.go('menu.mainmenu');
 	};
+	function onElementRemoved(element, callback) {
+		new MutationObserver(function(mutations) {
+			if(!document.body.contains(element)) {
+			callback();
+			this.disconnect();
+			}
+		}).observe(element.parentElement, {childList: true});
+	}
 
-
-	$scope.select = function(event, finalserver) {
+	$scope.select = function(isevent, object, finalserver) {
 		let server = finalserver.server;
-		let row = event.target.closest('tr');
+		let row = undefined;
+		if (isevent) {
+			row = object.target.closest('tr');
+		}else {
+			row = object
+		}
 		var table = document.getElementById("serversTable");
 
 		deselect(table.selectedRow);
@@ -815,14 +841,26 @@ function($scope, $state, $timeout, $filter, $compile) {
 
 		var serverInfoRow = document.createElement("tr");
 		serverInfoRow.setAttribute("id", "ServerInfoRow");
-		serverInfoRow.server = server;
+
+		var compiledTR = angular.element(serverInfoRow);
+		var compiledElementTR = $compile(compiledTR)($scope);	//compile so its tracked by angularjs
+
+		compiledElementTR.server = server;
+		compiledElementTR.finalserver = finalserver;
 		var compiledTD = angular.element(getServerInfoHTML($scope, finalserver));
 
-		var compiledElement = $compile(compiledTD)($scope);	//compile so its tracked by angularjs
+		var compiledElementTD = $compile(compiledTD)($scope);	//compile so its tracked by angularjs
 
-		angular.element(serverInfoRow).append(compiledElement);
+		compiledElementTR.append(compiledElementTD);
 
 		angular.element(row).after(serverInfoRow);
+
+		const container = document.getElementById('serversTableContainer');
+		onElementRemoved(compiledElementTR[0], function() {
+			if ($scope.saveScrollTop){
+				container.scrollTop = $scope.saveScrollTop; //restore the scrolltop
+			}
+		});
 	};
 
 	const container = document.getElementById('serversTableContainer');
@@ -839,12 +877,16 @@ function($scope, $state, $timeout, $filter, $compile) {
 
 	$scope.loadVisibleRows = function () {
 		const rowHeight = 24;
-		const bufferRows = 5;
+		const bufferRows = 15;
 
 		const container = document.getElementById('serversTableContainer');
 		if (!container) return;
 
+
 		const scrollTop = container.scrollTop;
+
+		$scope.saveScrollTop = scrollTop;	//save the scrolltop to restore it when scrolling up if the inforow disappears
+
 		const containerHeight = container.clientHeight;
 
 		const startIndex = Math.floor(scrollTop / rowHeight);
@@ -867,6 +909,17 @@ function($scope, $state, $timeout, $filter, $compile) {
 		$scope.loadVisibleRows();
 	});
 
+	$scope.checkSelectedRow = function(element, server) {
+		if ($scope.selected_row && server.server.ip == $scope.selected_row.server.ip && server.server.port == $scope.selected_row.server.port) {
+			let container = document.getElementById('serversTableContainer');
+			let oldscrolltop = container.scrollTop;
+			$scope.select(false, element, server);	//select it when loaded again
+			const infoRow = document.getElementById('ServerInfoRow');	
+			container.scrollTop = oldscrolltop - infoRow.offsetHeight / 3;	//smoother up scrolling
+
+		}
+
+	}
 
 	$scope.addFav = function(server) {
 		if ($scope.selected_row){
