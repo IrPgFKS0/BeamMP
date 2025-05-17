@@ -439,10 +439,6 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		if (serversTableContainer) {
 			serversTableContainer.scrollTop = 0;
 		}
-		var serverTable = document.getElementById("serversTable");
-		if (serverTable && serverTable.selectedRow){
-			deselect(serverTable.selectedRow);
-		}
 		serverView = view;
 		$state.go('menu.multiplayer.servers');
 		repopulateServerList();
@@ -811,120 +807,77 @@ function($scope, $state, $timeout, $filter, $compile) {
 		if ($event) console.log('[MultiplayerServersController] exiting by keypress event %o', $event);
 		$state.go('menu.mainmenu');
 	};
-	function onElementRemoved(element, callback) {
-		new MutationObserver(function(mutations) {
-			if(!document.body.contains(element)) {
-			callback();
-			this.disconnect();
-			}
-		}).observe(element.parentElement, {childList: true});
-	}
 
-	$scope.select = function(isevent, object, finalserver) {
-		let server = finalserver.server;
-		let row = undefined;
-		if (isevent) {
-			row = object.target.closest('tr');
-		}else {
-			row = object
-		}
-		var table = document.getElementById("serversTable");
+	const serversTableContainer = document.getElementById("serversTableContainer");
+	$scope.itemHeight = 24;
+	$scope.buffer = 10;
+	$scope.viewportHeight = serversTableContainer.clientHeight;
+	$scope.selectedServerId = null;
+	$scope.expandedRowHeight = 0;
+	$scope.loadingShimmerCount = Math.ceil($scope.viewportHeight / $scope.itemHeight)
 
-		deselect(table.selectedRow);
-
-		row.classList.add("highlight");
-		row.selected = true;
-		table.selectedRow = row;
+	$scope.onScroll = function() {
+		const scrollTop = serversTableContainer.scrollTop;
+		const total = $scope.serversArray.length;
 		
+		const scrollPos = scrollTop / $scope.itemHeight;
+		let startIndex = Math.max(0, Math.floor(scrollPos) - $scope.buffer);
+		let endIndex = Math.min(total, Math.ceil(scrollPos + ($scope.viewportHeight / $scope.itemHeight)) + $scope.buffer);
+		if ($scope.selectedServerId) {
+			const selectedServer = $scope.serversArray.find(s => s.id === $scope.selectedServerId);
+			if (selectedServer) {
+				const selectedIndex = $scope.serversArray.indexOf(selectedServer);
+				const expandedBottom = (selectedIndex * $scope.itemHeight) + $scope.itemHeight + $scope.expandedRowHeight;
+				
+				if (expandedBottom > scrollTop + $scope.viewportHeight) {
+					endIndex = Math.min(total, endIndex + Math.ceil((expandedBottom - (scrollTop + $scope.viewportHeight)) / $scope.itemHeight));
+				}
 
-		highlightedServer = server;
-
-		var serverInfoRow = document.createElement("tr");
-		serverInfoRow.setAttribute("id", "ServerInfoRow");
-
-		var compiledTR = angular.element(serverInfoRow);
-		var compiledElementTR = $compile(compiledTR)($scope);	//compile so its tracked by angularjs
-
-		compiledElementTR.server = server;
-		compiledElementTR.finalserver = finalserver;
-		var compiledTD = angular.element(getServerInfoHTML($scope, finalserver));
-
-		var compiledElementTD = $compile(compiledTD)($scope);	//compile so its tracked by angularjs
-
-		compiledElementTR.append(compiledElementTD);
-
-		angular.element(row).after(serverInfoRow);
-
-		const container = document.getElementById('serversTableContainer');
-		onElementRemoved(compiledElementTR[0], function() {
-			if ($scope.saveScrollTop){
-				container.scrollTop = $scope.saveScrollTop; //restore the scrolltop
+				startIndex = Math.min(startIndex, selectedIndex);
+				endIndex = Math.max(endIndex, selectedIndex + 1);
 			}
-		});
-	};
-
-	const container = document.getElementById('serversTableContainer');
-
-	$scope.limit = Math.ceil(container.clientHeight / 24);
-	$scope.startIndex = 0;
-
-	$scope.getVisibleServers = function() {
-		if (!Array.isArray($scope.serversArray)) {
-			return [];
 		}
-		return $scope.serversArray.slice($scope.startIndex, $scope.startIndex + $scope.limit);
-	};
 
-	$scope.loadVisibleRows = function () {
-		const rowHeight = 24;
-		const bufferRows = 15;
-
-		const container = document.getElementById('serversTableContainer');
-		if (!container) return;
-
-
-		const scrollTop = container.scrollTop;
-
-		$scope.saveScrollTop = scrollTop;	//save the scrolltop to restore it when scrolling up if the inforow disappears
-
-		const containerHeight = container.clientHeight;
-
-		const startIndex = Math.floor(scrollTop / rowHeight);
-		const visibleRows = Math.ceil(containerHeight / rowHeight);
-		const totalToShow = visibleRows + bufferRows * 2;
-
-		$scope.startIndex = Math.max(0, startIndex - bufferRows);
-		$scope.limit = totalToShow;
-
-		const beforeHeight = $scope.startIndex * rowHeight;
-		const afterHeight = Math.max(0, ($scope.serversArray.length - $scope.startIndex - $scope.limit) * rowHeight);
-
-		document.getElementById('TEMPSERVERITEM-BEFORE').style.height = beforeHeight + "px";
-		document.getElementById('TEMPSERVERITEM-AFTER').style.height = afterHeight + "px";
+		$scope.visibleServers = $scope.serversArray.slice(startIndex, endIndex);
+		$scope.beforeHeight = startIndex * $scope.itemHeight;
+		$scope.afterHeight = (total - endIndex) * $scope.itemHeight;
+		
+		if ($scope.selectedServerId && endIndex < total) {
+			$scope.afterHeight += $scope.expandedRowHeight - $scope.itemHeight;
+		}
 
 		if (!$scope.$$phase) $scope.$digest();
 	};
 
-	document.getElementById('serversTableContainer').addEventListener('scroll', () => {
-		$scope.loadVisibleRows();
-	});
-
-	$scope.checkSelectedRow = function(element, server) {
-		if ($scope.selected_row && server.server.ip == $scope.selected_row.server.ip && server.server.port == $scope.selected_row.server.port) {
-			let container = document.getElementById('serversTableContainer');
-			let oldscrolltop = container.scrollTop;
-			$scope.select(false, element, server);	//select it when loaded again
-			const infoRow = document.getElementById('ServerInfoRow');	
-			container.scrollTop = oldscrolltop - infoRow.offsetHeight / 3;	//smoother up scrolling
-
+	$scope.selectServer = function(server) {
+		const serverId = server.id;
+		highlightedServer = server
+		if ($scope.selectedServerId === serverId) {
+			$scope.selectedServerId = null;
+			highlightedServer = null
+			$scope.expandedRowHeight = 0;
+		} else {
+			$scope.selectedServerId = serverId;
+			$timeout(() => {
+				const row = document.getElementById('ServerInfoRow');
+				$scope.expandedRowHeight = row ? row.offsetHeight : 0;
+				$scope.onScroll();
+			}, 0, false); 
 		}
+		$scope.onScroll();
+	};
 
-	}
+	let lastScrollTime = 0;
+	serversTableContainer.addEventListener('scroll', () => {
+		const now = Date.now();
+		if (now - lastScrollTime < 16) return;
+		
+		lastScrollTime = now;
+		requestAnimationFrame(() => $scope.onScroll());
+	}, { passive: true });
+
 
 	$scope.addFav = function(server) {
-		if ($scope.selected_row){
-			$scope.selected_row.isFavorite = true;
-		}
 		addFav(server);	
 		const index = $scope.serversArray.findIndex(s => 
 			s.server.ip === server.ip && s.server.port === server.port
@@ -938,9 +891,6 @@ function($scope, $state, $timeout, $filter, $compile) {
 		}
 	};
 	$scope.removeFav = function(server) {
-		if ($scope.selected_row){
-			$scope.selected_row.isFavorite = false;
-		}
 		removeFav(server);
 		const index = $scope.serversArray.findIndex(s => 
 			s.server.ip === server.ip && s.server.port === server.port
@@ -953,9 +903,9 @@ function($scope, $state, $timeout, $filter, $compile) {
 
 		}
 	};
+	$scope.listPlayers = listPlayers;
 	$scope.formatServerName = formatServerName;
 	$scope.SmoothMapName = SmoothMapName;
-	$scope.officialMark = officialMark;
 	$scope.formatDescriptionName = formatDescriptionName;
 	$scope.modCount = modCount;
 	$scope.modList = modList;
@@ -1324,19 +1274,6 @@ function formatServerName(string) {
 }
 
 
-function officialMark(o, s) {
-	if (o) {
-		if (s) {
-			return '<img src="local://local/ui/modModules/multiplayer/beammp.png" alt="" style="height: 23px; padding-right: 10px;"> [Official Server]  '
-		} else {
-			return '<img src="local://local/ui/modModules/multiplayer/beammp.png" alt="" style="height: 21px; padding-right: 10px; padding-left: 10px; position: absolute;">'
-		}
-
-	} else {
-		return ""
-	}
-}
-
 function modCount(s) {
 	if(s.length==0) return 0;
 	return s.split(";").length-1;
@@ -1478,46 +1415,6 @@ globalThis.openExternalLink = function(url){
 	bngApi.engineLua(`MPCoreNetwork.openURL("`+url+`")`);
 }
 
-function getServerInfoHTML($scope, row) {
-		let d = row.server; 
-		$scope.selected_row = row;
-		// `d` is the original data object for the row
-		return `
-				<td colspan="5">
-					<h1 style="padding-left:10px;">`+officialMark(d.official, true)+formatServerName(d.sname)+`</h1>
-						<div class="row">
-						<div class="col">
-							<table class="description-table">
-								<tr><td>Owner:</td><td>${d.owner|| ""}</td></tr>
-								<tr><td>Map:</td><td>${SmoothMapName(d.map || "")}</td></tr>
-								<tr><td>Players:</td><td>${d.players|| ""}/${d.maxplayers|| ""}</td></tr>
-								<tr><td valign="top">Description:</td><td>${formatDescriptionName(d.sdesc|| "")}</td></tr>
-							</table>
-						</div>
-						<div class="col">
-							<ul class="serverItemDetails">
-								<li>Mods: ${modCount(d.modlist|| "")}</li>
-								<li>Mod Names: ${modList(d.modlist|| "")}</li>
-								<li>Total Mods Size: ${formatBytes(d.modstotalsize) || "0"}</li>
-							</ul>
-						</div>
-					</div>
-					<div class="row" style="padding-left: 10px;" ng-switch="selected_row.isFavorite">
-						<md-button id="serverconnect-button" class="button servers-button md-button md-default-theme" ng-class="" ng-click="connect(selected_row.server.ip, selected_row.server.port, selected_row.server.strippedName, selected_row.server.official)" style="margin-left: 10px;">Connect</md-button>
-						<div ng-switch-when="true">
-							<md-button id="removeFav-button" class="button servers-button md-button md-default-theme" ng-class="" ng-click="removeFav(selected_row.server)" style="margin-left: 10px; background-color: #FF6961;">Remove Favorite</md-button>
-						</div>
-						<div ng-switch-when="false">
-							<md-button id="addFav-button" class="button servers-button md-button md-default-theme" ng-class="" ng-click="addFav(selected_row.server, true)" style="margin-left: 10px; background-color: #FFB646">Add Favorite</md-button>
-						</div>
-					</div>
-					<div class="row">
-						<h4></h4>
-						<p>${listPlayers(d.playerslist|| "")}</p>
-					</div>
-			</td>`;
-};
-
 // /!\ IMPORTANT /!\ //// TYPE 0 = Normal / 1 = Favorites / 2 = Recents
 async function populateTable($filter, $scope, servers, tab, searchText = '', checkIsEmpty, checkIsNotEmpty, checkIsNotFull, checkModSlider, sliderMaxModSize, selectMap = 'Any map', SelectedServerVersions = [], tags = [], SelectedServerLocations = []) {
 	$scope.serversTable = {}; 
@@ -1610,10 +1507,10 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 			}
 		}
 	}
-
-	document.getElementById('TEMPSERVERITEM-AFTER').style.height = $scope.serversArray.length * 24 + "px";
-	document.getElementById('TEMPSERVERITEM-BEFORE').style.height = "0px";
-	
+	$scope.serversArray.forEach(server => {
+		server.id = server.server.ip + ':' + server.server.port;
+	});
+	$scope.onScroll();
 	if (type == 2) sortTable("recent", true, -1);
 }
 
@@ -1658,17 +1555,6 @@ async function receiveServers(data) {
 	});
 	return serversArray;
 };
-
-// Used to deselect a row
-function deselect(row) {
-	// Deselected the row
-	if (!row) return;
-	row.classList.remove("highlight");
-	row.selected = false;
-	// Remove the information thing if it was shown
-	var oldInfoRow = document.getElementById('ServerInfoRow')
-	if (oldInfoRow) oldInfoRow.remove();
-}
 
 async function getLauncherVersion() {
 	return new Promise(function(resolve, reject) {
