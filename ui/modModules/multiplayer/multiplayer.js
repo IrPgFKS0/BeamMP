@@ -750,27 +750,13 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		$timeout.cancel(timeOut);
 		//console.log('[MultiplayerController] destroyed.');
 	});
-}]).directive('elementInit', function() {
-  return {
-    restrict: 'A', 
-    link: function(scope, element, attrs) {
-      const callback = scope.$eval(attrs.elementInit);
-      
-      const customArg = scope.$eval(attrs.elementArg) || attrs.elementArg;
-
-
-      if (typeof callback === 'function') {
-        callback(element[0], customArg);
-      }
-    }
-  };
-})
+}])
 
 /* //////////////////////////////////////////////////////////////////////////////////////////////
 *	SERVERS TAB
 */ //////////////////////////////////////////////////////////////////////////////////////////////
-.controller('MultiplayerServersController', ['$scope', '$state', '$timeout', '$filter','$compile',
-function($scope, $state, $timeout, $filter, $compile) {
+.controller('MultiplayerServersController', ['$scope', '$state', '$timeout', '$filter',
+function($scope, $state, $timeout, $filter) {
 
 	var vm = this;
 	let serverListOptions = JSON.parse(localStorage.getItem("serverListOptions"))
