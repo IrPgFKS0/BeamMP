@@ -967,7 +967,7 @@ function Player:delete()
 	for k, v in pairs(self.vehicles) do
 		v:delete()
 	end
-	if self.activeVehicleID then vehicles[self.activeVehicleID].spectators[self.playerID] = nil end
+	if self.activeVehicleID and vehicles[self.activeVehicleID] then vehicles[self.activeVehicleID].spectators[self.playerID] = nil end
 	players[self.playerID] = nil
 
 	self = nil
