@@ -837,7 +837,7 @@ function($scope, $state, $timeout, $filter) {
 
 	$scope.selectServer = function(server) {
 		const serverId = server.id;
-		highlightedServer = server
+		highlightedServer = server.server
 		if ($scope.selectedServerId === serverId) {
 			$scope.selectedServerId = null;
 			highlightedServer = null
