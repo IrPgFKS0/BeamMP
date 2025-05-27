@@ -1241,7 +1241,18 @@ local function core_vehicle_partmgmnt_savedefault_overwrite(p1)
 	end
 end
 
-
+local gameplay_garageMode_start = gameplay_garageMode.start
+local function gameplay_garageMode_start_overwrite()
+	local vehicle = be:getPlayerVehicle(0)
+	if vehicle:getField("protected", 0) == "1" then
+		local title = MPTranslate("ui.multiplayer.configprotection.save.title", "Vehicle Save Error")
+		local msg = MPTranslate("ui.multiplayer.configprotection.save.message", "Sorry, you cannot save this vehicle.")
+		guihooks.trigger("toastrMsg", {type="error", title=title, msg=msg})
+		return
+	else
+		gameplay_garageMode_start()
+	end
+end
 
 -- applying section
 
@@ -1576,6 +1587,7 @@ end
 local function onVehicleSwitched(oldGameVehicleID, newGameVehicleID)
 	extensions.core_vehicle_partmgmt.saveLocal = core_vehicle_partmgmt_saveLocal_overwrite
 	extensions.core_vehicle_partmgmt.savedefault = core_vehicle_partmgmnt_savedefault_overwrite
+	extensions.gameplay_garageMode.start = gameplay_garageMode_start_overwrite
 	if MPCoreNetwork.isMPSession() then
 		log('I', "onVehicleSwitched", "Vehicle switched from "..oldGameVehicleID or "unknown".." to "..newGameVehicleID or "unknown")
 
