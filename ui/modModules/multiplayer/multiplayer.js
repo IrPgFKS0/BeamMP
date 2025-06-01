@@ -805,33 +805,37 @@ function($scope, $state, $timeout, $filter) {
 	$scope.onScroll = function() {
 		const scrollTop = serversTableContainer.scrollTop;
 		const total = $scope.serversArray.length;
+		const itemHeight = $scope.itemHeight;
+		const viewportHeight = $scope.viewportHeight;
+		const buffer = $scope.buffer;
 		
-		const scrollPos = scrollTop / $scope.itemHeight;
-		let startIndex = Math.max(0, Math.floor(scrollPos) - $scope.buffer);
-		let endIndex = Math.min(total, Math.ceil(scrollPos + ($scope.viewportHeight / $scope.itemHeight)) + $scope.buffer);
+		const itemsPerView = viewportHeight / itemHeight;
+		const scrollRow = Math.floor(scrollTop / itemHeight);
+		
+		let startIndex = Math.max(0, scrollRow - buffer);
+		let endIndex = Math.min(total, scrollRow + Math.ceil(itemsPerView) + buffer);
+		
 		if ($scope.selectedServerId) {
-			const selectedServer = $scope.serversArray.find(s => s.id === $scope.selectedServerId);
-			if (selectedServer) {
-				const selectedIndex = $scope.serversArray.indexOf(selectedServer);
-				const expandedBottom = (selectedIndex * $scope.itemHeight) + $scope.itemHeight + $scope.expandedRowHeight;
-				
-				if (expandedBottom > scrollTop + $scope.viewportHeight) {
-					endIndex = Math.min(total, endIndex + Math.ceil((expandedBottom - (scrollTop + $scope.viewportHeight)) / $scope.itemHeight));
+			const selectedIndex = $scope.serversArray.findIndex(s => s.id === $scope.selectedServerId);
+			
+			if (selectedIndex !== -1) {
+				const expandedBottom = (selectedIndex + 1) * itemHeight + $scope.expandedRowHeight;
+				const viewBottom = scrollTop + viewportHeight;
+				if (expandedBottom > viewBottom) {
+					const missingSpace = expandedBottom - viewBottom;
+					endIndex = Math.min(total, endIndex + Math.ceil(missingSpace / itemHeight));
 				}
-
-				startIndex = Math.min(startIndex, selectedIndex);
-				endIndex = Math.max(endIndex, selectedIndex + 1);
+				if (selectedIndex < startIndex) startIndex = selectedIndex;
+				if (selectedIndex >= endIndex) endIndex = selectedIndex + 1;
 			}
 		}
 
 		$scope.visibleServers = $scope.serversArray.slice(startIndex, endIndex);
-		$scope.beforeHeight = startIndex * $scope.itemHeight;
-		$scope.afterHeight = (total - endIndex) * $scope.itemHeight;
-		
+		$scope.beforeHeight = startIndex * itemHeight;
+		$scope.afterHeight = (total - endIndex) * itemHeight;
 		if ($scope.selectedServerId && endIndex < total) {
-			$scope.afterHeight += $scope.expandedRowHeight - $scope.itemHeight;
+			$scope.afterHeight += $scope.expandedRowHeight - itemHeight;
 		}
-
 		if (!$scope.$$phase) $scope.$digest();
 	};
 
@@ -844,11 +848,11 @@ function($scope, $state, $timeout, $filter) {
 			$scope.expandedRowHeight = 0;
 		} else {
 			$scope.selectedServerId = serverId;
-			$timeout(() => {
-				const row = document.getElementById('ServerInfoRow');
-				$scope.expandedRowHeight = row ? row.offsetHeight : 0;
-				$scope.onScroll();
-			}, 0, false); 
+			
+			const row = document.getElementById('ServerInfoRow');
+			$scope.expandedRowHeight = row ? row.offsetHeight : 0;
+			$scope.onScroll();
+			
 		}
 		$scope.onScroll();
 	};
@@ -859,7 +863,7 @@ function($scope, $state, $timeout, $filter) {
 		if (now - lastScrollTime < 16) return;
 		
 		lastScrollTime = now;
-		requestAnimationFrame(() => $scope.onScroll());
+		$scope.onScroll();
 	}, { passive: true });
 
 
@@ -1568,15 +1572,20 @@ async function isLauncherConnected() {
 
 var reverse = -1;
 globalThis.sortTable = function(sortType, isNumber, dir) {
-	if (dir) reverse = dir;
-	var table = document.getElementById("serversTable");
-    var tb = table.tBodies[0], tr = Array.prototype.slice.call(tb.rows, 0);
-	var headers = document.querySelectorAll("#serversTable > thead > tr > th")
-	tr = tr.sort(function (a, b) { // sort rows
-		return reverse * (a.server[sortType].toString().localeCompare(b.server[sortType].toString(), undefined, {'numeric': isNumber}));
-    });
-    for(var i = 0; i < tr.length; ++i) tb.appendChild(tr[i]); // append each row in order
-	reverse = -((+reverse) || -1);
+	const direction = dir || $scope.sortDirection || 1;
+	$scope.sortDirection = -direction; // toggle direction
+
+	$scope.serversArray.sort((a, b) => {
+		const aVal = a.server[sortType];
+		const bVal = b.server[sortType];
+		if (isNumber) {
+		return direction * (Number(aVal) - Number(bVal));
+		} else {
+		return direction * aVal.toString().localeCompare(bVal.toString(), undefined, { numeric: true });
+		}
+	});
+
+	$scope.onScroll();
 }
 
 /**
