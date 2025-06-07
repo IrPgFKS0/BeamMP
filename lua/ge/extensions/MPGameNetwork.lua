@@ -425,7 +425,7 @@ detectGlobalWrites() -- reenable global write notifications
 
 local simTimeAuthority_set = simTimeAuthority.set
 simTimeAuthority.set = function(...)
-	if debug.getinfo(2, "Sl").source ~= "lua/ge/extensions/core/quickAccess.lua" then
+	if debug.getinfo(2, "Sl").source ~= "lua/ge/extensions/core/quickAccess.lua" or not MPCoreNetwork.isMPSession() then
 		simTimeAuthority_set(...)
 	end
 end
