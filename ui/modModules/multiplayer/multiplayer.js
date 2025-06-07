@@ -893,6 +893,24 @@ function($scope, $state, $timeout, $filter) {
 
 		}
 	};
+
+	$scope.sortTable = function(sortType, isNumber, dir) {
+		const direction = dir || $scope.sortDirection || 1;
+		$scope.sortDirection = -direction; // toggle direction
+
+		$scope.serversArray.sort((a, b) => {
+			const aVal = a.server[sortType];
+			const bVal = b.server[sortType];
+			if (isNumber) {
+			return direction * (Number(aVal) - Number(bVal));
+			} else {
+			return direction * aVal.toString().localeCompare(bVal.toString(), undefined, { numeric: true });
+			}
+		});
+
+		$scope.onScroll();
+	}
+
 	$scope.listPlayers = listPlayers;
 	$scope.formatServerName = formatServerName;
 	$scope.SmoothMapName = SmoothMapName;
@@ -1501,7 +1519,7 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 		server.id = server.server.ip + ':' + server.server.port;
 	});
 	$scope.onScroll();
-	if (type == 2) sortTable("recent", true, -1);
+	if (type == 2) $scope.sortTable("recent", true, -1);
 }
 
 // Used to connect to the backend with ids
@@ -1570,23 +1588,7 @@ async function isLauncherConnected() {
 	});
 }
 
-var reverse = -1;
-globalThis.sortTable = function(sortType, isNumber, dir) {
-	const direction = dir || $scope.sortDirection || 1;
-	$scope.sortDirection = -direction; // toggle direction
 
-	$scope.serversArray.sort((a, b) => {
-		const aVal = a.server[sortType];
-		const bVal = b.server[sortType];
-		if (isNumber) {
-		return direction * (Number(aVal) - Number(bVal));
-		} else {
-		return direction * aVal.toString().localeCompare(bVal.toString(), undefined, { numeric: true });
-		}
-	});
-
-	$scope.onScroll();
-}
 
 /**
 *

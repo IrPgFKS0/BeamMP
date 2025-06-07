@@ -426,18 +426,17 @@ md-slider.ng-pristine.ng-untouched.ng-valid.md-default-theme.ng-empty {
 
 
 .server-maxplayers {
-  width: 8%; 
+  width: 90px; 
 }
 .server-mapname {
   width: 20%; 
 }
 .server-servername {
-  width: 64%; 
+  width: 70%; 
 }
 .server-flag {
-  width: 8%; 
+  width: 90px; 
 }
-
 
 
 
