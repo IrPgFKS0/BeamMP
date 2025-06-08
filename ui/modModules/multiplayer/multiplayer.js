@@ -1503,6 +1503,26 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 				else stillOk = false;
 			}
 			if (!stillOk) {
+
+				var serverTags = (tmpServer1.tags || "").toLowerCase().split(",").map(tag => tag.trim());
+				var missingTag = false;
+				for (let tag of tags) {
+					if (!serverTags.includes(tag.toLowerCase())) missingTag = true;
+				}
+				if (missingTag) continue;
+
+				var smoothMapName = SmoothMapName(tmpServer1.map);
+
+				if (searchText && !tmpServer1.strippedName?.toLowerCase().includes(searchText.toLowerCase())) continue;
+				if (checkIsEmpty && tmpServer1.players > 0) continue;
+				if (checkIsNotEmpty && tmpServer1.players == 0) continue;
+				if (checkIsNotFull && tmpServer1.players >= parseInt(tmpServer1.maxplayers)) continue;
+				if (checkModSlider && sliderMaxModSize * 1048576 < tmpServer1.modstotalsize) continue;
+				if (selectMap != "Any map" && selectMap != smoothMapName) continue;
+				if (SelectedServerVersions.length > 0 && !SelectedServerVersions.includes("v" + tmpServer1.version)) continue;
+				if (SelectedServerLocations.length > 0 && !SelectedServerLocations.includes(tmpServer1.location)) continue;
+
+
 				var offline = false;
 				var custom = false;
 				var name = tmpServer1.sname;
@@ -1515,6 +1535,9 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 			}
 		}
 	}
+	if (Object.keys($scope.serversTable).length === 0) {
+    	$scope.serversArray = [];
+	}	
 	$scope.serversArray.forEach(server => {
 		server.id = server.server.ip + ':' + server.server.port;
 	});
@@ -1535,9 +1558,6 @@ function connect(ip, port, name, skipModWarning = false) {
 	// Connect with ids
 	bngApi.engineLua('MPCoreNetwork.connectToServer("' + ip + '", ' + port + ',"' + name + '", ' + skipModWarning + ')');
 }
-
-// Used to select a row (when it's clicked)
-
 
 async function receiveServers(data) {
 	var serversArray = new Array();
