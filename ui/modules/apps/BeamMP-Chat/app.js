@@ -59,8 +59,8 @@ app.controller("Chat", ['$scope', 'Settings', function ($scope, Settings) {
 
 		if (chatlist) {		// scroll to the bottom of the chat list on ui reload
 			setTimeout(() => {
-			  chatlist.scrollTop = chatlist.scrollHeight;
-			}, 0);
+				scrollToLastMessage();
+			}, 0)
 		}
 	};
 
@@ -121,6 +121,8 @@ app.controller("Chat", ['$scope', 'Settings', function ($scope, Settings) {
 		const chatVertical = localStorage.getItem('chatVertical');
 		if (chatVertical != "top") setChatDirection("top");
 		else setChatDirection("bottom");
+	
+		scrollToLastMessage();
 	}
 
 	$scope.$on('chatMessage', function (event, data) {
@@ -384,14 +386,20 @@ function addMessage(msg, time = null) {
 	if (chatList.children.length > 70) {
 		chatList.removeChild(chatList.children[0]);
 	}
+	
+	scrollToLastMessage();
 
-	// Scroll the chat depending on its direction
+}
+
+function scrollToLastMessage() {
 	const chatwindow = document.getElementById("chat-window");
-	if (chatwindow.style.flexDirection != "column-reverse") {
-		chatList.scrollTop = chatList.scrollHeight
+	const chatlist = document.getElementById("chat-list");
+	const isReversed = getComputedStyle(chatwindow).flexDirection === "column-reverse";
+	if (isReversed) {
+		chatlist.scrollTop = -chatlist.scrollHeight;
 	} else {
-		chatList.scrollTop = 0
-	};
+		chatlist.scrollTop = chatlist.scrollHeight;
+	}
 }
 
 function onKeyDown(e) {
