@@ -36,6 +36,9 @@
 }
 
 table#serversTable {
+  border-collapse: collapse;
+  table-layout: fixed;
+  height: fit-content;
   width: 100%;
   color: white;
   position: relative;
@@ -420,3 +423,65 @@ md-slider.ng-pristine.ng-untouched.ng-valid.md-default-theme.ng-empty {
   top: 2px;
   max-width: 34px;
 }
+
+
+.server-maxplayers,
+.server-flag {
+  width: 90px;
+}
+.server-mapname {
+  width: 33.33%;
+}
+.server-servername {
+  width: 66.67%;
+}
+
+
+
+.server-item {
+    height: 24px;
+}
+.server-item td {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.featured {
+  background-color: rgba(0, 128, 0, 0.25);
+}
+.partner {
+  background-color: rgba(0, 123, 195, 0.3);
+}
+.official {
+  background-color: rgba(255, 106, 0, 0.25);
+}
+.favorite {
+  background-color: rgba(255, 215, 0, 0.35);
+}
+.custom {
+  background-color: rgba(255, 215, 0, 0.35);
+}
+.offline {
+  background-color: rgba(0, 0, 0, 0.35);
+}
+.color-0 { color: #000000; }
+.color-1 { color: #0000AA; }
+.color-2 { color: #00AA00; }
+.color-3 { color: #00AAAA; }
+.color-4 { color: #AA0000; }
+.color-5 { color: #AA00AA; }
+.color-6 { color: #FFAA00; }
+.color-7 { color: #AAAAAA; }
+.color-8 { color: #555555; }
+.color-9 { color: #5555FF; }
+.color-a { color: #55FF55; }
+.color-b { color: #55FFFF; }
+.color-c { color: #FF5555; }
+.color-d { color: #FF55FF; }
+.color-e { color: #FFFF55; }
+.color-f { color: #FFFFFF; }
+
+.bold { font-weight: bold; }
+.line-through { text-decoration: line-through; }
+.underline { text-decoration: underline; }
+.italic { font-style: italic; }
