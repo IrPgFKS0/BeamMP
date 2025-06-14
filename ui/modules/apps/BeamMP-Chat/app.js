@@ -56,6 +56,12 @@ app.controller("Chat", ['$scope', 'Settings', function ($scope, Settings) {
 				addMessage(v.message, v.time)
 			})
 		}
+
+		if (chatlist) {		// scroll to the bottom of the chat list on ui reload
+			setTimeout(() => {
+			  chatlist.scrollTop = chatlist.scrollHeight;
+			}, 0);
+		}
 	};
 
 	$scope.reset = function() {
