@@ -425,17 +425,15 @@ md-slider.ng-pristine.ng-untouched.ng-valid.md-default-theme.ng-empty {
 }
 
 
-.server-maxplayers {
-  width: 90px; 
+.server-maxplayers,
+.server-flag {
+  width: 90px;
 }
 .server-mapname {
-  width: 20%; 
+  width: 33.33%;
 }
 .server-servername {
-  width: 70%; 
-}
-.server-flag {
-  width: 90px; 
+  width: 66.67%;
 }
 
 
