@@ -150,12 +150,12 @@ function ChatInputMessageCallback(data)
             end
         elseif data.EventKey == imgui.Key_DownArrow then
             if #history > 0 and historyPos == #history then
-                ffi.fill(data.Buf, data.BufSize, 0)  -- Clear the buffer
+                data.Buf = ""
                 data.CursorPos = 0
                 data.SelectionStart = 0
                 data.SelectionEnd = 0
                 data.BufTextLen = 0
-                data.BufDirty = imgui.Bool(true)
+                data.BufDirty = true
                 historyPos = -1
                 return 0  -- Return 0 to prevent further processing
             elseif historyPos == -1 then -- Empty, not on any history
@@ -169,13 +169,12 @@ function ChatInputMessageCallback(data)
             local t = history[historyPos]
             if type(t) ~= "string" then return 0 end
             local inplen = string.len(t)
-            local inplenInt = imgui.Int(inplen)
-            ffi.copy(data.Buf, t, math.min(data.BufSize - 1, inplen + 1))
-            data.CursorPos = inplenInt
-            data.SelectionStart = inplenInt
-            data.SelectionEnd = inplenInt
-            data.BufTextLen = inplenInt
-            data.BufDirty = imgui.Bool(true);
+            data.Buf = t
+            data.CursorPos = inplen
+            data.SelectionStart = inplen
+            data.SelectionEnd = inplen
+            data.BufTextLen = inplen
+            data.BufDirty = true
         end
     elseif data.EventFlag == imgui.InputTextFlags_CallbackCharFilter and
         data.EventChar == 96 then -- 96 = '`'
