@@ -15,7 +15,6 @@ local M = {
 
 local utils = require("multiplayer.ui.utils")
 local ffi = require('ffi')
-ffi.cdef("int ImGuiInputTextCallbackLua(const ImGuiInputTextCallbackData* data);")
 
 local imgui = ui_imgui
 local heightOffset = 20
@@ -138,7 +137,6 @@ end
 --- @param data table The input text data.
 --- @return number Returns 0 to prevent further processing or 1 to allow further processing.
 function ChatInputMessageCallback(data)
-    data = ffi.cast("ImGuiInputTextCallbackData*", data);
      if data.EventFlag == imgui.InputTextFlags_CallbackHistory then
         local prevHistoryPos = historyPos
         if data.EventKey == imgui.Key_UpArrow then
@@ -329,7 +327,7 @@ local function render()
         flags = flags + imgui.InputTextFlags_CallbackCompletion
         flags = flags + imgui.InputTextFlags_CallbackHistory
         flags = flags + imgui.InputTextFlags_CallbackCharFilter
-        if imgui.InputText("##ChatInputMessage", chatMessageBuf, 256, flags,  ffi.C.ImGuiInputTextCallbackLua, ffi.cast("void*","ChatInputMessageCallback")) then
+        if imgui.InputText("##ChatInputMessage", chatMessageBuf, 256, flags,  ffi.C.ImGuiInputTextCallbackLua, "ChatInputMessageCallback") then
             sendChatMessage(chatMessageBuf)
             if UI.settings.window.keepActive then
                 imgui.SetKeyboardFocusHere(-1)
