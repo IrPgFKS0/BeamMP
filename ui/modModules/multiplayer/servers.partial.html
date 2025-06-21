@@ -163,7 +163,7 @@
 							</div>
 						</div>
 						<div class="row" style="padding-left: 10px;" ng-switch="server.isFavorite">
-							<md-button id="serverconnect-button" class="button servers-button md-button md-default-theme" ng-class="" ng-click="connect(server.server.ip, server.server.port, server.server.strippedName, server.server.official)" style="margin-left: 10px;">Connect</md-button>
+							<md-button id="serverconnect-button" class="button servers-button md-button md-default-theme" ng-class="" ng-click="connect(server.server.ip, server.server.port, server.name, server.server.official)" style="margin-left: 10px;">Connect</md-button>
 							<div ng-switch-when="true">
 								<md-button id="removeFav-button" class="button servers-button md-button md-default-theme" ng-class="" ng-click="removeFav(server.server)" style="margin-left: 10px; background-color: #FF6961;">Remove Favorite</md-button>
 							</div>
