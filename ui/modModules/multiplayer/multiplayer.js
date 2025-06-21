@@ -1242,42 +1242,41 @@ function formatDescriptionName(string) {
 
 
 function formatServerName(string) {
-    let activeClasses = []; 
     let result = '';
     let currentText = '';
-    
+    let classes = new Set();
+
     const tokens = string.split(/(\^.)/g);
 
-    tokens.forEach((token, index) => {
-        if (token.startsWith('^')) { 
-   
-            if (currentText) {
-                result += activeClasses.length 
-                    ? `<span class="${activeClasses.join(' ')}">${currentText}</span>` 
-                    : currentText;
-                currentText = '';
-            }
-           
+    const flush = () => {
+        if (!currentText) return;
+        const classList = Array.from(classes);
+        result += classList.length
+            ? `<span class="${classList.join(' ')}">${currentText}</span>`
+            : currentText;
+        currentText = '';
+    };
+
+    for (const token of tokens) {
+        if (/^\^.$/.test(token)) {
+            flush();
             if (token === '^r') {
-                activeClasses = []; 
+                classes.clear();
             } else {
-          
-                const cssClass = globalThis.serverStyleMap?.[token];
-                if (cssClass && !activeClasses.includes(cssClass)) {
-                    activeClasses.push(cssClass);
+                const cls = globalThis.serverStyleMap?.[token];
+                if (cls?.startsWith('color-')) {
+                    [...classes].forEach(c => c.startsWith('color-') && classes.delete(c));
+                    classes.add(cls);
+                } else if (cls) {
+                    classes.add(cls);
                 }
             }
-        } else if (token) { 
+        } else {
             currentText += token;
         }
+    }
 
-        if (index === tokens.length - 1 && currentText) {
-            result += activeClasses.length 
-                ? `<span class="${activeClasses.join(' ')}">${currentText}</span>` 
-                : currentText;
-        }
-    });
-
+    flush();
     return result;
 }
 
