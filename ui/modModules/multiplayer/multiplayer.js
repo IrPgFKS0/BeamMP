@@ -1420,9 +1420,15 @@ function getRecents() {
         var tmpRecents = [];
         if (encoded) {
             try {
+                //decode
                 tmpRecents = JSON.parse(Base64.decode(encoded));
             } catch (e) {
-                tmpRecents = [];
+                try {
+                    //fallback if decode fail
+                    tmpRecents = JSON.parse(encoded);
+                } catch (e2) {
+                    tmpRecents = [];
+                }
             }
         }
         recents = tmpRecents;
