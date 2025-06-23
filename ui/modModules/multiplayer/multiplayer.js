@@ -809,34 +809,35 @@ function($scope, $state, $timeout, $filter) {
 		const viewportHeight = $scope.viewportHeight;
 		const buffer = $scope.buffer;
 		
-		const itemsPerView = viewportHeight / itemHeight;
+		const itemsPerView = Math.ceil(viewportHeight / itemHeight);
 		const scrollRow = Math.floor(scrollTop / itemHeight);
 		
-		let startIndex = Math.max(0, scrollRow - buffer);
+		let startIndex = Math.max(0, scrollRow - Math.ceil(itemsPerView) + buffer);
 		let endIndex = Math.min(total, scrollRow + Math.ceil(itemsPerView) + buffer);
 		
+		$scope.afterInfoRowHeight = 0;
+		$scope.beforeInfoRowHeight = 0;
 		if ($scope.selectedServerId) {
-			const selectedIndex = $scope.serversArray.findIndex(s => s.id === $scope.selectedServerId);
 			
-			if (selectedIndex !== -1) {
-				const expandedBottom = (selectedIndex + 1) * itemHeight + $scope.expandedRowHeight;
-				const viewBottom = scrollTop + viewportHeight;
-				if (expandedBottom > viewBottom) {
-					const missingSpace = expandedBottom - viewBottom;
-					endIndex = Math.min(total, endIndex + Math.ceil(missingSpace / itemHeight));
+			if ($scope.selectedIndex !== -1) {
+				// when selectedIndex is not in the view anymore
+				if ($scope.selectedIndex < startIndex || $scope.selectedIndex >= endIndex) {
+					
+					//if the selected server is above the current view
+					if ($scope.selectedIndex < scrollRow) {		//this compense the height of the expanded row that is not rendered anymore
+						$scope.beforeInfoRowHeight = $scope.expandedRowHeight;
+					}else{	//if the selected server is below the current view
+						$scope.afterInfoRowHeight = $scope.expandedRowHeight;
+					}
 				}
-				if (selectedIndex < startIndex) startIndex = selectedIndex;
-				if (selectedIndex >= endIndex) endIndex = selectedIndex + 1;
 			}
 		}
 
 		$scope.visibleServers = $scope.serversArray.slice(startIndex, endIndex);
 		$scope.beforeHeight = startIndex * itemHeight;
 		$scope.afterHeight = (total - endIndex) * itemHeight;
-		if ($scope.selectedServerId && endIndex < total) {
-			$scope.afterHeight += $scope.expandedRowHeight - itemHeight;
-		}
 		if (!$scope.$$phase) $scope.$digest();
+
 	};
 
 	$scope.selectServer = function(server) {
@@ -848,21 +849,17 @@ function($scope, $state, $timeout, $filter) {
 			$scope.expandedRowHeight = 0;
 		} else {
 			$scope.selectedServerId = serverId;
-			
-			const row = document.getElementById('ServerInfoRow');
-			$scope.expandedRowHeight = row ? row.offsetHeight : 0;
-			$scope.onScroll();
-			
+			$scope.selectedIndex = $scope.serversArray.findIndex(s => s.id === $scope.selectedServerId);
+
+			$timeout(function() {	//timeout because the serverInfoRow is not rendered yet
+				const row = document.getElementById('ServerInfoRow');
+				$scope.expandedRowHeight = row.offsetHeight;
+			})
 		}
 		$scope.onScroll();
 	};
 
-	let lastScrollTime = 0;
 	serversTableContainer.addEventListener('scroll', () => {
-		const now = Date.now();
-		if (now - lastScrollTime < 16) return;
-		
-		lastScrollTime = now;
 		$scope.onScroll();
 	}, { passive: true });
 
