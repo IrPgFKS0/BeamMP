@@ -78,18 +78,26 @@
 	.marquee {
 		display: flex;
 		width: max-content;
+		position: relative;
+	}
+	.activate-marquee:hover {
+		animation: scroll-left 10s linear infinite;
 	}
 
 	.session-status {
 		flex-shrink: 0;
 		padding-right: 60px; 
 	}
+	.session-status:nth-child(2) {
+		position: absolute;
+		left: 100%;
+	}
 	@keyframes scroll-left {
 	0% {
 		transform: translateX(0%);
 	}
 	100% {
-		transform: translateX(-50%);
+		transform: translateX(-100%);
 	}
 	}
 

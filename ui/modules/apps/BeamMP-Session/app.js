@@ -103,9 +103,9 @@ app.controller("Session", ['$scope', '$mdDialog', function ($scope, $mdDialog) {
 			for (let i = 0; i < sessionStatus.length; i++) {
 				sessionStatus[i].innerHTML = formatServerName(data); // DISPLAY SERVER NAME FORMATTING
 				if (isMarqueeNeeded(sessionStatus[i])) {
-					marquee.style.animation = 'scroll-left 10s linear infinite';
+					marquee.classList.add('activate-marquee');
 				} else {
-					marquee.style.animation = 'none';
+					marquee.classList.remove('activate-marquee');
 					break;
 				}
 			}
@@ -167,9 +167,8 @@ function formatServerName(string) {
     return result;
 }
 
-function isMarqueeNeeded(sessionStatusElement) {
-  const block = document.getElementById('server-name-block');
-
-  return sessionStatusElement.clientWidth > block.clientWidth;
+function isMarqueeNeeded(element) {
+	const block = document.getElementById('server-name-block');
+    return element.offsetWidth > block.getBoundingClientRect().width;
 }
 
