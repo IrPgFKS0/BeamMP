@@ -817,9 +817,9 @@ function($scope, $state, $timeout, $filter) {
 		
 		$scope.afterInfoRowHeight = 0;
 		$scope.beforeInfoRowHeight = 0;
-		if ($scope.selectedServerId) {
-			
-			if ($scope.selectedIndex !== -1) {
+		if ($scope.selectedServerId && $scope.selectedIndex !== -1) {
+			const selectedServerExists = $scope.serversArray.some(s => s.id === $scope.selectedServerId);
+			if (selectedServerExists) {
 				// when selectedIndex is not in the view anymore
 				if ($scope.selectedIndex < startIndex || $scope.selectedIndex >= endIndex) {
 					
