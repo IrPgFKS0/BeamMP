@@ -127,7 +127,7 @@
 					<td class="loading-shimmer" colspan="4"></td>
 				</tr>	
     			<tr ng-style="{'height': beforeHeight + 'px'}"></tr>
-
+				<tr ng-style="{'height': beforeInfoRowHeight + 'px'}" ></tr>
 				<tr class="server-item" ng-repeat-start="server in visibleServers track by server.server.ip + ':' + server.server.port" ng-show="serversTable" ng-click="selectServer(server)" ng-class="{'highlight': server.server.ip + ':' + server.server.port === selectedServerId}">
 					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" class="server-flag" style="font-size: initial; padding-left: 3px; text-align: right; padding-right: 10px" ><img ng-src="local://local/ui/modModules/multiplayer/flags/{{server.server.location.toLowerCase()}}.png" class="flag"></img> {{server.server.location}}</td>
 					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" class="server-servername" ng-bind-html="formatServerName(server.name)" ></td>
@@ -177,7 +177,7 @@
 						</div>
 					</td>
 				</tr>
-
+				<tr ng-style="{'height': afterInfoRowHeight + 'px'}" ></tr>
     			<tr ng-style="{'height': afterHeight + 'px'}"></tr>
 			</tbody>
 		</table>
