@@ -437,6 +437,9 @@ md-slider.ng-pristine.ng-untouched.ng-valid.md-default-theme.ng-empty {
 }
 
 
+#serverListMainContainer .focus-visible::before {     
+  display: none; 
+}
 
 .server-item {
     height: 24px;
@@ -464,6 +467,7 @@ md-slider.ng-pristine.ng-untouched.ng-valid.md-default-theme.ng-empty {
 .offline {
   background-color: rgba(0, 0, 0, 0.35);
 }
+
 .color-0 { color: #000000; }
 .color-1 { color: #0000AA; }
 .color-2 { color: #00AA00; }
