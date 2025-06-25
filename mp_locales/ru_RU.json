@@ -77,7 +77,7 @@
   "ui.options.multiplayer.unicycleTitle": "Дефолтный Unicycle",
   "ui.options.multiplayer.unicycleDefault": "Конфигурация Unicycle по умолчанию",
   "ui.options.multiplayer.unicycleAutoSave": "Автоматически сохранять последний использованный Unicycle",
-  "ui.options.multiplayer.unicycleAutoSave.tooltip": "При деспавне Unicycle, он будет сохранен и использован при следующем спавне",
+  "ui.options.multiplayer.unicycleAutoSave.tooltip": "При диспавне Unicycle, он будет сохранен и использован при следующем спавне",
   "ui.options.multiplayer.unicycleOnSwitch": "По умолчанию установлено значение",
   "ui.options.multiplayer.skipModSecurityWarning": "Пропустить всплывающее окно с предупреждением безопасности мода.",
   "ui.options.multiplayer.skipModSecurityWarning.tooltip": "Отключите всплывающее окно безопасности при присоединении к модифицированным серверам.",
