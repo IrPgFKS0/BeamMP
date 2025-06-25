@@ -1562,8 +1562,8 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 	$scope.serversArray.forEach(server => {
 		server.id = server.server.ip + ':' + server.server.port;
 	});
+	if (type == 2) $scope.sortTable("addTime", true, 1);
 	$scope.onScroll();
-	if (type == 2) $scope.sortTable("recent", true, -1);
 }
 
 // Used to connect to the backend with ids
