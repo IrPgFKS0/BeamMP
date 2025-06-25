@@ -925,6 +925,7 @@ function($scope, $state, $timeout, $filter) {
 
 	// Called when the page is left
 	$scope.$on('$destroy', function () {
+		serverView = "";
 		$timeout.cancel(timeOut);
 		//console.log('[MultiplayerServersController] destroyed.');
 		var buttons = document.getElementsByClassName("servers-btn");
