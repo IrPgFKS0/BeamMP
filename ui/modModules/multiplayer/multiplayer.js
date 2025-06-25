@@ -1385,10 +1385,15 @@ async function getFavorites() {
 }
 
 function addFav(server, isUpdate) {
-	server.addTime = Date.now();
-	favorites.push(server);
-	saveFav();
-	if (!isUpdate) bngApi.engineLua('MPCoreNetwork.requestServerList()');
+	const exists = favorites.some(fav => 
+        fav.ip === server.ip && fav.port === server.port
+    );
+	if (!exists) {
+		server.addTime = Date.now();
+		favorites.push(server);
+		saveFav();
+		if (!isUpdate) bngApi.engineLua('MPCoreNetwork.requestServerList()');
+	}
 }
 
 function removeFav(server) {
