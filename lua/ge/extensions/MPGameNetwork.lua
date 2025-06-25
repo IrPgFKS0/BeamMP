@@ -224,6 +224,10 @@ local function spawnUiDialog(dialogInfo)
 	if dialogInfo.reportToServer == nil then dialogInfo.reportToServer = false end
 	if dialogInfo.reportToExtensions == nil then dialogInfo.reportToExtensions = false end
 	
+	if dialogInfo.class ~= "experimental" then
+		dialogInfo.class = ""
+	end
+
 	be:queueJS(string.format([[
 			angular.element(document.body).injector().get('ConfirmationDialog').open(
 				DOMPurify.sanitize(JSON.parse(atob(`%s`))), 
@@ -233,10 +237,10 @@ local function spawnUiDialog(dialogInfo)
 			).then(res => {
 				if (res) {
 					if (%s) {
-						bngApi.engineLua(`TriggerServerEvent("` + res + `", MPHelpers.b64decode("%s"))`)
+						bngApi.engineLua(`TriggerServerEvent(MPHelpers.b64decode("` + btoa(res) + `"), MPHelpers.b64decode("%s"))`)
 					}
 					if (%s) {
-						bngApi.engineLua(`extensions.hook("` + res + `", MPHelpers.b64decode("%s"))`)
+						bngApi.engineLua(`extensions.hook(MPHelpers.b64decode("` + btoa(res) + `"), MPHelpers.b64decode("%s"))`)
 					}
 				}
 			});
@@ -245,9 +249,9 @@ local function spawnUiDialog(dialogInfo)
 		MPHelpers.b64encode(jsonEncode(dialogInfo.body or "")),
 		MPHelpers.b64encode(jsonEncode(buttons)),
 		MPHelpers.b64encode(dialogInfo.class or ""),
-		dialogInfo.reportToServer,
+		type(dialogInfo.reportToServer) == "boolean" and dialogInfo.reportToServer,
 		MPHelpers.b64encode(dialogInfo.interactionID or ""),
-		dialogInfo.reportToExtensions,
+		type(dialogInfo.reportToExtensions) == "boolean" and dialogInfo.reportToExtensions,
 		MPHelpers.b64encode(dialogInfo.interactionID or "")
 	))
 end
