@@ -8,7 +8,7 @@ let lastSentMessage = "";
 
 let lastMsgId = 0;
 let newChatMenu = false;
-
+import('/ui/lib/ext/purify.min.js')
 app.directive('multiplayerchat', [function () {
 	return {
 		templateUrl: '/ui/modules/apps/BeamMP-Chat/app.html',
@@ -240,13 +240,6 @@ async function showChat() {
 
 // -------------------------------------------- MESSAGE FORMATTING -------------------------------------------- //
 
-function escapeHTML(text) {
-    return text.replace(/&/g, "&amp;")
-               .replace(/</g, "&lt;")
-               .replace(/>/g, "&gt;")
-               .replace(/"/g, "&quot;")
-               .replace(/'/g, "&#39;");
-}
 
 function formatChatMessage(string) {
     const blockedTags = new Set(['script', 'iframe', 'form', 'input', 'button', 'a']);
@@ -286,7 +279,7 @@ function formatChatMessage(string) {
     let currentText = '';
     let classes = new Set();
 
-    string = escapeHTML(string);
+    string = DOMPurify.sanitize(string);
     const tokens = string.split(/(\^.)/g);
 
     const flush = () => {

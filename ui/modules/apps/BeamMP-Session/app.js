@@ -5,7 +5,7 @@
 var app = angular.module('beamng.apps');
 var mdDialog;
 var mdDialogVisible = false;
-
+import('/ui/lib/ext/purify.min.js')
 app.directive('multiplayersession', [function () {
 	return {
 		templateUrl: '/ui/modules/apps/BeamMP-Session/app.html',
@@ -117,13 +117,6 @@ app.controller("Session", ['$scope', '$mdDialog', function ($scope, $mdDialog) {
 	});
 }]);
 
-function escapeHTML(text) {
-    return text.replace(/&/g, "&amp;")
-               .replace(/</g, "&lt;")
-               .replace(/>/g, "&gt;")
-               .replace(/"/g, "&quot;")
-               .replace(/'/g, "&#39;");
-}
 
 
 function formatServerName(string) {
@@ -131,7 +124,7 @@ function formatServerName(string) {
     let currentText = '';
     let classes = new Set();
 
-	string = escapeHTML(string);
+	string = DOMPurify.sanitize(string);
 
     const tokens = string.split(/(\^.)/g);
 

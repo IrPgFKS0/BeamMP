@@ -1241,13 +1241,7 @@ function formatDescriptionName(string) {
     return innerHTML; //$('#TEMPAREA').html();
 }
 
-function escapeHTML(text) {
-    return text.replace(/&/g, "&amp;")
-               .replace(/</g, "&lt;")
-               .replace(/>/g, "&gt;")
-               .replace(/"/g, "&quot;")
-               .replace(/'/g, "&#39;");
-}
+
 
 
 function formatServerName(string) {
@@ -1255,7 +1249,7 @@ function formatServerName(string) {
     let currentText = '';
     let classes = new Set();
 
-	string = escapeHTML(string);
+	string = DOMPurify.sanitize(string)
 
     const tokens = string.split(/(\^.)/g);
 
