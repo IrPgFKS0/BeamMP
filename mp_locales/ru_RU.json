@@ -94,7 +94,7 @@
   "ui.multiplayer.loading": "Загрузка...",
   "ui.multiplayer.official": "Официальные серверы",
   "ui.multiplayer.servers": "Публичные серверы",
-  "ui.multiplayer.favorites": "Избранное",
+  "ui.multiplayer.favorites": "Избранные серверы",
   "ui.multiplayer.favorite": "Сохранить как избранное",
   "ui.multiplayer.favoritedToast.title": "Избранный сервер",
   "ui.multiplayer.favoritedToast.description": "Этот сервер добавлен в избранное.",

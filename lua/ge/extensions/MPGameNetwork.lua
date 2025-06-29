@@ -154,6 +154,108 @@ local function playerLeft(params)
 	end 
 end
 
+--[[
+	Format
+	[title] = String (Optional. The Title of the Dialog)
+	[body] = String (Optional. The text [question] displayed to the user)
+	[buttons] = table (Optional)
+		[1..n] = table
+			[label] = String (Ok, Cancel..)
+			[default] = bool (When the user presses the ENTER key this button will be executed)
+			[isCancel] = bool (When the user presses the ESC key this button will be executed)
+			[key] = String (Optional. The "event" that will be broadcasted to the server and/or the extensions)
+	[class] = String (Optional)
+		experimental = Draws hazard lines around the dialog
+	[interactionID] = String (Optional. The name of the interaction)
+	[reportToServer] = bool (Optional. If true will report the button "key" together with the "interactionID" to the server)
+	[reportToExtensions] = bool (Optional. If true will report the button "key" together with the "interactionID" to the local extensions)
+	
+	Example
+	
+	MPGameNetwork.spawnUiDialog({
+		title = "Awesome Title",
+		body = "Hey do you rather like Pepsi or Cola?",
+		buttons = {
+			{
+				label = "Pepsi",
+				key = "favoriteDrinkPepsi"
+			},
+			{
+				label = "Cola",
+				key = "favoriteDrinkCola"
+			}
+		},
+		interactionID = "favoriteDrink",
+		reportToServer = true,
+		reportToExtensions = true
+	})
+	
+	-- Server side
+	function favoriteDrinkPepsi(player_id, interactionID)
+		print(MP.GetPlayerName(player_id) .. ' likes Pepsi!")
+	end
+	
+	function favoriteDrinkCola(player_id, interactionID)
+		print(MP.GetPlayerName(player_id) .. ' likes Cola!")
+	end
+	
+	MP.RegisterEvent("favoriteDrinkPepsi", "favoriteDrinkPepsi")
+	MP.RegisterEvent("favoriteDrinkCola", "favoriteDrinkCola")
+	
+	-- Locally
+	M.favoriteDrinkPepsi = function()
+		print("I Like Pepsi!")
+	end
+	
+	M.favoriteDrinkCola = function()
+		print("I like Cola!")
+	end
+]]
+local function spawnUiDialog(dialogInfo)
+	local buttons = next(dialogInfo.buttons or {}) and dialogInfo.buttons or {
+		{
+			label = "OK",
+			key = nil,
+			default = true,
+			isCancel = true
+		}
+	}
+	
+	if dialogInfo.reportToServer == nil then dialogInfo.reportToServer = false end
+	if dialogInfo.reportToExtensions == nil then dialogInfo.reportToExtensions = false end
+	
+	if dialogInfo.class ~= "experimental" then
+		dialogInfo.class = ""
+	end
+
+	be:queueJS(string.format([[
+			angular.element(document.body).injector().get('ConfirmationDialog').open(
+				DOMPurify.sanitize(JSON.parse(atob(`%s`))), 
+				DOMPurify.sanitize(JSON.parse(atob(`%s`))),
+				JSON.parse(atob(`%s`)),
+				{ class: atob(`%s`) }
+			).then(res => {
+				if (res) {
+					if (%s) {
+						bngApi.engineLua(`TriggerServerEvent(MPHelpers.b64decode("` + btoa(res) + `"), MPHelpers.b64decode("%s"))`)
+					}
+					if (%s) {
+						bngApi.engineLua(`extensions.hook(MPHelpers.b64decode("` + btoa(res) + `"), MPHelpers.b64decode("%s"))`)
+					}
+				}
+			});
+		]],
+		MPHelpers.b64encode(jsonEncode(dialogInfo.title or "Dialog")),
+		MPHelpers.b64encode(jsonEncode(dialogInfo.body or "")),
+		MPHelpers.b64encode(jsonEncode(buttons)),
+		MPHelpers.b64encode(dialogInfo.class or ""),
+		type(dialogInfo.reportToServer) == "boolean" and dialogInfo.reportToServer,
+		MPHelpers.b64encode(dialogInfo.interactionID or ""),
+		type(dialogInfo.reportToExtensions) == "boolean" and dialogInfo.reportToExtensions,
+		MPHelpers.b64encode(dialogInfo.interactionID or "")
+	))
+end
+
 -- -----------------------------------------------------------------------------
 -- Events System
 -- -----------------------------------------------------------------------------
@@ -362,6 +464,7 @@ local HandleNetwork = {
 	['C'] = function(params) UI.chatMessage(params) end, -- Chat Message Event
 	['R'] = function(params) MPControllerGE.handle(params) end, -- Controller data
 	['n'] = function(params) local category, icon, message = params:match("([^:]+):?(.-):(.+)") UI.showNotification(message, category, icon) end, -- Custom UI notification
+	['D'] = function(params) spawnUiDialog(jsonDecode(params)) end, -- Custom UI Dialog
 }
 
 
@@ -442,6 +545,7 @@ M.disconnectLauncher  = disconnectLauncher
 M.send                = sendData
 M.CallEvent           = handleEvents
 M.quitMP              = quitMP
+M.spawnUiDialog       = spawnUiDialog
 
 M.addKeyEventListener = addKeyEventListener -- takes: string keyName, function listenerFunction
 M.getKeyState         = getKeyState         -- takes: string keyName
