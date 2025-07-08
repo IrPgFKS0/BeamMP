@@ -912,9 +912,8 @@ function($scope, $state, $timeout, $filter) {
 	}
 
 	$scope.listPlayers = listPlayers;
-	$scope.formatServerName = formatServerName;
+	$scope.formatCodes = formatCodes;
 	$scope.SmoothMapName = SmoothMapName;
-	$scope.formatDescriptionName = formatDescriptionName;
 	$scope.modCount = modCount;
 	$scope.modList = modList;
 	$scope.formatBytes = formatBytes;
@@ -1187,64 +1186,7 @@ var descStyleMap = {
     '^o': 'font-style:italic',
 };
 
-function applyDescCode(string, codes) {
-    var elem = document.createElement('span');
-		elem.style.fontSize = 'initial';
-    string = string.replace(/\x00*/g, '');
-    for(var i = 0, len = codes.length; i < len; i++) {
-        elem.style.cssText += descStyleMap[codes[i]] + ';';
-    }
-    elem.innerHTML = string;
-    return elem;
-}
-
-function formatDescriptionName(string) {
-    var codes = string.match(/\^.{1}/g) || [],
-        indexes = [],
-        apply = [],
-        tmpStr,
-        indexDelta,
-        final = document.createDocumentFragment(),
-        i,
-        len;
-    for(i = 0, len = codes.length; i < len; i++) {
-        indexes.push( string.indexOf(codes[i]) );
-        string = string.replace(codes[i], '\x00\x00');
-    }
-    if(indexes[0] !== 0) {
-        final.appendChild( applyDescCode( string.substring(0, indexes[0]), [] ) );
-    }
-
-		// Find all color and formatting codes
-    for(i = 0; i < len; i++) {
-    	indexDelta = indexes[i + 1] - indexes[i];
-        if(indexDelta === 2) {
-            while(indexDelta === 2) {
-                apply.push ( codes[i] );
-                i++;
-                indexDelta = indexes[i + 1] - indexes[i];
-            }
-            apply.push ( codes[i] );
-        } else {
-            apply.push( codes[i] );
-        }
-        if( apply.lastIndexOf('^r') > -1) {
-            apply = apply.slice( apply.lastIndexOf('^r') + 1 );
-        }
-        tmpStr = string.substring( indexes[i], indexes[i + 1] );
-        final.appendChild( applyDescCode(tmpStr, apply) );
-    }
-		//$('#TEMPAREA').html(final);
-		document.getElementById('TEMPAREA').innerHTML = final;
-		var innerHTML = [...final.childNodes].map( n=> n.outerHTML ).join('\n')
-		//console.log(innerHTML)
-    return innerHTML; //$('#TEMPAREA').html();
-}
-
-
-
-
-function formatServerName(string) {
+function formatCodes(string) {
     let result = '';
     let currentText = '';
     let classes = new Set();
@@ -1436,11 +1378,11 @@ function getRecents() {
     });
 }
 
-function addRecent(server, isUpdate) { // has to have name, ip, port
+function addRecent(server) { // has to have name, ip, port
 	server.addTime = Date.now();
 	recents.push(server);
 	recents = recents.slice(-1 * 50); //keep the last 50 entries
-	if(!isUpdate) localStorage.setItem("recents", Base64.encode(JSON.stringify(recents)));
+	localStorage.setItem("recents", Base64.encode(JSON.stringify(recents)));
 }
 
 globalThis.openExternalLink = function(url){
@@ -1502,7 +1444,7 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 		if (type == 1 && !isFavorite) continue; // If it's favorite tab, we only show favorites
 
 		// Recents
-		for (let tmpServer of recents) if (tmpServer.ip == server.ip && tmpServer.port == server.port) isRecent = tmpServer.addTime;
+		for (let tmpServer of recents) if (tmpServer.ip == server.ip && tmpServer.port == server.port) isRecent = true;
 		if (type == 2 && !isRecent) continue; // Everything happens underneath for recents
 
 		// If the server passed the filter
@@ -1513,7 +1455,7 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 		});
 
 		if (isFavorite) addFav(server, true);
-		if (isRecent) addRecent(server, true);
+		if (isRecent) addRecent(server);
 	}
 	
 	// Here we check if some favorited / recents servers are offline or not
@@ -1565,8 +1507,7 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 	$scope.serversArray.forEach(server => {
 		server.id = server.server.ip + ':' + server.server.port;
 	});
-	if (type == 2) $scope.sortTable("addTime", true, 1);
-	$scope.onScroll();
+	if (type == 2) $scope.sortTable("addTime", true, -1) ; else $scope.onScroll();
 }
 
 // Used to connect to the backend with ids
