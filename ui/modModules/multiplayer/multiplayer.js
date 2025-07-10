@@ -812,34 +812,35 @@ function($scope, $state, $timeout, $filter) {
 		const viewportHeight = $scope.viewportHeight;
 		const buffer = $scope.buffer;
 		
-		const itemsPerView = viewportHeight / itemHeight;
+		const itemsPerView = Math.ceil(viewportHeight / itemHeight);
 		const scrollRow = Math.floor(scrollTop / itemHeight);
 		
-		let startIndex = Math.max(0, scrollRow - buffer);
+		let startIndex = Math.max(0, scrollRow - Math.ceil(itemsPerView) + buffer);
 		let endIndex = Math.min(total, scrollRow + Math.ceil(itemsPerView) + buffer);
 		
-		if ($scope.selectedServerId) {
-			const selectedIndex = $scope.serversArray.findIndex(s => s.id === $scope.selectedServerId);
-			
-			if (selectedIndex !== -1) {
-				const expandedBottom = (selectedIndex + 1) * itemHeight + $scope.expandedRowHeight;
-				const viewBottom = scrollTop + viewportHeight;
-				if (expandedBottom > viewBottom) {
-					const missingSpace = expandedBottom - viewBottom;
-					endIndex = Math.min(total, endIndex + Math.ceil(missingSpace / itemHeight));
+		$scope.afterInfoRowHeight = 0;
+		$scope.beforeInfoRowHeight = 0;
+		if ($scope.selectedServerId && $scope.selectedIndex !== -1) {
+			const selectedServerExists = $scope.serversArray.some(s => s.id === $scope.selectedServerId);
+			if (selectedServerExists) {
+				// when selectedIndex is not in the view anymore
+				if ($scope.selectedIndex < startIndex || $scope.selectedIndex >= endIndex) {
+					
+					//if the selected server is above the current view
+					if ($scope.selectedIndex < scrollRow) {		//this compense the height of the expanded row that is not rendered anymore
+						$scope.beforeInfoRowHeight = $scope.expandedRowHeight;
+					}else{	//if the selected server is below the current view
+						$scope.afterInfoRowHeight = $scope.expandedRowHeight;
+					}
 				}
-				if (selectedIndex < startIndex) startIndex = selectedIndex;
-				if (selectedIndex >= endIndex) endIndex = selectedIndex + 1;
 			}
 		}
 
 		$scope.visibleServers = $scope.serversArray.slice(startIndex, endIndex);
 		$scope.beforeHeight = startIndex * itemHeight;
 		$scope.afterHeight = (total - endIndex) * itemHeight;
-		if ($scope.selectedServerId && endIndex < total) {
-			$scope.afterHeight += $scope.expandedRowHeight - itemHeight;
-		}
 		if (!$scope.$$phase) $scope.$digest();
+
 	};
 
 	$scope.selectServer = function(server) {
@@ -851,21 +852,17 @@ function($scope, $state, $timeout, $filter) {
 			$scope.expandedRowHeight = 0;
 		} else {
 			$scope.selectedServerId = serverId;
-			
-			const row = document.getElementById('ServerInfoRow');
-			$scope.expandedRowHeight = row ? row.offsetHeight : 0;
-			$scope.onScroll();
-			
+			$scope.selectedIndex = $scope.serversArray.findIndex(s => s.id === $scope.selectedServerId);
+
+			$timeout(function() {	//timeout because the serverInfoRow is not rendered yet
+				const row = document.getElementById('ServerInfoRow');
+				$scope.expandedRowHeight = row.offsetHeight;
+			})
 		}
 		$scope.onScroll();
 	};
 
-	let lastScrollTime = 0;
 	serversTableContainer.addEventListener('scroll', () => {
-		const now = Date.now();
-		if (now - lastScrollTime < 16) return;
-		
-		lastScrollTime = now;
 		$scope.onScroll();
 	}, { passive: true });
 
@@ -915,9 +912,8 @@ function($scope, $state, $timeout, $filter) {
 	}
 
 	$scope.listPlayers = listPlayers;
-	$scope.formatServerName = formatServerName;
+	$scope.formatCodes = formatCodes;
 	$scope.SmoothMapName = SmoothMapName;
-	$scope.formatDescriptionName = formatDescriptionName;
 	$scope.modCount = modCount;
 	$scope.modList = modList;
 	$scope.formatBytes = formatBytes;
@@ -931,6 +927,7 @@ function($scope, $state, $timeout, $filter) {
 
 	// Called when the page is left
 	$scope.$on('$destroy', function () {
+		serverView = "";
 		$timeout.cancel(timeOut);
 		//console.log('[MultiplayerServersController] destroyed.');
 		var buttons = document.getElementsByClassName("servers-btn");
@@ -1189,98 +1186,44 @@ var descStyleMap = {
     '^o': 'font-style:italic',
 };
 
-function applyDescCode(string, codes) {
-    var elem = document.createElement('span');
-		elem.style.fontSize = 'initial';
-    string = string.replace(/\x00*/g, '');
-    for(var i = 0, len = codes.length; i < len; i++) {
-        elem.style.cssText += descStyleMap[codes[i]] + ';';
-    }
-    elem.innerHTML = string;
-    return elem;
-}
-
-function formatDescriptionName(string) {
-    var codes = string.match(/\^.{1}/g) || [],
-        indexes = [],
-        apply = [],
-        tmpStr,
-        indexDelta,
-        final = document.createDocumentFragment(),
-        i,
-        len;
-    for(i = 0, len = codes.length; i < len; i++) {
-        indexes.push( string.indexOf(codes[i]) );
-        string = string.replace(codes[i], '\x00\x00');
-    }
-    if(indexes[0] !== 0) {
-        final.appendChild( applyDescCode( string.substring(0, indexes[0]), [] ) );
-    }
-
-		// Find all color and formatting codes
-    for(i = 0; i < len; i++) {
-    	indexDelta = indexes[i + 1] - indexes[i];
-        if(indexDelta === 2) {
-            while(indexDelta === 2) {
-                apply.push ( codes[i] );
-                i++;
-                indexDelta = indexes[i + 1] - indexes[i];
-            }
-            apply.push ( codes[i] );
-        } else {
-            apply.push( codes[i] );
-        }
-        if( apply.lastIndexOf('^r') > -1) {
-            apply = apply.slice( apply.lastIndexOf('^r') + 1 );
-        }
-        tmpStr = string.substring( indexes[i], indexes[i + 1] );
-        final.appendChild( applyDescCode(tmpStr, apply) );
-    }
-		//$('#TEMPAREA').html(final);
-		document.getElementById('TEMPAREA').innerHTML = final;
-		var innerHTML = [...final.childNodes].map( n=> n.outerHTML ).join('\n')
-		//console.log(innerHTML)
-    return innerHTML; //$('#TEMPAREA').html();
-}
-
-
-function formatServerName(string) {
-    let activeClasses = []; 
+function formatCodes(string) {
     let result = '';
     let currentText = '';
-    
+    let classes = new Set();
+
+	string = DOMPurify.sanitize(string)
+
     const tokens = string.split(/(\^.)/g);
 
-    tokens.forEach((token, index) => {
-        if (token.startsWith('^')) { 
-   
-            if (currentText) {
-                result += activeClasses.length 
-                    ? `<span class="${activeClasses.join(' ')}">${currentText}</span>` 
-                    : currentText;
-                currentText = '';
-            }
-           
+    const flush = () => {
+        if (!currentText) return;
+        const classList = Array.from(classes);
+        result += classList.length
+            ? `<span class="${classList.join(' ')}">${currentText}</span>`
+            : currentText;
+        currentText = '';
+    };
+
+    for (const token of tokens) {
+        if (/^\^.$/.test(token)) {
+            flush();
             if (token === '^r') {
-                activeClasses = []; 
+                classes.clear();
             } else {
-          
-                const cssClass = globalThis.serverStyleMap?.[token];
-                if (cssClass && !activeClasses.includes(cssClass)) {
-                    activeClasses.push(cssClass);
+                const cls = globalThis.serverStyleMap?.[token];
+                if (cls?.startsWith('color-')) {
+                    [...classes].forEach(c => c.startsWith('color-') && classes.delete(c));
+                    classes.add(cls);
+                } else if (cls) {
+                    classes.add(cls);
                 }
             }
-        } else if (token) { 
+        } else {
             currentText += token;
         }
+    }
 
-        if (index === tokens.length - 1 && currentText) {
-            result += activeClasses.length 
-                ? `<span class="${activeClasses.join(' ')}">${currentText}</span>` 
-                : currentText;
-        }
-    });
-
+    flush();
     return result;
 }
 
@@ -1382,10 +1325,15 @@ async function getFavorites() {
 }
 
 function addFav(server, isUpdate) {
-	server.addTime = Date.now();
-	favorites.push(server);
-	saveFav();
-	if (!isUpdate) bngApi.engineLua('MPCoreNetwork.requestServerList()');
+	const exists = favorites.some(fav => 
+        fav.ip === server.ip && fav.port === server.port
+    );
+	if (!exists) {
+		server["addTime"] = Date.now();
+		favorites.push(server);
+		saveFav();
+		if (!isUpdate) bngApi.engineLua('MPCoreNetwork.requestServerList()');
+	}
 }
 
 function removeFav(server) {
@@ -1407,19 +1355,37 @@ function saveFav() {
 	// bngApi.engineLua(`MPConfig.setFavorites(\'${JSON.stringify(favorites).replace(/'/g, "\\'")}\')`);
 }
 
+
 function getRecents() {
-	return new Promise(function(resolve, reject) {
-		var tmpRecents = JSON.parse(localStorage.getItem("recents"));
-		recents = tmpRecents || []; // Moved this to here so that we are no longer awaiting it
-		resolve(tmpRecents || []);
-	});
+    return new Promise(function(resolve, reject) {
+        var encoded = localStorage.getItem("recents");
+        var tmpRecents = [];
+        if (encoded) {
+            try {
+                //decode
+                tmpRecents = JSON.parse(Base64.decode(encoded));
+            } catch (e) {
+                try {
+                    //fallback if decode fail
+                    tmpRecents = JSON.parse(encoded);
+                } catch (e2) {
+                    tmpRecents = [];
+                }
+            }
+        }
+        recents = tmpRecents;
+        resolve(tmpRecents);
+    });
 }
 
-function addRecent(server, isUpdate) { // has to have name, ip, port
-	server.addTime = Date.now();
+function addRecent(server) { // has to have name, ip, port
+	server["addTime"] = Date.now();
+	recents = recents.filter(rec => 
+        !(rec.ip === server.ip && rec.port === server.port)
+    );	// Remove server and add it back
 	recents.push(server);
 	recents = recents.slice(-1 * 50); //keep the last 50 entries
-	if(!isUpdate) localStorage.setItem("recents", JSON.stringify(recents));
+	localStorage.setItem("recents", Base64.encode(JSON.stringify(recents)));
 }
 
 globalThis.openExternalLink = function(url){
@@ -1481,7 +1447,10 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 		if (type == 1 && !isFavorite) continue; // If it's favorite tab, we only show favorites
 
 		// Recents
-		for (let tmpServer of recents) if (tmpServer.ip == server.ip && tmpServer.port == server.port) isRecent = tmpServer.addTime;
+		for (let tmpServer of recents) if (tmpServer.ip == server.ip && tmpServer.port == server.port) {
+			isRecent = true; 
+			server.addTime = tmpServer.addTime;
+		}
 		if (type == 2 && !isRecent) continue; // Everything happens underneath for recents
 
 		// If the server passed the filter
@@ -1491,8 +1460,6 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 			return $scope.serversTable[key];
 		});
 
-		if (isFavorite) addFav(server, true);
-		if (isRecent) addRecent(server, true);
 	}
 	
 	// Here we check if some favorited / recents servers are offline or not
@@ -1544,8 +1511,7 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 	$scope.serversArray.forEach(server => {
 		server.id = server.server.ip + ':' + server.server.port;
 	});
-	$scope.onScroll();
-	if (type == 2) $scope.sortTable("recent", true, -1);
+	if (type == 2) $scope.sortTable("addTime", true, -1) ; else $scope.onScroll();
 }
 
 // Used to connect to the backend with ids
@@ -1613,160 +1579,12 @@ async function isLauncherConnected() {
 
 
 
-/**
-*
-*  Base64 encode / decode
-*  http://www.webtoolkit.info/javascript_base64.html
-*  https://stackoverflow.com/questions/23223718/failed-to-execute-btoa-on-window-the-string-to-be-encoded-contains-characte
-**/
+// Base64 encoding and decoding functions
 var Base64 = {
-
-    // private property
-    _keyStr: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
-
-    // public method for encoding
-    , encode: function (input)
-    {
-        var output = "";
-        var chr1, chr2, chr3, enc1, enc2, enc3, enc4;
-        var i = 0;
-
-        input = Base64._utf8_encode(input);
-
-        while (i < input.length)
-        {
-            chr1 = input.charCodeAt(i++);
-            chr2 = input.charCodeAt(i++);
-            chr3 = input.charCodeAt(i++);
-
-            enc1 = chr1 >> 2;
-            enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
-            enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
-            enc4 = chr3 & 63;
-
-            if (isNaN(chr2))
-            {
-                enc3 = enc4 = 64;
-            }
-            else if (isNaN(chr3))
-            {
-                enc4 = 64;
-            }
-
-            output = output +
-                this._keyStr.charAt(enc1) + this._keyStr.charAt(enc2) +
-                this._keyStr.charAt(enc3) + this._keyStr.charAt(enc4);
-        } // Whend 
-
-        return output;
-    } // End Function encode 
-
-
-    // public method for decoding
-    ,decode: function (input)
-    {
-        var output = "";
-        var chr1, chr2, chr3;
-        var enc1, enc2, enc3, enc4;
-        var i = 0;
-
-        input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
-        while (i < input.length)
-        {
-            enc1 = this._keyStr.indexOf(input.charAt(i++));
-            enc2 = this._keyStr.indexOf(input.charAt(i++));
-            enc3 = this._keyStr.indexOf(input.charAt(i++));
-            enc4 = this._keyStr.indexOf(input.charAt(i++));
-
-            chr1 = (enc1 << 2) | (enc2 >> 4);
-            chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
-            chr3 = ((enc3 & 3) << 6) | enc4;
-
-            output = output + String.fromCharCode(chr1);
-
-            if (enc3 != 64)
-            {
-                output = output + String.fromCharCode(chr2);
-            }
-
-            if (enc4 != 64)
-            {
-                output = output + String.fromCharCode(chr3);
-            }
-
-        } // Whend 
-
-        output = Base64._utf8_decode(output);
-
-        return output;
-    } // End Function decode 
-
-
-    // private method for UTF-8 encoding
-    ,_utf8_encode: function (string)
-    {
-        var utftext = "";
-        string = string.replace(/\r\n/g, "\n");
-
-        for (var n = 0; n < string.length; n++)
-        {
-            var c = string.charCodeAt(n);
-
-            if (c < 128)
-            {
-                utftext += String.fromCharCode(c);
-            }
-            else if ((c > 127) && (c < 2048))
-            {
-                utftext += String.fromCharCode((c >> 6) | 192);
-                utftext += String.fromCharCode((c & 63) | 128);
-            }
-            else
-            {
-                utftext += String.fromCharCode((c >> 12) | 224);
-                utftext += String.fromCharCode(((c >> 6) & 63) | 128);
-                utftext += String.fromCharCode((c & 63) | 128);
-            }
-
-        } // Next n 
-
-        return utftext;
-    } // End Function _utf8_encode 
-
-    // private method for UTF-8 decoding
-    ,_utf8_decode: function (utftext)
-    {
-        var string = "";
-        var i = 0;
-        var c, c1, c2, c3;
-        c = c1 = c2 = 0;
-
-        while (i < utftext.length)
-        {
-            c = utftext.charCodeAt(i);
-
-            if (c < 128)
-            {
-                string += String.fromCharCode(c);
-                i++;
-            }
-            else if ((c > 191) && (c < 224))
-            {
-                c2 = utftext.charCodeAt(i + 1);
-                string += String.fromCharCode(((c & 31) << 6) | (c2 & 63));
-                i += 2;
-            }
-            else
-            {
-                c2 = utftext.charCodeAt(i + 1);
-                c3 = utftext.charCodeAt(i + 2);
-                string += String.fromCharCode(((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
-                i += 3;
-            }
-
-        } // Whend 
-
-        return string;
-    } // End Function _utf8_decode 
-
-}
+    encode: function(input) {
+        return btoa(new TextEncoder().encode(input).reduce((data, byte) => data + String.fromCharCode(byte), ""));
+    },
+    decode: function(input) {
+        return new TextDecoder().decode(Uint8Array.from(atob(input), c => c.charCodeAt(0)));
+    }
+};

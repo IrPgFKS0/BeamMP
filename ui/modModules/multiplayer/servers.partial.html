@@ -127,10 +127,10 @@
 					<td class="loading-shimmer" colspan="4"></td>
 				</tr>	
     			<tr ng-style="{'height': beforeHeight + 'px'}"></tr>
-
+				<tr ng-style="{'height': beforeInfoRowHeight + 'px'}" ></tr>
 				<tr class="server-item" ng-repeat-start="server in visibleServers track by server.server.ip + ':' + server.server.port" ng-show="serversTable" ng-click="selectServer(server)" ng-class="{'highlight': server.server.ip + ':' + server.server.port === selectedServerId}">
 					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" class="server-flag" style="font-size: initial; padding-left: 3px; text-align: right; padding-right: 10px" ><img ng-src="local://local/ui/modModules/multiplayer/flags/{{server.server.location.toLowerCase()}}.png" class="flag"></img> {{server.server.location}}</td>
-					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" class="server-servername" ng-bind-html="formatServerName(server.name)" ></td>
+					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" class="server-servername" ng-bind-html="formatCodes(server.name)" ></td>
 					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" class="server-mapname" style="font-size: initial">{{SmoothMapName(server.server.map)}}</td>
 					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" class="server-maxplayers" style="font-size: initial">{{server.server.players}}/{{server.server.maxplayers}}</td>
 				</tr>
@@ -143,7 +143,7 @@
 								alt="Official Server"
 								ng-style="{'height': '23px', 'padding-right': '10px'}">
 								<span ng-if="server.server.official">[Official Server]</span>
-								<span ng-bind-html="formatServerName(server.server.sname)" style="font-size:22px; margin-left:5px"></span>
+								<span ng-bind-html="formatCodes(server.server.sname)" style="font-size:22px; margin-left:5px"></span>
 							</h1>
 							<div class="row">
 							<div class="col">
@@ -151,7 +151,7 @@
 									<tr><td>Owner:</td><td>{{server.server.owner|| ""}}</td></tr>
 									<tr><td>Map:</td><td>{{SmoothMapName(server.server.map || "")}}</td></tr>
 									<tr><td>Players:</td><td>{{server.server.players|| ""}}/{{server.server.maxplayers|| ""}}</td></tr>
-									<tr><td valign="top">Description:</td><td ng-bind-html="formatDescriptionName(server.server.sdesc|| '')"></td></tr>
+									<tr><td valign="top">Description:</td><td ng-bind-html="formatCodes(server.server.sdesc|| '')"></td></tr>
 								</table>
 							</div>
 							<div class="col">
@@ -163,7 +163,7 @@
 							</div>
 						</div>
 						<div class="row" style="padding-left: 10px;" ng-switch="server.isFavorite">
-							<md-button id="serverconnect-button" class="button servers-button md-button md-default-theme" ng-class="" ng-click="connect(server.server.ip, server.server.port, server.server.strippedName, server.server.official)" style="margin-left: 10px;">Connect</md-button>
+							<md-button id="serverconnect-button" class="button servers-button md-button md-default-theme" ng-class="" ng-click="connect(server.server.ip, server.server.port, server.name, server.server.official)" style="margin-left: 10px;">Connect</md-button>
 							<div ng-switch-when="true">
 								<md-button id="removeFav-button" class="button servers-button md-button md-default-theme" ng-class="" ng-click="removeFav(server.server)" style="margin-left: 10px; background-color: #FF6961;">Remove Favorite</md-button>
 							</div>
@@ -177,7 +177,7 @@
 						</div>
 					</td>
 				</tr>
-
+				<tr ng-style="{'height': afterInfoRowHeight + 'px'}" ></tr>
     			<tr ng-style="{'height': afterHeight + 'px'}"></tr>
 			</tbody>
 		</table>

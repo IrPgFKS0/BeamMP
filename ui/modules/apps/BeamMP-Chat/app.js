@@ -8,7 +8,7 @@ let lastSentMessage = "";
 
 let lastMsgId = 0;
 let newChatMenu = false;
-
+import('/ui/lib/ext/purify.min.js')
 app.directive('multiplayerchat', [function () {
 	return {
 		templateUrl: '/ui/modules/apps/BeamMP-Chat/app.html',
@@ -239,64 +239,81 @@ async function showChat() {
 // -------------------------------------------- CHAT FADING -------------------------------------------- //
 
 // -------------------------------------------- MESSAGE FORMATTING -------------------------------------------- //
-function applyCode(string, codes) {
-	var elem = document.createElement("span");
-	elem.style.fontSize = "initial";
-	string = string.replace(/\x00*/g, "");
-	for (var i = 0, len = codes.length; i < len; i++) {
-		elem.style.cssText += serverStyleMap[codes[i]] + ";";
-	}
-	elem.innerHTML = string;
-	return elem;
+
+
+function formatChatMessage(string) {
+    const blockedTags = new Set(['script', 'iframe', 'form', 'input', 'button', 'a']);
+    
+    const dangerousAttributePattern = /^(?:on.*|(?:form).*|action)$/i;
+
+    function isSafeHtml(html) {
+        const div = document.createElement('div');
+        div.innerHTML = html;
+        
+        const elements = div.getElementsByTagName('*');
+        for (let element of elements) {
+            if (blockedTags.has(element.tagName.toLowerCase())) {
+                return false;
+            }
+            
+            for (let attr of element.attributes) {
+                if (dangerousAttributePattern.test(attr.name) || 
+                    /javascript:|data:/i.test(attr.value)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    if (string.startsWith("Server: ")) {
+        const messageContent = string.substring(8);
+        if (messageContent.includes('<') && messageContent.includes('>')) {
+            if (isSafeHtml(messageContent)) {
+                return "Server: " + messageContent;
+            }
+        }
+    }
+
+    let result = '';
+    let currentText = '';
+    let classes = new Set();
+
+    string = DOMPurify.sanitize(string);
+    const tokens = string.split(/(\^.)/g);
+
+    const flush = () => {
+        if (!currentText) return;
+        const classList = Array.from(classes);
+        result += classList.length
+            ? `<span class="${classList.join(' ')}">${currentText}</span>`
+            : currentText;
+        currentText = '';
+    };
+
+    for (const token of tokens) {
+        if (/^\^.$/.test(token)) {
+            flush();
+            if (token === '^r') {
+                classes.clear();
+            } else {
+                const cls = globalThis.serverStyleMap?.[token];
+                if (cls?.startsWith('color-')) {
+                    [...classes].forEach(c => c.startsWith('color-') && classes.delete(c));
+                    classes.add(cls);
+                } else if (cls) {
+                    classes.add(cls);
+                }
+            }
+        } else {
+            currentText += token;
+        }
+    }
+
+    flush();
+    return result;
 }
 
-function formatRichString(string) {
-	let tempAreaElement = document.createElement('div');
-	tempAreaElement.setAttribute("id", "TEMPAREA");
-
-	var codes = string.match(/\^.{1}/g) || [],
-		indexes = [],
-		apply = [],
-		tmpStr,
-		deltaIndex,
-		noCode,
-		final = document.createDocumentFragment(),
-		i;
-
-	for (i = 0, len = codes.length; i < len; i++) {
-		indexes.push(string.indexOf(codes[i]));
-		string = string.replace(codes[i], "\x00\x00");
-	}
-
-	if (indexes[0] !== 0) {
-		final.appendChild(applyCode(string.substring(0, indexes[0]), []));
-	}
-
-	for (i = 0; i < len; i++) {
-		indexDelta = indexes[i + 1] - indexes[i];
-		if (indexDelta === 2) {
-			while (indexDelta === 2) {
-				apply.push(codes[i]);
-				i++;
-				indexDelta = indexes[i + 1] - indexes[i];
-			}
-			apply.push(codes[i]);
-		} else {
-			apply.push(codes[i]);
-		}
-		if (apply.lastIndexOf("^r") > -1) {
-			apply = apply.slice(apply.lastIndexOf("^r") + 1);
-		}
-		tmpStr = string.substring(indexes[i], indexes[i + 1]);
-		final.appendChild(applyCode(tmpStr, apply));
-  }
-  tempAreaElement.innerHTML = final;
-  var innerHTML = [...final.childNodes].map((n) => n.outerHTML).join("\n");
-
-  tempAreaElement = undefined;
-
-  return innerHTML;
-}
 // -------------------------------------------- MESSAGE FORMATTING -------------------------------------------- //
 
 function storeChatMessage(message) {
@@ -373,7 +390,7 @@ function addMessage(msg, time = null) {
 	// check if this message is a server message before
 	// doing rich formatting
 	if (msgText.startsWith("Server: ")) {
-		const formattedInnerHtml = formatRichString(msgText);
+		const formattedInnerHtml = formatChatMessage(msgText);
 		chatMessageNode.innerHTML = chatMessageNode.innerHTML + formattedInnerHtml;
 	} else {
 		const textNode = document.createTextNode(msgText);

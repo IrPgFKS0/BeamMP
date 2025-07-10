@@ -5,7 +5,7 @@
 var app = angular.module('beamng.apps');
 var mdDialog;
 var mdDialogVisible = false;
-
+import('/ui/lib/ext/purify.min.js')
 app.directive('multiplayersession', [function () {
 	return {
 		templateUrl: '/ui/modules/apps/BeamMP-Session/app.html',
@@ -93,10 +93,22 @@ app.controller("Session", ['$scope', '$mdDialog', function ($scope, $mdDialog) {
 
 	$scope.$on('setServerName', function (event, data) {
 		//console.log('Setting status to: ' + sanitizeString(status))
-		if (!data) document.getElementById("server-name-block").style.display = "none";
+		const block = document.getElementById('server-name-block');
+
+		if (!data) block.style.display = "none";
 		else {
-			document.getElementById("server-name-block").style.display = "";
-			document.getElementById("Session-Status").innerHTML = sanitizeString(data); // DISPLAY SERVER NAME FORMATTING
+			block.style.display = "";
+			const marquee = block.querySelector('.marquee');
+			let sessionStatus = document.getElementsByClassName("session-status");
+			for (let i = 0; i < sessionStatus.length; i++) {
+				sessionStatus[i].innerHTML = formatServerName(data); // DISPLAY SERVER NAME FORMATTING
+				if (isMarqueeNeeded(sessionStatus[i])) {
+					marquee.classList.add('activate-marquee');
+				} else {
+					marquee.classList.remove('activate-marquee');
+					break;
+				}
+			}
 		}
 	});
 
@@ -105,10 +117,51 @@ app.controller("Session", ['$scope', '$mdDialog', function ($scope, $mdDialog) {
 	});
 }]);
 
-function sanitizeString(str) {  // VERY basic sanitization.
-	str = str.replace(/<script.*?<\/script>/g, '');
-	str = str.replace(/<button.*?<\/button>/g, '');
-	str = str.replace(/<iframe.*?<\/iframe>/g, '');
-	str = str.replace(/<a.*?<\/a>/g, '');
-    return str
+
+
+function formatServerName(string) {
+    let result = '';
+    let currentText = '';
+    let classes = new Set();
+
+	string = DOMPurify.sanitize(string);
+
+    const tokens = string.split(/(\^.)/g);
+
+    const flush = () => {
+        if (!currentText) return;
+        const classList = Array.from(classes);
+        result += classList.length
+            ? `<span class="${classList.join(' ')}">${currentText}</span>`
+            : currentText;
+        currentText = '';
+    };
+
+    for (const token of tokens) {
+        if (/^\^.$/.test(token)) {
+            flush();
+            if (token === '^r') {
+                classes.clear();
+            } else {
+                const cls = globalThis.serverStyleMap?.[token];
+                if (cls?.startsWith('color-')) {
+                    [...classes].forEach(c => c.startsWith('color-') && classes.delete(c));
+                    classes.add(cls);
+                } else if (cls) {
+                    classes.add(cls);
+                }
+            }
+        } else {
+            currentText += token;
+        }
+    }
+
+    flush();
+    return result;
 }
+
+function isMarqueeNeeded(element) {
+	const block = document.getElementById('server-name-block');
+    return element.offsetWidth > block.getBoundingClientRect().width;
+}
+
