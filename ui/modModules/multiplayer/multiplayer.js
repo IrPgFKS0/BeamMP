@@ -1329,7 +1329,7 @@ function addFav(server, isUpdate) {
         fav.ip === server.ip && fav.port === server.port
     );
 	if (!exists) {
-		server.addTime = Date.now();
+		server["addTime"] = Date.now();
 		favorites.push(server);
 		saveFav();
 		if (!isUpdate) bngApi.engineLua('MPCoreNetwork.requestServerList()');
@@ -1379,7 +1379,10 @@ function getRecents() {
 }
 
 function addRecent(server) { // has to have name, ip, port
-	server.addTime = Date.now();
+	server["addTime"] = Date.now();
+	recents = recents.filter(rec => 
+        !(rec.ip === server.ip && rec.port === server.port)
+    );	// Remove server and add it back
 	recents.push(server);
 	recents = recents.slice(-1 * 50); //keep the last 50 entries
 	localStorage.setItem("recents", Base64.encode(JSON.stringify(recents)));
@@ -1444,7 +1447,10 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 		if (type == 1 && !isFavorite) continue; // If it's favorite tab, we only show favorites
 
 		// Recents
-		for (let tmpServer of recents) if (tmpServer.ip == server.ip && tmpServer.port == server.port) isRecent = true;
+		for (let tmpServer of recents) if (tmpServer.ip == server.ip && tmpServer.port == server.port) {
+			isRecent = true; 
+			server.addTime = tmpServer.addTime;
+		}
 		if (type == 2 && !isRecent) continue; // Everything happens underneath for recents
 
 		// If the server passed the filter
@@ -1454,8 +1460,6 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 			return $scope.serversTable[key];
 		});
 
-		if (isFavorite) addFav(server, true);
-		if (isRecent) addRecent(server);
 	}
 	
 	// Here we check if some favorited / recents servers are offline or not
