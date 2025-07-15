@@ -21,6 +21,7 @@ local ltn12 = require("ltn12")
 local launcherConnected = false
 local isConnecting = false
 local proxyPort = ""
+local socketPartialData
 local launcherVersion = "" -- used only for the server list
 local modVersion = "4.16.0" -- the mod version
 -- server
@@ -120,6 +121,7 @@ local function connectToLauncher(silent)
 	isConnecting = true
 	if not silent then log('W', 'connectToLauncher', "connectToLauncher called! Current connection status: "..tostring(launcherConnected)) end
 	if not launcherConnected and not mp_core then
+		socketPartialData = nil
 		TCPLauncherSocket = socket.tcp()
 		TCPLauncherSocket:setoption("keepalive", true) -- Keepalive to avoid connection closing too quickly
 		TCPLauncherSocket:settimeout(0) -- Set timeout to 0 to avoid freezing
@@ -142,6 +144,7 @@ local function disconnectLauncher(reconnect)
 		TCPLauncherSocket:close()
 		launcherConnected = false
 		isGoingMpSession = false
+		socketPartialData = nil
 	end
 	if reconnect then connectToLauncher() end
 end
@@ -628,7 +631,8 @@ local function onUpdate(dt)
 
 		if TCPLauncherSocket ~= nop then
 			while(true) do
-				local received, stat, partial = TCPLauncherSocket:receive()
+				local received, stat, partial = TCPLauncherSocket:receive('*l', socketPartialData)
+				socketPartialData = partial
 				if not received or received:len() == 0 then
 					break
 				end

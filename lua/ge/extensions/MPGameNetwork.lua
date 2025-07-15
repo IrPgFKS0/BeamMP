@@ -17,6 +17,7 @@ local socket = require('socket')
 local TCPLauncherSocket = nop
 local launcherConnected = false
 local isConnecting = false
+local socketPartialData
 
 --[[ Format
 	["eventname"] = table
@@ -53,6 +54,7 @@ local function connectToLauncher()
 	log('M', 'connectToLauncher', "Connecting MPGameNetwork!")
 	if not launcherConnected then
 		isConnecting = true
+		socketPartialData = nil
 		TCPLauncherSocket = socket.tcp()
 		TCPLauncherSocket:setoption("keepalive", true)
 		TCPLauncherSocket:settimeout(0) -- Set timeout to 0 to avoid freezing
@@ -74,6 +76,7 @@ local function disconnectLauncher()
 	if launcherConnected then
 		TCPLauncherSocket:close()
 		launcherConnected = false
+		socketPartialData = nil
 	end
 end
 
@@ -478,7 +481,8 @@ local function onUpdate(dt)
 	if launcherConnected then
 		if TCPLauncherSocket ~= nop then
 			while(true) do
-				local received, status, partial = TCPLauncherSocket:receive() -- Receive data
+				local received, status, partial = TCPLauncherSocket:receive('*l', socketPartialData) -- Receive data
+				socketPartialData = partial
 				if received == nil or received == "" then break end
 
 				if settings.getValue("showDebugOutput") == true then
