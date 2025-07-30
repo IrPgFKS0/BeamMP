@@ -217,6 +217,7 @@ local disallowedKeys = {
 	["engineRunning"] = 1, -- engine and ignition is synced in MPPowertrainVE
 	["ignition"] = 1,
 	["ignitionLevel"] = 1,
+	["postCrashBrakeTriggered"] = 1,
 	---modded vehicles --
 	-- me262 plane ------
 	["inst_pitch"] = 1,
