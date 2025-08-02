@@ -41,7 +41,7 @@ app.controller("Session", ['$scope', '$mdDialog', function ($scope, $mdDialog) {
 		bngApi.engineLua('setCEFFocus(true)');
 	};
 
-$scope.$on('showMdDialog', function (event, data) {
+	$scope.$on('showMdDialog', function (event, data) {
 		switch (data.dialogtype) {
 			case "alert":
 				if (mdDialogVisible) { return; }
@@ -67,19 +67,18 @@ $scope.$on('showMdDialog', function (event, data) {
 					controller: function ($scope, $mdDialog) {
 						$scope.close = function () {
 							$mdDialog.hide();
+							mdDialogVisible = false;
+
+							if (data.okJS !== undefined) {
+								eval(data.okJS);
+								return;
+							} else if (data.okLua !== undefined) {
+								bngApi.engineLua(data.okLua);
+								return;
+							}
 						};
 					}
 				}).then(function () {
-					mdDialogVisible = false;
-
-					if (data.okJS !== undefined) {
-						eval(data.okJS);
-						return;
-					} else if (data.okLua !== undefined) {
-						bngApi.engineLua(data.okLua);
-						return;
-					}
-				}, function () {
 					mdDialogVisible = false;
 				});
 

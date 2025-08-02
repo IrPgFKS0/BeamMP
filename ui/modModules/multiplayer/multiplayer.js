@@ -567,19 +567,18 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 					controller: function ($scope, $mdDialog) {
 						$scope.close = function () {
 							$mdDialog.hide();
+							mdDialogVisible = false;
+
+							if (data.okJS !== undefined) {
+								eval(data.okJS);
+								return;
+							} else if (data.okLua !== undefined) {
+								bngApi.engineLua(data.okLua);
+								return;
+							}
 						};
 					}
 				}).then(function () {
-					mdDialogVisible = false;
-
-					if (data.okJS !== undefined) {
-						eval(data.okJS);
-						return;
-					} else if (data.okLua !== undefined) {
-						bngApi.engineLua(data.okLua);
-						return;
-					}
-				}, function () {
 					mdDialogVisible = false;
 				});
 
