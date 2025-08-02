@@ -92,20 +92,27 @@ local function receiveTwoStep(data)
 	end
 end
 
---postCrashBrake
-local postCrashBrakeTriggered = 0
-local function postCrashBrakeRemoteUpdateGFX(controllerName, funcName, tempTable, ...)
-	if postCrashBrakeTriggered ~= electrics.values.postCrashBrakeTriggered then
-		postCrashBrakeTriggered = electrics.values.postCrashBrakeTriggered
-		if electrics.values.postCrashBrakeTriggered == 1 then
-			guihooks.message("Impact detected, stopping car...", 10, "vehicle.postCrashBrake.impact")
+-- postCrashBrake
+local lastPostCrashBrakeTriggered
+
+local function postCrashBrakeOwnerUpdateGFX(controllerName, funcName, tempTable, ...)
+	controllerSyncVE.OGcontrollerFunctionsTable[controllerName][funcName](...)
+	if electrics.values.postCrashBrakeTriggered == 1 then
+		if electrics.values.postCrashBrakeTriggered ~= lastPostCrashBrakeTriggered then
+			tempTable.variables = electrics.values.postCrashBrakeTriggered and 1 or 0
+			controllerSyncVE.sendControllerData(tempTable)
 		end
 	end
+	lastPostCrashBrakeTriggered = electrics.values.postCrashBrakeTriggered
 end
 
-local function postCrashBrakeinit(controllerName, funcName, tempTable, ...)
-	controllerSyncVE.OGcontrollerFunctionsTable[controllerName][funcName](...)
-	electrics.values.postCrashBrakeTriggered = 0 -- postCrashBrakeinit set's the electric to nil which beamMP doesn't detect, so to fix that i set it to 0
+local function receivePostCrashBrake(data)
+	if data.variables == 1 then
+		guihooks.message("Impact detected, stopping car...", 10, "vehicle.postCrashBrake.impact")
+		electrics.values.postCrashBrakeTriggered = 1
+	else
+		electrics.values.postCrashBrakeTriggered = nil
+	end
 end
 
 -- jato
@@ -212,13 +219,11 @@ local includedControllerTypes = {
 	},
 
 	["postCrashBrake"] = {
-		["updateGFX"] = { -- disables postCrashBrake on remote vehicles by replacing the function with an empty one
-			remoteOnly = true, -- so it only runs on remote vehicles so we don't send DT every frame :P
-			remoteFunction = postCrashBrakeRemoteUpdateGFX, -- makes the impact detected message still show when the owner vehicle crashes
+		["updateGFX"] = {
+			remoteFunction = nop, -- disables postCrashBrake on remote vehicles
+			ownerFunction = postCrashBrakeOwnerUpdateGFX,
+			receiveFunction = receivePostCrashBrake,
 		},
-		["init"] = {
-			ownerFunction = postCrashBrakeinit --hooks into init to set the electric to 0 instead of nil, this is so BeamMP picks up the change
-		}
 	},
 
 	["rollover"] = {
