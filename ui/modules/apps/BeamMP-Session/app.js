@@ -58,6 +58,7 @@ app.controller("Session", ['$scope', '$mdDialog', function ($scope, $mdDialog) {
         ${data.text}
       </div>
       <div style="display: flex; justify-content: flex-end;">
+		<md-button ng-click="continueOffline()" class="md-primary" style="color: white;">Continue offline</md-button>
         <md-button ng-click="close()" class="md-primary" style="color: white;">
           ${data.okText}
         </md-button>
@@ -76,6 +77,10 @@ app.controller("Session", ['$scope', '$mdDialog', function ($scope, $mdDialog) {
 								bngApi.engineLua(data.okLua);
 								return;
 							}
+						};
+						$scope.continueOffline = function () {
+							$mdDialog.hide();
+							mdDialogVisible = false;
 						};
 					}
 				}).then(function () {
