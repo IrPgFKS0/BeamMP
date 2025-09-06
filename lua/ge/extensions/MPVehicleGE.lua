@@ -1903,22 +1903,41 @@ local function onServerCameraSwitched(playerID, serverVehicleID)
 end
 
 local function onServerVehicleColorChanged(serverVehicleID, data)
-	local gameVehicleID = getGameVehicleID(serverVehicleID) -- Get game ID
-	local vehicle = getVehicleByGameID(gameVehicleID) -- get vehicle table for this vehicle
-	if vehicle and vehicle.serverVehicleString and not vehicle.isLocal and not vehicle.editQueue then -- If serverVehicleID not null and not player own vehicle
-		if gameVehicleID then
-			local veh = be:getObjectByID(gameVehicleID) -- Get associated vehicle
-			if veh then
-				local paint = jsonDecode(data) -- Decoded data
-				if paint then -- if there's paint data
-					veh:queueLuaCommand("extensions.hook(\"onBeamMPVehicleColorChange\")")
-					for k, v in pairs(paint) do -- apply paint
-						extensions.core_vehicle_manager.liveUpdateVehicleColors(gameVehicleID, veh, k, v)
-					end
-				end
-			end
-		end
-	end
+    local gameVehicleID = getGameVehicleID(serverVehicleID) -- Get game ID
+    local vehicle = getVehicleByServerID(serverVehicleID) -- get vehicle table for this vehicle
+
+    if vehicle and vehicle.serverVehicleString and not vehicle.isLocal then -- If serverVehicleID not null and not player own vehicle
+        if gameVehicleID and gameVehicleID ~= -1 and not vehicle.editQueue then
+            local veh = be:getObjectByID(gameVehicleID) -- Get associated vehicle
+            if veh then
+                local paint = jsonDecode(data) -- Decoded data
+                if paint then -- if there's paint data
+                    veh:queueLuaCommand("extensions.hook(\"onBeamMPVehicleColorChange\")")
+                    for k, v in pairs(paint) do -- apply paint
+                        extensions.core_vehicle_manager.liveUpdateVehicleColors(gameVehicleID, veh, k, v)
+                    end
+                    local newConfig = extensions.core_vehicle_manager.getVehicleData(gameVehicleID).config
+                newConfig.paints = paint
+
+                veh:setField('partConfig', '', serialize(newConfig))
+                end
+            end
+        elseif vehicle.spawnQueue then
+            local decodedData = jsonDecode(vehicle.spawnQueue.data)
+            decodedData.vcf.paints = jsonDecode(data)
+            vehicle.spawnQueue.data = jsonEncode(decodedData)
+        elseif vehicle.editQueue then
+            local decodedData = jsonDecode(vehicle.editQueue)
+            decodedData.vcf.paints = jsonDecode(data)
+            vehicle.editQueue = jsonEncode(decodedData)
+        end
+
+        local deletedVehicleData = players_vehicle_configs[serverVehicleID]
+        if deletedVehicleData and deletedVehicleData.vcf then
+            local paint = jsonDecode(data)
+            players_vehicle_configs[serverVehicleID].vcf.paints = paint
+        end
+    end
 end
 
 local HandleNetwork = {
