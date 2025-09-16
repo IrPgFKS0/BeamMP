@@ -14,7 +14,7 @@ local M = {}
 local chatWindow = require("multiplayer.ui.chat")
 local optionsWindow = require("multiplayer.ui.options")
 local playerListWindow = require("multiplayer.ui.playerList")
-require('/common/extensions/ui/flowgraph/editor_api')(M)
+require('/common/extensions/ui/flowgraph/editor_api_luaintf')(M)
 local gui_module = require("ge/extensions/editor/api/gui")
 local gui = {setupEditorGuiTheme = nop}
 local imgui = ui_imgui
