@@ -23,7 +23,7 @@ local isConnecting = false
 local proxyPort = ""
 local socketPartialData
 local launcherVersion = "" -- used only for the server list
-local modVersion = "4.17.1" -- the mod version
+local modVersion = "4.18.0" -- the mod version
 -- server
 
 local serverList -- server list JSON
