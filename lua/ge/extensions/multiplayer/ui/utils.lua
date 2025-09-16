@@ -20,10 +20,10 @@ local imgui = ui_imgui
 --- @param hoveredColor table (optional) The color of the button when hovered. Defaults to the ImGui hovered button color.
 --- @return boolean Returns true if the button was clicked, false otherwise.
 M.imageButton = function(texID, size, color, activeColor, hoveredColor)
-    local colors = imgui.GetStyle().Colors
-    color = color or colors[imgui.Col_Button]
-    activeColor = activeColor or colors[imgui.Col_ButtonActive]
-    hoveredColor = hoveredColor or colors[imgui.Col_ButtonHovered]
+    --local colors = imgui.GetStyle()[1].Colors
+    color = color or imgui.GetStyleColorVec4(imgui.Col_Button)
+    activeColor = activeColor or imgui.GetStyleColorVec4(imgui.Col_ButtonActive)
+    hoveredColor = hoveredColor or imgui.GetStyleColorVec4(imgui.Col_ButtonHovered)
 
     -- Remove background
     imgui.PushStyleColor2(imgui.Col_Button, imgui.ImVec4(0, 0, 0, 0))
