@@ -160,7 +160,6 @@ end
 -- storeState stores the incoming data and then if the remote car was reset locally for whatever reason it reapplies the state
 
 local includedControllerTypes = {
-
 	["axleLift"] = {
 		["setMode"] = {
 			storeState = true
@@ -231,13 +230,13 @@ local includedControllerTypes = {
 		["prepare"] = {}
 	},
 
-	["spinner"] = {
+	--[[["spinner"] = {
 		["toggleDirection"] = {
 			ownerFunction = toggleDirection,
 			receiveFunction = receiveToggleDirection,
 			storeState = true
 		}
-	},
+	},]]
 
 	["tirePressureControl"] = {
 		["toggleGroupState"] = {
@@ -263,7 +262,24 @@ local includedControllerTypes = {
 			ownerFunction = TwoStep,
 			receiveFunction = receiveTwoStep
 		}
-	}
+	},
+
+	["hamster_wheel"] = {
+    ["setTargetRPMRatioIncrease"] = {},
+    ["setTargetRPMRatioDecrease"] = {},
+    ["setTargetRPMRatio"] = {}
+  },
+
+	["spinner"] = {
+    ["setTargetRPMRatioIncrease"] = {},
+    ["setTargetRPMRatioDecrease"] = {},
+    ["setTargetRPMRatio"] = {}
+  },
+
+	["large_roller"] = {
+    ["setTargetThrottle"] = {},
+    ["setRollerHeight"] = {}
+  }
 }
 
 local function onReset()
