@@ -2246,6 +2246,9 @@ end
 
 local function onPreRender(dt)
 	if MPGameNetwork and MPGameNetwork.launcherConnected() then
+		local blobColorQueued = MPHelpers.hex2rgb(settings.getValue("blobColorQueued"))
+		local blobColorIllegal = MPHelpers.hex2rgb(settings.getValue("blobColorIllegal"))
+		local blobColorDeleted = MPHelpers.hex2rgb(settings.getValue("blobColorDeleted"))
 
 		-- get current vehicle ID and position
 		local activeVeh = be:getPlayerVehicle(0)
@@ -2353,15 +2356,15 @@ local function onPreRender(dt)
 
 				if v.spawnQueue then -- in queue
 					if settingsCache.showBlobQueued then
-						colors = MPHelpers.hex2rgb(settings.getValue("blobColorQueued"))
+						colors = blobColorQueued
 					end
 				elseif v.isIllegal then -- illegal (modded)
 					if settingsCache.showBlobIllegal then
-						colors = MPHelpers.hex2rgb(settings.getValue("blobColorIllegal"))
+						colors = blobColorIllegal
 					end
 				elseif v.isDeleted then
 					if settingsCache.showBlobDeleted then
-						colors = MPHelpers.hex2rgb(settings.getValue("blobColorDeleted"))
+						colors = blobColorDeleted
 					end
 				else
 					colors = { 1, 0, 1 }
