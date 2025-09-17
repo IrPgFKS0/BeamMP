@@ -32,6 +32,10 @@ local original_spawnNewVehicle
 local original_replaceVehicle
 local original_spawnDefault
 
+-- the debugDrawer functions without draw in the name calls FFI directly, these runs a lot faster and produces no garbage,
+-- however it requires xyz to be input independently, check lua\common\utils\debugDraw.lua to see the available functions
+local debugDrawer2 = require("utils/debugDraw")
+local drawTextAdvanced = debugDrawer2.TextAdvanced
 
 --- Contains Information about Backend authorized Roles
 -- @table roleToInfo
@@ -2434,7 +2438,7 @@ local function onPreRender(dt)
 				local name = v.customName or ownerName
 
 				local tag = settings.getValue("shortenNametags") and roleInfo.shorttag or roleInfo.tag
-				local backColor = ColorI(roleInfo.backcolor.r, roleInfo.backcolor.g, roleInfo.backcolor.b, math.floor(nametagAlpha*127))
+				local backColor = color(roleInfo.backcolor.r, roleInfo.backcolor.g, roleInfo.backcolor.b, math.floor(nametagAlpha*127))
 
 				local prefix = ""
 				for source, tag in pairs(owner.nickPrefixes)
@@ -2461,24 +2465,32 @@ local function onPreRender(dt)
 					if spectators ~= "" then
 						local spectatorBackColor = backColor
 						if settings.getValue("spectatorUnifiedColors") then
-							spectatorBackColor = ColorI(roleToInfo.USER.backcolor.r, roleToInfo.USER.backcolor.g, roleToInfo.USER.backcolor.b, math.floor(nametagAlpha*127))
+							spectatorBackColor = color(roleToInfo.USER.backcolor.r, roleToInfo.USER.backcolor.g, roleToInfo.USER.backcolor.b, math.floor(nametagAlpha*127))
 						end
-						debugDrawer:drawTextAdvanced(
-							pos, -- Location
+						drawTextAdvanced(
+							pos.x, pos.y, pos.z, -- Location
 							String(" ".. spectators .." "), -- Text
-							ColorF(1, 1, 1, nametagAlpha), true, false, -- Foreground Color / Draw background / Wtf
-							spectatorBackColor) -- Background Color
+							color(255, 255, 255, nametagAlpha*254), -- Foreground Color, Alpha is multiplied by 254 because using 255 seems to break backround alpha in 0.37
+							true, -- Draw background 
+							false, -- Wtf
+							spectatorBackColor, -- Background Color
+							false, -- shadow
+							settings.getValue("nameTagsHideBehindObjects") -- useZ, makes it render behind objects if true
+						)
 
 						pos.z = pos.z + 0.01 -- has to be positive
 					end
 				end
-
 				-- draw main nametag
-				debugDrawer:drawTextAdvanced(
-					pos, -- Location
+				drawTextAdvanced(
+					pos.x, pos.y, pos.z, -- Location
 					String(" " .. table.concat({prefix, name, suffix, tag, dist}) .. " "), -- Text
-					ColorF(1, 1, 1, nametagAlpha), true, false, -- Foreground Color / Draw background / Wtf
-					backColor -- Background Color
+					color(255, 255, 255, nametagAlpha*254), -- Foreground Color, Alpha is multiplied by 254 because using 255 seems to break backround alpha in 0.37
+					true, -- Draw background 
+					false, -- Wtf
+					backColor, -- Background Color
+					false, -- shadow
+					settings.getValue("nameTagsHideBehindObjects") -- useZ, makes it render behind objects if true
 				)
 			end
 			:: skip_vehicle ::
