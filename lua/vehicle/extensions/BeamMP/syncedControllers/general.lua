@@ -205,6 +205,12 @@ local includedControllerTypes = {
 		["moveFeet"] = {}
 	},
 
+	["hydraulics/closedLoopLinearControl"] = {
+		["setCylinderTargetExtendPercent"] = {
+			compare = true,
+		}
+	},
+
 	["jato"] = {
 		["updateGFX"] = {
 			remoteOnly = true,
@@ -249,7 +255,7 @@ local includedControllerTypes = {
 			ownerFunction = TwoStep,
 			receiveFunction = receiveTwoStep
 		}
-	},
+	}
 }
 
 local function onReset()
