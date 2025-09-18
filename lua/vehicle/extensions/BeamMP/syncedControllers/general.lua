@@ -225,19 +225,6 @@ local includedControllerTypes = {
 		},
 	},
 
-	["rollover"] = {
-		["cycle"] = {},
-		["prepare"] = {}
-	},
-
-	--[[["spinner"] = {
-		["toggleDirection"] = {
-			ownerFunction = toggleDirection,
-			receiveFunction = receiveToggleDirection,
-			storeState = true
-		}
-	},]]
-
 	["tirePressureControl"] = {
 		["toggleGroupState"] = {
 			ownerFunction = toggleGroupState
@@ -263,23 +250,6 @@ local includedControllerTypes = {
 			receiveFunction = receiveTwoStep
 		}
 	},
-
-	["hamster_wheel"] = {
-    ["setTargetRPMRatioIncrease"] = {},
-    ["setTargetRPMRatioDecrease"] = {},
-    ["setTargetRPMRatio"] = {}
-  },
-
-	["spinner"] = {
-    ["setTargetRPMRatioIncrease"] = {},
-    ["setTargetRPMRatioDecrease"] = {},
-    ["setTargetRPMRatio"] = {}
-  },
-
-	["large_roller"] = {
-    ["setTargetThrottle"] = {},
-    ["setRollerHeight"] = {}
-  }
 }
 
 local function onReset()
