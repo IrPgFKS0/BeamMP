@@ -32,10 +32,13 @@ local original_spawnNewVehicle
 local original_replaceVehicle
 local original_spawnDefault
 
--- the debugDrawer functions without draw in the name calls FFI directly, these runs a lot faster and produces no garbage,
--- however it requires xyz to be input independently, check lua\common\utils\debugDraw.lua to see the available functions
-local debugDrawer2 = require("utils/debugDraw")
-local drawTextAdvanced = debugDrawer2.TextAdvanced
+local ffiFound = false
+if ffi and ffi.C then
+	ffiFound = true
+end
+
+-- debug drawers, using the FFI functions for debugDraw is a lot faster and produces no garbage
+local drawTextAdvanced = ffiFound and ffi.C.BNG_DBG_DRAW_TextAdvanced or nop
 
 --- Contains Information about Backend authorized Roles
 -- @table roleToInfo
