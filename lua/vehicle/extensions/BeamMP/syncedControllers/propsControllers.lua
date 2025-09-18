@@ -6,6 +6,29 @@ local M = {}
 
 -- Custom functions
 
+--kickplate
+
+local function changePowerLevel(controllerName, funcName, tempTable, ...)
+    local powerIncrease = ...
+    if powerIncrease and electrics.values.kickplatePowerLevel then
+        controller.getControllerSafe("kickplate").setPowerLevel(electrics.values.kickplatePowerLevel + powerIncrease)
+    end
+end
+
+-- spikestrips
+
+local function prepareID(controllerName, funcName, tempTable, ...)
+	tempTable["vehID"] = ...
+	controllerSyncVE.sendControllerData(tempTable)
+	return controllerSyncVE.OGcontrollerFunctionsTable[controllerName][funcName](...)
+end
+
+local function receiveID(data)
+    if data.vehID then
+        controllerSyncVE.OGcontrollerFunctionsTable[data.controllerName][data.functionName](data.vehID)
+    end
+end
+
 -- compare set to true only sends data when there is a change
 -- compare set to false sends the data every time the function is called
 -- adding ownerFunction and/or receiveFunction can set custom functions to read or change data before sending or on receiveing
@@ -42,7 +65,50 @@ local includedControllerTypes = {
         ["fireCannon"] = {},
         ["shootStrengthChange"] = {},
         ["targetInclinationChange"] = {}
-    }
+    },
+
+    ["kickplate"] = { -- TODO finish this, only power level syncs atm
+        ["setPowerLevel"] = {},
+        ["changePowerLevel"] = {
+			ownerFunction = changePowerLevel
+        },
+        ["setRandomDirection"] = {},
+        ["setPlateDirection"] = {}
+    },
+
+    ["spikestripRemoteScissor"] = {
+        ["setOperationMode"] = {},
+        ["toggleOperationMode"] = {},
+        ["setTargetSelectionMode"] = {},
+        ["setManualTargetId"] = {
+			ownerFunction = prepareID,
+			receiveFunction = receiveID,
+        },
+        ["setManualExtension"] = {},
+        ["toggleManualExtension"] = {}
+    },
+
+    ["spikestripRemoteStick"] = {
+        ["setOperationMode"] = {},
+        ["toggleOperationMode"] = {},
+        ["toggleArmed"] = {},
+        ["setTargetSelectionMode"] = {},
+        ["setManualTargetId"] = {
+			ownerFunction = prepareID,
+			receiveFunction = receiveID,
+        },
+        ["manualLaunch"] = {},
+        ["manualRetract"] = {}
+    },
+
+    ["roofCrusherTester"] = {
+        ["moveManually"] = {},
+        ["toggleState"] = {}
+    },
+
+    ["testRoller"] = {
+        ["changeRampAngle"] = {} -- TODO exclude ramp_angle electrics from electrics sync and sync it manually here, the hydros are so fast it causes shaking when using electrics sync
+    },
 }
 
 local function onReset()
