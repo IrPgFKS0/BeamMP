@@ -265,6 +265,11 @@
   <md-checkbox ng-model="options.data.values.nameTagShowDistance" ng-change="options.applyState()"></md-checkbox>
 </md-list-item>
 
+<md-list-item md-no-ink>
+  <p>{{:: 'ui.options.multiplayer.nameTagsHideBehindObjects' | translate }}</p>
+  <md-checkbox ng-model="options.data.values.nameTagsHideBehindObjects" ng-change="options.applyState()"></md-checkbox>
+</md-list-item>
+
 <md-list-item md-no-ink ng-show="options.data.values.showAdvancedMPOptions">
   <p>{{:: 'ui.options.multiplayer.nametagFade' | translate }}</p>
   <md-checkbox ng-model="options.data.values.nameTagFadeEnabled" ng-change="options.applyState()"></md-checkbox>
