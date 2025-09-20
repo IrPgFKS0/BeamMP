@@ -205,6 +205,12 @@ local includedControllerTypes = {
 		["moveFeet"] = {}
 	},
 
+	["hydraulics/closedLoopLinearControl"] = {
+		["setCylinderTargetExtendPercent"] = {
+			compare = true,
+		}
+	},
+
 	["jato"] = {
 		["updateGFX"] = {
 			remoteOnly = true,
@@ -224,19 +230,6 @@ local includedControllerTypes = {
 			receiveFunction = receivePostCrashBrake,
 		},
 	},
-
-	["rollover"] = {
-		["cycle"] = {},
-		["prepare"] = {}
-	},
-
-	--[[["spinner"] = {
-		["toggleDirection"] = {
-			ownerFunction = toggleDirection,
-			receiveFunction = receiveToggleDirection,
-			storeState = true
-		}
-	},]]
 
 	["tirePressureControl"] = {
 		["toggleGroupState"] = {
@@ -262,24 +255,7 @@ local includedControllerTypes = {
 			ownerFunction = TwoStep,
 			receiveFunction = receiveTwoStep
 		}
-	},
-
-	["hamster_wheel"] = {
-    ["setTargetRPMRatioIncrease"] = {},
-    ["setTargetRPMRatioDecrease"] = {},
-    ["setTargetRPMRatio"] = {}
-  },
-
-	["spinner"] = {
-    ["setTargetRPMRatioIncrease"] = {},
-    ["setTargetRPMRatioDecrease"] = {},
-    ["setTargetRPMRatio"] = {}
-  },
-
-	["large_roller"] = {
-    ["setTargetThrottle"] = {},
-    ["setRollerHeight"] = {}
-  }
+	}
 }
 
 local function onReset()
