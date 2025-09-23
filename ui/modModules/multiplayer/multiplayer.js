@@ -639,6 +639,8 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		document.getElementById('OriginalLoadingStatus').removeAttribute("hidden");
 		document.getElementById('LoadingStatus').setAttribute("hidden", "hidden");
 		document.getElementById('LoadingServer').style.display = 'none';
+		//vm.downloadingMods = [];
+		lastModInfo = ''
 		bngApi.engineLua('MPCoreNetwork.leaveServer()');
 	};
 
@@ -702,16 +704,84 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 
 	};
 
+	vm.downloadingMods = [];
+	var lastModInfo = ''
+
 	$scope.$on('LoadingInfo', function (event, data) {
-		if (document.getElementById('LoadingStatus').innerText != data.message) console.log(data.message)
-		if (data.message == "done") {
-			document.getElementById('LoadingStatus').innerText = "Done";
+		//console.log(data.message)
+
+		// Split the message into parts: mod number, mod name, progress, speed
+		let modNumber = null;
+		let modName = null;
+		let progress = null;
+		let speed = null;
+
+		if (data.message.startsWith("Downloading Resource")) {
+			// Sample: 'Downloading Resource 1/10: Nissan 350z.zip (1.0%) at 12.8 Mbit/s'
+			// Extract mod number, name, progress, and speed from the message
+			const regex = /Downloading Resource (\d+\/\d+): (.+?) \((\d+\.\d+)%\)(?: at (.+))?/;
+			const matches = data.message.match(regex);
+			if (matches) {
+				modNumber = matches[1];
+				modName = matches[2];
+				progress = matches[3];
+				speed = matches[4] || '...';
+			}
+			//console.log(`Mod ${modNumber}: ${modName} - ${progress}% at ${speed}`);
+
+			// Update current downloading mod info and if complete then push this mod into the downloaded mods info
+			$scope.$apply(function() {
+				// Update or add the current mod being downloaded
+				let existingMod = vm.downloadingMods.find(mod => mod.name === modName);
+				if (existingMod) {
+					existingMod.progress = progress;
+					existingMod.speed = speed;
+				} else {
+					// add this new mod to the beginning of the array
+					vm.downloadingMods = [{ number: modNumber, name: modName, progress: progress, speed: speed }, ...vm.downloadingMods];
+				}
+
+				// If we switched to a new mod, mark the last one as done
+				if (lastModInfo != '' && lastModInfo != modName) {
+					let lastMod = vm.downloadingMods.find(mod => mod.name === lastModInfo);
+					lastMod.progress = 100;
+					lastMod.speed = 'Done';
+					lastModInfo = modName;
+				}
+			});
+		} else if (data.message.startsWith("Loading Resource")) {
+			// Sample: 'Loading Resource 1/70: Scintillacamaf.zip'
+			const regex = /Loading Resource (\d+\/\d+): (.+)/;
+			const matches = data.message.match(regex);
+			if (matches) {
+				modNumber = matches[1];
+				modName = matches[2];
+			}
+			//console.log(`Mod ${modNumber}: ${modName} - Loading`);
+
+			// Update current downloading mod info and if complete then push this mod into the downloaded mods info
+			$scope.$apply(function() {
+				// Update or add the current mod being downloaded
+				let existingMod = vm.downloadingMods.find(mod => mod.name === modName);
+				if (existingMod) {
+					existingMod.progress = '100';
+					existingMod.speed = 'Downloaded';
+				} else {
+					vm.downloadingMods = [{ number: modNumber, name: modName, progress: '100', speed: 'Loading' }, ...vm.downloadingMods];
+				}
+			});
 		} else {
-			document.getElementById('LoadingStatus').innerText = data.message;
+			if (document.getElementById('LoadingStatus').innerText != data.message) console.log(data.message)
+			if (data.message == "done") {
+				document.getElementById('LoadingStatus').innerText = "Done";
+				lastModInfo = ''
+			} else {
+				document.getElementById('LoadingStatus').innerText = data.message;
+			}
+			
+			document.getElementById('OriginalLoadingStatus').setAttribute("hidden", "hidden");
+			document.getElementById('LoadingStatus').removeAttribute("hidden");
 		}
-		
-		document.getElementById('OriginalLoadingStatus').setAttribute("hidden", "hidden");
-		document.getElementById('LoadingStatus').removeAttribute("hidden");
 	});
 
 

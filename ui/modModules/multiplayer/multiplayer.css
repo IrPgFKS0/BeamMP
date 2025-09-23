@@ -157,6 +157,23 @@ div#LoadingBody {
   background-color: #848484;
   padding: 15px;
   border-radius: 5px;
+  max-height: 30%;
+  overflow-y: hidden;
+}
+
+#mod-download-list {
+  margin-top: 20px;
+  overflow: hidden;
+  position: relative;
+  background-color: rgb(109 109 109);
+  padding: 5px;
+  border: 1px solid #696969;
+  border-radius: 3px;
+}
+
+.mod-download-row {
+    align-items: center;
+    margin-bottom: 2px;
 }
 
 .addCustomFav {
