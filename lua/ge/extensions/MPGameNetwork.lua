@@ -554,10 +554,10 @@ end
 
 extensions.core_gamestate.onUiChangedState = function(toState, fromState)
   if stateStartsWithPausedPrefix(toState) then
-    simTimeAuthority.pushPauseRequest()
+    simTimeAuthority.pushPauseRequest(toState)
   end
   if stateStartsWithPausedPrefix(fromState) then
-    simTimeAuthority.popPauseRequest()
+    simTimeAuthority.popPauseRequest(fromState)
   end
 end
 
