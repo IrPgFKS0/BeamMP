@@ -662,7 +662,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 
 		var valid = (ip.length > 0) && (port.length > 0) && !isNaN(port)
 		if (!valid) return;
-		var name = ip + ":" + port;
+		var name = new Date().toLocaleString()
 		var server = {
 			cversion: await getLauncherVersion(), ip: ip, location: "--", map: "", maxplayers: "0", players: "0",
 			owner: "", playersList: "", sdesc: "", sname: name, strippedName: name,
