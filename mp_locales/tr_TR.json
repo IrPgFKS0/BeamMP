@@ -30,6 +30,7 @@
   "ui.options.multiplayer.nameTags": "Oyuncu isim etiketlerini gizle",
   "ui.options.multiplayer.nameTagAlternate": "Alternatif isim etiketi rengi kullan",
   "ui.options.multiplayer.nameTagShowDistance": "Başka oyunculara olan mesafeyi göster",
+  "ui.options.multiplayer.nameTagsHideBehindObjects": "Nesnelerin arkasındaki isim etiketlerini gizle",
   "ui.options.multiplayer.debugOutput": "Konsolda ağ etkinliği göster",
   "ui.options.multiplayer.launcherPort": "Launcher portu:[br]Zorunlu kalmadıkça değiştirmeyin",
   "ui.options.multiplayer.launcherPortWarn": "Zorunlu kalmadıkça değiştirmeyin",
