@@ -4,7 +4,7 @@
   "ui.options.multiplayer.protectConfigFromClone": "Aktivera Konfigurationskloningsskydd",
   "ui.options.multiplayer.protectConfigFromClone.tooltip": "Skydda denna konfiguration från att klonas av andra spelare.",
   "ui.options.multiplayer.enableNewChatMenu": "Ny chattmeny",
-  "ui.options.multiplayer.enableNewChatMenu.tooltip": "Den nya chattmenyn använder ImGui. Den är anpassningsbar, snygg och fantastisk!",
+  "ui.options.multiplayer.enableNewChatMenu.tooltip": "Den nya chattmenyn använder ImGui. Den är anpassningsbar och snygg!",
   "ui.options.multiplayer.enablePosSmoother": "Aktivera fordonspositionsutjämning",
   "ui.options.multiplayer.enablePosSmoother.tooltip": "Försöker jämna ut positionsdata från spelare med ostadiga anslutningar, vilket minskar fordonens hopprörelser/rubberbanding",
   "ui.options.multiplayer.autoSyncVehicles": "Aktivera automatisk synkronisering av delar",
