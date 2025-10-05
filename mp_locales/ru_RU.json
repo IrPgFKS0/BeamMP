@@ -30,6 +30,7 @@
   "ui.options.multiplayer.nameTags": "Скрыть ники игроков",
   "ui.options.multiplayer.nameTagAlternate": "Альтернативный цвет ников",
   "ui.options.multiplayer.nameTagShowDistance": "Показывать дистанцию до других игроков",
+  "ui.options.multiplayer.nameTagsHideBehindObjects": "Скрывать ники за обьектами",
   "ui.options.multiplayer.debugOutput": "Показывать сетевую активность в консоли",
   "ui.options.multiplayer.launcherPort": "Порт лаунчера",
   "ui.options.multiplayer.launcherPortWarn": "НЕ МЕНЯЙТЕ, ЕСЛИ НЕ ЗНАЕТЕ ЗАЧЕМ ЭТО!!!",
