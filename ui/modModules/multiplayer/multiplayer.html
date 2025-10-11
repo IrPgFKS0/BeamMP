@@ -17,7 +17,7 @@
         <span style="color: darkgray;font-size: 0.8em;">{{mod.speed}}</span>
       </span>
       <div style="flex: 2;" ng-if="mod.progress != 100">
-        <md-progress-linear md-mode="determinate" value="{{mod.progress}}" class="md-accent"></md-progress-linear>
+        <md-progress-linear md-mode="determinate" value="{{mod.progress}}" class="md-accent rounded-progress"></md-progress-linear>
       </div>
       <span ng-if="mod.progress == 100" style="color: green; font-size: 1em; margin-left: 10px; float: right;">
         <md-icon class="material-icons" style="vertical-align: middle;">check_mark</md-icon>

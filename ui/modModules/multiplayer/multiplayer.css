@@ -1,3 +1,13 @@
+.rounded-progress .md-container {
+  border-radius: 10px;
+  overflow: hidden; /* prevents overflow of the bar */
+}
+
+.rounded-progress .md-bar {
+  border-radius: 10px;
+}
+
+
 .offset-div {
   position: absolute;
   width: 100%;
