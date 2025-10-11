@@ -771,7 +771,9 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 				}
 			});
 		} else {
-			if (document.getElementById('LoadingStatus').innerText != data.message) console.log(data.message)
+			if (document.getElementById('LoadingStatus').innerText != data.message) {
+				console.log(data.message);
+			}
 			if (data.message == "done") {
 				document.getElementById('LoadingStatus').innerText = "Done";
 				lastModInfo = ''
