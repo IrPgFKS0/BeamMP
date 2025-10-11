@@ -639,8 +639,8 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		document.getElementById('OriginalLoadingStatus').removeAttribute("hidden");
 		document.getElementById('LoadingStatus').setAttribute("hidden", "hidden");
 		document.getElementById('LoadingServer').style.display = 'none';
-		//vm.downloadingMods = [];
-		lastModInfo = ''
+		vm.downloadingMods.length = 0;
+		lastModInfo = '';
 		bngApi.engineLua('MPCoreNetwork.leaveServer()');
 	};
 
@@ -705,7 +705,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	};
 
 	vm.downloadingMods = [];
-	var lastModInfo = ''
+	var lastModInfo = '';
 
 	$scope.$on('LoadingInfo', function (event, data) {
 		//console.log(data.message)
@@ -732,7 +732,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 			// Update current downloading mod info and if complete then push this mod into the downloaded mods info
 			$scope.$apply(function() {
 				// Update or add the current mod being downloaded
-				let existingMod = vm.downloadingMods.find(mod => mod.name === modName);
+				const existingMod = vm.downloadingMods.find(mod => mod.name === modName);
 				if (existingMod) {
 					existingMod.progress = progress;
 					existingMod.speed = speed;
@@ -743,7 +743,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 
 				// If we switched to a new mod, mark the last one as done
 				if (lastModInfo != '' && lastModInfo != modName) {
-					let lastMod = vm.downloadingMods.find(mod => mod.name === lastModInfo);
+					const lastMod = vm.downloadingMods.find(mod => mod.name === lastModInfo);
 					lastMod.progress = 100;
 					lastMod.speed = 'Done';
 					lastModInfo = modName;
@@ -762,12 +762,12 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 			// Update current downloading mod info and if complete then push this mod into the downloaded mods info
 			$scope.$apply(function() {
 				// Update or add the current mod being downloaded
-				let existingMod = vm.downloadingMods.find(mod => mod.name === modName);
+				const existingMod = vm.downloadingMods.find(mod => mod.name === modName);
 				if (existingMod) {
 					existingMod.progress = '100';
 					existingMod.speed = 'Downloaded';
 				} else {
-					vm.downloadingMods = [{ number: modNumber, name: modName, progress: '100', speed: 'Loading' }, ...vm.downloadingMods];
+					vm.downloadingMods = [{ number: modNumber, name: modName, progress: '100', speed: 'Downloaded' }, ...vm.downloadingMods];
 				}
 			});
 		} else {
