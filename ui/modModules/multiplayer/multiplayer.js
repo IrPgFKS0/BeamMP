@@ -708,6 +708,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	var lastModInfo = '';
 
 	$scope.$on('LoadingInfo', function (event, data) {
+		const loadingStatusElement = document.getElementById('LoadingStatus')
 		//console.log(data.message)
 
 		// Split the message into parts: mod number, mod name, progress, speed
@@ -771,18 +772,18 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 				}
 			});
 		} else {
-			if (document.getElementById('LoadingStatus').innerText != data.message) {
+			if (loadingStatusElement.innerText != data.message) {
 				console.log(data.message);
 			}
 			if (data.message == "done") {
-				document.getElementById('LoadingStatus').innerText = "Done";
+				loadingStatusElement.innerText = "Done";
 				lastModInfo = ''
 			} else {
-				document.getElementById('LoadingStatus').innerText = data.message;
+				loadingStatusElement.innerText = data.message;
 			}
 			
 			document.getElementById('OriginalLoadingStatus').setAttribute("hidden", "hidden");
-			document.getElementById('LoadingStatus').removeAttribute("hidden");
+			loadingStatusElement.removeAttribute("hidden");
 		}
 	});
 
