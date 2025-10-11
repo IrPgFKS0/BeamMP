@@ -11,7 +11,7 @@ let newChatMenu = false;
 import('/ui/lib/ext/purify.min.js')
 app.directive('redesignedchat', [function () {
 	return {
-		templateUrl: '/ui/modules/apps/BeamMP-Chat/app.html',
+		templateUrl: '/ui/modules/apps/BeamMP-Chat-Redesigned/app.html',
 		replace: true,
 		restrict: 'EA',
 		scope: true,
