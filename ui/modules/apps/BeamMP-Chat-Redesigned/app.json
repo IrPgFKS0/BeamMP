@@ -1,0 +1,17 @@
+{
+  "domElement": "<BeamMP-Chat-Redesigned></BeamMP-Chat-Redesigned>",
+  "name": "redesigned Chat",
+  "types": [
+    "ui.apps.categories.multiplayer"
+  ],
+  "css": {
+  	"left": "180px",
+  	"bottom": "0px",
+  	"width": "550px",
+    "height": "170px"
+  },
+  "description": "redesigned Chat while in multiplayer servers",
+  "author": "BeamMP",
+  "version": "1.1",
+  "directive": "redesignedchat"
+}
