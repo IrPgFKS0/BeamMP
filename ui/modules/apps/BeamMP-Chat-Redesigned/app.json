@@ -1,5 +1,5 @@
 {
-  "domElement": "<BeamMP-Chat-Redesigned></BeamMP-Chat-Redesigned>",
+  "domElement": "<redesignedchat></redesignedchat>",
   "name": "redesigned Chat",
   "types": [
     "ui.apps.categories.multiplayer"
