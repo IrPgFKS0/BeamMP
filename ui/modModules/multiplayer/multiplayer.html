@@ -11,17 +11,17 @@
     <span id="LoadingStatus" hidden style="height: 0px;"></span>
     <div id="mod-download-list">
       <div ng-repeat="mod in multiplayer.downloadingMods" class="mod-download-row" style="align-items: center; margin-bottom: 10px;">
-      <span style="flex: 1;">
-        <code>{{mod.number}}: {{mod.name}}</code>
-        {{ ' - ' }}
-        <span style="color: darkgray;font-size: 0.8em;">{{mod.speed}}</span>
-      </span>
-      <div style="flex: 2;" ng-if="mod.progress != 100">
-        <md-progress-linear md-mode="determinate" value="{{mod.progress}}" class="md-accent rounded-progress"></md-progress-linear>
-      </div>
-      <span ng-if="mod.progress == 100" style="color: green; font-size: 1em; margin-left: 10px; float: right;">
-        <md-icon class="material-icons" style="vertical-align: middle;">check_mark</md-icon>
-      </span>
+        <span style="flex: 1;">
+          <code>{{mod.name}}</code>
+          {{ ' - ' }}
+          <span style="color: darkgray;font-size: 0.8em;">{{mod.speed}}</span>
+        </span>
+        <div style="flex: 2;" ng-if="mod.progress != 100">
+          <md-progress-linear md-mode="determinate" value="{{mod.progress}}" class="md-accent"></md-progress-linear>
+        </div>
+        <span ng-if="mod.progress == 100" style="color: green; font-size: 1em; margin-left: 10px; float: right;">
+          <md-icon class="material-icons" style="vertical-align: middle;">check_mark</md-icon>
+        </span>
       </div>
       <div style="
       pointer-events: none;
