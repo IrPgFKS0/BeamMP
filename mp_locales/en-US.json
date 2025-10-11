@@ -53,6 +53,8 @@
     "ui.options.multiplayer.enableBlobs.tooltip": "Unspawned vehicles will appear as colored spheres (blobs)",
     "ui.options.multiplayer.showSpectators": "Show spectators' nametag under vehicle nametags",
     "ui.options.multiplayer.showSpectators.tooltip": "Players spectating others' vehicles will be listed under their nametags",
+    "ui.options.multiplayer.licensePlateUsesPlayerName": "Show Player names on license plates",
+    "ui.options.multiplayer.licensePlateUsesPlayerName.tooltip": "Will show the Player's username on vehicle license plates",
     "ui.options.multiplayer.spectatorUnifiedColors": "Same color for spectator nametags",
     "ui.options.multiplayer.spectatorUnifiedColors.tooltip": "Draw all spectator nametags as grey, independent of the user's role",
     "ui.options.multiplayer.nametagFade": "Fade nametags in/out",

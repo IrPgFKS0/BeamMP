@@ -1341,7 +1341,10 @@ local function applyVehSpawn(event)
 		players[vehicle.ownerID]:addVehicle(vehicle)
 	end
 
-	core_vehicles.setPlateText(event.playerNickname, spawnedVehID)
+	if settings.getValue("licensePlateUsesPlayerName") then
+		core_vehicles.setPlateText(event.playerNickname, spawnedVehID)
+	end
+
 	spawnedVeh:queueLuaCommand("hydros.onFFBConfigChanged(nil)")
 	spawnedVeh:queueLuaCommand("MPPowertrainVE.setIgnitionState("..ignitionLevel..")")
 end

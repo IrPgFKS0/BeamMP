@@ -341,6 +341,12 @@
   </md-list-item>
 </div>
 
+<md-list-item md-no-ink>
+  <p>{{:: 'ui.options.multiplayer.licensePlateUsesPlayerName' | translate }}</p>
+  <md-tooltip md-direction="right">{{:: 'ui.options.multiplayer.licensePlateUsesPlayerName.tooltip' | translate }}</md-tooltip>
+  <md-checkbox ng-model="options.data.values.licensePlateUsesPlayerName" ng-change="options.applyState()"></md-checkbox>
+</md-list-item>
+
 
 <md-divider></md-divider>
 <md-list-item layout="column" layout-align="start start" ng-show="options.data.values.showAdvancedMPOptions"><p><h3>{{:: 'ui.options.multiplayer.others' |  translate }}</h3></p></md-list-item>
