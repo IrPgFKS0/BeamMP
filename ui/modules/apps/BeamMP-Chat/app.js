@@ -22,6 +22,10 @@ app.directive('multiplayerchat', [function () {
 
 app.controller("Chat", ['$scope', 'Settings', function ($scope, Settings) {
 	$scope.init = function() {
+		const savedStyle = localStorage.getItem('chatStyle');
+        if (savedStyle) {
+            document.getElementById('chat-style').setAttribute('href', savedStyle);
+        }
 		var chatMessages = retrieveChatMessages()
 		newChatMenu = Settings.values.enableNewChatMenu;
 		//console.log(`[CHAT] New chat menu: ${newChatMenu}`);
@@ -124,6 +128,24 @@ app.controller("Chat", ['$scope', 'Settings', function ($scope, Settings) {
 	
 		scrollToLastMessage();
 	}
+
+	$scope.swapStyle = function() {
+        const stylesheet = document.getElementById('chat-style');
+        if (!stylesheet) return;
+
+        const currentStyle = stylesheet.getAttribute('href');
+        let newStyle;
+
+        if (currentStyle.includes('app.css')) {
+            newStyle = '/ui/modules/apps/BeamMP-Chat/redesign.css';
+        } else {
+            newStyle = '/ui/modules/apps/BeamMP-Chat/app.css';
+        }
+        
+        stylesheet.setAttribute('href', newStyle);
+        localStorage.setItem('chatStyle', newStyle);
+        scrollToLastMessage();
+    };
 
 	$scope.$on('chatMessage', function (event, data) {
 		if (data.id > lastMsgId) {
