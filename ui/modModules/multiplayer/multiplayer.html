@@ -6,10 +6,10 @@
   <div id="LoadingBody" style="">
     <md-button style="right:0; top:0; margin:0;" class="button close-button" ng-class="" ng-click="multiplayer.closeLoadingPopup()"> X </md-button>
     <h1>{{:: 'ui.multiplayer.connectingToServer' | translate}}</h1>
-    <hr />
+    <hr ng-if="multiplayer.loadingStatus != '' || multiplayer.downloadingMods.length > 0"/>
     <span id="OriginalLoadingStatus" hidden style="height: 0px;"></span>
-    <span id="LoadingStatus" hidden style="height: 0px;"></span>
-    <div id="mod-download-list">
+    <span id="LoadingStatus" hidden style="height: 0px;">{{multiplayer.loadingStatus}}</span>
+    <div id="mod-download-list" ng-if="multiplayer.downloadingMods.length > 0">
       <div ng-repeat="mod in multiplayer.downloadingMods" class="mod-download-row" style="align-items: center; margin-bottom: 10px;">
         <span style="flex: 1;">
           <code>{{mod.name}}</code>

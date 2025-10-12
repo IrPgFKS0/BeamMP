@@ -640,6 +640,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		document.getElementById('LoadingStatus').setAttribute("hidden", "hidden");
 		document.getElementById('LoadingServer').style.display = 'none';
 		vm.downloadingMods.length = 0;
+		vm.loadingStatus = "";
 		lastModInfo = '';
 		bngApi.engineLua('MPCoreNetwork.leaveServer()');
 	};
@@ -705,6 +706,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	};
 
 	vm.downloadingMods = [];
+	vm.loadingStatus = "";
 	var lastModInfo = '';
 
 	$scope.$on('LoadingInfo', function (event, data) {
@@ -773,13 +775,13 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 			});
 		} else {
 			if (loadingStatusElement.innerText != data.message) {
-				console.log(data.message);
+				//console.log(data.message);
 			}
 			if (data.message == "done") {
-				loadingStatusElement.innerText = "Done";
-				lastModInfo = ''
+				vm.loadingStatus = "Done";
+				lastModInfo = '';
 			} else {
-				loadingStatusElement.innerText = data.message;
+				vm.loadingStatus = data.message;
 			}
 			
 			document.getElementById('OriginalLoadingStatus').setAttribute("hidden", "hidden");
