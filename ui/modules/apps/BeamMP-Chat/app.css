@@ -53,6 +53,7 @@
     width: 250px;
     transition: 0.13s;
     transition-delay: 700ms;
+    align-items: center;
 }
 
 #chatbox:hover {
