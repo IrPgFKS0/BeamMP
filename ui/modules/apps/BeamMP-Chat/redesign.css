@@ -61,6 +61,7 @@ ul#chat-list {
     overflow: hidden;
     transition: width 0.2s ease-in-out, background-color 0.3s ease;
     transition-delay: 700ms;
+    align-items: center;
 }
 
 #chatbox:hover {
