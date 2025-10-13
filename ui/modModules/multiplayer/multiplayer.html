@@ -6,20 +6,20 @@
   <div id="LoadingBody" style="">
     <md-button style="right:0; top:0; margin:0;" class="button close-button" ng-class="" ng-click="multiplayer.closeLoadingPopup()"> X </md-button>
     <h1>{{:: 'ui.multiplayer.connectingToServer' | translate}}</h1>
-    <hr ng-if="multiplayer.loadingStatus != '' || multiplayer.downloadingMods.length > 0"/>
+    <hr id="loadingstatus-divider"/>
     <span id="OriginalLoadingStatus" hidden style="height: 0px;"></span>
     <span id="LoadingStatus" hidden style="height: 0px;">{{multiplayer.loadingStatus}}</span>
     <div id="mod-download-list" ng-if="multiplayer.downloadingMods.length > 0">
       <div ng-repeat="mod in multiplayer.downloadingMods" class="mod-download-row" style="align-items: center; margin-bottom: 10px;">
         <span style="flex: 1;">
-          <code>{{mod.name}}</code>
+          <code>{{mod.number}} - {{mod.name}}</code>
           {{ ' - ' }}
-          <span style="color: darkgray;font-size: 0.8em;">{{mod.speed}}</span>
+          <span style="color: darkgray;font-size: 0.8em;">{{$index === 0 ? mod.speed : 'Downloaded'}}</span>
         </span>
-        <div style="flex: 2;" ng-if="mod.progress != 100">
+        <div style="flex: 2;" ng-if="$index === 0 && mod.progress != 100">
           <md-progress-linear md-mode="determinate" value="{{mod.progress}}" class="md-accent"></md-progress-linear>
         </div>
-        <span ng-if="mod.progress == 100" style="color: green; font-size: 1em; margin-left: 10px; float: right;">
+        <span ng-if="$index != 0" style="color: green; font-size: 1em; margin-left: 10px; float: right;">
           <md-icon class="material-icons" style="vertical-align: middle;">check_mark</md-icon>
         </span>
       </div>
