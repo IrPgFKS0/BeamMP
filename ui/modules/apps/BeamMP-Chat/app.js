@@ -21,11 +21,24 @@ app.directive('multiplayerchat', [function () {
 
 
 app.controller("Chat", ['$scope', 'Settings', function ($scope, Settings) {
+	const applyChatStyle = function(useNewDesign) {
+		const stylesheet = document.getElementById('chat-style');
+		if (!stylesheet) return;
+		let newStylePath;
+		if (useNewDesign) {
+			newStylePath = '/ui/modules/apps/BeamMP-Chat/redesign.css';
+		} else {
+			newStylePath = '/ui/modules/apps/BeamMP-Chat/app.css';
+		}		
+		if (stylesheet.getAttribute('href') !== newStylePath) {
+			stylesheet.setAttribute('href', newStylePath);
+		}
+		scrollToLastMessage();
+	};
+
 	$scope.init = function() {
-		const savedStyle = localStorage.getItem('chatStyle');
-        if (savedStyle) {
-            document.getElementById('chat-style').setAttribute('href', savedStyle);
-        }
+		applyChatStyle(Settings.values.enableNewChatDesign);
+
 		var chatMessages = retrieveChatMessages()
 		newChatMenu = Settings.values.enableNewChatMenu;
 		//console.log(`[CHAT] New chat menu: ${newChatMenu}`);
@@ -129,24 +142,6 @@ app.controller("Chat", ['$scope', 'Settings', function ($scope, Settings) {
 		scrollToLastMessage();
 	}
 
-	$scope.swapStyle = function() {
-        const stylesheet = document.getElementById('chat-style');
-        if (!stylesheet) return;
-
-        const currentStyle = stylesheet.getAttribute('href');
-        let newStyle;
-
-        if (currentStyle.includes('app.css')) {
-            newStyle = '/ui/modules/apps/BeamMP-Chat/redesign.css';
-        } else {
-            newStyle = '/ui/modules/apps/BeamMP-Chat/app.css';
-        }
-        
-        stylesheet.setAttribute('href', newStyle);
-        localStorage.setItem('chatStyle', newStyle);
-        scrollToLastMessage();
-    };
-
 	$scope.$on('chatMessage', function (event, data) {
 		if (data.id > lastMsgId) {
 			lastMsgId = data.id;
@@ -172,6 +167,9 @@ app.controller("Chat", ['$scope', 'Settings', function ($scope, Settings) {
 
 	$scope.$on('SettingsChanged', function (event, data) {
 		Settings.values = data.values;
+
+		applyChatStyle(Settings.values.enableNewChatDesign);
+
 		const chatbox = document.getElementById("chat-window");
 		if (newChatMenu) {
 			chatbox.style.display = "none";
