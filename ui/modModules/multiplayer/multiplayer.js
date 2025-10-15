@@ -879,6 +879,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 			}
 		} else {
 			nameElement.textContent = "";
+			nameElement.style.backgroundColor = "rgba(0, 0, 0, 0)";
 			idElement.textContent = "";
 			avatarElement.removeAttribute("src");
 		}
