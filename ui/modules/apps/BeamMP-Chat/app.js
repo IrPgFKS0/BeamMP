@@ -37,7 +37,7 @@ app.controller("Chat", ['$scope', 'Settings', function ($scope, Settings) {
 	};
 
 	$scope.init = function() {
-		applyChatStyle(Settings.values.enableNewChatDesign);
+		applyChatStyle(Settings.values.useUiAppRedesign);
 
 		var chatMessages = retrieveChatMessages()
 		newChatMenu = Settings.values.enableNewChatMenu;
@@ -168,7 +168,7 @@ app.controller("Chat", ['$scope', 'Settings', function ($scope, Settings) {
 	$scope.$on('SettingsChanged', function (event, data) {
 		Settings.values = data.values;
 
-		applyChatStyle(Settings.values.enableNewChatDesign);
+		applyChatStyle(Settings.values.useUiAppRedesign);
 
 		const chatbox = document.getElementById("chat-window");
 		if (newChatMenu) {
