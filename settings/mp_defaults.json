@@ -42,6 +42,6 @@
   "skipModSecurityWarning"      : [ "local", false ],
   "highlightQueuedPlayers"      : [ "local", true  ],
   "playerlistLeftclick"         : [ "cloud", 0 ],
-  "enableNewChatDesign"         : [ "cloud", true ],
+  "useUiAppRedesign"            : [ "cloud", false ],
   "refreshIngame"               : [ "local", false ]
 }
