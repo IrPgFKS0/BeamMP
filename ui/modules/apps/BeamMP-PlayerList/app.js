@@ -16,34 +16,56 @@ app.directive('multiplayerplayerlist', [function () {
 		controllerAs: 'ctrl'
 	}
 }]);
-app.controller("PlayerList", ['$scope', '$filter', function ($scope, $filter) {
+app.controller("PlayerList", ['$scope', '$filter', 'Settings', function ($scope, $filter, Settings) {
 	$scope.warnVis = false;
 	$scope.timer = null;
 	$scope.showPlayerIDs = true
 	$scope.playerlistLeftclick = 0;
+
+	const applyPlayerListStyle = function(useNewDesign) {
+		const stylesheet = document.getElementById('playerlist-style');
+		if (!stylesheet) return;
+
+		let newStylePath;
+		if (useNewDesign) {
+			newStylePath = '/ui/modules/apps/BeamMP-PlayerList/redesign.css';
+		} else {
+			newStylePath = '/ui/modules/apps/BeamMP-PlayerList/app.css';
+		}
+		
+		if (stylesheet.getAttribute('href') !== newStylePath) {
+			stylesheet.setAttribute('href', newStylePath);
+		}
+	};
+
 	$scope.init = function() {
 		// Set players list direction
 		setPLDirection(localStorage.getItem('plHorizontal'));
 		setPLDirection(localStorage.getItem('plVertical'));
 		if (localStorage.getItem('plShown') == 1) showList();
 		bngApi.engineLua("guihooks.trigger('updateCustomButtons', UI.getCustomButtonNames())")
+		
+		// Apply style on init
+		applyPlayerListStyle(Settings.values.enableNewChatDesign);
+      	bngApi.engineLua('settings.getValue("showPlayerIDs")', (data) => {
+      		$scope.showPlayerIDs = data
+    	})
+		bngApi.engineLua('settings.getValue("playerlistLeftclick")', (data) => {
+			$scope.playerlistLeftclick = data
+	  	})
 	};
 
-	$scope.settingsChanged = function() {
-    bngApi.engineLua('settings.getValue("showPlayerIDs")', (data) => {
-      $scope.showPlayerIDs = data
-    })
-	bngApi.engineLua('settings.getValue("playerlistLeftclick")', (data) => {
-		$scope.playerlistLeftclick = data
-	  })
-  }
-  $scope.settingsChanged()
+	$scope.$on('SettingsChanged', function (event, data) {
+		Settings.values = data.values;
+		applyPlayerListStyle(Settings.values.enableNewChatDesign);
+		$scope.showPlayerIDs = Settings.values.showPlayerIDs;
+		$scope.playerlistLeftclick = Settings.values.playerlistLeftclick;
+	});
 
 	$scope.reset = function() {
 		connected = false;
 		players = [];
 		$scope.init();
-		$scope.settingsChanged()
 	};
 
 	$scope.select = function() {
