@@ -3,12 +3,35 @@
 <link type="text/css" rel="stylesheet" href="/ui/modModules/multiplayer/multiplayer.css">
 
 <div id="LoadingServer" style="display: none;">
-    <div id="LoadingBody">
-		<md-button style="right:0; top:0; margin:0;" class="button close-button" ng-class="" ng-click="multiplayer.closeLoadingPopup()"> X </md-button>
-        <h1>{{:: 'ui.multiplayer.connecting' | translate}}</h1>
-        <span id="OriginalLoadingStatus">{{:: 'ui.multiplayer.connectingToServer' | translate}}</span>
-		<span id="LoadingStatus" hidden></span>
+  <div id="LoadingBody" style="">
+    <md-button style="right:0; top:0; margin:0;" class="button close-button" ng-class="" ng-click="multiplayer.closeLoadingPopup()"> X </md-button>
+    <h1>{{:: 'ui.multiplayer.connectingToServer' | translate}}</h1>
+    <hr id="loadingstatus-divider"/>
+    <span id="OriginalLoadingStatus" hidden style="height: 0px;"></span>
+    <span id="LoadingStatus" hidden style="height: 0px;">{{multiplayer.loadingStatus}}</span>
+    <div id="mod-download-list" ng-if="multiplayer.downloadingMods.length > 0">
+      <div ng-repeat="mod in multiplayer.downloadingMods" class="mod-download-row" style="align-items: center; margin-bottom: 10px;">
+        <span style="flex: 1;">
+          <code>{{mod.number}} - {{mod.name}}</code>
+          {{ ' - ' }}
+          <span style="color: darkgray;font-size: 0.8em;">{{$index === 0 ? mod.speed : ('ui.multiplayer.download.downloaded' | translate)}}</span>
+        </span>
+        <div style="flex: 2;" ng-if="$index === 0 && mod.progress != 100">
+          <md-progress-linear md-mode="determinate" value="{{mod.progress}}" class="md-accent"></md-progress-linear>
+        </div>
+        <span ng-if="$index != 0" style="color: green; font-size: 1em; margin-left: 10px; float: right;">
+          <md-icon class="material-icons" style="vertical-align: middle;">check_mark</md-icon>
+        </span>
+      </div>
+      <div style="
+      pointer-events: none;
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      height: 70%;
+      background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(109,109,109,1) 100%);
+      "></div>
     </div>
+  </div>
 </div>
 
 <div id="addCustomFav" style="display: none;" class="filter-overlay">

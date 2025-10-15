@@ -625,6 +625,18 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	}
 
 	vm.directConnect = function() {
+		let modlist = document.getElementById('mod-download-list');
+		if (modlist) {
+			modlist.style.display = 'none';
+		}
+
+		vm.loadingStatus = ""
+		vm.downloadingMods = [];
+		$scope.$applyAsync();
+
+		document.getElementById('loadingstatus-divider').style.display = "none";
+		document.getElementById('LoadingStatus').innerText = "";
+
 		//console.log('Clicked')
 		var ip = document.getElementById('directip').value.trim();
 		var port = document.getElementById('directport').value.trim();
@@ -638,7 +650,13 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	vm.closeLoadingPopup =  function() {
 		document.getElementById('OriginalLoadingStatus').removeAttribute("hidden");
 		document.getElementById('LoadingStatus').setAttribute("hidden", "hidden");
+		document.getElementById('LoadingStatus').innerText = "";
+		document.getElementById('loadingstatus-divider').style.display = 'none';
 		document.getElementById('LoadingServer').style.display = 'none';
+		vm.downloadingMods.length = 0;
+		vm.downloadingMods = [];
+		vm.loadingStatus = "";
+		lastModInfo = '';
 		bngApi.engineLua('MPCoreNetwork.leaveServer()');
 	};
 
@@ -702,16 +720,104 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 
 	};
 
+	vm.downloadingMods = [];
+	vm.loadingStatus = "";
+	var lastModInfo = '';
+
 	$scope.$on('LoadingInfo', function (event, data) {
-		if (document.getElementById('LoadingStatus').innerText != data.message) console.log(data.message)
-		if (data.message == "done") {
-			document.getElementById('LoadingStatus').innerText = "Done";
+		console.log(vm, event, data)
+		const loadingStatusElement = document.getElementById('LoadingStatus')
+		//console.log(data.message)
+
+		// Split the message into parts: mod number, mod name, progress, speed
+		let modNumber = null;
+		let modName = null;
+		let progress = null;
+		let speed = null;
+
+		if (data.message.startsWith("Downloading Resource")) {
+			let modlist = document.getElementById('mod-download-list');
+			if (modlist) {
+				modlist.style.display = 'block';
+			}
+			// Sample: 'Downloading Resource 1/10: Nissan 350z.zip (1.0%) at 12.8 Mbit/s'
+			// Extract mod number, name, progress, and speed from the message
+			const regex = /Downloading Resource (\d+\/\d+): (.+?) \((\d+\.\d+)%\)(?: at (.+))?/;
+			const matches = data.message.match(regex);
+			if (matches) {
+				modNumber = matches[1];
+				modName = matches[2];
+				progress = matches[3];
+				speed = matches[4] || '...';
+			}
+			//console.log(`Mod ${modNumber}: ${modName} - ${progress}% at ${speed}`);
+
+			// Update current downloading mod info and if complete then push this mod into the downloaded mods info
+			$scope.$apply(function() {
+				// Update or add the current mod being downloaded
+				const existingMod = vm.downloadingMods.find(mod => mod.name === modName);
+				if (existingMod) {
+					existingMod.progress = progress;
+					existingMod.speed = speed;
+				} else {
+					// add this new mod to the beginning of the array
+					vm.downloadingMods = [{ number: modNumber, name: modName, progress: progress, speed: speed }, ...vm.downloadingMods];
+				}
+
+				// If we switched to a new mod, mark the last one as done
+				if (lastModInfo != '' && lastModInfo != modName) {
+					const lastMod = vm.downloadingMods.find(mod => mod.name === lastModInfo);
+					lastMod.progress = 100;
+					lastMod.speed = $filter('translate')('ui.multiplayer.download.done');
+					lastModInfo = modName;
+				}
+			});
+		} else if (data.message.startsWith("Loading Resource")) {
+			let modlist = document.getElementById('mod-download-list');
+			if (modlist) {
+				modlist.style.display = 'block';
+			}
+			// Sample: 'Loading Resource 1/70: Scintillacamaf.zip'
+			const regex = /Loading Resource (\d+\/\d+): (.+)/;
+			const matches = data.message.match(regex);
+			if (matches) {
+				modNumber = matches[1];
+				modName = matches[2];
+			}
+			//console.log(`Mod ${modNumber}: ${modName} - Loading`);
+
+			// Update current downloading mod info and if complete then push this mod into the downloaded mods info
+			$scope.$apply(function() {
+				// Update or add the current mod being downloaded
+				const existingMod = vm.downloadingMods.find(mod => mod.name === modName);
+				if (existingMod) {
+					existingMod.progress = '100';
+					existingMod.speed = $filter('translate')('ui.multiplayer.loading');
+				} else {
+					vm.downloadingMods = [{ number: modNumber, name: modName, progress: '100', speed: $filter('translate')('ui.multiplayer.loading') }, ...vm.downloadingMods];
+				}
+			});
 		} else {
-			document.getElementById('LoadingStatus').innerText = data.message;
-		}
+			if (data.message == "done") {
+				vm.loadingStatus = $filter('translate')('ui.multiplayer.download.done');
+				lastModInfo = '';
+			} else {
+				vm.loadingStatus = data.message;
+			}
+
+			document.getElementById('LoadingStatus').innerText = vm.loadingStatus;
+
+			vm.downloadingMods = []
 		
-		document.getElementById('OriginalLoadingStatus').setAttribute("hidden", "hidden");
-		document.getElementById('LoadingStatus').removeAttribute("hidden");
+			document.getElementById('OriginalLoadingStatus').setAttribute("hidden", "hidden");
+			loadingStatusElement.removeAttribute("hidden");
+		}
+		let divider = document.getElementById('loadingstatus-divider')
+		if (divider) {
+			divider.style.display = (vm.downloadingMods.length > 0 || vm.loadingStatus != "") ? "block" : "none";
+		}
+
+		$scope.$applyAsync();
 	});
 
 
@@ -773,6 +879,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 			}
 		} else {
 			nameElement.textContent = "";
+			nameElement.style.backgroundColor = "rgba(0, 0, 0, 0)";
 			idElement.textContent = "";
 			avatarElement.removeAttribute("src");
 		}
@@ -1565,6 +1672,23 @@ function connect(ip, port, name, skipModWarning = false) {
 	document.getElementById('LoadingStatus').setAttribute("hidden", "hidden");
 	// Show the connecting screen
 	document.getElementById('LoadingServer').style.display = 'flex'
+
+	let modlist = document.getElementById('mod-download-list');
+	if (modlist) {
+		modlist.style.display = 'none';
+	}
+
+	const injector = angular.element(document.body).injector();
+	const $controller = injector.get('$controller');
+	const $rootScope = injector.get('$rootScope');
+	const multiplayerCtrl = $controller('MultiplayerController', { $scope: $rootScope });
+
+	multiplayerCtrl.loadingStatus = ""
+	multiplayerCtrl.downloadingMods = [];
+	$rootScope.$applyAsync();
+
+	document.getElementById('loadingstatus-divider').style.display = "none";
+
 	// Connect with ids
 	bngApi.engineLua('MPCoreNetwork.connectToServer("' + ip + '", ' + port + ',"' + name + '", ' + skipModWarning + ')');
 }
