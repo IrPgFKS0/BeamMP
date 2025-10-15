@@ -189,6 +189,6 @@
 
     "ui.options.multiplayer.enableNewChatDesign": "App Style",
     "ui.options.multiplayer.enableNewChatDesign.tooltip": "Choose the visual style for the application's user interface.",
-    "ui.options.multiplayer.enableNewChatDesign.redesign": "redesign",
+    "ui.options.multiplayer.enableNewChatDesign.redesign": "Redesign",
     "ui.options.multiplayer.enableNewChatDesign.old": "Old"
 }
