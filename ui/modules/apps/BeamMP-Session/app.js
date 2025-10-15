@@ -16,8 +16,21 @@ app.directive('multiplayersession', [function () {
 	}
 }]);
 
-app.controller("Session", ['$scope', '$mdDialog', function ($scope, $mdDialog) {
+app.controller("Session", ['$scope', '$mdDialog', 'Settings', function ($scope, $mdDialog, Settings) {
+
+	const applySessionStyle = function(useNewDesign) {
+		const stylesheet = document.getElementById('session-style');
+		if (!stylesheet) return;
+
+		let newStylePath = useNewDesign ? '/ui/modules/apps/BeamMP-Session/redesign.css' : '/ui/modules/apps/BeamMP-Session/app.css';
+		
+		if (stylesheet.getAttribute('href') !== newStylePath) {
+			stylesheet.setAttribute('href', newStylePath);
+		}
+	};
+
 	$scope.init = function() {
+		applySessionStyle(Settings.values.enableNewChatDesign);
 		bngApi.engineLua('UI.setServerName()'); // request server name
 		bngApi.engineLua('UI.sendQueue()'); // request queue data
 		//TODO: ping request to instantly populate the player count
@@ -40,6 +53,11 @@ app.controller("Session", ['$scope', '$mdDialog', function ($scope, $mdDialog) {
 	$scope.select = function() {
 		bngApi.engineLua('setCEFFocus(true)');
 	};
+
+	$scope.$on('SettingsChanged', function (event, data) {
+		Settings.values = data.values;
+		applySessionStyle(Settings.values.enableNewChatDesign);
+	});
 
 	$scope.$on('showMdDialog', function (event, data) {
 		switch (data.dialogtype) {
@@ -196,4 +214,3 @@ function isMarqueeNeeded(element) {
 	const block = document.getElementById('server-name-block');
     return element.offsetWidth > block.getBoundingClientRect().width;
 }
-
