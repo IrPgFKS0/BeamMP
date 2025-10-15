@@ -14,7 +14,7 @@
         <span style="flex: 1;">
           <code>{{mod.number}} - {{mod.name}}</code>
           {{ ' - ' }}
-          <span style="color: darkgray;font-size: 0.8em;">{{$index === 0 ? mod.speed : 'Downloaded'}}</span>
+          <span style="color: darkgray;font-size: 0.8em;">{{$index === 0 ? mod.speed : ('ui.multiplayer.download.downloaded' | translate)}}</span>
         </span>
         <div style="flex: 2;" ng-if="$index === 0 && mod.progress != 100">
           <md-progress-linear md-mode="determinate" value="{{mod.progress}}" class="md-accent"></md-progress-linear>

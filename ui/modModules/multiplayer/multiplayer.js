@@ -768,7 +768,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 				if (lastModInfo != '' && lastModInfo != modName) {
 					const lastMod = vm.downloadingMods.find(mod => mod.name === lastModInfo);
 					lastMod.progress = 100;
-					lastMod.speed = 'Done';
+					lastMod.speed = $filter('translate')('ui.multiplayer.download.done');
 					lastModInfo = modName;
 				}
 			});
@@ -792,14 +792,14 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 				const existingMod = vm.downloadingMods.find(mod => mod.name === modName);
 				if (existingMod) {
 					existingMod.progress = '100';
-					existingMod.speed = 'Loading';
+					existingMod.speed = $filter('translate')('ui.multiplayer.loading');
 				} else {
-					vm.downloadingMods = [{ number: modNumber, name: modName, progress: '100', speed: 'Loading' }, ...vm.downloadingMods];
+					vm.downloadingMods = [{ number: modNumber, name: modName, progress: '100', speed: $filter('translate')('ui.multiplayer.loading') }, ...vm.downloadingMods];
 				}
 			});
 		} else {
 			if (data.message == "done") {
-				vm.loadingStatus = "Done";
+				vm.loadingStatus = $filter('translate')('ui.multiplayer.download.done');
 				lastModInfo = '';
 			} else {
 				vm.loadingStatus = data.message;
