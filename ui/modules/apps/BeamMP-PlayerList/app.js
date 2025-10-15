@@ -46,7 +46,7 @@ app.controller("PlayerList", ['$scope', '$filter', 'Settings', function ($scope,
 		bngApi.engineLua("guihooks.trigger('updateCustomButtons', UI.getCustomButtonNames())")
 		
 		// Apply style on init
-		applyPlayerListStyle(Settings.values.enableNewChatDesign);
+		applyPlayerListStyle(Settings.values.useUiAppRedesign);
       	bngApi.engineLua('settings.getValue("showPlayerIDs")', (data) => {
       		$scope.showPlayerIDs = data
     	})
@@ -57,7 +57,7 @@ app.controller("PlayerList", ['$scope', '$filter', 'Settings', function ($scope,
 
 	$scope.$on('SettingsChanged', function (event, data) {
 		Settings.values = data.values;
-		applyPlayerListStyle(Settings.values.enableNewChatDesign);
+		applyPlayerListStyle(Settings.values.useUiAppRedesign);
 		$scope.showPlayerIDs = Settings.values.showPlayerIDs;
 		$scope.playerlistLeftclick = Settings.values.playerlistLeftclick;
 	});
