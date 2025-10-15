@@ -30,7 +30,7 @@ app.controller("Session", ['$scope', '$mdDialog', 'Settings', function ($scope, 
 	};
 
 	$scope.init = function() {
-		applySessionStyle(Settings.values.enableNewChatDesign);
+		applySessionStyle(Settings.values.useUiAppRedesign);
 		bngApi.engineLua('UI.setServerName()'); // request server name
 		bngApi.engineLua('UI.sendQueue()'); // request queue data
 		//TODO: ping request to instantly populate the player count
@@ -56,7 +56,7 @@ app.controller("Session", ['$scope', '$mdDialog', 'Settings', function ($scope, 
 
 	$scope.$on('SettingsChanged', function (event, data) {
 		Settings.values = data.values;
-		applySessionStyle(Settings.values.enableNewChatDesign);
+		applySessionStyle(Settings.values.useUiAppRedesign);
 	});
 
 	$scope.$on('showMdDialog', function (event, data) {
