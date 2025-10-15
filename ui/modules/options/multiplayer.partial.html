@@ -47,11 +47,11 @@
 </md-list-item>
 
 <md-list-item md-no-ink>
-  <p>{{:: 'ui.options.multiplayer.enableNewChatDesign' | translate }}</p>
-  <md-tooltip md-direction="right">{{:: 'ui.options.multiplayer.enableNewChatDesign.tooltip' | translate }}</md-tooltip> 
-  <md-select aria-label="App Style" ng-model="options.data.values.enableNewChatDesign" ng-change="options.applyState()">
-    <md-option md-no-ink ng-value="0">{{:: 'ui.options.multiplayer.enableNewChatDesign.old' | translate }}</md-option>
-    <md-option md-no-ink ng-value="1">{{:: 'ui.options.multiplayer.enableNewChatDesign.redesign' | translate }}</md-option>
+  <p><span class="mp-setting-highlight">{{:: 'ui.options.multiplayer.experimental' | translate }}</span> {{:: 'ui.options.multiplayer.useUiAppRedesign' | translate }}</p>
+  <md-tooltip md-direction="right">{{:: 'ui.options.multiplayer.useUiAppRedesign.tooltip' | translate }}</md-tooltip> 
+  <md-select aria-label="UI App Style" ng-model="options.data.values.useUiAppRedesign" ng-change="options.applyState()">
+    <md-option md-no-ink ng-value="0">{{:: 'ui.options.multiplayer.useUiAppRedesign.old' | translate }}</md-option>
+    <md-option md-no-ink ng-value="1">{{:: 'ui.options.multiplayer.useUiAppRedesign.redesign' | translate }}</md-option>
   </md-select>
 </md-list-item>
 
