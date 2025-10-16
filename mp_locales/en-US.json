@@ -187,5 +187,9 @@
     "ui.apps.multiplayer.playerlist.openProfile": "Open profile",
     "ui.apps.multiplayer.playerlist.restoreVehicles": "Queue deleted vehicles",
     "ui.apps.multiplayer.playerlist.players": "Players",
-    "ui.apps.multiplayer.playerlist.error": "No players.. something is wrong"
+    "ui.apps.multiplayer.playerlist.error": "No players.. something is wrong",
+    "ui.options.multiplayer.useUiAppRedesign": "UI App Style",
+    "ui.options.multiplayer.useUiAppRedesign.tooltip": "Choose the visual style for BeamMP's ui apps.",
+    "ui.options.multiplayer.useUiAppRedesign.redesign": "Redesign",
+    "ui.options.multiplayer.useUiAppRedesign.old": "Old"
 }

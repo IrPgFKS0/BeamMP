@@ -21,7 +21,27 @@ app.directive('multiplayerchat', [function () {
 
 
 app.controller("Chat", ['$scope', 'Settings', function ($scope, Settings) {
+	const applyChatStyle = function(useNewDesign) {
+		const stylesheet = document.getElementById('chat-style');
+		const sendButton = document.getElementById('send-button');
+		if (!stylesheet) return;
+		let newStylePath;
+		if (useNewDesign) {
+			newStylePath = '/ui/modules/apps/BeamMP-Chat/redesign.css';
+			if (sendButton) sendButton.innerHTML = '💬';
+		} else {
+			newStylePath = '/ui/modules/apps/BeamMP-Chat/app.css';
+			if (sendButton) sendButton.innerHTML = 'Send';
+		}		
+		if (stylesheet.getAttribute('href') !== newStylePath) {
+			stylesheet.setAttribute('href', newStylePath);
+		}
+		scrollToLastMessage();
+	};
+
 	$scope.init = function() {
+		applyChatStyle(Settings.values.useUiAppRedesign);
+
 		var chatMessages = retrieveChatMessages()
 		newChatMenu = Settings.values.enableNewChatMenu;
 		//console.log(`[CHAT] New chat menu: ${newChatMenu}`);
@@ -150,6 +170,9 @@ app.controller("Chat", ['$scope', 'Settings', function ($scope, Settings) {
 
 	$scope.$on('SettingsChanged', function (event, data) {
 		Settings.values = data.values;
+
+		applyChatStyle(Settings.values.useUiAppRedesign);
+
 		const chatbox = document.getElementById("chat-window");
 		if (newChatMenu) {
 			chatbox.style.display = "none";
