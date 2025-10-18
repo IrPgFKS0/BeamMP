@@ -65,7 +65,7 @@
 			transform: translateY(-2px);
 		}
 		#players-table td {
-			padding: 4px 5px;
+			padding: 0px 5px;
 			max-width: 100%;
 			max-width: 0;
 			overflow: hidden;
