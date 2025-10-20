@@ -966,29 +966,28 @@ function($scope, $state, $timeout, $filter) {
 		let startIndex = Math.max(0, scrollRow - Math.ceil(itemsPerView) + buffer);
 		let endIndex = Math.min(total, scrollRow + Math.ceil(itemsPerView) + buffer);
 		
-		$scope.afterInfoRowHeight = 0;
-		$scope.beforeInfoRowHeight = 0;
+		let beforeHeight = startIndex * itemHeight;
+		let afterHeight = (total - endIndex) * itemHeight;
+
 		if ($scope.selectedServerId && $scope.selectedIndex !== -1) {
 			const selectedServerExists = $scope.serversArray.some(s => s.id === $scope.selectedServerId);
 			if (selectedServerExists) {
 				// when selectedIndex is not in the view anymore
 				if ($scope.selectedIndex < startIndex || $scope.selectedIndex >= endIndex) {
-					
 					//if the selected server is above the current view
 					if ($scope.selectedIndex < scrollRow) {		//this compense the height of the expanded row that is not rendered anymore
-						$scope.beforeInfoRowHeight = $scope.expandedRowHeight;
+						beforeHeight += $scope.expandedRowHeight;
 					}else{	//if the selected server is below the current view
-						$scope.afterInfoRowHeight = $scope.expandedRowHeight;
+						afterHeight += $scope.expandedRowHeight;
 					}
 				}
 			}
 		}
 
 		$scope.visibleServers = $scope.serversArray.slice(startIndex, endIndex);
-		$scope.beforeHeight = startIndex * itemHeight;
-		$scope.afterHeight = (total - endIndex) * itemHeight;
+		$scope.beforeHeight = beforeHeight;
+		$scope.afterHeight = afterHeight;
 		if (!$scope.$$phase) $scope.$digest();
-
 	};
 
 	$scope.selectServer = function(server) {
