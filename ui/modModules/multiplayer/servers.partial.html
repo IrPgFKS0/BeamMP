@@ -151,7 +151,7 @@
 									<tr><td>Owner:</td><td>{{server.server.owner|| ""}}</td></tr>
 									<tr><td>Map:</td><td>{{SmoothMapName(server.server.map || "")}}</td></tr>
 									<tr><td>Players:</td><td>{{server.server.players|| ""}}/{{server.server.maxplayers|| ""}}</td></tr>
-									<tr><td valign="top">Description:</td><td ng-bind-html="formatCodes(server.server.sdesc|| '')"></td></tr>
+									<tr><td valign="top">Description:</td><td ng-bind-html="formatCodes(server.server.sdesc|| '', true)"></td></tr>
 								</table>
 							</div>
 							<div class="col">
