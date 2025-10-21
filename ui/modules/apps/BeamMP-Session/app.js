@@ -135,6 +135,7 @@ app.controller("Session", ['$scope', '$mdDialog', 'Settings', function ($scope, 
 		queueElem.innerHTML = `${queue.spawnCount}|${queue.editCount}`;
 		queueElem.title = `Edits: ${queue.editCount}\nSpawns: ${queue.spawnCount}`; // titles dont work in game :C
 
+		updateRightCorners();
 	});
 
 	$scope.$on('setAutoQueueProgress', function (event, progress) {
@@ -160,14 +161,30 @@ app.controller("Session", ['$scope', '$mdDialog', 'Settings', function ($scope, 
 				}
 			}
 		}
+		updateRightCorners();
 	});
 
 	$scope.$on('setPlayerCount', function (event, count) {
 		document.getElementById("Session-PlayerCount").innerHTML = count;
+		updateRightCorners();
 	});
 }]);
 
 
+function updateRightCorners() {
+	const blocks = document.querySelectorAll('.outerDiv > div.block, .outerDiv > div:not(.block)'); 
+	blocks.forEach(b => {
+		b.style.borderTopRightRadius = '0';
+		b.style.borderBottomRightRadius = '0';
+	});
+	for (let i = blocks.length - 1; i >= 0; i--) {
+		if (blocks[i].style.display !== 'none') {
+			blocks[i].style.borderTopRightRadius = '8px';
+			blocks[i].style.borderBottomRightRadius = '8px';
+			break;
+		}
+	}
+}
 
 function formatServerName(string) {
     let result = '';
