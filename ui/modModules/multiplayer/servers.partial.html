@@ -127,8 +127,7 @@
 					<td class="loading-shimmer" colspan="4"></td>
 				</tr>	
     			<tr ng-style="{'height': beforeHeight + 'px'}"></tr>
-				<tr ng-style="{'height': beforeInfoRowHeight + 'px'}" ></tr>
-				<tr class="server-item" ng-repeat-start="server in visibleServers track by server.server.ip + ':' + server.server.port" ng-show="serversTable" ng-click="selectServer(server)" ng-class="{'highlight': server.server.ip + ':' + server.server.port === selectedServerId}">
+				<tr class="server-item" ng-repeat-start="server in visibleServers track by server.id" ng-show="serversTable" ng-click="selectServer(server)" ng-class="{'highlight': server.server.ip + ':' + server.server.port === selectedServerId}">
 					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" class="server-flag" style="font-size: initial; padding-left: 3px; text-align: right; padding-right: 10px" ><img ng-src="local://local/ui/modModules/multiplayer/flags/{{server.server.location.toLowerCase()}}.png" class="flag"></img> {{server.server.location}}</td>
 					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" class="server-servername" ng-bind-html="formatCodes(server.name)" ></td>
 					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" class="server-mapname" style="font-size: initial">{{SmoothMapName(server.server.map)}}</td>
@@ -151,13 +150,13 @@
 									<tr><td>Owner:</td><td>{{server.server.owner|| ""}}</td></tr>
 									<tr><td>Map:</td><td>{{SmoothMapName(server.server.map || "")}}</td></tr>
 									<tr><td>Players:</td><td>{{server.server.players|| ""}}/{{server.server.maxplayers|| ""}}</td></tr>
-									<tr><td valign="top">Description:</td><td ng-bind-html="formatCodes(server.server.sdesc|| '')"></td></tr>
+									<tr><td valign="top">Description:</td><td ng-bind-html="formatCodes(server.server.sdesc|| '', true)"></td></tr>
 								</table>
 							</div>
 							<div class="col">
 								<ul class="serverItemDetails">
 									<li>Mods: {{modCount(server.server.modlist|| "")}}</li>
-									<li>Mod Names: {{modList(server.server.modlist|| "")}}</li>
+									<li>Mod Names: <div style="margin-left: 10px; max-width: 75%; max-height: 200px; overflow-y: auto; background: rgba(0, 0, 0, 0.1);">{{modList(server.server.modlist|| "")}}</div></li>
 									<li>Total Mods Size: {{formatBytes(server.server.modstotalsize) || "0"}}</li>
 								</ul>
 							</div>
@@ -177,7 +176,6 @@
 						</div>
 					</td>
 				</tr>
-				<tr ng-style="{'height': afterInfoRowHeight + 'px'}" ></tr>
     			<tr ng-style="{'height': afterHeight + 'px'}"></tr>
 			</tbody>
 		</table>

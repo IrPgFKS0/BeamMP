@@ -1156,6 +1156,9 @@ local function sendVehicleSpawn(gameVehicleID)
 		-- The vehicle_manager.lua may not contain the correct color values, since v0.31, when we read them from that lua, so we read those from the object itself
 		vehicleTable.vcf.paints = MPHelpers.getColorsFromVehObj(veh)
 
+		-- License plate names doesn't allways exist in the vehicle config, so we need to add it manually
+		vehicleTable.vcf.licenseName = veh:getDynDataFieldbyName("licenseText", 0)
+
 		local stringToSend = jsonEncode(vehicleTable) -- Encode table to send it as json string
 		MPGameNetwork.send('Os:0:'..stringToSend) -- Send table that contain all vehicle informations for each vehicle
 		log('I', "sendVehicle", "Vehicle "..gameVehicleID.." was sent")
@@ -1196,6 +1199,9 @@ local function sendVehicleEdit(gameVehicleID)
 	vehicleTable.ign = settings.getValue("spawnVehicleIgnitionLevel") or 3 -- Ingition state
 	-- The vehicle_manager.lua may not contain the correct color values, since v0.31, when we read them from that lua, so we read those from the object itself
 	vehicleTable.vcf.paints = MPHelpers.getColorsFromVehObj(veh)
+
+	-- License plate names doesn't allways exist in the vehicle config, so we need to add it manually
+	vehicleTable.vcf.licenseName = veh:getDynDataFieldbyName("licenseText", 0)
 
 	local stringToSend = jsonEncode(vehicleTable) -- Encode table to send it as json string
 	MPGameNetwork.send('Oc:'..getServerVehicleID(gameVehicleID)..':'..stringToSend) -- Send table that contain all vehicle informations for each vehicle
@@ -1341,7 +1347,10 @@ local function applyVehSpawn(event)
 		players[vehicle.ownerID]:addVehicle(vehicle)
 	end
 
-	core_vehicles.setPlateText(event.playerNickname, spawnedVehID)
+	if settings.getValue("licensePlateUsesPlayerName") then
+		core_vehicles.setPlateText(event.playerNickname, spawnedVehID)
+	end
+
 	spawnedVeh:queueLuaCommand("hydros.onFFBConfigChanged(nil)")
 	spawnedVeh:queueLuaCommand("MPPowertrainVE.setIgnitionState("..ignitionLevel..")")
 end
@@ -1382,6 +1391,9 @@ local function applyVehEdit(serverID, data)
 			if configChanged then
 				veh:setDynDataFieldbyName("autoEnterVehicle", 0, tostring((be:getPlayerVehicle(0) and be:getPlayerVehicle(0):getID() == gameVehicleID) or false))
 				veh:respawn(serialize(playerVehicle.config))
+				if settings.getValue("licensePlateUsesPlayerName") then
+					core_vehicles.setPlateText(data.playerNickname, gameVehicleID)
+				end
 			elseif vehicleConfig.paints then
 				log('I','applyVehEdit', "only color changed")
 				for k, v in pairs(vehicleConfig.paints) do
@@ -1403,6 +1415,10 @@ local function applyVehEdit(serverID, data)
 		veh:setDynDataFieldbyName("autoEnterVehicle", 0, tostring((be:getPlayerVehicle(0) and be:getPlayerVehicle(0):getID() == gameVehicleID) or false))
 		log('I', 'applyVehEdit', "Updating vehicle from server "..vehicleName.." with id "..serverID)
 		spawn.setVehicleObject(veh, options)
+
+		if settings.getValue("licensePlateUsesPlayerName") then
+			core_vehicles.setPlateText(playerName, gameVehicleID)
+		end
 	end
 	
 	veh:setField("protected", 0, protected or "0")
