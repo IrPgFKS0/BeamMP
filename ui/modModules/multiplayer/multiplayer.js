@@ -966,29 +966,28 @@ function($scope, $state, $timeout, $filter) {
 		let startIndex = Math.max(0, scrollRow - Math.ceil(itemsPerView) + buffer);
 		let endIndex = Math.min(total, scrollRow + Math.ceil(itemsPerView) + buffer);
 		
-		$scope.afterInfoRowHeight = 0;
-		$scope.beforeInfoRowHeight = 0;
+		let beforeHeight = startIndex * itemHeight;
+		let afterHeight = (total - endIndex) * itemHeight;
+
 		if ($scope.selectedServerId && $scope.selectedIndex !== -1) {
 			const selectedServerExists = $scope.serversArray.some(s => s.id === $scope.selectedServerId);
 			if (selectedServerExists) {
 				// when selectedIndex is not in the view anymore
 				if ($scope.selectedIndex < startIndex || $scope.selectedIndex >= endIndex) {
-					
 					//if the selected server is above the current view
 					if ($scope.selectedIndex < scrollRow) {		//this compense the height of the expanded row that is not rendered anymore
-						$scope.beforeInfoRowHeight = $scope.expandedRowHeight;
+						beforeHeight += $scope.expandedRowHeight;
 					}else{	//if the selected server is below the current view
-						$scope.afterInfoRowHeight = $scope.expandedRowHeight;
+						afterHeight += $scope.expandedRowHeight;
 					}
 				}
 			}
 		}
 
 		$scope.visibleServers = $scope.serversArray.slice(startIndex, endIndex);
-		$scope.beforeHeight = startIndex * itemHeight;
-		$scope.afterHeight = (total - endIndex) * itemHeight;
+		$scope.beforeHeight = beforeHeight;
+		$scope.afterHeight = afterHeight;
 		if (!$scope.$$phase) $scope.$digest();
-
 	};
 
 	$scope.selectServer = function(server) {
@@ -1311,30 +1310,7 @@ globalThis.serverStyleMap = {
     '^o': 'italic'
 };
 
-var descStyleMap = {
-    '^0': 'color:#000000',
-    '^1': 'color:#0000AA',
-    '^2': 'color:#00AA00',
-    '^3': 'color:#00AAAA',
-    '^4': 'color:#AA0000',
-    '^5': 'color:#AA00AA',
-    '^6': 'color:#FFAA00',
-    '^7': 'color:#AAAAAA',
-    '^8': 'color:#555555',
-    '^9': 'color:#5555FF',
-    '^a': 'color:#55FF55',
-    '^b': 'color:#55FFFF',
-    '^c': 'color:#FF5555',
-    '^d': 'color:#FF55FF',
-    '^e': 'color:#FFFF55',
-    '^f': 'color:#FFFFFF',
-    '^l': 'font-weight:bold',
-    '^m': 'text-decoration:line-through',
-    '^n': 'text-decoration:underline',
-    '^o': 'font-style:italic',
-};
-
-function formatCodes(string) {
+function formatCodes(string, isdesc = false) {
     let result = '';
     let currentText = '';
     let classes = new Set();
@@ -1357,6 +1333,8 @@ function formatCodes(string) {
             flush();
             if (token === '^r') {
                 classes.clear();
+            } else if (isdesc && token === '^p') {
+                currentText += '<br>';
             } else {
                 const cls = globalThis.serverStyleMap?.[token];
                 if (cls?.startsWith('color-')) {
