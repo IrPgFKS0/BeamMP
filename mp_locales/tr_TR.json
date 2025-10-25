@@ -178,6 +178,8 @@
   "ui.multiplayer.filters.serverVersions": "Sunucu Versiyon(ları):",
   "ui.multiplayer.filters.tags": "Etiketler:",
   "ui.multiplayer.filters.serverLocations": "Lokasyon(lar): ",
+  "ui.multiplayer.download.done": "Bitti — Bu ekranda takıldınız mı? Şu adımları deneyin: https://docs.beammp.com/FAQ/How-to-deactivate-mods/ ve bu da yardımcı olmazsa, BeamMP Discord'u veya Forumu üzerinden bizimle iletişime geçin.",
+  "ui.multiplayer.download.downloaded": "İndirildi",
   "ui.apps.multiplayer.playerlist.copyname": "Adı kopyala",
   "ui.apps.multiplayer.playerlist.deleteAllVehicles": "Tüm araçları sil",
   "ui.apps.multiplayer.playerlist.queueEvents": "Etkinlikleri kuyruğa ekle",
@@ -185,5 +187,9 @@
   "ui.apps.multiplayer.playerlist.openProfile": "Profili göster",
   "ui.apps.multiplayer.playerlist.restoreVehicles": "Silinen araçları kuyruğa ekle",
   "ui.apps.multiplayer.playerlist.players": "Oyuncular",
-  "ui.apps.multiplayer.playerlist.error": "Oyuncu yok... bir sorun var"
+  "ui.apps.multiplayer.playerlist.error": "Oyuncu yok... bir sorun var",
+  "ui.options.multiplayer.useUiAppRedesign": "UI Uygulama Stili",
+  "ui.options.multiplayer.useUiAppRedesign.tooltip": "BeamMP'nin kullanıcı arayüzü uygulamaları için görsel stili seçin.",
+  "ui.options.multiplayer.useUiAppRedesign.redesign": "Yeni Tasarım",
+  "ui.options.multiplayer.useUiAppRedesign.old": "Eski Tasarım"
 }
