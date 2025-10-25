@@ -1385,6 +1385,9 @@ local function applyVehEdit(serverID, data)
 			if configChanged then
 				veh:setDynDataFieldbyName("autoEnterVehicle", 0, tostring((be:getPlayerVehicle(0) and be:getPlayerVehicle(0):getID() == gameVehicleID) or false))
 				veh:respawn(serialize(playerVehicle.config))
+				if settings.getValue("licensePlateUsesPlayerName") then
+					core_vehicles.setPlateText(data.playerNickname, gameVehicleID)
+				end
 			elseif vehicleConfig.paints then
 				log('I','applyVehEdit', "only color changed")
 				for k, v in pairs(vehicleConfig.paints) do
@@ -1406,6 +1409,10 @@ local function applyVehEdit(serverID, data)
 		veh:setDynDataFieldbyName("autoEnterVehicle", 0, tostring((be:getPlayerVehicle(0) and be:getPlayerVehicle(0):getID() == gameVehicleID) or false))
 		log('I', 'applyVehEdit', "Updating vehicle from server "..vehicleName.." with id "..serverID)
 		spawn.setVehicleObject(veh, options)
+
+		if settings.getValue("licensePlateUsesPlayerName") then
+			core_vehicles.setPlateText(playerName, gameVehicleID)
+		end
 	end
 	
 	veh:setField("protected", 0, protected or "0")
