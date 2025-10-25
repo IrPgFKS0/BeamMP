@@ -178,6 +178,8 @@
   "ui.multiplayer.filters.serverVersions": "Версия(и) сервера:",
   "ui.multiplayer.filters.tags": "Теги:",
   "ui.multiplayer.filters.serverLocations": "Местоположение(я):",
+  "ui.multiplayer.download.done": "Готово — Застряли на этом экране? Попробуйте эти шаги: https://docs.beammp.com/FAQ/How-to-deactivate-mods/\n и если это не поможет, свяжитесь с нами на Discord или форуме BeamMP.",
+  "ui.multiplayer.download.downloaded": "Загружено",
   "ui.apps.multiplayer.playerlist.copyname": "Копировать имя",
   "ui.apps.multiplayer.playerlist.deleteAllVehicles": "Удалить все транспортные средства",
   "ui.apps.multiplayer.playerlist.queueEvents": "Очередь событий",
@@ -185,5 +187,9 @@
   "ui.apps.multiplayer.playerlist.openProfile": "Открыть профиль",
   "ui.apps.multiplayer.playerlist.restoreVehicles": "Очередь удаленных транспортных средств",
   "ui.apps.multiplayer.playerlist.players": "Игроки",
-  "ui.apps.multiplayer.playerlist.error": "Нет игроков.. что-то не так"
+  "ui.apps.multiplayer.playerlist.error": "Нет игроков.. что-то не так",
+  "ui.options.multiplayer.useUiAppRedesign": "Стиль UI-приложений",
+  "ui.options.multiplayer.useUiAppRedesign.tooltip": "Выберите визуальный стиль для UI-приложений BeamMP.",
+  "ui.options.multiplayer.useUiAppRedesign.redesign": "Редизайн",
+  "ui.options.multiplayer.useUiAppRedesign.old": "Старый"
 }
