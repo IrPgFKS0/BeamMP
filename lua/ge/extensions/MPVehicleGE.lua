@@ -1156,6 +1156,9 @@ local function sendVehicleSpawn(gameVehicleID)
 		-- The vehicle_manager.lua may not contain the correct color values, since v0.31, when we read them from that lua, so we read those from the object itself
 		vehicleTable.vcf.paints = MPHelpers.getColorsFromVehObj(veh)
 
+		-- License plate names doesn't allways exist in the vehicle config, so we need to add it manually
+		vehicleTable.vcf.licenseName = veh:getDynDataFieldbyName("licenseText", 0)
+
 		local stringToSend = jsonEncode(vehicleTable) -- Encode table to send it as json string
 		MPGameNetwork.send('Os:0:'..stringToSend) -- Send table that contain all vehicle informations for each vehicle
 		log('I', "sendVehicle", "Vehicle "..gameVehicleID.." was sent")
@@ -1196,6 +1199,9 @@ local function sendVehicleEdit(gameVehicleID)
 	vehicleTable.ign = settings.getValue("spawnVehicleIgnitionLevel") or 3 -- Ingition state
 	-- The vehicle_manager.lua may not contain the correct color values, since v0.31, when we read them from that lua, so we read those from the object itself
 	vehicleTable.vcf.paints = MPHelpers.getColorsFromVehObj(veh)
+
+	-- License plate names doesn't allways exist in the vehicle config, so we need to add it manually
+	vehicleTable.vcf.licenseName = veh:getDynDataFieldbyName("licenseText", 0)
 
 	local stringToSend = jsonEncode(vehicleTable) -- Encode table to send it as json string
 	MPGameNetwork.send('Oc:'..getServerVehicleID(gameVehicleID)..':'..stringToSend) -- Send table that contain all vehicle informations for each vehicle
