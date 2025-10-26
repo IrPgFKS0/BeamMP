@@ -12,14 +12,14 @@
 		justify-content: center;
 		flex-flow: row nowrap;
 	}
-    	.info-container {
+    .info-container {
         display: flex;
 		flex-flow: row nowrap;
         height: 100%;
         flex: 1 1 auto;
         min-width: 0;
     }
-    	.info-container > .block {
+    .info-container > .block {
 		min-height: 100%;
 		border: 2px solid rgba(175, 175, 175, 0.45);
 		background-color: rgba(0, 0, 0, 0.25);
