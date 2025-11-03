@@ -36,6 +36,7 @@ local function saveConfig(settings)
     config:close()
 end
 
+local color = imgui.ArrayFloat(3)
 
 -- ------------------------------
 -- ---[       Tabs        ]------
@@ -48,7 +49,10 @@ local function renderTheming()
                 longestSettingName = #setting.name
             end
             -- All are colors, create text and then 3 sliders
-            local color = ffi.new("float[4]", setting.tab.x, setting.tab.y, setting.tab.z, 1)
+            --local color = ffi.new("float[4]", setting.tab.x, setting.tab.y, setting.tab.z, 1)
+            color[0] = setting.tab.x
+            color[1] = setting.tab.y
+            color[2] = setting.tab.z
 
             imgui.Text(toTitleCase(setting.name))
             imgui.SameLine()
