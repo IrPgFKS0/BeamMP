@@ -36,7 +36,7 @@ div#Session {
 		border: 1px solid rgba(255, 255, 255, 0.2);
 		border-radius: 8px;
 		overflow: hidden;         
-        flex: 1 1 auto;
+        flex: 0 1 auto;
         min-width: 0;
 	}
 	.info-container > .block {
