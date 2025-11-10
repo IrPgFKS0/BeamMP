@@ -53,6 +53,8 @@
   "ui.options.multiplayer.enableBlobs.tooltip": "Spawnlanmayan araçlar renkli küreler (bloblar) olarak görünecektir",
   "ui.options.multiplayer.showSpectators": "İzleyicinin isim etiketini araç isim etiketinin altında göster",
   "ui.options.multiplayer.showSpectators.tooltip": "Başkalarının araçlarını izleyen oyuncular, isim etiketlerinin altında listelenecektir",
+  "ui.options.multiplayer.licensePlateUsesPlayerName": "Plakalarda oyuncu isimlerini göster",
+  "ui.options.multiplayer.licensePlateUsesPlayerName.tooltip": "Oyuncunun kullanıcı adını araç plakalarında gösterir.",
   "ui.options.multiplayer.spectatorUnifiedColors": "Seyirci isim etiketleri için aynı renk",
   "ui.options.multiplayer.spectatorUnifiedColors.tooltip": "Kullanıcının rolünden bağımsız olarak tüm izleyici isim etiketlerini gri olarak çizer",
   "ui.options.multiplayer.nametagFade": "İsim etiketlerini içeri/dışarı soldur",
