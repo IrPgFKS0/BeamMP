@@ -53,6 +53,8 @@
   "ui.options.multiplayer.enableBlobs.tooltip": "Ospawnade fordon kommer att visas som färgade sfärer (blobs)",
   "ui.options.multiplayer.showSpectators": "Visa åskådares namnlappar under fordonens namnlappar",
   "ui.options.multiplayer.showSpectators.tooltip": "Spelare som åskådar andra fordon kommer att listas under deras namnlappar",
+  "ui.options.multiplayer.licensePlateUsesPlayerName": "Visa Spelarnamn på registreringsskyltar",
+  "ui.options.multiplayer.licensePlateUsesPlayerName.tooltip": "Visar Spelarens användarnamn på fordonets registreringsskyltar",
   "ui.options.multiplayer.spectatorUnifiedColors": "Samma färg för åskådarnamnlappar",
   "ui.options.multiplayer.spectatorUnifiedColors.tooltip": "Rita alla åskådarnamnlappar som grå, oberoende av användarens roll",
   "ui.options.multiplayer.nametagFade": "Tona namnlappar in/ut",
