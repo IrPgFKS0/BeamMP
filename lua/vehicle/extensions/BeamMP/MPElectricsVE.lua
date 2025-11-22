@@ -18,23 +18,6 @@ local localSwingwing = 0 -- for DH Super bolide
 
 
 
-local function getEsc()
-	if controller.getController('driveModes') then
-		return controller.getController('driveModes').serialize().activeDriveModeKey
-	elseif controller.getController('esc') then
-		return controller.getController('esc').serialize().escConfigKey
-	end
-end
-
-local function setEsc(key)
-	if controller.getController('driveModes') then
-		controller.getController('driveModes').setDriveMode(key)
-	elseif controller.getController('esc') then
-		controller.getController('esc').setESCMode(key)
-	end
-end
-
-
 local disallowedKeys = {
 	["wheelThermals"] = 1,
 	["airflowspeed"] = 1,
@@ -455,11 +438,6 @@ local function applyElectrics(data)
 		-- LineLock syncing
 		if decodedData.linelock and electrics.values.linelock ~= decodedData.linelock then
 			controller.getControllerSafe("lineLock").setLineLock(decodedData.linelock)
-		end
-
-		-- ESC Mode syncing
-		if decodedData.escMode then
-			setEsc(decodedData.escMode)
 		end
 
 		-- ABS Behavior syncing
