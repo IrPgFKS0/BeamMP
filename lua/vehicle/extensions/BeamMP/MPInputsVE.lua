@@ -108,15 +108,18 @@ local function getInputs()
 					state = -state / (v.data.input.steeringWheelLock or 1) -- converts steering wheel degrees to an input value
 				end
 			end
-			if math.abs(state) < 0.001 then -- prevent super small values to count as updates
+			if math.abs(state) < 0.0001 then -- prevent super small values to count as updates
 				state = 0
 			end
-			state = math.floor(state * 1000) / 1000
-			if shortName[inputName] then
-				inputName = shortName[inputName]
-			end
+			state = math.floor((state * 10000) + 0.5) / 10000
 			if lastInputs[inputName] ~= state then
-				inputsToSend[inputName] = state
+				inputsToSend[shortName[inputName] or inputName] = state
+				if not lastInputs[inputName] then
+					if MPElectricsVE then
+						MPElectricsVE.excludeElectric(inputName)
+						MPElectricsVE.excludeElectric(inputName.."_input")
+					end
+				end
 				lastInputs[inputName] = state
 			end
 		end
@@ -134,7 +137,13 @@ end
 
 local function storeTargetValue(inputName,inputState)
 	if not inputCache[inputName] then
-		inputCache[inputName] = {smoother = newTemporalSmoothingNonLinear(smoothingRate), currentValue = 0, state = inputState}
+		local maxLimit
+		local minLimit
+		if input.state[inputName] then
+			maxLimit = input.state[inputName].maxLimit
+			minLimit = input.state[inputName].minLimit
+		end
+		inputCache[inputName] = {smoother = newTemporalSmoothingNonLinear(smoothingRate), currentValue = 0, state = inputState, maxLimit = maxLimit or 1, minLimit = minLimit or -1}
 		if v.mpVehicleType == "R" then -- non defined inputs do not exist in input.state until they are pressed once so we have to add those here instead
 			input.setAllowedInputSource(inputName, "local", false)
 			input.setAllowedInputSource(inputName, "BeamMP", true)
@@ -165,9 +174,12 @@ local function updateGFX(dt)
 			applyGear(remoteGear)
 		end
 		for inputName, inputData in pairs(inputCache) do -- smoothing and applying the inputs
-			local differece = inputData.state - inputData.currentValue
-			if  math.abs(differece) < 0.0001 then -- because exponential smoothing never reaches the target value the brake/parking brake would never reach 0 causing automatics to never shift up
+			local difference = math.abs(inputData.state - inputData.currentValue)
+			local distToMax = math.abs(inputData.state - inputData.maxLimit)
+			local distToMin = math.abs(inputData.state - inputData.minLimit)
+			if distToMax < 0.01 or distToMin < 0.01 or difference > 0.2 then -- because exponential smoothing never reaches the target value the brake/parking brake would never reach 0 causing automatics to never shift up
 				inputData.currentValue = inputData.state
+				inputData.smoother:set(inputData.state,dt)
 			else
 				inputData.currentValue = inputData.smoother:get(inputData.state,dt)
 			end
@@ -203,6 +215,10 @@ end
 local function onExtensionLoaded()
 	for inputName, state in pairs(input.state) do
 		storeTargetValue(inputName, 0) -- sets all inputs to 0 on spawn so cars don't drive around with the parking brake stuck on
+		if MPElectricsVE then
+			MPElectricsVE.excludeElectric(inputName)
+			MPElectricsVE.excludeElectric(inputName.."_input")
+		end
 	end
 end
 
