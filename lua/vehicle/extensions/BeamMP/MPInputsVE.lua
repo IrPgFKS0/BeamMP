@@ -111,12 +111,15 @@ local function getInputs()
 			if math.abs(state) < 0.001 then -- prevent super small values to count as updates
 				state = 0
 			end
-			state = math.floor(state * 1000) / 1000
-			if shortName[inputName] then
-				inputName = shortName[inputName]
-			end
+			state = math.floor((state * 1000) + 0.5) / 1000
 			if lastInputs[inputName] ~= state then
-				inputsToSend[inputName] = state
+				inputsToSend[shortName[inputName] or inputName] = state
+				if not lastInputs[inputName] then
+					if MPElectricsVE then
+						MPElectricsVE.excludeElectric(inputName)
+						MPElectricsVE.excludeElectric(inputName.."_input")
+					end
+				end
 				lastInputs[inputName] = state
 			end
 		end
@@ -203,6 +206,10 @@ end
 local function onExtensionLoaded()
 	for inputName, state in pairs(input.state) do
 		storeTargetValue(inputName, 0) -- sets all inputs to 0 on spawn so cars don't drive around with the parking brake stuck on
+		if MPElectricsVE then
+			MPElectricsVE.excludeElectric(inputName)
+			MPElectricsVE.excludeElectric(inputName.."_input")
+		end
 	end
 end
 

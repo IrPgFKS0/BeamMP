@@ -8,28 +8,14 @@ local M = {}
 
 -- ============= VARIABLES =============
 local lastElectrics = {}
+local checkElectrics = {}
+local electricsToSend = {}
+
 local latestData
 local electricsChanged = false
 local localSwingwing = 0 -- for DH Super bolide
 -- ============= VARIABLES =============
 
-
-
-local function getEsc()
-	if controller.getController('driveModes') then
-		return controller.getController('driveModes').serialize().activeDriveModeKey
-	elseif controller.getController('esc') then
-		return controller.getController('esc').serialize().escConfigKey
-	end
-end
-
-local function setEsc(key)
-	if controller.getController('driveModes') then
-		controller.getController('driveModes').setDriveMode(key)
-	elseif controller.getController('esc') then
-		controller.getController('esc').setESCMode(key)
-	end
-end
 
 
 local disallowedKeys = {
@@ -218,6 +204,28 @@ local disallowedKeys = {
 	["ignition"] = 1,
 	["ignitionLevel"] = 1,
 	["postCrashBrakeTriggered"] = 1,
+	["hPatternAxisX"] = 1,
+	["hPatternAxisY"] = 1,
+	["gear"] = 1,
+	["gearIndex"] = 1,
+	["gearModeIndex"] = 1,
+	["steering_timestamp"] = 1,
+	["strut_F_axleLift"] = 1,
+	["strut_R_axleLift"] = 1,
+	["dseWarningPulse"] = 1,
+	["regenFromBrake"] = 1,
+	["regenFromOnePedal"] = 1,
+	["brakelight_signal_L"] = 1,
+	["brakelight_signal_R"] = 1,
+	["lowhighbeam_signal_R"] = 1,
+	["lowhighbeam_signal_L"] = 1,
+	["reverse_wigwag_L"] = 1,
+	["reverse_wigwag_R"] = 1,
+	["highbeam_wigwag_L"] = 1,
+	["highbeam_wigwag_R"] = 1,
+	["parkingbrakelight"] = 1,
+	["jato"] = 1,
+	["jatoInput"] = 1,
 	---modded vehicles --
 	-- me262 plane ------
 	["inst_pitch"] = 1,
@@ -265,38 +273,127 @@ local disallowedKeys = {
 	["steeringBike3"] = 1
 }
 
-local function round2(num, numDecimalPlaces)
-  return tonumber(string.format("%." .. (numDecimalPlaces or 0) .. "f", num))
+local function excludeElectric(electricName)
+	if electricName then
+		disallowedKeys[electricName] = 1
+	end
 end
 
-local function check()
-	local electricsToSend = {} -- This holds the data that is different from the last frame to be sent since it is different
-	local electricsChanged = false
-	electrics.values.escMode = getEsc()
-	local e = electrics.values
-	if not e then return end -- Error avoidance in console
-	for k,v in pairs(e) do -- For each electric value
-		if not disallowedKeys[k] then -- If it's not a disallowed key
-			if k == "fuelVolume" then
-				if lastElectrics[k] ~= round2(v, 1) then -- If the value changed
-					electricsChanged = true -- Send electrics
-					lastElectrics[k] = round2(v, 1) -- Define the new value
-					electricsToSend[k] = round2(v, 1)
-				end
-			else
-				if lastElectrics[k] ~= v then -- If the value changed
-					electricsChanged = true -- Send electrics
-					lastElectrics[k] = v -- Define the new value
-					electricsToSend[k] = v
+local function searchObjectForElectrics(object)
+	for varname,val in pairs(object) do
+		if string.match(varname,"ElectricsName") or string.match(varname,"electricsName") or string.match(varname,"ElectricName") then
+			excludeElectric(val)
+		end
+	end
+end
+
+local function checkForElectricsToExclude()
+	for _,storage in pairs(energyStorage.getStorages()) do
+		searchObjectForElectrics(storage)
+	end
+	for _,device in pairs(powertrain.getDevices()) do
+		searchObjectForElectrics(device)
+	end
+	for _,controller in pairs(controller.getAllControllers()) do
+		if controller.typeName == "pneumatics/airbrakes" then
+			if electrics.values[controller.name .. "_pressure_service"] then excludeElectric(controller.name .. "_pressure_service") end
+			if electrics.values[controller.name .. "_pressure_parking"] then excludeElectric(controller.name .. "_pressure_parking") end
+		end
+		if controller.typeName == "pneumatics/liftAxleControl" then
+			if electrics.values[controller.name .. "_main_airbags_pressure_avg"] then excludeElectric(controller.name .. "_main_airbags_pressure_avg") end
+			if electrics.values[controller.name .. "_lift_airbags_pressure_avg"] then excludeElectric(controller.name .. "_lift_airbags_pressure_avg") end
+			if electrics.values[controller.name .. "_lift_axle_mode"] then excludeElectric(controller.name .. "_lift_axle_mode") end
+		end
+		if controller.typeName == "pneumatics/actuators" then
+			local jbeamData = v.data[controller.name]
+			if jbeamData then
+				local pressureBeamData = v.data[jbeamData.pressuredBeams] or {}
+				for _, pressureData in pairs(pressureBeamData) do
+					if pressureData.groupName then
+						excludeElectric(controller.name .. "_" .. pressureData.groupName .. "_valveState")
+						excludeElectric(controller.name .. "_" .. pressureData.groupName .. "_pressure_avg")
+					end
 				end
 			end
 		end
+		if controller.typeName == "advancedCouplerControl" then
+			if electrics.values[controller.name .. "_notAttached"] then excludeElectric(controller.name .. "_notAttached") end
+		end
+		if controller.typeName == "tirePressureControl" then
+			excludeElectric(controller.name .. "_activeGroupPressure")
+		end
+	end
+	for name,val in pairs(electrics.values) do
+		if string.match(name,"_filament") then
+			excludeElectric(name)
+		end
+	end
+	for _, wheelData in pairs(wheels.wheels) do
+		if wheelData.brakeGlowElectricsName then
+			excludeElectric(wheelData.brakeGlowElectricsName)
+		end
+	end
+end
+
+local function round2(num, numDecimalPlaces)
+  return math.floor((num*(10^numDecimalPlaces)+0.5))/(10^numDecimalPlaces)
+end
+
+local function check()
+	local e = electrics.values
+	if not e then return end -- Error avoidance in console
+	electricsChanged = false
+	table.clear(electricsToSend)
+
+	for name,val in pairs(e) do -- check for new electrics
+		if lastElectrics[name] == nil then
+			if not disallowedKeys[name] then
+				if string.match(name,"_filament") then
+					excludeElectric(name)
+				else
+					if type(val) == "number" then
+						if name == "fuelVolume" then
+							val = round2(val,1)
+						else
+							val = round2(val,4)
+						end
+					end
+					checkElectrics[name] = val
+					electricsToSend[name] = val
+					electricsChanged = true
+				end
+			end
+			lastElectrics[name] = val
+		end
+	end
+
+	for name,val in pairs(checkElectrics) do
+		local newVal = e[name]
+		if newVal == nil then
+			electricsToSend[name] = "isnil"
+			checkElectrics[name] = nil
+			lastElectrics[name] = nil
+			electricsChanged = true
+			goto skip_electric
+		end
+		if type(newVal) == "number" then
+			if name == "fuelVolume" then
+				newVal = round2(newVal,1)
+			else
+				newVal = round2(newVal,4)
+			end
+		end
+		if newVal ~= val then
+			electricsToSend[name] = newVal
+			checkElectrics[name] = newVal
+			electricsChanged = true
+		end
+		:: skip_electric ::
 	end
 	if electricsChanged then
 		obj:queueGameEngineLua("MPElectricsGE.sendElectrics(\'"..jsonEncode(electricsToSend).."\', "..obj:getID()..")")
 	end
 end
-
 
 local lastLeftSignal = 0
 local lastRightSignal = 0
@@ -348,11 +445,6 @@ local function applyElectrics(data)
 			controller.getControllerSafe("lineLock").setLineLock(decodedData.linelock)
 		end
 
-		-- ESC Mode syncing
-		if decodedData.escMode then
-			setEsc(decodedData.escMode)
-		end
-
 		-- ABS Behavior syncing
 		if decodedData.absMode and wheels then
 			wheels.setABSBehavior(decodedData.absMode)
@@ -372,7 +464,11 @@ local function applyElectrics(data)
 
 		-- Anything else
 		for k,v in pairs(decodedData) do
-			electrics.values[k] = v
+			if v == "isnil" then
+				electrics.values[k] = nil
+			else
+				electrics.values[k] = v
+			end
 		end
 
 		latestData = data
@@ -391,7 +487,10 @@ local function onReset()
 	end
 end
 
-
+local function onExtensionLoaded()
+	checkForElectricsToExclude()
+	onReset()
+end
 
 local function applyLatestElectrics()
 	applyElectrics(latestData)
@@ -399,11 +498,12 @@ end
 
 
 
-M.onExtensionLoaded    = onReset
+M.onExtensionLoaded    = onExtensionLoaded
 M.onReset			   = onReset
 M.check				   = check
 M.applyElectrics	   = applyElectrics
 M.applyLatestElectrics = applyLatestElectrics
+M.excludeElectric	   = excludeElectric
 
 
 return M
