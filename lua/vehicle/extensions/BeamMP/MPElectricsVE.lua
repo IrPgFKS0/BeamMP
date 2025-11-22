@@ -328,6 +328,11 @@ local function checkForElectricsToExclude()
 			excludeElectric(name)
 		end
 	end
+	for _, wheelData in pairs(wheels.wheels) do
+		if wheelData.brakeGlowElectricsName then
+			excludeElectric(wheelData.brakeGlowElectricsName)
+		end
+	end
 end
 
 local function round2(num, numDecimalPlaces)
