@@ -293,6 +293,57 @@ local function excludeElectric(electricName)
 	end
 end
 
+local function searchObjectForElectrics(object)
+	for varname,val in pairs(object) do
+		if string.match(varname,"ElectricsName") or string.match(varname,"electricsName") or string.match(varname,"ElectricName") then
+			excludeElectric(val)
+		end
+	end
+end
+
+local function checkForElectricsToExclude()
+	for _,storage in pairs(energyStorage.getStorages()) do
+		searchObjectForElectrics(storage)
+	end
+	for _,device in pairs(powertrain.getDevices()) do
+		searchObjectForElectrics(device)
+	end
+	for _,controller in pairs(controller.getAllControllers()) do
+		if controller.typeName == "pneumatics/airbrakes" then
+			if electrics.values[controller.name .. "_pressure_service"] then excludeElectric(controller.name .. "_pressure_service") end
+			if electrics.values[controller.name .. "_pressure_parking"] then excludeElectric(controller.name .. "_pressure_parking") end
+		end
+		if controller.typeName == "pneumatics/liftAxleControl" then
+			if electrics.values[controller.name .. "_main_airbags_pressure_avg"] then excludeElectric(controller.name .. "_main_airbags_pressure_avg") end
+			if electrics.values[controller.name .. "_lift_airbags_pressure_avg"] then excludeElectric(controller.name .. "_lift_airbags_pressure_avg") end
+			if electrics.values[controller.name .. "_lift_axle_mode"] then excludeElectric(controller.name .. "_lift_axle_mode") end
+		end
+		if controller.typeName == "pneumatics/actuators" then
+			local jbeamData = v.data[controller.name]
+			if jbeamData then
+				local pressureBeamData = v.data[jbeamData.pressuredBeams] or {}
+				for _, pressureData in pairs(pressureBeamData) do
+					if pressureData.groupName then
+						excludeElectric(controller.name .. "_" .. pressureData.groupName .. "_valveState")
+						excludeElectric(controller.name .. "_" .. pressureData.groupName .. "_pressure_avg")
+					end
+				end
+			end
+		end
+		if controller.typeName == "advancedCouplerControl" then
+			if electrics.values[controller.name .. "_notAttached"] then excludeElectric(controller.name .. "_notAttached") end
+		end
+		if controller.typeName == "tirePressureControl" then
+			excludeElectric(controller.name .. "_activeGroupPressure")
+		end
+	end
+	for name,val in pairs(electrics.values) do
+		if string.match(name,"_filament") then
+			excludeElectric(name)
+		end
+	end
+end
+
 local function round2(num, numDecimalPlaces)
   return math.floor((num*(10^numDecimalPlaces)+0.5))/(10^numDecimalPlaces)
 end
