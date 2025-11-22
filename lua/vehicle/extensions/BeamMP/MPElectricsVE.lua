@@ -288,7 +288,7 @@ local disallowedKeys = {
 }
 
 local function round2(num, numDecimalPlaces)
-  return tonumber(string.format("%." .. (numDecimalPlaces or 0) .. "f", num))
+  return math.floor((num*(10^numDecimalPlaces)+0.5))/(10^numDecimalPlaces)
 end
 
 local function check()
