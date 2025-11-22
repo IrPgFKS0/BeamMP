@@ -111,7 +111,7 @@ local function getInputs()
 			if math.abs(state) < 0.001 then -- prevent super small values to count as updates
 				state = 0
 			end
-			state = math.floor(state * 1000) / 1000
+			state = math.floor((state * 1000) + 0.5) / 1000
 			if lastInputs[inputName] ~= state then
 				inputsToSend[shortName[inputName] or inputName] = state
 				if not lastInputs[inputName] then
