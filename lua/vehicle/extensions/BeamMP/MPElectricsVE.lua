@@ -287,6 +287,12 @@ local disallowedKeys = {
 	["steeringBike3"] = 1
 }
 
+local function excludeElectric(electricName)
+	if electricName then
+		disallowedKeys[electricName] = 1
+	end
+end
+
 local function round2(num, numDecimalPlaces)
   return math.floor((num*(10^numDecimalPlaces)+0.5))/(10^numDecimalPlaces)
 end
@@ -426,6 +432,7 @@ M.onReset			   = onReset
 M.check				   = check
 M.applyElectrics	   = applyElectrics
 M.applyLatestElectrics = applyLatestElectrics
+M.excludeElectric	   = excludeElectric
 
 
 return M
