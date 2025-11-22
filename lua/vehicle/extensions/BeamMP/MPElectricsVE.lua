@@ -8,6 +8,9 @@ local M = {}
 
 -- ============= VARIABLES =============
 local lastElectrics = {}
+local checkElectrics = {}
+local electricsToSend = {}
+
 local latestData
 local electricsChanged = false
 local localSwingwing = 0 -- for DH Super bolide
@@ -349,33 +352,60 @@ local function round2(num, numDecimalPlaces)
 end
 
 local function check()
-	local electricsToSend = {} -- This holds the data that is different from the last frame to be sent since it is different
-	local electricsChanged = false
-	electrics.values.escMode = getEsc()
 	local e = electrics.values
 	if not e then return end -- Error avoidance in console
-	for k,v in pairs(e) do -- For each electric value
-		if not disallowedKeys[k] then -- If it's not a disallowed key
-			if k == "fuelVolume" then
-				if lastElectrics[k] ~= round2(v, 1) then -- If the value changed
-					electricsChanged = true -- Send electrics
-					lastElectrics[k] = round2(v, 1) -- Define the new value
-					electricsToSend[k] = round2(v, 1)
-				end
-			else
-				if lastElectrics[k] ~= v then -- If the value changed
-					electricsChanged = true -- Send electrics
-					lastElectrics[k] = v -- Define the new value
-					electricsToSend[k] = v
+	electricsChanged = false
+	table.clear(electricsToSend)
+
+	for name,val in pairs(e) do -- check for new electrics
+		if lastElectrics[name] == nil then
+			if not disallowedKeys[name] then
+				if string.match(name,"_filament") then
+					excludeElectric(name)
+				else
+					if type(val) == "number" then
+						if name == "fuelVolume" then
+							val = round2(val,1)
+						else
+							val = round2(val,4)
+						end
+					end
+					checkElectrics[name] = val
+					electricsToSend[name] = val
+					electricsChanged = true
 				end
 			end
+			lastElectrics[name] = val
 		end
+	end
+
+	for name,val in pairs(checkElectrics) do
+		local newVal = e[name]
+		if newVal == nil then
+			electricsToSend[name] = "isnil"
+			checkElectrics[name] = nil
+			lastElectrics[name] = nil
+			electricsChanged = true
+			goto skip_electric
+		end
+		if type(newVal) == "number" then
+			if name == "fuelVolume" then
+				newVal = round2(newVal,1)
+			else
+				newVal = round2(newVal,4)
+			end
+		end
+		if newVal ~= val then
+			electricsToSend[name] = newVal
+			checkElectrics[name] = newVal
+			electricsChanged = true
+		end
+		:: skip_electric ::
 	end
 	if electricsChanged then
 		obj:queueGameEngineLua("MPElectricsGE.sendElectrics(\'"..jsonEncode(electricsToSend).."\', "..obj:getID()..")")
 	end
 end
-
 
 local lastLeftSignal = 0
 local lastRightSignal = 0
@@ -451,7 +481,11 @@ local function applyElectrics(data)
 
 		-- Anything else
 		for k,v in pairs(decodedData) do
-			electrics.values[k] = v
+			if v == "isnil" then
+				electrics.values[k] = nil
+			else
+				electrics.values[k] = v
+			end
 		end
 
 		latestData = data
@@ -470,7 +504,10 @@ local function onReset()
 	end
 end
 
-
+local function onExtensionLoaded()
+	checkForElectricsToExclude()
+	onReset()
+end
 
 local function applyLatestElectrics()
 	applyElectrics(latestData)
@@ -478,7 +515,7 @@ end
 
 
 
-M.onExtensionLoaded    = onReset
+M.onExtensionLoaded    = onExtensionLoaded
 M.onReset			   = onReset
 M.check				   = check
 M.applyElectrics	   = applyElectrics
