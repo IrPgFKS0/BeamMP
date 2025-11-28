@@ -85,7 +85,7 @@ ul#chat-list {
     color: #BBBBBB;
 }
 
-#Chat .buttons {
+.multiplayerChat .buttons {
     color: #DDDDDD;
     border: none;
     background-color: transparent;
@@ -94,7 +94,7 @@ ul#chat-list {
     cursor: pointer;
 }
 
-#Chat .buttons:hover {
+.multiplayerChat .buttons:hover {
     background-color: rgba(0, 0, 0, 0.2);
     color: #FFFFFF;
 }
