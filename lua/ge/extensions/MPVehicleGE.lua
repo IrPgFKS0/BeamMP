@@ -32,13 +32,6 @@ local original_spawnNewVehicle
 local original_replaceVehicle
 local original_spawnDefault
 
-local ffiFound = false
-if ffi and ffi.C then
-	ffiFound = true
-end
-
--- debug drawers, using the FFI functions for debugDraw is a lot faster and produces no garbage
-local drawTextAdvanced = ffiFound and ffi.C.BNG_DBG_DRAW_TextAdvanced or nop
 
 --- Contains Information about Backend authorized Roles
 -- @table roleToInfo
@@ -1145,19 +1138,18 @@ local function sendVehicleSpawn(gameVehicleID)
 		vehicleTable.pos = {pos.x, pos.y, pos.z} -- Position
 		vehicleTable.rot = {rot.x, rot.y, rot.z, rot.w} -- Rotation
 		vehicleTable.pro = settings.getValue("protectConfigFromClone", false) -- Should the config be protected?
+		vehicleTable.abs = settings.getValue("absBehavior") -- Sync for ABS assist
 
 		if vehicleTable.pro == true then
 			vehicleTable.pro = "1"
 		else
 			vehicleTable.pro = "0"
 		end
+
 		vehicleTable.ign = settings.getValue("spawnVehicleIgnitionLevel") or 3 -- Ingition state
 
 		-- The vehicle_manager.lua may not contain the correct color values, since v0.31, when we read them from that lua, so we read those from the object itself
 		vehicleTable.vcf.paints = MPHelpers.getColorsFromVehObj(veh)
-
-		-- License plate names doesn't allways exist in the vehicle config, so we need to add it manually
-		vehicleTable.vcf.licenseName = veh:getDynDataFieldbyName("licenseText", 0)
 
 		local stringToSend = jsonEncode(vehicleTable) -- Encode table to send it as json string
 		MPGameNetwork.send('Os:0:'..stringToSend) -- Send table that contain all vehicle informations for each vehicle
@@ -1186,22 +1178,21 @@ local function sendVehicleEdit(gameVehicleID)
 
 	if not isOwn(veh:getID()) then return end
 
-	vehicleTable.pid = MPConfig.getPlayerServerID()
-	vehicleTable.jbm = veh:getJBeamFilename()
-	vehicleTable.vcf = MPHelpers.simplifyVehConfig(deepcopy(vehicleData.config))
-	vehicleTable.pro = settings.getValue("protectConfigFromClone", false) -- Should the config be protected?
+	vehicleTable.pid   = MPConfig.getPlayerServerID()
+	vehicleTable.jbm   = veh:getJBeamFilename()
+	vehicleTable.vcf   = MPHelpers.simplifyVehConfig(deepcopy(vehicleData.config))
+	vehicleTable.pro   = settings.getValue("protectConfigFromClone", false) -- Should the config be protected?
+	vehicleTable.abs   = settings.getValue("absBehavior") -- Sync for ABS assist
 
 	if vehicleTable.pro == true then
 		vehicleTable.pro = "1"
 	else
 		vehicleTable.pro = "0"
 	end
+
 	vehicleTable.ign = settings.getValue("spawnVehicleIgnitionLevel") or 3 -- Ingition state
 	-- The vehicle_manager.lua may not contain the correct color values, since v0.31, when we read them from that lua, so we read those from the object itself
 	vehicleTable.vcf.paints = MPHelpers.getColorsFromVehObj(veh)
-
-	-- License plate names doesn't allways exist in the vehicle config, so we need to add it manually
-	vehicleTable.vcf.licenseName = veh:getDynDataFieldbyName("licenseText", 0)
 
 	local stringToSend = jsonEncode(vehicleTable) -- Encode table to send it as json string
 	MPGameNetwork.send('Oc:'..getServerVehicleID(gameVehicleID)..':'..stringToSend) -- Send table that contain all vehicle informations for each vehicle
@@ -1299,6 +1290,7 @@ local function applyVehSpawn(event)
 	local rot            = quat(0,0,1,0) * quat(decodedData.rot) -- the car rotates 180 degrees on spawn so we need to counter that
 	local ignitionLevel  = (type(decodedData.ign) == "number") and decodedData.ign or 3
 	local protected      = decodedData.pro -- Config Protected
+	local absMode        = decodedData.abs -- ABS assist
 
 	local vehicle = vehicles[event.serverVehicleID]
 	if vehicle and vehicle.position and vehicle.rotation then -- if we have receieved position packets then use that for position and rotation instead
@@ -1324,11 +1316,13 @@ local function applyVehSpawn(event)
 		log('W', 'applyVehSpawn', "(spawn)Updating vehicle from server "..vehicleName.." with id "..spawnedVehID)
 		spawn.setVehicleObject(spawnedVeh, {model=vehicleName, config=serialize(vehicleConfig), pos=pos, rot=rot, cling=true})
 		spawnedVeh:setField("protected", 0, protected or "0")
+		spawnedVeh:setField("absMode", 0, absMode or "realistic")
 	else
 		log('W', 'applyVehSpawn', "Spawning new vehicle "..vehicleName.." from server")
 		spawnedVeh = spawn.spawnVehicle(vehicleName, serialize(vehicleConfig), pos, rot, { autoEnterVehicle=false, vehicleName="multiplayerVehicle", cling=true})
 		spawnedVehID = spawnedVeh:getID()
 		spawnedVeh:setField("protected", 0, protected or "0")
+		spawnedVeh:setField("absMode", 0, absMode or "realistic")
 		log('W', 'applyVehSpawn', "Spawned new vehicle "..vehicleName.." from server with id "..spawnedVehID)
 
 		if not vehicles[event.serverVehicleID] then
@@ -1342,15 +1336,13 @@ local function applyVehSpawn(event)
 		vehicle.isSpawned = true
 		vehicle.jbeam = vehicleName
 		vehicle.protected = protected
+		vehicle.absMode = absMode
 		vehiclesMap[spawnedVehID] = event.serverVehicleID
 
 		players[vehicle.ownerID]:addVehicle(vehicle)
 	end
 
-	if settings.getValue("licensePlateUsesPlayerName") then
-		core_vehicles.setPlateText(event.playerNickname, spawnedVehID)
-	end
-
+	core_vehicles.setPlateText(event.playerNickname, spawnedVehID)
 	spawnedVeh:queueLuaCommand("hydros.onFFBConfigChanged(nil)")
 	spawnedVeh:queueLuaCommand("MPPowertrainVE.setIgnitionState("..ignitionLevel..")")
 end
@@ -1366,6 +1358,7 @@ local function applyVehEdit(serverID, data)
 	local vehicleName   = decodedData.jbm -- Vehicle name
 	local vehicleConfig = decodedData.vcf -- Vehicle config
 	local protected       = decodedData.pro
+	local absMode         = decodedData.abs
 
 	local playerName = players[decodedData.pid] and players[decodedData.pid].name or 'Unknown'
 
@@ -1391,9 +1384,6 @@ local function applyVehEdit(serverID, data)
 			if configChanged then
 				veh:setDynDataFieldbyName("autoEnterVehicle", 0, tostring((be:getPlayerVehicle(0) and be:getPlayerVehicle(0):getID() == gameVehicleID) or false))
 				veh:respawn(serialize(playerVehicle.config))
-				if settings.getValue("licensePlateUsesPlayerName") then
-					core_vehicles.setPlateText(data.playerNickname, gameVehicleID)
-				end
 			elseif vehicleConfig.paints then
 				log('I','applyVehEdit', "only color changed")
 				for k, v in pairs(vehicleConfig.paints) do
@@ -1415,16 +1405,11 @@ local function applyVehEdit(serverID, data)
 		veh:setDynDataFieldbyName("autoEnterVehicle", 0, tostring((be:getPlayerVehicle(0) and be:getPlayerVehicle(0):getID() == gameVehicleID) or false))
 		log('I', 'applyVehEdit', "Updating vehicle from server "..vehicleName.." with id "..serverID)
 		spawn.setVehicleObject(veh, options)
-
-		if settings.getValue("licensePlateUsesPlayerName") then
-			core_vehicles.setPlateText(playerName, gameVehicleID)
-		end
 	end
 	
 	veh:setField("protected", 0, protected or "0")
+	veh:setField("abs", 0, absMode or "realistic")
 end
-
-
 
 -- local events
 
@@ -1437,6 +1422,11 @@ local function onVehicleSpawned(gameVehicleID)
 	local newJbeamName = veh:getJBeamFilename()
 
 	local vehicle = getVehicleByGameID(gameVehicleID)
+
+	local absMode = veh:getField("absMode", 0)
+	if absMode ~= "" then
+		veh:queueLuaCommand("wheels.setABSBehavior(\""..absMode.."\")") -- apply ABS behavior on vehicle spawn
+	end
 
 	if not vehicle or not vehicle.jbeam then -- If it's not an edit
 		log("I", "onVehicleSpawned", "New Vehicle Spawned "..gameVehicleID)
@@ -1926,41 +1916,22 @@ local function onServerCameraSwitched(playerID, serverVehicleID)
 end
 
 local function onServerVehicleColorChanged(serverVehicleID, data)
-    local gameVehicleID = getGameVehicleID(serverVehicleID) -- Get game ID
-    local vehicle = getVehicleByServerID(serverVehicleID) -- get vehicle table for this vehicle
-
-    if vehicle and vehicle.serverVehicleString and not vehicle.isLocal then -- If serverVehicleID not null and not player own vehicle
-        if gameVehicleID and gameVehicleID ~= -1 and not vehicle.editQueue then
-            local veh = be:getObjectByID(gameVehicleID) -- Get associated vehicle
-            if veh then
-                local paint = jsonDecode(data) -- Decoded data
-                if paint then -- if there's paint data
-                    veh:queueLuaCommand("extensions.hook(\"onBeamMPVehicleColorChange\")")
-                    for k, v in pairs(paint) do -- apply paint
-                        extensions.core_vehicle_manager.liveUpdateVehicleColors(gameVehicleID, veh, k, v)
-                    end
-                    local newConfig = extensions.core_vehicle_manager.getVehicleData(gameVehicleID).config
-                newConfig.paints = paint
-
-                veh:setField('partConfig', '', serialize(newConfig))
-                end
-            end
-        elseif vehicle.spawnQueue then
-            local decodedData = jsonDecode(vehicle.spawnQueue.data)
-            decodedData.vcf.paints = jsonDecode(data)
-            vehicle.spawnQueue.data = jsonEncode(decodedData)
-        elseif vehicle.editQueue then
-            local decodedData = jsonDecode(vehicle.editQueue)
-            decodedData.vcf.paints = jsonDecode(data)
-            vehicle.editQueue = jsonEncode(decodedData)
-        end
-
-        local deletedVehicleData = players_vehicle_configs[serverVehicleID]
-        if deletedVehicleData and deletedVehicleData.vcf then
-            local paint = jsonDecode(data)
-            players_vehicle_configs[serverVehicleID].vcf.paints = paint
-        end
-    end
+	local gameVehicleID = getGameVehicleID(serverVehicleID) -- Get game ID
+	local vehicle = getVehicleByGameID(gameVehicleID) -- get vehicle table for this vehicle
+	if vehicle and vehicle.serverVehicleString and not vehicle.isLocal and not vehicle.editQueue then -- If serverVehicleID not null and not player own vehicle
+		if gameVehicleID then
+			local veh = be:getObjectByID(gameVehicleID) -- Get associated vehicle
+			if veh then
+				local paint = jsonDecode(data) -- Decoded data
+				if paint then -- if there's paint data
+					veh:queueLuaCommand("extensions.hook(\"onBeamMPVehicleColorChange\")")
+					for k, v in pairs(paint) do -- apply paint
+						extensions.core_vehicle_manager.liveUpdateVehicleColors(gameVehicleID, veh, k, v)
+					end
+				end
+			end
+		end
+	end
 end
 
 local HandleNetwork = {
@@ -2269,9 +2240,6 @@ end
 
 local function onPreRender(dt)
 	if MPGameNetwork and MPGameNetwork.launcherConnected() then
-		local blobColorQueued = MPHelpers.hex2rgb(settings.getValue("blobColorQueued"))
-		local blobColorIllegal = MPHelpers.hex2rgb(settings.getValue("blobColorIllegal"))
-		local blobColorDeleted = MPHelpers.hex2rgb(settings.getValue("blobColorDeleted"))
 
 		-- get current vehicle ID and position
 		local activeVeh = be:getPlayerVehicle(0)
@@ -2379,15 +2347,15 @@ local function onPreRender(dt)
 
 				if v.spawnQueue then -- in queue
 					if settingsCache.showBlobQueued then
-						colors = blobColorQueued
+						colors = MPHelpers.hex2rgb(settings.getValue("blobColorQueued"))
 					end
 				elseif v.isIllegal then -- illegal (modded)
 					if settingsCache.showBlobIllegal then
-						colors = blobColorIllegal
+						colors = MPHelpers.hex2rgb(settings.getValue("blobColorIllegal"))
 					end
 				elseif v.isDeleted then
 					if settingsCache.showBlobDeleted then
-						colors = blobColorDeleted
+						colors = MPHelpers.hex2rgb(settings.getValue("blobColorDeleted"))
 					end
 				else
 					colors = { 1, 0, 1 }
@@ -2457,7 +2425,7 @@ local function onPreRender(dt)
 				local name = v.customName or ownerName
 
 				local tag = settings.getValue("shortenNametags") and roleInfo.shorttag or roleInfo.tag
-				local backColor = color(roleInfo.backcolor.r, roleInfo.backcolor.g, roleInfo.backcolor.b, math.floor(nametagAlpha*127))
+				local backColor = ColorI(roleInfo.backcolor.r, roleInfo.backcolor.g, roleInfo.backcolor.b, math.floor(nametagAlpha*127))
 
 				local prefix = ""
 				for source, tag in pairs(owner.nickPrefixes)
@@ -2484,32 +2452,24 @@ local function onPreRender(dt)
 					if spectators ~= "" then
 						local spectatorBackColor = backColor
 						if settings.getValue("spectatorUnifiedColors") then
-							spectatorBackColor = color(roleToInfo.USER.backcolor.r, roleToInfo.USER.backcolor.g, roleToInfo.USER.backcolor.b, math.floor(nametagAlpha*127))
+							spectatorBackColor = ColorI(roleToInfo.USER.backcolor.r, roleToInfo.USER.backcolor.g, roleToInfo.USER.backcolor.b, math.floor(nametagAlpha*127))
 						end
-						drawTextAdvanced(
-							pos.x, pos.y, pos.z, -- Location
+						debugDrawer:drawTextAdvanced(
+							pos, -- Location
 							String(" ".. spectators .." "), -- Text
-							color(255, 255, 255, nametagAlpha*254), -- Foreground Color, Alpha is multiplied by 254 because using 255 seems to break backround alpha in 0.37
-							true, -- Draw background 
-							false, -- Wtf
-							spectatorBackColor, -- Background Color
-							false, -- shadow
-							settings.getValue("nameTagsHideBehindObjects") -- useZ, makes it render behind objects if true
-						)
+							ColorF(1, 1, 1, nametagAlpha), true, false, -- Foreground Color / Draw background / Wtf
+							spectatorBackColor) -- Background Color
 
 						pos.z = pos.z + 0.01 -- has to be positive
 					end
 				end
+
 				-- draw main nametag
-				drawTextAdvanced(
-					pos.x, pos.y, pos.z, -- Location
+				debugDrawer:drawTextAdvanced(
+					pos, -- Location
 					String(" " .. table.concat({prefix, name, suffix, tag, dist}) .. " "), -- Text
-					color(255, 255, 255, nametagAlpha*254), -- Foreground Color, Alpha is multiplied by 254 because using 255 seems to break backround alpha in 0.37
-					true, -- Draw background 
-					false, -- Wtf
-					backColor, -- Background Color
-					false, -- shadow
-					settings.getValue("nameTagsHideBehindObjects") -- useZ, makes it render behind objects if true
+					ColorF(1, 1, 1, nametagAlpha), true, false, -- Foreground Color / Draw background / Wtf
+					backColor -- Background Color
 				)
 			end
 			:: skip_vehicle ::
@@ -2604,9 +2564,6 @@ end
 
 
 local function onUIInitialised()
-	extensions.core_vehicle_partmgmt.saveLocal = core_vehicle_partmgmt_saveLocal_overwrite
-	extensions.core_vehicle_partmgmt.savedefault = core_vehicle_partmgmnt_savedefault_overwrite
-	extensions.gameplay_garageMode.start = gameplay_garageMode_start_overwrite
 	UI.updateQueue(getQueueCounts())
 end
 
