@@ -1430,7 +1430,7 @@ local function applyVehEdit(serverID, data)
 	end
 	
 	veh:setField("protected", 0, protected or "0")
-	veh:setField("abs", 0, absMode or "realistic")
+	veh:setField("absMode", 0, absMode or "realistic")
 end
 
 
