@@ -1708,7 +1708,7 @@ local function onVehicleResetted(gameVehicleID)
 				}
 			}
 			MPGameNetwork.send('Or:'..vehicle.serverVehicleString..":"..jsonEncode(tempTable).."")
-		elseif vehicle then -- apply ABS vehavior on nonlocal vehicles
+		elseif vehicle then -- apply ABS behavior on nonlocal vehicles
 			local veh = be:getObjectByID(gameVehicleID)
 			local absMode = veh:getField("absMode", 0)
 			if absMode ~= "" then
