@@ -1328,13 +1328,13 @@ local function applyVehSpawn(event)
 		log('W', 'applyVehSpawn', "(spawn)Updating vehicle from server "..vehicleName.." with id "..spawnedVehID)
 		spawn.setVehicleObject(spawnedVeh, {model=vehicleName, config=serialize(vehicleConfig), pos=pos, rot=rot, cling=true})
 		spawnedVeh:setField("protected", 0, protected or "0")
-		spawnedVeh:setField("absMode", 0, absMode or "realistic")
+		spawnedVeh:setField("absMode", 0, absMode or "")
 	else
 		log('W', 'applyVehSpawn', "Spawning new vehicle "..vehicleName.." from server")
 		spawnedVeh = spawn.spawnVehicle(vehicleName, serialize(vehicleConfig), pos, rot, { autoEnterVehicle=false, vehicleName="multiplayerVehicle", cling=true})
 		spawnedVehID = spawnedVeh:getID()
 		spawnedVeh:setField("protected", 0, protected or "0")
-		spawnedVeh:setField("absMode", 0, absMode or "realistic")
+		spawnedVeh:setField("absMode", 0, absMode or "")
 		log('W', 'applyVehSpawn', "Spawned new vehicle "..vehicleName.." from server with id "..spawnedVehID)
 
 		if not vehicles[event.serverVehicleID] then
@@ -1430,7 +1430,7 @@ local function applyVehEdit(serverID, data)
 	end
 	
 	veh:setField("protected", 0, protected or "0")
-	veh:setField("absMode", 0, absMode or "realistic")
+	veh:setField("absMode", 0, absMode or "")
 end
 
 
@@ -1446,11 +1446,6 @@ local function onVehicleSpawned(gameVehicleID)
 	local newJbeamName = veh:getJBeamFilename()
 
 	local vehicle = getVehicleByGameID(gameVehicleID)
-
-	local absMode = veh:getField("absMode", 0)
-	if absMode ~= "" then
-		veh:queueLuaCommand("wheels.setABSBehavior(\""..absMode.."\")") -- apply ABS behavior on vehicle spawn
-	end
 
 	if not vehicle or not vehicle.jbeam then -- If it's not an edit
 		log("I", "onVehicleSpawned", "New Vehicle Spawned "..gameVehicleID)
@@ -1713,7 +1708,14 @@ local function onVehicleResetted(gameVehicleID)
 				}
 			}
 			MPGameNetwork.send('Or:'..vehicle.serverVehicleString..":"..jsonEncode(tempTable).."")
+		elseif vehicle then -- apply ABS vehavior on nonlocal vehicles
+			local veh = be:getObjectByID(gameVehicleID)
+			local absMode = veh:getField("absMode", 0)
+			if absMode ~= "" then
+				veh:queueLuaCommand("wheels.setABSBehavior(\""..absMode.."\")")
+			end
 		end
+
 	end
 end
 
