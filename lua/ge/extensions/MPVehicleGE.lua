@@ -1259,7 +1259,7 @@ end
 local gameplay_garageMode_start = gameplay_garageMode.start
 local function gameplay_garageMode_start_overwrite()
 	local vehicle = be:getPlayerVehicle(0)
-	if vehicle:getField("protected", 0) == "1" then
+	if vehicle and vehicle:getField("protected", 0) == "1" then
 		local title = MPTranslate("ui.multiplayer.configprotection.save.title", "Vehicle Save Error")
 		local msg = MPTranslate("ui.multiplayer.configprotection.save.message", "Sorry, you cannot save this vehicle.")
 		guihooks.trigger("toastrMsg", {type="error", title=title, msg=msg})
