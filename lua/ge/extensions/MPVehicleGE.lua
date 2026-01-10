@@ -1145,6 +1145,7 @@ local function sendVehicleSpawn(gameVehicleID)
 		vehicleTable.pos = {pos.x, pos.y, pos.z} -- Position
 		vehicleTable.rot = {rot.x, rot.y, rot.z, rot.w} -- Rotation
 		vehicleTable.pro = settings.getValue("protectConfigFromClone", false) -- Should the config be protected?
+		vehicleTable.abs = settings.getValue("absBehavior") -- Sync for ABS assist
 
 		if vehicleTable.pro == true then
 			vehicleTable.pro = "1"
@@ -1190,6 +1191,7 @@ local function sendVehicleEdit(gameVehicleID)
 	vehicleTable.jbm = veh:getJBeamFilename()
 	vehicleTable.vcf = MPHelpers.simplifyVehConfig(deepcopy(vehicleData.config))
 	vehicleTable.pro = settings.getValue("protectConfigFromClone", false) -- Should the config be protected?
+	vehicleTable.abs   = settings.getValue("absBehavior") -- Sync for ABS assist
 
 	if vehicleTable.pro == true then
 		vehicleTable.pro = "1"
@@ -1299,6 +1301,8 @@ local function applyVehSpawn(event)
 	local rot            = quat(0,0,1,0) * quat(decodedData.rot) -- the car rotates 180 degrees on spawn so we need to counter that
 	local ignitionLevel  = (type(decodedData.ign) == "number") and decodedData.ign or 3
 	local protected      = decodedData.pro -- Config Protected
+	local absMode        = decodedData.abs -- ABS assist
+	
 
 	local vehicle = vehicles[event.serverVehicleID]
 	if vehicle and vehicle.position and vehicle.rotation then -- if we have receieved position packets then use that for position and rotation instead
@@ -1324,11 +1328,13 @@ local function applyVehSpawn(event)
 		log('W', 'applyVehSpawn', "(spawn)Updating vehicle from server "..vehicleName.." with id "..spawnedVehID)
 		spawn.setVehicleObject(spawnedVeh, {model=vehicleName, config=serialize(vehicleConfig), pos=pos, rot=rot, cling=true})
 		spawnedVeh:setField("protected", 0, protected or "0")
+		spawnedVeh:setField("absMode", 0, absMode or "")
 	else
 		log('W', 'applyVehSpawn', "Spawning new vehicle "..vehicleName.." from server")
 		spawnedVeh = spawn.spawnVehicle(vehicleName, serialize(vehicleConfig), pos, rot, { autoEnterVehicle=false, vehicleName="multiplayerVehicle", cling=true})
 		spawnedVehID = spawnedVeh:getID()
 		spawnedVeh:setField("protected", 0, protected or "0")
+		spawnedVeh:setField("absMode", 0, absMode or "")
 		log('W', 'applyVehSpawn', "Spawned new vehicle "..vehicleName.." from server with id "..spawnedVehID)
 
 		if not vehicles[event.serverVehicleID] then
@@ -1342,6 +1348,7 @@ local function applyVehSpawn(event)
 		vehicle.isSpawned = true
 		vehicle.jbeam = vehicleName
 		vehicle.protected = protected
+		vehicle.absMode = absMode
 		vehiclesMap[spawnedVehID] = event.serverVehicleID
 
 		players[vehicle.ownerID]:addVehicle(vehicle)
@@ -1366,6 +1373,7 @@ local function applyVehEdit(serverID, data)
 	local vehicleName   = decodedData.jbm -- Vehicle name
 	local vehicleConfig = decodedData.vcf -- Vehicle config
 	local protected       = decodedData.pro
+	local absMode         = decodedData.abs
 
 	local playerName = players[decodedData.pid] and players[decodedData.pid].name or 'Unknown'
 
@@ -1422,6 +1430,7 @@ local function applyVehEdit(serverID, data)
 	end
 	
 	veh:setField("protected", 0, protected or "0")
+	veh:setField("absMode", 0, absMode or "")
 end
 
 
@@ -1699,7 +1708,14 @@ local function onVehicleResetted(gameVehicleID)
 				}
 			}
 			MPGameNetwork.send('Or:'..vehicle.serverVehicleString..":"..jsonEncode(tempTable).."")
+		elseif vehicle then -- apply ABS behavior on nonlocal vehicles
+			local veh = be:getObjectByID(gameVehicleID)
+			local absMode = veh:getField("absMode", 0)
+			if absMode ~= "" then
+				veh:queueLuaCommand("wheels.setABSBehavior(\""..absMode.."\")")
+			end
 		end
+
 	end
 end
 
