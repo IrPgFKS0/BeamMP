@@ -177,7 +177,7 @@ local function updateGFX(dt)
 			local difference = math.abs(inputData.state - inputData.currentValue)
 			local distToMax = math.abs(inputData.state - inputData.maxLimit)
 			local distToMin = math.abs(inputData.state - inputData.minLimit)
-			if distToMax < 0.01 or distToMin < 0.01 or difference > 0.2 then -- because exponential smoothing never reaches the target value the brake/parking brake would never reach 0 causing automatics to never shift up
+			if distToMax < 0.01 or distToMin < 0.01 or difference > 0.2 or difference < 0.000001 then -- because exponential smoothing never reaches the target value the brake/parking brake would never reach 0 causing automatics to never shift up
 				inputData.currentValue = inputData.state
 				inputData.smoother:set(inputData.state,dt)
 			else
