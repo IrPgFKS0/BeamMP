@@ -268,7 +268,7 @@ end
 -- @usage MPGameNetwork.CallEvent(`<event data string>`)
 local function handleEvents(p)
 	local name, data = string.match(p,"^%:([^%:]+)%:(.*)")
-	if not name then log('W', 'Attempted to call event with malformed data: '..p) return end
+	if not name then log('W', 'Attempted to call event with malformed data: '..tostring(p)) return end
 	for _, calls in ipairs(eventTriggers[name] or {}) do
 		local ok, err = pcall(calls.func, data)
 		if not ok then
