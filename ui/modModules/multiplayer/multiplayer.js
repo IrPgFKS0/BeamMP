@@ -725,7 +725,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	var lastModInfo = '';
 
 	$scope.$on('LoadingInfo', function (event, data) {
-		console.log(vm, event, data)
+		//console.log(vm, event, data)
 		const loadingStatusElement = document.getElementById('LoadingStatus')
 		//console.log(data.message)
 
