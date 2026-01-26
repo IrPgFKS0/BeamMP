@@ -30,6 +30,17 @@ end
 --- Saves the configuration settings to file.
 --- @param settings table The settings to be saved. If not provided, UI.settings will be used.
 local function saveConfig(settings)
+    settings = settings or UI.settings
+    if settings.colors then
+        for settingName,colorData in pairs(settings.colors) do
+            settings.colors[settingName] = {
+                x = colorData.x,
+                y = colorData.y,
+                z = colorData.z,
+                w = colorData.w
+            }
+        end
+    end
     local jsonData = jsonEncode(settings or UI.settings)
     local config = io.open("./settings/BeamMP/chat.json", "w")
     config:write(jsonData)
