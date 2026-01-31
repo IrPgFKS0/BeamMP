@@ -358,7 +358,7 @@ end
 --- This function is used to load the settings and config of the UI (chat)
 local function loadConfig()
     local config = io.open("./settings/BeamMP/chat.json", "r")
-    if not config then -- Write new config
+    if not config or config:read() == "null" then -- Write new config
         log("I", "chat", "No config found, creating default")
 
         local jsonData = jsonEncode(M.defaultSettings)
@@ -386,9 +386,7 @@ local function loadConfig()
         for key, value in pairs(src) do
             if type(value) == "table" then
                 local subKeys = findMissingKeys(value, tbl and tbl[key])
-                for _, subKey in ipairs(subKeys) do
-                    table.insert(missing, subKey)
-                end
+                missing[key] = next(subKeys) and subKeys or nil
             elseif tbl == nil or tbl[key] == nil then
                 table.insert(missing, key)
             end
@@ -398,15 +396,30 @@ local function loadConfig()
     end
 
     configLoaded = true
-
-    if #findMissingKeys(M.defaultSettings, settings) > 0 then
-        log('I', "BeamMP", "Missing one or more settings, resetting config file...")
-        M.settings = deepcopy(M.defaultSettings)
-        optionsWindow.saveConfig(M.settings) -- we pass it in because "UI.lua" and "ui/options.lua" depend on eachother,
-                                             -- so instead of doing "UI.options", we pass it in instead.
-        return
+    local missingVars = findMissingKeys(M.defaultSettings, settings)
+    if next(missingVars) ~= nil then
+        log('I', "BeamMP", "Missing one or more settings, filling them in...")
+        for k,v in pairs(missingVars) do
+            if not settings[k] then
+                settings[k] = {}
+            end
+            if type(v) == "table" then
+                for a,b in pairs(v) do
+                    if M.defaultSettings[k] and M.defaultSettings[k][b] ~= nil then
+                        settings[k][b] = M.defaultSettings[k][b]
+                    end
+                end
+            end
+        end
+        optionsWindow.saveConfig(settings) -- we pass it in because "UI.lua" and "ui/options.lua" depend on eachother,
+                   -- so instead of doing "UI.options", we pass it in instead.
     end
 
+    if settings.color then
+        for settingName,colorData in pairs(settings.color) do
+            settings.color[settingName] = imgui.ImVec4(colorData.x,colorData.y,colorData.z,colorData.w)
+        end
+    end
     M.settings = settings
 end
 
