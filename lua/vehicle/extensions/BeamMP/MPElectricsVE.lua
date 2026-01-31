@@ -224,8 +224,8 @@ local disallowedKeys = {
 	["highbeam_wigwag_L"] = 1,
 	["highbeam_wigwag_R"] = 1,
 	["parkingbrakelight"] = 1,
-	["jato"] = 1,
-	["jatoInput"] = 1,
+	--["jato"] = 1, -- both jato electrics are needed to sync the jato, controller sync is purely on receiving side
+	--["jatoInput"] = 1,
 	---modded vehicles --
 	-- me262 plane ------
 	["inst_pitch"] = 1,
