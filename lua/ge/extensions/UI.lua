@@ -397,7 +397,6 @@ local function loadConfig()
 
     configLoaded = true
     local missingVars = findMissingKeys(M.defaultSettings, settings)
-    dump(missingVars)
     if next(missingVars) ~= nil then
         log('I', "BeamMP", "Missing one or more settings, filling them in...")
         for k,v in pairs(missingVars) do
