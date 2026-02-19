@@ -191,7 +191,8 @@ app.controller("PlayerList", ['$scope', '$filter', 'Settings', function ($scope,
 							bngApi.engineLua(`
 								for id, veh in pairs(MPVehicleGE.getVehicles()) do
 									if veh.ownerName == require("mime").unb64('` + btoa(parsedList[i].name) + `') then
-										be:getObjectByID(veh.gameVehicleID):delete()
+										local veh = getObjectByID(veh.gameVehicleID)
+										if veh then veh:delete() end
 									end
 								end
 						`)}
