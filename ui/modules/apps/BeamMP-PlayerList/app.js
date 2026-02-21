@@ -187,13 +187,15 @@ app.controller("PlayerList", ['$scope', '$filter', 'Settings', function ($scope,
 						nameCell.setAttribute("onclick", "viewPlayer('"+parsedList[i].name+"')");
 						break;
 					case 3:
-						bngApi.engineLua(`
-							for id, veh in pairs(MPVehicleGE.getVehicles()) do
-								if veh.ownerName == require("mime").unb64('` + btoa(parsedList[i].name) + `') then
-									be:getObjectByID(veh.gameVehicleID):delete()
+						nameCell.onclick = function() {
+							bngApi.engineLua(`
+								for id, veh in pairs(MPVehicleGE.getVehicles()) do
+									if veh.ownerName == require("mime").unb64('` + btoa(parsedList[i].name) + `') then
+										local vehicle = getObjectByID(veh.gameVehicleID)
+										if vehicle then vehicle:delete() end
+									end
 								end
-							end
-						`)
+						`)}
 						break;
 					case 4:
 						nameCell.setAttribute("onclick", "restorePlayerVehicle('"+parsedList[i].name+"')");
