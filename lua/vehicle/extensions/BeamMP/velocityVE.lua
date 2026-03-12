@@ -180,7 +180,7 @@ local function onInit()
 		calcCOG()
 	end
 
-	log('M', 'onInit', "velocityVE init, physicsFPS: "..physicsFPS..", parentNode: "..parentNode)
+	log('M', 'onInit', "velocityVE init, physicsFPS: "..physicsFPS..", parentNode: "..tostring(parentNode))
 end
 
 local function onReset()
