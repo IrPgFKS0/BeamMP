@@ -54,6 +54,7 @@
   "ui.options.multiplayer.showSpectators": "Afficher les pseudos des spectateurs sous les pseudos des conducteur des véhicules",
   "ui.options.multiplayer.showSpectators.tooltip": "Les joueurs spectateurs d'autres véhicules seront affichés sous leurs pseudo",
   "ui.options.multiplayer.licensePlateUsesPlayerName": "Afficher les noms des joueurs sur les plaques d'immatriculation",
+  "ui.options.multiplayer.licensePlateUsesPlayerName.tooltip": "Affichera le nom d'utilisateur du joueur sur les plaques d'immatriculation des véhicules.",
   "ui.options.multiplayer.spectatorUnifiedColors": "Même couleur pour les badges des spectateurs",
   "ui.options.multiplayer.spectatorUnifiedColors.tooltip": "Afficher tous les noms des spectateurs en gris, indépendamment du rôle de l'utilisateur",
   "ui.options.multiplayer.nametagFade": "Fondre l'affichage des pseudo",
@@ -189,5 +190,8 @@
   "ui.apps.multiplayer.playerlist.restoreVehicles": "Mets les véhicules supprimés en file d'attente",
   "ui.apps.multiplayer.playerlist.players": "Joueurs",
   "ui.apps.multiplayer.playerlist.error": "Aucun joueur.. Il y a un problème",
+  "ui.options.multiplayer.useUiAppRedesign": "Style d'interface utilisateur",
+  "ui.options.multiplayer.useUiAppRedesign.tooltip": "Choisissez le style visuel des applications d'interface utilisateur de BeamMP.",
+  "ui.options.multiplayer.useUiAppRedesign.redesign": "Refonte",
   "ui.options.multiplayer.useUiAppRedesign.old": "Ancien"
 }
