@@ -72,7 +72,7 @@ end
 --- Send given packet to the Server, over the Launcher.
 -- @tparam string s The packet to be sent to the Launcher/server.
 -- @usage MPGameNetwork.sendData(`<data>`)
-local function sendData(data)
+local function sendData(data) -- TODO currently the socket keeps retrying indefinitely if timed out, this freezes the game if the launcher is frozen, breaking the loop with offset the header and break the connection, we could maybe buffer data and try again next frame?
 	-- if not connected return
 	if not TCPLauncherSocket then return end
 	local header = ffi.string(ffi.new("uint32_t[?]", 4, #data), 4)

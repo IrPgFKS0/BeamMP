@@ -69,11 +69,29 @@ local reconnectAttempt = 0
 
 --- Sends data through a TCP socket
 -- @param s string containing the data to send to the launcher
-local function send(s)
+local function send(data) -- TODO currently the socket keeps retrying indefinitely if timed out, this freezes the game if the launcher is frozen, breaking the loop with offset the header and break the connection, we could maybe buffer data and try again next frame?
 	if TCPLauncherSocket == nop then return end
 
-	local header = ffi.string(ffi.new("uint32_t[?]", 4, #s), 4)
-	local bytes, error, index = TCPLauncherSocket:send(header .. s)
+	local header = ffi.string(ffi.new("uint32_t[?]", 4, #data), 4)
+	local packet = header .. data
+
+	local retries = 1
+
+	local bytes, error, index = TCPLauncherSocket:send(packet)
+
+	if error == 'timeout' then
+		while (retries > 0 and error) do
+			isConnecting = false
+			log('E', 'sendData', 'Socket error: '..error)
+			if error == "timeout" then
+				log('W', 'sendData', 'Stopped at index: '..index..' while trying to send '..#packet..' bytes of data. retries:' .. retries)
+				packet = string.sub(packet, index + 1)
+
+				bytes, error, index = TCPLauncherSocket:send(packet)
+			end
+		end
+	end
+
 	if error then
 		isConnecting = false
 		log('E', 'send', 'Socket error: '..error)
@@ -86,13 +104,13 @@ local function send(s)
 		elseif error == "Socket is not connected" then
 
 		else
-			log('E', 'send', 'Stopped at index: '..index..' while trying to send '..#s..' bytes of data.')
+			log('E', 'send', 'Stopped at index: '..index..' while trying to send '..#data..' bytes of data.')
 		end
 	else
 		if not launcherConnected then launcherConnected = true isConnecting = false onLauncherConnected() end
 
 		if not settings.getValue("showDebugOutput") then return end
-		log('M', 'send', 'Sending Data ('..bytes..'): '..s)
+		log('M', 'send', 'Sending Data ('..bytes..'): '..data)
 	end
 end
 
