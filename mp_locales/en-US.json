@@ -182,6 +182,7 @@
     "ui.multiplayer.filters.serverLocations": "Location(s): ",
     "ui.multiplayer.download.done": "Done — Are you stuck on this screen? Try these steps: https://docs.beammp.com/FAQ/How-to-deactivate-mods/ and if that doesn't help, contact us on the BeamMP discord or forum.",
     "ui.multiplayer.download.downloaded": "Downloaded",
+    "ui.multiplayer.loginDescription2temp": "Login is temporarily disabled until further notice, please use a guest account.",
     "ui.apps.multiplayer.playerlist.copyname": "Copy name",
     "ui.apps.multiplayer.playerlist.deleteAllVehicles": "Delete all vehicles",
     "ui.apps.multiplayer.playerlist.queueEvents": "Queue events",
