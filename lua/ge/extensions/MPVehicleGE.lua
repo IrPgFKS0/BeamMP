@@ -1712,7 +1712,7 @@ local function onVehicleResetted(gameVehicleID)
 			local veh = be:getObjectByID(gameVehicleID)
 			local absMode = veh:getField("absMode", 0)
 			if absMode ~= "" then
-				veh:queueLuaCommand("wheels.setABSBehavior(\""..absMode.."\")")
+				veh:queueLuaCommand("wheels.setABSBehavior(mime.unb64(\'".. MPHelpers.b64encode(absMode) .."\'))")
 			end
 		end
 
