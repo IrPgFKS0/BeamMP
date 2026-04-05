@@ -5,13 +5,11 @@
 <div class-"theEntireMultiplayerModule">
 <div id="LoadingServer" style="display: none;">
   <div id="LoadingBody" flex layout="column">
-    <h2 style="
-		font-family: Overpass var(--fnt-defs);
-		font-style: italic;
-		padding-bottom: 0;
-	">{{:: 'ui.multiplayer.connectingToServer' | translate}}</h2>
+    <h2 style="padding-bottom:0;">{{:: 'ui.multiplayer.connectingToServer' | translate}}</h2>
+
     <span id="OriginalLoadingStatus" hidden style="height: 0px;"></span>
     <span id="LoadingStatus" hidden>{{multiplayer.loadingStatus}}</span>
+
     <div id="mod-download-list" ng-if="multiplayer.downloadingMods.length > 0">
       <div ng-repeat="mod in multiplayer.downloadingMods" class="mod-download-row" style="align-items: center; margin-bottom: 10px;">
         <div style="width: 1em; height: 1em; font-size: 1em; margin-right: 1em; float: left;">
@@ -39,15 +37,37 @@
 
 <div id="addCustomFav" style="display: none;" class="filter-overlay">
   <div class="addCustomFav">
-    <md-button style="right:0; top:0; margin:0;" class="button close-button" ng-class="" ng-click="multiplayer.closePopup()"> X </md-button>
     <md-list-item layout class="md-padding">
-      <h1>{{:: 'ui.multiplayer.addCustomServer' | translate}}: </h1>
+      <h2>{{:: 'ui.multiplayer.addCustomServer' | translate}}</h2>
     </md-list-item>
     <center>
-      <input type="text" id="customFavName" name="customFavName" placeholder="Server name"/>
-      <input type="text" id="customFavIP" name="customFavIP" placeholder="Server IP"/>
-      <input type="text" id="customFavPort" name="customFavPort" placeholder="Server port" value="30814"/>
-      <md-button class="button" ng-click="multiplayer.addCustomServer()" style="margin-top: 20px; width: 400px;">{{:: 'ui.multiplayer.save' | translate}}</md-button>
+	<div layout="column" style="width:min-content">
+	  <div class="serverListSearch">
+		<div class="serverListSearchBar">
+		  <input class="bng-input mp-search" type="text" id="customFavName" name="customFavName" placeholder="Server name" value=""/>
+		</div>
+		<span class="mpSearchBarBottom"></span>
+	  </div>
+	  <div class="serverListSearch">
+		<div class="serverListSearchBar">
+		  <input class="bng-input mp-search" type="text" id="customFavIP" name="customFavIP" placeholder="Server IP" value=""/>
+		</div>
+		<span class="mpSearchBarBottom"></span>
+	  </div>
+	  <div class="serverListSearch">
+		<div class="serverListSearchBar">
+		  <input class="bng-input mp-search" type="text" id="customFavPort" name="customFavPort" placeholder="Server port" value="30814"/>
+		</div>
+		<span class="mpSearchBarBottom"></span>
+	  </div>
+	</div>
+	<div layout="row" style="float:right; width:min-content">
+      <md-button class="default-case bng-button-link" ng-class="" ng-click="multiplayer.closePopup()">
+		<img class="button-icon button-icon-filter" src={{vueIconsPath}}xmark.svg />
+		{{:: 'ui.common.cancel' | translate}}
+	  </md-button>
+      <md-button class="default-case bng-button-main" ng-click="multiplayer.addCustomServer()">{{:: 'ui.multiplayer.save' | translate}}</md-button>
+	</div>
     </center>
   </div>
 </div>
