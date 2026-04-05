@@ -24,6 +24,14 @@
     line-height: 1.5em;
 	vertical-align: middle !important;
 }
+.bng-button-main,
+.bng-button-secondary,
+.bng-button-white,
+.bng-button-outline,
+.bng-button-link,
+.bng-button-attention {
+	min-width: 2.75em; /* for icon-only buttons */
+}
 
 .rounded-progress .md-container {
   border-radius: 10px;
@@ -32,6 +40,11 @@
 
 .rounded-progress .md-bar {
   border-radius: 10px;
+}
+
+#activeFilters {
+	display: flex;
+	line-height: 1em;
 }
 
 

@@ -1197,29 +1197,27 @@ function($scope, $state, $timeout, $filter) {
 			tags: vm.tags
 		};
 
-		var activeFiltersText = "";
-		if (vm.checkIsEmpty) activeFiltersText += $filter('translate')('ui.multiplayer.filters.empty') + ", ";
-		if (vm.checkIsNotEmpty) activeFiltersText += $filter('translate')('ui.multiplayer.filters.notEmpty') + ", ";
-		if (vm.checkIsNotFull) activeFiltersText += $filter('translate')('ui.multiplayer.filters.notFull') + ", ";
-		if (vm.checkModSlider) activeFiltersText += $filter('translate')('ui.multiplayer.filters.modSize') + " < " + formatBytes(vm.sliderMaxModSize * 1e+6) + ", ";
-		if (vm.selectMap.length > 0) activeFiltersText += $filter('translate')('ui.multiplayer.filters.map') + ": " + vm.selectMap.join(", ") + ", ";
-		if (vm.serverVersions.length > 0) activeFiltersText += $filter('translate')('ui.multiplayer.filters.serverVersions') + vm.serverVersions.join(", ") + ", ";
-		if (vm.tags.length > 0) activeFiltersText += $filter('translate')('ui.multiplayer.filters.tags') + vm.tags.join(", ") + ", ";
-		if (vm.serverLocations.length > 0) activeFiltersText += $filter('translate')('ui.multiplayer.filters.serverLocations') + vm.serverLocations.join(", ") + ", ";
+		vm.activeFiltersText = [];
+		if (vm.checkIsEmpty) 				vm.activeFiltersText.push($filter('translate')('ui.multiplayer.filters.empty'));
+		if (vm.checkIsNotEmpty) 			vm.activeFiltersText.push($filter('translate')('ui.multiplayer.filters.notEmpty'));
+		if (vm.checkIsNotFull) 				vm.activeFiltersText.push($filter('translate')('ui.multiplayer.filters.notFull'));
+		if (vm.checkModSlider) 				vm.activeFiltersText.push($filter('translate')('ui.multiplayer.filters.modSize') + " < " + formatBytes(vm.sliderMaxModSize * 1e+6));
+		if (vm.selectMap.length > 0) 		vm.activeFiltersText.push($filter('translate')('ui.multiplayer.filters.map') + vm.selectMap.join(", "));
+		if (vm.serverVersions.length > 0) 	vm.activeFiltersText.push($filter('translate')('ui.multiplayer.filters.serverVersions') + vm.serverVersions.join(", "));
+		if (vm.tags.length > 0) 			vm.activeFiltersText.push($filter('translate')('ui.multiplayer.filters.tags') + vm.tags.join(", "));
+		if (vm.serverLocations.length > 0) 	vm.activeFiltersText.push($filter('translate')('ui.multiplayer.filters.serverLocations') + vm.serverLocations.join(", "));
 
 		var clearFiltersButton = document.getElementById("clearFiltersButton");
 		//var FiltersPrefix = document.getElementById("FiltersPrefix");
 
-		if (activeFiltersText.length > 0) { 
-			activeFiltersText = activeFiltersText.slice(0, -2);
+		if (vm.activeFiltersText.length > 0) { 
+			//activeFiltersText = activeFiltersText.slice(0, -2);
 			clearFiltersButton.style.display = "block"; 
 			//FiltersPrefix.style.display = "block";
 		} else {
 			clearFiltersButton.style.display = "none";
 			//FiltersPrefix.style.display = "none";
 		}
-
-		document.getElementById("activeFilters").innerText = activeFiltersText
 
 		localStorage.setItem("serverListOptions", JSON.stringify(serverListOptions));
 	};

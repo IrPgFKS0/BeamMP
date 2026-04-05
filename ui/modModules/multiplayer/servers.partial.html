@@ -13,20 +13,27 @@
 
 		<md-button id="extra-button" class="default-case bng-button-link" style="display: none;"></md-button>
 
-		<md-button class="default-case bng-button-link" style="display: flex; justify-content: center; width: 200px;" ng-click="toggleFilterOverlay()">
-			<span style="margin-right: 10px">{{:: 'ui.multiplayer.openFilters' | translate}}</span>
-			<md-icon style="margin: 0;">filter_list</md-icon>
+		<md-button class="default-case bng-button-link" style="display: flex; padding: 0.5em 0.5em;" ng-click="toggleFilterOverlay()">
+			<img class="button-icon button-icon-filter" src={{vueIconsPath}}filter.svg />
 			<md-tooltip md-direction="top">{{:: 'ui.multiplayer.openFilters' | translate}}</md-tooltip>
 		</md-button>
 
-		<md-button class="default-case bng-button-attention" style="display: none; justify-content: center; width: 200px;" id="clearFiltersButton" ng-click="clearFilters()">
-			<span style="margin-right: 10px">{{:: 'ui.multiplayer.clearFilters' | translate}}</span>
-			<md-icon style="margin: 0; vertical-align: middle;">clear</md-icon>
+		<md-button class="default-case bng-button-attention" style="display: none; padding: 0.5em 0.5em;" id="clearFiltersButton" ng-click="clearFilters()">
+			<img class="button-icon button-icon-filter" src={{vueIconsPath}}xmark.svg />
 			<md-tooltip md-direction="top">{{:: 'ui.multiplayer.clearFilters' | translate}}</md-tooltip>
 		</md-button>
 
 		<span id="FiltersPrefix" style="display: none; font-weight: bold; align-self: center;">{{:: 'ui.multiplayer.activeFilters' | translate}}</span>
-		<span id="activeFilters" style="align-self: center; padding-left: 10px;"></span>
+		<span id="activeFilters" style="align-self: center; padding-left: 10px;">
+			<span ng-repeat="text in multiplayermenu.activeFiltersText"
+			style="
+				background-color:var(--bng-black-o4);
+				padding: 0.25em 0.5em;
+				margin-right:1em;
+				border: solid var(--bng-cool-gray-600) 0.125em;
+				border-radius: var(--bng-corners-2);
+			">{{ text }}</span>
+		</span>
 
 		<div class="filter-overlay" ng-show="isFilterOverlayVisible" ng-click="toggleFilterOverlay(); multiplayermenu.repopulate();">
 			<div class="filter-body" ng-click="$event.stopPropagation();">
