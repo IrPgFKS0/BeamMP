@@ -2,31 +2,45 @@
 	<div flex="" style="max-height: 0;"></div>
 	<div id="MultiplayerLoginBody">
 		<img src="local://local/ui/modModules/multiplayer/beammp_new_cropped.png" style="max-width:50%" alt="BeamMP Logo">
-		<h2 class="text-red" id="LOGINERRORFIELD"></h2>
-<!--		<form id="LoginContainer">
+		<h2 class="text-red" style="text-align: center;" id="LOGINERRORFIELD"></h2>
+		<form id="LoginContainer">
 			<h2 class="text-white" id="loginHeader">{{:: 'ui.multiplayer.loginDescription1' | translate}}</h2>
-			<input (keyup.enter)="multiplayer.login()" type="text" id="loginUsername" placeholder="Username / Email"/>
-			<input (keyup.enter)="multiplayer.login()" type="password" id="loginPassword" placeholder="Password"/>
-			<div style="display:flex; align-content: space-evenly; width: 400px;">
-				<button class="default-case bng-button-main" style="margin-left: 0;" ng-click="login()">{{:: 'ui.multiplayer.login' | translate}}</button>
-				<button class="default-case bng-button-outline" style="margin-right: 0;" onclick="openExternalLink('https://forum.beammp.com/signup')">{{:: 'ui.multiplayer.register' | translate}}</button>
-				<button class="default-case bng-button-link" ng-click="switchConnection()">{{:: 'ui.multiplayer.playAsGuest' | translate}}</button>
+			<div layout="column">
+				<div class="serverListSearch">
+					<div class="serverListSearchBar">
+						<input class="bng-input mp-search" (keyup.enter)="multiplayer.login()" type="text" id="loginUsername" placeholder="Username / Email" tabindex="1"/>
+					</div>
+					<span class="mpSearchBarBottom"></span>
+				</div>
+				<div class="serverListSearch">
+					<div class="serverListSearchBar">
+						<input class="bng-input mp-search" (keyup.enter)="multiplayer.login()" type="password" id="loginPassword" placeholder="Password" tabindex="2"/>
+					</div>
+					<span class="mpSearchBarBottom"></span>
+				</div>
+			</div>
+			<div layout="row">
+				<div flex>
+					<button class="default-case bng-button-main" style="margin-left: 0;" ng-click="login()" tabindex="3">{{:: 'ui.multiplayer.login' | translate}}</button>
+					<button class="default-case bng-button-outline" style="margin-right: 0;" onclick="openExternalLink('https://forum.beammp.com/signup')" tabindex="4">{{:: 'ui.multiplayer.register' | translate}}</button>
+					<button class="default-case bng-button-link" ng-click="switchConnection()" tabindex="4">{{:: 'ui.multiplayer.playAsGuest' | translate}}</button>
+				</div>
 			</div>
 		</form>
 		<form id="GuestContainer" style="display: none;">
 			<h3 class="text-white">{{:: 'ui.multiplayer.guestDescription1' | translate}}</h3>
 			<div style="display:flex;  align-content: space-evenly;">
-				<button class="default-case bng-button-main" ng-click="switchConnection()">{{:: 'ui.multiplayer.iHaveAnAccount' | translate}}</button>
-				<button class="default-case bng-button-link" ng-click="guestLogin()">{{:: 'ui.multiplayer.play' | translate}}</button>
+				<button class="default-case bng-button-main" ng-click="switchConnection()" tabindex="1">{{:: 'ui.multiplayer.iHaveAnAccount' | translate}}</button>
+				<button class="default-case bng-button-link" ng-click="guestLogin()" tabindex="2">{{:: 'ui.multiplayer.play' | translate}}</button>
 			</div>
 		</form>
--->
-		<form id="LoginContainer">
+
+		<!--<form id="LoginContainer">
 			<div style="width:100%; display:flex; align-content: center; flex-direction: column;">
 				<h2 class="text-white" id="loginHeader">{{:: 'ui.multiplayer.loginDescription2temp' | translate}}</h2>
 				<button class="default-case bng-button-main" ng-click="guestLogin()">{{:: 'ui.multiplayer.playAsGuest' | translate}}</button>
 			</div>
-		</form>
+		</form>-->
 	</div>
 	<div flex="" style="max-height: 0;"></div>
 </div>
