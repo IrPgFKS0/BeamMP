@@ -1,3 +1,30 @@
+.theEntireMultiplayerModule {
+	font-family: var(--fnt-defs) !important;
+}
+
+.theEntireMultiplayerModule #bng-title-fix {
+	--off-white-from-vue:oklch(92.5% 0 0);
+	font-family: Overpass, var(--fnt-defs);
+	color: var(--off-white-from-vue);
+	font-weight: 1000;
+	font-size: 1.84em !important;
+	letter-spacing: normal !important;
+}
+
+.default-case {
+	text-transform: none !important;
+}
+.button-icon-filter {
+	filter: invert(100%) sepia(0%) saturate(22%) hue-rotate(36deg) brightness(104%) contrast(108%);
+}
+.button-icon {
+	font-size: 1.5em;
+    width: 1em;
+    height: 1em;
+    line-height: 1.5em;
+	vertical-align: middle !important;
+}
+
 .rounded-progress .md-container {
   border-radius: 10px;
   overflow: hidden; /* prevents overflow of the bar */
@@ -17,12 +44,13 @@
 }
 
 #top-bar {
-  background: #404040b8;
+  background: transparent
 }
 
 #left-menu {
   color: white;
-  background-color: #404040b8;
+  background-color: transparent;
+  max-width: 14em;
 }
 
 #filter-dropdown {
@@ -36,11 +64,60 @@
   border-radius: var(--bng-corners-1);
 }
 
+.mpSearchBarBottom {
+	width: 400px; /* WHY IS THIS HARDCODED GOD NO */
+	display: block;
+	position: relative; 
+	/*transform: translate(0, 0);*/
+	height: 0.0625em;
+	background-color: oklch(92.5% 0 0);
+}
+.serverListSearch {
+	display: inline-block;
+	position: relative;
+	width: 400px;
+	height: 2.5em;
+	line-height: 1.25em;
+	font-size: 1em;
+	margin: 6px 8px;
+	box-sizing: border-box;
+}
+.serverListSearch:focus-within .mpSearchBarBottom {
+	height: 0.125em !important;
+	background-color: var(--bng-orange-500);
+}
+.serverListSearchBar {
+	display: block;
+	height: fit-content;
+  	background-color: rgba(var(--bng-cool-gray-900-rgb), .66);
+	padding: 0.5em .25em;
+	color: var(--off-white-from-vue);
+	cursor: default;
+
+	border: none;
+	border-radius: .25em .25em 0 0 !important;
+	box-sizing: border-box;
+}
+.serverListSearchBar:focus-within {
+  	background-color: var(--bng-cool-gray-900);
+}
+.mp-search {
+  display: inline;
+  border: none !important;
+  background: none;
+  height: calc(1.5em);
+  font-size: 1em;
+  margin: 0;
+  max-width: calc(400px - 0.5em - 1.779em);
+  padding: 0;
+  cursor: default;
+}
+
 #back {
   width: 100%;
   height: 100%;
+  background-color: #00000099; /* match bng top bar */
 }
-
 #serversTableContainer {
 	overflow-x: hidden;
 }
@@ -76,10 +153,6 @@ table#serversTable {
   background-color: rgba(0, 0, 0, 0.25);
 }
 
-#serversTable tr:hover {
-  background-color: rgba(0, 0, 0, 0.25);
-}
-
 .highlight {
   background-color: #99aab5 !important;
 }
@@ -104,15 +177,26 @@ table#serversTable {
   height: 40px;
 }
 
-.button:hover {
-  background-color: white;
+.patreon-button-highlight {
+	border-color: var(--bng-add-green-600);
+	background-color: var(--bng-add-green-800);
+}
+.patreon-button-highlight:hover {
+	background-color: var(--bng-add-green-700) !important;
+}
+.patreon-button-highlight-two {
+	border-color: #fe8cff; /* might want to make a variable for this */
+}
+
+.sidebar-buttons {
+	text-align:left;
+	min-height: fit-content;
 }
 
 .close-button {
-  width: 50px;
   margin-left: auto;
   float: right;
-  margin-right: 5px;
+  text-transform: none !important;
 }
 
 #connect-button {
@@ -121,23 +205,13 @@ table#serversTable {
   float: right;
 }
 
-#direct-connect-button {
-  width: 425px;
-  margin-left: 0px;
-}
-
-#add-fav-button {
-  width: fit-content;
-  margin-left: 0px;
-}
-
 #launcher-connect-button {
   width: 250px;
   margin: 0 10px 0 0;
   background: #576ebf;
-}
-#launcher-connect-button:hover {
-  background-color: #374eaf;
+  &:hover {
+  	background-color: #374eaf;
+  }
 }
 
 #launcher-port {
@@ -152,33 +226,46 @@ md-content {
 div#LoadingServer {
   align-items: center;
   justify-content: center;
-  position: absolute;
-  z-index: 100;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
   width: 100vw;
   height: 100vh;
-  left: 0px;
-  top: 0px;
   color: white;
-  background-color: rgba(0, 0, 0, 0.75);
+  background-color: rgba(0, 0, 0, 0.66);
+  backdrop-filter: blur(2px);
 }
 
 div#LoadingBody {
-  width: 60%;
-  background-color: #848484;
-  padding: 15px;
-  border-radius: 5px;
-  max-height: 30%;
-  overflow-y: hidden;
+  width: 50%;
+  max-width: 50%;
+  max-height: 40%;
+  overflow-y: auto;
+  
+  font-family: var(--fnt-defs);
+  border-radius: var(--bng-corners-3);
+  padding: 20px;
+  /*border: solid rgb(90, 90, 90) 0.125em;
+
+  background-color: rgb(60, 60, 60);*/
+
+  background-color: rgba(33, 33, 33, 0.8);
+  border: solid var(--bng-cool-gray-700) 0.125em;
 }
 
 #mod-download-list {
   margin-top: 20px;
-  overflow: hidden;
-  position: relative;
-  background-color: rgb(109 109 109);
+  overflow-x: hidden;
+  overflow-y: scroll;
+  background-color: #ffffff10;
   padding: 5px;
-  border: 1px solid #696969;
+  border: none;
+  height: 200px;
+  max-height: 200px;
   border-radius: 3px;
+  padding-bottom: 0;
+  margin-bottom: 0;
 }
 
 .mod-download-row {
@@ -268,24 +355,29 @@ md-slider.ng-pristine.ng-untouched.ng-valid.md-default-theme.ng-empty {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0.66);
   z-index: 9999;
   display: flex;
   justify-content: center;
   align-items: center;
+  backdrop-filter: blur(2px);
 }
 
 .filter-body {
-  background-color: grey;
+  background-color: rgba(33, 33, 33, 0.8);
+  /*background-color: rgba(var(--bng-cool-gray-900-rgb), 0.66);*/
   padding: 20px;
-  border-radius: 8px;
+  border-radius: var(--bng-corners-3);
+  border: solid var(--bng-cool-gray-700) 0.125em;
   width: 800px;
   display: flex;
   flex-wrap: wrap;
-}
-
-.filter-body h2 {
+  font-family: var(--fnt-defs);
+  h2 {
+    font-family: Overpass var(--fnt-defs);
+    font-style: italic;
   margin-top: 10px;
+  }
 }
 
 .filter-content {
@@ -443,6 +535,10 @@ md-slider.ng-pristine.ng-untouched.ng-valid.md-default-theme.ng-empty {
   border-radius: 5px;
 }
 
+#serversTableHead {
+	text-align: left;
+}
+
 .flag {
   height: 17px;
   float: left;
@@ -469,13 +565,35 @@ md-slider.ng-pristine.ng-untouched.ng-valid.md-default-theme.ng-empty {
 }
 
 .server-item {
-    height: 24px;
+  height: 24px;
 }
 .server-item td {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.server-item:focus-within {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+.server-item:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+.server-item:nth-child(odd) {
+  backdrop-filter: brightness(0.90);
+}
+
+.bng-button-attention:hover {
+  background-color: hsla(360, 75%, 50%, 1) !important;
+}
+
+.bng-button-attention:active {
+  background-color: hsla(360, 75%, 30%, 1) !important;
+}
+
+.bng-button-attention:focus {
+  background-color: hsla(360, 85%, 45%, 1) !important;
+}
+
 .featured {
   background-color: rgba(0, 128, 0, 0.25);
 }
@@ -483,13 +601,13 @@ md-slider.ng-pristine.ng-untouched.ng-valid.md-default-theme.ng-empty {
   background-color: rgba(0, 123, 195, 0.3);
 }
 .official {
-  background-color: rgba(255, 106, 0, 0.25);
+  background-color: rgba(243, 109, 36, 0.25)
 }
 .favorite {
-  background-color: rgba(255, 215, 0, 0.35);
+  background-color: rgba(255, 215, 0, 0.25);
 }
 .custom {
-  background-color: rgba(255, 215, 0, 0.35);
+  background-color: rgba(255, 215, 0, 0.25);
 }
 .offline {
   background-color: rgba(0, 0, 0, 0.35);

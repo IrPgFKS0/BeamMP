@@ -181,7 +181,7 @@ export default angular.module('multiplayer', ['ui.router'])
 		<img src="/ui/modModules/multiplayer/icons/dns.svg" style="padding: 5px" height="22px">
 		<span style="padding-left: 5px;">Servers: <strong id="beammpMetricsServers">${ beammpMetrics.servers }</strong> </span>
 		<span class="divider" id="beammp-profile-divider"></span>
-		<img src="${userData.avatar}" id="beammp-profile-avatar" style="padding: 5px; border-radius: 50%;" height="22px">
+		<img src="${userData.avatar}" id="beammp-profile-avatar" style="filter: invert(100%) sepia(0%) saturate(22%) hue-rotate(36deg) brightness(104%) contrast(108%); padding: 5px; border-radius: 50%;" height="22px">
 		<span><strong id="beammp-profile-name">${userData.username}</strong> </span>
 	</div>
 	`
@@ -199,6 +199,9 @@ export default angular.module('multiplayer', ['ui.router'])
 		let nameElement = document.getElementById("beammp-profile-name")
 		let avatarElement = document.getElementById("beammp-profile-avatar")
 		let divider = document.getElementById("beammp-profile-divider")
+		if (!!data.avatar) {
+			data.avatar = '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg'
+		}
 
 		if (nameElement && avatarElement) {
 			userData = {
@@ -446,6 +449,8 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	bngApi = bngApi;
 	mdDialog = $mdDialog;
 
+	$scope.vueIconsPath = "/ui/ui-vue/src/assets/fonts/bngIcons/svg/";
+
 	$scope.switchServerView = function(view) {
 		var serversTableContainer = document.getElementById("serversTableContainer");
 		if (serversTableContainer) {
@@ -457,11 +462,9 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 
 		var buttons = document.getElementsByClassName("servers-btn");
 		for (var i = 0; i < buttons.length; i++) {
-			buttons[i].classList.remove("md-primary");
-			buttons[i].classList.remove("md-raised");
+			buttons[i].classList.remove("bng-button-outline");
 		}
-		document.getElementById(view+"-servers-btn").classList.add("md-primary");
-		document.getElementById(view+"-servers-btn").classList.add("md-raised");
+		document.getElementById(view+"-servers-btn").classList.add("bng-button-outline");
 
 		if (view == "recents") {
 			$translate('ui.multiplayer.clearRecent').then(function (translation) {
@@ -558,22 +561,40 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 
 				$mdDialog.show({
 					template: `
-    <md-dialog aria-label="Alert Dialog"
-               style="display: flex; flex-direction: column; padding: 24px;">
-      <div style="font-size: 24px; color: white; margin-bottom: 16px;">
-        ${data.title}
-      </div>
-      <div style="font-size: 16px; color: white; margin-bottom: 24px;">
-        ${data.text}
-      </div>
-      <div style="display: flex; justify-content: flex-end;">
-        <md-button ng-click="continueOffline()" class="md-primary" style="color: white;">Continue offline</md-button>
-        <md-button ng-click="close()" class="md-primary" style="color: white;">
-          ${data.okText}
-        </md-button>
-      </div>
-    </md-dialog>
-  `,
+						<md-dialog aria-label="Alert Dialog" style="
+							display: flex;
+  							background-color: #252525;
+							font-family: var(--fnt-defs);
+							border-radius: var(--bng-corners-3);
+							flex-direction: column;
+							padding: 24px;
+							text-shadow: none;
+						">
+							<div class="alertDialogTitle" style="
+								font-family: Overpass var(--fnt-defs);
+								font-size: 1.5em;
+								text-align: center;
+								font-weight: 600;
+								color: white;
+								margin-bottom: 16px;
+							">
+								${data.title}
+							</div>
+							<div style="
+								font-size: 1em;
+								color: oklch(92.5% 0 0);
+								margin-bottom: 24px;
+							">
+								${data.text}
+							</div>
+							<div style="display: flex; justify-content: flex-end;">
+								<md-button ng-click="continueOffline()" class="bng-button-link" style="text-transform: none">Continue offline</md-button>
+								<md-button ng-click="close()" class="bng-button-main" style="text-transform: none">
+								${data.okText}
+								</md-button>
+							</div>
+						</md-dialog>
+					`,
 					controller: function ($scope, $mdDialog) {
 						$scope.close = function () {
 							$mdDialog.hide();
@@ -634,7 +655,6 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		vm.downloadingMods = [];
 		$scope.$applyAsync();
 
-		document.getElementById('loadingstatus-divider').style.display = "none";
 		document.getElementById('LoadingStatus').innerText = "";
 
 		//console.log('Clicked')
@@ -651,7 +671,6 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		document.getElementById('OriginalLoadingStatus').removeAttribute("hidden");
 		document.getElementById('LoadingStatus').setAttribute("hidden", "hidden");
 		document.getElementById('LoadingStatus').innerText = "";
-		document.getElementById('loadingstatus-divider').style.display = 'none';
 		document.getElementById('LoadingServer').style.display = 'none';
 		vm.downloadingMods.length = 0;
 		vm.downloadingMods = [];
@@ -812,10 +831,6 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 			document.getElementById('OriginalLoadingStatus').setAttribute("hidden", "hidden");
 			loadingStatusElement.removeAttribute("hidden");
 		}
-		let divider = document.getElementById('loadingstatus-divider')
-		if (divider) {
-			divider.style.display = (vm.downloadingMods.length > 0 || vm.loadingStatus != "") ? "block" : "none";
-		}
 
 		$scope.$applyAsync();
 	});
@@ -834,51 +849,64 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 			let patreonText = $filter('translate')('ui.multiplayer.patreon.message.user')
 
 			let banner = document.getElementById("topRightStatus")
+			let patreonButton = document.getElementById("patreonSidebarButton")
+			var patreonButtonText = document.getElementById("patreonSidebarButtonSubtitle")
 
-			if (banner != null) {
-
-				if (data.role == "EA") {
-					patreonText = $filter('translate')('ui.multiplayer.patreon.message.ea')
+			if (data.role == "EA") {
+				patreonText = $filter('translate')('ui.multiplayer.patreon.message.ea')
+				if (banner != null) {
 					banner.children[0].style.display = "none"
 					banner.style.color = "#fe8cff";
-				} else {
+				}
+
+				patreonButton.classList.remove("patreon-button-highlight")
+				patreonButton.classList.add("patreon-button-highlight-two")
+				patreonButtonText.innerHTML = patreonText
+			} else {
+				if (banner != null) {
 					banner.children[0].style.display = ""
 					banner.style.color = "white";
 				}
 
-				banner.firstChild.nodeValue = patreonText
-				banner.children[0].style.color = "var(--bng-orange)"
-				banner.children[0].children[0].innerText = $filter('translate')('ui.multiplayer.patreon.button.user')
-
-				if (data.color != null)
-					nameElement.style.backgroundColor = data.color
-				else
-					nameElement.style.backgroundColor = "rgba(0, 0, 0, 0)"
-
-				nameElement.textContent = data.username;
-				avatarElement.src = data.avatar;
-
-				if (data.id != null) {
-					nameElement.style.cursor = "pointer";
-					nameElement.onclick = function () {
-						openExternalLink("https://forum.beammp.com/u/" + data.username + "/summary");
-					}
-
-					idElement.textContent = "ID: " + data.id
-					idElement.onclick = function () {
-						bngApi.engineLua(`setClipboard("` + data.id + `")`);
-						toastr.info("Copied ID to clipboard")
-					}
-					if (data.role != "USER") {
-						idElement.style.marginTop = "0"
-					} else {
-						idElement.style.marginTop = "6px"
-					}
-				} else {
-					idElement.textContent = "";
-					nameElement.onclick = null;
-					nameElement.style.cursor = "default";
+				if (patreonButton != null) {
+					patreonButton.classList.remove("patreon-button-highlight-two")
+					patreonButton.classList.add("patreon-button-highlight")
+					patreonButtonText.innerText = patreonText
 				}
+			}
+
+			banner.firstChild.nodeValue = patreonText
+			banner.children[0].style.color = "var(--bng-orange)"
+			banner.children[0].children[0].innerText = $filter('translate')('ui.multiplayer.patreon.button.user')
+
+			if (data.color != null)
+				nameElement.style.backgroundColor = data.color
+			else
+				nameElement.style.backgroundColor = "rgba(0, 0, 0, 0)"
+
+			nameElement.textContent = data.username;
+			avatarElement.src = data.avatar;
+
+			if (data.id != null) {
+				nameElement.style.cursor = "pointer";
+				nameElement.onclick = function () {
+					openExternalLink("https://forum.beammp.com/u/" + data.username + "/summary");
+				}
+
+				idElement.textContent = "ID: " + data.id
+				idElement.onclick = function () {
+					bngApi.engineLua(`setClipboard("` + data.id + `")`);
+					toastr.info("Copied ID to clipboard")
+				}
+				if (data.role != "USER") {
+					idElement.style.marginTop = "0"
+				} else {
+					idElement.style.marginTop = "6px"
+				}
+			} else {
+				idElement.textContent = "";
+				nameElement.onclick = null;
+				nameElement.style.cursor = "default";
 			}
 		} else {
 			nameElement.textContent = "";
@@ -932,7 +960,7 @@ function($scope, $state, $timeout, $filter) {
 		vm.checkIsNotFull = false
 		vm.checkModSlider = false
 		vm.sliderMaxModSize = 500 // in MB
-		vm.selectMap = "Any map"
+		vm.selectMap = []
 		vm.serverVersions = []
 		vm.tags = []
 		vm.serverLocations = []
@@ -1082,8 +1110,7 @@ function($scope, $state, $timeout, $filter) {
 		//console.log('[MultiplayerServersController] destroyed.');
 		var buttons = document.getElementsByClassName("servers-btn");
 		for (var i = 0; i < buttons.length; i++) {
-			buttons[i].classList.remove("md-primary");
-			buttons[i].classList.remove("md-raised");
+			buttons[i].classList.remove("bng-button-outline");
 		}
 	});
 	
@@ -1115,7 +1142,6 @@ function($scope, $state, $timeout, $filter) {
 
 		
 		vm.availableMaps.sort();
-		vm.availableMaps.unshift("Any map");
 
 		vm.availableServerVersions.sort();
 
@@ -1166,8 +1192,8 @@ function($scope, $state, $timeout, $filter) {
 		if (vm.checkIsEmpty) activeFiltersText += $filter('translate')('ui.multiplayer.filters.empty') + ", ";
 		if (vm.checkIsNotEmpty) activeFiltersText += $filter('translate')('ui.multiplayer.filters.notEmpty') + ", ";
 		if (vm.checkIsNotFull) activeFiltersText += $filter('translate')('ui.multiplayer.filters.notFull') + ", ";
-		if (vm.checkModSlider) activeFiltersText += $filter('translate')('ui.multiplayer.filters.modSize') + " < " + vm.sliderMaxModSize + "MB, ";
-		if (vm.selectMap != "Any map") activeFiltersText += $filter('translate')('ui.multiplayer.filters.map') + ": " + vm.selectMap + ", ";
+		if (vm.checkModSlider) activeFiltersText += $filter('translate')('ui.multiplayer.filters.modSize') + " < " + formatBytes(vm.sliderMaxModSize * 1e+6) + ", ";
+		if (vm.selectMap.length > 0) activeFiltersText += $filter('translate')('ui.multiplayer.filters.map') + ": " + vm.selectMap.join(", ") + ", ";
 		if (vm.serverVersions.length > 0) activeFiltersText += $filter('translate')('ui.multiplayer.filters.serverVersions') + vm.serverVersions.join(", ") + ", ";
 		if (vm.tags.length > 0) activeFiltersText += $filter('translate')('ui.multiplayer.filters.tags') + vm.tags.join(", ") + ", ";
 		if (vm.serverLocations.length > 0) activeFiltersText += $filter('translate')('ui.multiplayer.filters.serverLocations') + vm.serverLocations.join(", ") + ", ";
@@ -1202,7 +1228,7 @@ function($scope, $state, $timeout, $filter) {
 		vm.checkIsNotFull = false;
 		vm.checkModSlider = false;
 		vm.sliderMaxModSize = 500;
-		vm.selectMap = "Any map";
+		vm.selectMap = [];
 		vm.serverVersions = [];
 		vm.tags = [];
 		vm.serverLocations = [];
@@ -1522,7 +1548,7 @@ globalThis.openExternalLink = function(url){
 }
 
 // /!\ IMPORTANT /!\ //// TYPE 0 = Normal / 1 = Favorites / 2 = Recents
-async function populateTable($filter, $scope, servers, tab, searchText = '', checkIsEmpty, checkIsNotEmpty, checkIsNotFull, checkModSlider, sliderMaxModSize, selectMap = 'Any map', SelectedServerVersions = [], tags = [], SelectedServerLocations = []) {
+async function populateTable($filter, $scope, servers, tab, searchText = '', checkIsEmpty, checkIsNotEmpty, checkIsNotFull, checkModSlider, sliderMaxModSize, selectMap = [], SelectedServerVersions = [], tags = [], SelectedServerLocations = []) {
 	$scope.serversTable = {}; 
 	var type = 0;
 	if (tab == "favorites") type = 1;
@@ -1565,7 +1591,7 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 		else if(checkModSlider && sliderMaxModSize * 1048576 < server.modstotalsize) continue;
 	
 		// Filter by map
-		else if((selectMap != "Any map" && selectMap != smoothMapName)) continue;
+		else if (selectMap.length > 0 && !selectMap.includes(smoothMapName)) continue;
 
 		else if (SelectedServerVersions.length > 0 && !SelectedServerVersions.includes("v" + server.version)) continue;
 
@@ -1617,7 +1643,7 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 				if (checkIsNotEmpty && tmpServer1.players == 0) continue;
 				if (checkIsNotFull && tmpServer1.players >= parseInt(tmpServer1.maxplayers)) continue;
 				if (checkModSlider && sliderMaxModSize * 1048576 < tmpServer1.modstotalsize) continue;
-				if (selectMap != "Any map" && selectMap != smoothMapName) continue;
+				if (selectMap.length > 0 && !selectMap.includes(smoothMapName)) continue;
 				if (SelectedServerVersions.length > 0 && !SelectedServerVersions.includes("v" + tmpServer1.version)) continue;
 				if (SelectedServerLocations.length > 0 && !SelectedServerLocations.includes(tmpServer1.location)) continue;
 
@@ -1667,8 +1693,6 @@ function connect(ip, port, name, skipModWarning = false) {
 	multiplayerCtrl.loadingStatus = ""
 	multiplayerCtrl.downloadingMods = [];
 	$rootScope.$applyAsync();
-
-	document.getElementById('loadingstatus-divider').style.display = "none";
 
 	// Connect with ids
 	bngApi.engineLua('MPCoreNetwork.connectToServer("' + ip + '", ' + port + ',"' + name + '", ' + skipModWarning + ')');

@@ -99,6 +99,8 @@
     "ui.multiplayer.servers": "Public Servers",
     "ui.multiplayer.favorites": "Favorites",
     "ui.multiplayer.favorite": "Save as Favorite",
+	"ui.multiplayer.addFavorite": "Add Favorite",
+	"ui.multiplayer.removeFavorite": "Remove Favorite",
     "ui.multiplayer.favoritedToast.title": "Favorited server",
     "ui.multiplayer.favoritedToast.description": "This server has been favorited.",
     "ui.multiplayer.featured": "Featured Servers",

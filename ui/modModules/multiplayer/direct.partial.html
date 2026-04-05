@@ -1,15 +1,27 @@
-<md-content>
-	<div style="background:#2C2F33; padding-left:15px;">
-		<br />
+<md-content style="background:none">
+	<div style="display:grid;padding-top:3px;">
 		<div layout="row">
-			<input type="text" id="directip" name="ip" placeholder="Server IP" value="127.0.0.1" tabindex="1"/>
-			<md-button class="button servers-button" ng-class="" ng-click="multiplayer.pasteClipboardToDirectIP()">{{:: 'ui.multiplayer.pasteFromClipboard' | translate}}</md-button>
+			<div class="serverListSearch" style="margin: 3px 0;">
+				<div class="serverListSearchBar">
+					<input class="bng-input mp-search" type="text" id="directip" name="ip" placeholder="Server IP" value="" tabindex="1"/>
+				</div>
+				<span class="mpSearchBarBottom"></span>
+			</div>
+			<md-button class="default-case bng-button-link" ng-class="" ng-click="multiplayer.pasteClipboardToDirectIP()">{{:: 'ui.multiplayer.pasteFromClipboard' | translate}}</md-button>
 		</div>
-		<input type="text" id="directport" name="port" placeholder="Server Port" value="30814" tabindex="2"/>
+		<div layout="row">
+			<div class="serverListSearch" style="margin: 0 0;">
+				<div class="serverListSearchBar">
+					<input class="bng-input mp-search" type="text" id="directport" name="port" placeholder="Server Port" value="" tabindex="2"/>
+				</div>
+				<span class="mpSearchBarBottom"></span>
+			</div>
+		</div>
 		<!--<input type="text" id="nickname" name="nickname" placeholder="Nickname"/>-->
-		<md-button id="direct-connect-button" class="button" ng-click="multiplayer.directConnect()" tabindex="3">{{:: 'ui.multiplayer.connect' | translate}}</md-button>
-		<md-button id="add-fav-button" class="button" ng-click="multiplayer.directConnectFavorite()" tabindex="4">{{:: 'ui.multiplayer.favorite' | translate}}</md-button>
-		<md-divider></md-divider>
+		<div layout="row">
+			<md-button style="margin-left:0;" id="direct-connect-button" class="default-case bng-button-main" ng-click="multiplayer.directConnect()" tabindex="3">{{:: 'ui.multiplayer.connect' | translate}}</md-button>
+			<md-button id="add-fav-button" class="default-case bng-button-link" ng-click="multiplayer.directConnectFavorite()" tabindex="4">{{:: 'ui.multiplayer.favorite' | translate}}</md-button>
+		</div>
 	</div>
 	<div id="footer"></div>
 
