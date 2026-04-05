@@ -24,13 +24,18 @@
     line-height: 1.5em;
 	vertical-align: middle !important;
 }
-.bng-button-main,
-.bng-button-secondary,
-.bng-button-white,
-.bng-button-outline,
-.bng-button-link,
-.bng-button-attention {
-	min-width: 2.75em; /* for icon-only buttons */
+.theEntireMultiplayerModule {
+	.bng-button-main,
+	.bng-button-secondary,
+	.bng-button-white,
+	.bng-button-outline,
+	.bng-button-link,
+	.bng-button-attention {
+		min-width: 2.75em; /* for icon-only buttons */
+		margin: 0.375em 0.5em;
+		font-weight: 500;
+		white-space: nowrap;
+	}
 }
 
 .rounded-progress .md-container {
@@ -126,6 +131,23 @@
   cursor: default;
 }
 
+#MultiplayerLoginBody {
+	background-color: rgba(33, 33, 33, 0.8);
+	padding: 20px;
+	border-radius: var(--bng-corners-3);
+	border: solid var(--bng-cool-gray-700) 0.125em;
+	font-family: var(--fnt-defs);
+
+  	display:flex;
+	position:relative;
+	height:fit-content;
+	width:fit-content;
+	margin: auto;
+	flex-direction:column;
+	align-items: center;
+	justify-content: center;
+}
+
 #back {
   width: 100%;
   height: 100%;
@@ -191,14 +213,16 @@ table#serversTable {
 }
 
 .patreon-button-highlight {
-	border-color: var(--bng-add-green-600);
+	border-color: var(--bng-add-green-600) !important;
 	background-color: var(--bng-add-green-800);
 }
-.patreon-button-highlight:hover {
+.patreon-button-highlight:hover,
+.patreon-button-highlight:focus,
+.patreon-button-highlight:focus-within {
 	background-color: var(--bng-add-green-700) !important;
 }
 .patreon-button-highlight-two {
-	border-color: #fe8cff; /* might want to make a variable for this */
+	border-color: #fe8cff !important; /* might want to make a variable for this */
 }
 
 .sidebar-buttons {

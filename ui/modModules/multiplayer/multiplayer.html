@@ -2,7 +2,7 @@
 
 <link type="text/css" rel="stylesheet" href="/ui/modModules/multiplayer/multiplayer.css">
 
-<div class-"theEntireMultiplayerModule">
+<div class="theEntireMultiplayerModule">
 <div id="LoadingServer" style="display: none;">
   <div id="LoadingBody" flex layout="column">
     <h2 style="padding-bottom:0;">{{:: 'ui.multiplayer.connectingToServer' | translate}}</h2>
@@ -28,10 +28,10 @@
       </div>
     </div>
 	<div flex="" style="max-height: none;"></div>
-    <md-button style="right:0; top:0; margin-top: 20px; margin-right: 0" class="bng-button-attention close-button" ng-class="" ng-click="multiplayer.closeLoadingPopup()">
+    <button style="right:0; top:0; margin-top: 20px; margin-right: 0" class="bng-button-attention close-button" ng-class="" ng-click="multiplayer.closeLoadingPopup()">
 		<img class="button-icon button-icon-filter" src={{vueIconsPath}}xmark.svg />
 		{{:: 'ui.common.cancel' | translate}}
-	</md-button>
+	</button>
   </div>
 </div>
 
@@ -62,11 +62,11 @@
 	  </div>
 	</div>
 	<div layout="row" style="float:right; width:min-content">
-      <md-button class="default-case bng-button-link" ng-class="" ng-click="multiplayer.closePopup()">
+      <button class="default-case bng-button-link" ng-class="" ng-click="multiplayer.closePopup()">
 		<img class="button-icon button-icon-filter" src={{vueIconsPath}}xmark.svg />
 		{{:: 'ui.common.cancel' | translate}}
-	  </md-button>
-      <md-button class="default-case bng-button-main" ng-click="multiplayer.addCustomServer()">{{:: 'ui.multiplayer.save' | translate}}</md-button>
+	  </button>
+      <button class="default-case bng-button-main" ng-click="multiplayer.addCustomServer()">{{:: 'ui.multiplayer.save' | translate}}</button>
 	</div>
     </center>
   </div>
@@ -87,60 +87,60 @@
 				">{{:: 'ui.multiplayer.multiplayer' | translate}}</div>
 			</div>
             <p id="topRightStatus" style="display:none; text-align: center;margin: 0 auto;position: absolute;width: 100%;color: white;">{{:: 'ui.multiplayer.patreon.message.user' | translate}}
-              <md-button class="" style="
+              <button class="" style="
 			  display:none;
               margin: 5px;
               border: 2px solid;
               border-radius: 5px;
               padding: 2px 5px;
               color: var(--bng-orange);
-          " ng-click="multiplayer.showMessage()"><span>{{:: 'ui.multiplayer.patreon.button.user' | translate}}</span></md-button></p>
-			<!--<md-button id="launcher-connect-button" class="button" ng-click="multiplayer.resetLauncherConnection()">Connect to launcher</md-button>-->
+          " ng-click="multiplayer.showMessage()"><span>{{:: 'ui.multiplayer.patreon.button.user' | translate}}</span></button></p>
+			<!--<button id="launcher-connect-button" class="button" ng-click="multiplayer.resetLauncherConnection()">Connect to launcher</button>-->
         </md-list-item>
     </md-toolbar>
 
     <div flex layout="row" style="overflow: auto;">
       <md-content layout="column" id="left-menu">
-        <md-button class="default-case sidebar-buttons servers-btn bng-button-link bng-button-outline" id="-servers-btn" ng-click="switchServerView('')">
+        <button class="default-case sidebar-buttons servers-btn bng-button-link bng-button-outline" id="-servers-btn" ng-click="switchServerView('')">
           <img class="button-icon button-icon-filter" src={{vueIconsPath}}globeSimplified.svg />
 		      {{:: 'ui.multiplayer.servers' | translate}}
-        </md-button>
+        </button>
 
-        <md-button class="default-case sidebar-buttons servers-btn bng-button-link" id="featured-servers-btn" ng-click="switchServerView('featured')">
+        <button class="default-case sidebar-buttons servers-btn bng-button-link" id="featured-servers-btn" ng-click="switchServerView('featured')">
 		  <img class="button-icon button-icon-filter" src={{vueIconsPath}}cup.svg />
 		      {{:: 'ui.multiplayer.featured' | translate}}
-        </md-button>
+        </button>
 
-        <md-button class="default-case sidebar-buttons servers-btn bng-button-link" id="official-servers-btn" ng-click="switchServerView('official')">
+        <button class="default-case sidebar-buttons servers-btn bng-button-link" id="official-servers-btn" ng-click="switchServerView('official')">
 		  <img class="button-icon button-icon-filter" src={{vueIconsPath}}shieldCheckmark.svg />
 		      {{:: 'ui.multiplayer.official' | translate}}
-        </md-button>
+        </button>
 
-        <md-button class="default-case sidebar-buttons servers-btn bng-button-link" id="partner-servers-btn" ng-click="switchServerView('partner')">
+        <button class="default-case sidebar-buttons servers-btn bng-button-link" id="partner-servers-btn" ng-click="switchServerView('partner')">
 		  <img class="button-icon button-icon-filter" src={{vueIconsPath}}medal.svg />
 		      {{:: 'ui.multiplayer.partner' | translate}}
-        </md-button>
+        </button>
 
-        <md-button class="default-case sidebar-buttons servers-btn bng-button-link" id="favorites-servers-btn" ng-click="switchServerView('favorites')">
+        <button class="default-case sidebar-buttons servers-btn bng-button-link" id="favorites-servers-btn" ng-click="switchServerView('favorites')">
 		  <img class="button-icon button-icon-filter" src={{vueIconsPath}}bookmark.svg />
 				  {{:: 'ui.multiplayer.favorites' | translate}}
-        </md-button>
+        </button>
 
-        <md-button class="default-case sidebar-buttons servers-btn bng-button-link" id="recents-servers-btn" ng-click="switchServerView('recents')">
+        <button class="default-case sidebar-buttons servers-btn bng-button-link" id="recents-servers-btn" ng-click="switchServerView('recents')">
           <img class="button-icon button-icon-filter" src={{vueIconsPath}}POITimeL.svg />
 				  {{:: 'ui.multiplayer.recent' | translate}}
-        </md-button>
+        </button>
 
-        <md-button class="default-case sidebar-buttons bng-button-link" id="direct-connect-btn" ng-class="{'md-primary md-raised': (multiplayer.stateName.indexOf('multiplayer.direct') !== -1)}" ui-sref="menu.multiplayer.direct">
+        <button class="default-case sidebar-buttons bng-button-link" id="direct-connect-btn" ng-class="{'md-primary md-raised': (multiplayer.stateName.indexOf('multiplayer.direct') !== -1)}" ui-sref="menu.multiplayer.direct">
           <img class="button-icon button-icon-filter" src={{vueIconsPath}}globeSimpleNotSign.svg />
 				  {{:: 'ui.multiplayer.direct_connect' | translate}}
-        </md-button>
+        </button>
 	    
 	    <div flex="" style="max-height: none;"></div>
 
 		<md-divider style="padding-top: 2px"></md-divider>
 
-        <md-button class="default-case sidebar-buttons bng-button-link" id="patreonSidebarButton" onclick="openExternalLink(`https://www.patreon.com/BeamMP`)" ng-class="">
+        <button class="default-case sidebar-buttons bng-button-link" id="patreonSidebarButton" onclick="openExternalLink(`https://www.patreon.com/BeamMP`)" ng-class="">
           <img src="local://local/ui/modModules/multiplayer/icons/PATREON_SYMBOL_1_WHITE_RGB.svg" class="button-icon"></img>
           {{:: 'ui.multiplayer.patreon' | translate}}
 		  <div id="patreonSidebarButtonSubtitle" style="
@@ -152,38 +152,38 @@
 			max-width: 100%;
 			white-space: normal;
 		  "></div>
-        </md-button>
+        </button>
 
-        <md-button class="default-case sidebar-buttons bng-button-link" id="forum-btn" onclick="openExternalLink(`https://forum.beammp.com`)" ng-class="">
+        <button class="default-case sidebar-buttons bng-button-link" id="forum-btn" onclick="openExternalLink(`https://forum.beammp.com`)" ng-class="">
           <img class="button-icon button-icon-filter" src={{vueIconsPath}}chatBubble.svg />
 		  {{:: 'ui.multiplayer.forum' | translate}}
-        </md-button>
+        </button>
 
-        <md-button class="default-case sidebar-buttons bng-button-link" onclick="openExternalLink(`https://discord.gg/BeamMP`)" ng-class="">
+        <button class="default-case sidebar-buttons bng-button-link" onclick="openExternalLink(`https://discord.gg/BeamMP`)" ng-class="">
           <md-icon class="button-icon" md-svg-src="local://local/ui/modModules/multiplayer/icons/icon_clyde_white_RGB.svg"></md-icon>
           {{:: 'ui.multiplayer.discord' | translate}}
-        </md-button>
+        </button>
 
-		<md-button class="default-case sidebar-buttons bng-button-link" onclick="openExternalLink(`https://docs.beammp.com`)" ng-class="">
+		<button class="default-case sidebar-buttons bng-button-link" onclick="openExternalLink(`https://docs.beammp.com`)" ng-class="">
           <img class="button-icon button-icon-filter" src={{vueIconsPath}}info.svg></md-icon>
           {{:: 'ui.multiplayer.docs' | translate}}
-        </md-button>
+        </button>
 
-        <md-button class="default-case sidebar-buttons bng-button-link" onclick="openExternalLink(`https://github.com/BeamMP/`)">
+        <button class="default-case sidebar-buttons bng-button-link" onclick="openExternalLink(`https://github.com/BeamMP/`)">
           <img src="local://local/ui/modModules/multiplayer/icons/github-mark.svg" class="button-icon"></img>
           {{:: 'ui.multiplayer.github' | translate}}
-        </md-button>
+        </button>
 
 	    <md-divider></md-divider>
       
-        <img id="serverlist-profile-avatar" style="filter: invert(100%) sepia(0%) saturate(22%) hue-rotate(36deg) brightness(104%) contrast(108%); width: 100px; border-radius: 50%; display: block; margin-left: auto; margin-right: auto;"/>
+        <img id="serverlist-profile-avatar" style="width: 100px; border-radius: 50%; display: block; margin-left: auto; margin-right: auto;"/>
         <span id="serverlist-profile-name" style="text-align: center; background-color: rgba(0, 0, 0, 0); border-radius: 10px; margin-left: 15px; margin-right: 15px; margin-top: 10px; padding: 2px;"></span>
         <span id="serverlist-profile-id" style="text-align: center;font-size: 0.9em; line-height: 1.5em; opacity: 0.8; cursor: pointer; margin-top: 6px;"></span>
 
-        <md-button class="default-case sidebar-buttons bng-button-attention" ng-click="logout()" class="md-raised md-accent">
+        <button class="default-case sidebar-buttons bng-button-attention" ng-click="logout()" class="md-raised md-accent">
 		  <img class="button-icon button-icon-filter" src={{vueIconsPath}}exit.svg></md-icon>
 				  {{:: 'ui.multiplayer.logout' | translate}}
-        </md-button>
+        </button>
       </md-content>
 
       <div flex style="position: relative;">

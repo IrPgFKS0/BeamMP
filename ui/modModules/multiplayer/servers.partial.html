@@ -9,19 +9,19 @@
 			</div>
 			<span class="mpSearchBarBottom"></span>
 		</div>
-		<md-button id="refresh-button" class="default-case bng-button-main" ng-class="" ng-click="multiplayer.refreshList()">{{:: 'ui.multiplayer.refresh' | translate}}</md-button>
+		<button id="refresh-button" class="default-case bng-button-main" ng-class="" ng-click="multiplayer.refreshList()">{{:: 'ui.multiplayer.refresh' | translate}}</button>
 
-		<md-button id="extra-button" class="default-case bng-button-link" style="display: none;"></md-button>
+		<button id="extra-button" class="default-case bng-button-link" style="display: none;"></button>
 
-		<md-button class="default-case bng-button-link" style="display: flex; padding: 0.5em 0.5em;" ng-click="toggleFilterOverlay()">
+		<button class="default-case bng-button-link" style="display: flex; padding: 0.5em 0.5em;" ng-click="toggleFilterOverlay()">
 			<img class="button-icon button-icon-filter" src={{vueIconsPath}}filter.svg />
 			<md-tooltip md-direction="top">{{:: 'ui.multiplayer.openFilters' | translate}}</md-tooltip>
-		</md-button>
+		</button>
 
-		<md-button class="default-case bng-button-attention" style="display: none; padding: 0.5em 0.5em;" id="clearFiltersButton" ng-click="clearFilters()">
+		<button class="default-case bng-button-attention" style="display: none; padding: 0.5em 0.5em;" id="clearFiltersButton" ng-click="clearFilters()">
 			<img class="button-icon button-icon-filter" src={{vueIconsPath}}xmark.svg />
 			<md-tooltip md-direction="top">{{:: 'ui.multiplayer.clearFilters' | translate}}</md-tooltip>
-		</md-button>
+		</button>
 
 		<span id="FiltersPrefix" style="display: none; font-weight: bold; align-self: center;">{{:: 'ui.multiplayer.activeFilters' | translate}}</span>
 		<span id="activeFilters" style="align-self: center; padding-left: 10px;">
@@ -39,9 +39,9 @@
 			<div class="filter-body" ng-click="$event.stopPropagation();">
 				<h2>{{:: 'ui.multiplayer.filterOptions' | translate}}</h2>
 
-				<!--<md-button class="md-icon-button" style="margin-left: auto;" ng-click="toggleFilterOverlay(); multiplayermenu.repopulate();">
+				<!--<button class="md-icon-button" style="margin-left: auto;" ng-click="toggleFilterOverlay(); multiplayermenu.repopulate();">
 					<md-icon>close</md-icon>
-				</md-button>-->
+				</button>-->
 
 				<div class="filter-content">
 					<md-checkbox ng-model="multiplayermenu.checkIsEmpty" tabindex="1">
@@ -120,9 +120,9 @@
 						</span>
 					</div>
 				</div>
-				<md-button class="default-case bng-button-main" style="margin-left: auto;" ng-click="toggleFilterOverlay(); multiplayermenu.repopulate();" tabindex="10">
+				<button class="default-case bng-button-main" style="margin-left: auto;" ng-click="toggleFilterOverlay(); multiplayermenu.repopulate();" tabindex="10">
 					{{:: 'ui.common.apply' | translate}}
-				</md-button>
+				</button>
 			</div>
 		</div>
 	</div>
@@ -178,12 +178,12 @@
 							</div>
 						</div>
 						<div class="row" style="padding-left: 10px;" ng-switch="server.isFavorite">
-							<md-button id="serverconnect-button" class="default-case bng-button-main" ng-class="" ng-click="connect(server.server.ip, server.server.port, server.name, server.server.official)" style="margin-left: 10px;">Connect</md-button>
+							<button id="serverconnect-button" class="default-case bng-button-main" ng-class="" ng-click="connect(server.server.ip, server.server.port, server.name, server.server.official)" style="margin-left: 10px;">Connect</button>
 							<div ng-switch-when="true">
-								<md-button id="removeFav-button" class="default-case bng-button-link" ng-class="" ng-click="removeFav(server.server)" style="margin-left: 10px">{{:: 'ui.multiplayer.removeFavorite' | translate}}</md-button>
+								<button id="removeFav-button" class="default-case bng-button-link" ng-class="" ng-click="removeFav(server.server)" style="margin-left: 10px">{{:: 'ui.multiplayer.removeFavorite' | translate}}</button>
 							</div>
 							<div ng-switch-when="false">
-								<md-button id="addFav-button" class="default-case bng-button-link" ng-class="" ng-click="addFav(server.server, true)" style="margin-left: 10px">{{:: 'ui.multiplayer.addFavorite' | translate}}</md-button>
+								<button id="addFav-button" class="default-case bng-button-link" ng-class="" ng-click="addFav(server.server, true)" style="margin-left: 10px">{{:: 'ui.multiplayer.addFavorite' | translate}}</button>
 							</div>
 						</div>
 						<div class="row">
