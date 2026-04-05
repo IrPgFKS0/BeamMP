@@ -452,8 +452,6 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	bngApi = bngApi;
 	mdDialog = $mdDialog;
 
-	$scope.vueIconsPath = "/ui/ui-vue/src/assets/fonts/bngIcons/svg/";
-
 	$scope.switchServerView = function(view) {
 		var serversTableContainer = document.getElementById("serversTableContainer");
 		if (serversTableContainer) {
@@ -941,6 +939,10 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		$timeout.cancel(timeOut);
 		//console.log('[MultiplayerController] destroyed.');
 	});
+
+	$scope.getVueIconPath = function(iconName) {
+		return "/ui/ui-vue/src/assets/fonts/bngIcons/svg/" + iconName + ".svg"
+	};
 }])
 
 /* //////////////////////////////////////////////////////////////////////////////////////////////

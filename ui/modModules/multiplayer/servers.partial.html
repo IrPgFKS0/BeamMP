@@ -5,7 +5,7 @@
 		<div class="serverListSearch">
 			<div class="serverListSearchBar">
 				<input class="bng-input mp-search" ng-model="multiplayermenu.searchText" ng-change="multiplayermenu.repopulate();" type="text" id="search" name="search" placeholder="Search..." />
-				<img class="button-icon button-icon-filter" style="display:inline" src={{vueIconsPath}}search.svg />
+				<img class="button-icon button-icon-filter" style="display:inline" ng-src={{getVueIconPath('search')}} />
 			</div>
 			<span class="mpSearchBarBottom"></span>
 		</div>
@@ -14,12 +14,12 @@
 		<button id="extra-button" class="default-case bng-button-link" style="display: none;"></button>
 
 		<button class="default-case bng-button-link" style="display: flex; padding: 0.5em 0.5em;" ng-click="toggleFilterOverlay()">
-			<img class="button-icon button-icon-filter" src={{vueIconsPath}}filter.svg />
+			<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('filter')}} />
 			<md-tooltip md-direction="top">{{:: 'ui.multiplayer.openFilters' | translate}}</md-tooltip>
 		</button>
 
 		<button class="default-case bng-button-attention" style="display: none; padding: 0.5em 0.5em;" id="clearFiltersButton" ng-click="clearFilters()">
-			<img class="button-icon button-icon-filter" src={{vueIconsPath}}xmark.svg />
+			<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('xmark')}} />
 			<md-tooltip md-direction="top">{{:: 'ui.multiplayer.clearFilters' | translate}}</md-tooltip>
 		</button>
 
@@ -71,7 +71,10 @@
 								{{:: 'ui.multiplayer.serverLocationFilterTooltip' | translate}}
 							</md-tooltip>
 							<md-option ng-repeat="location in multiplayermenu.availableServerLocations" ng-value="multiplayermenu.availableServerLocations[$index]" style="height: 40px;">
-								<img src="local://local/ui/modModules/multiplayer/flags/{{ location.toLowerCase() }}.png" class="flag" style="margin-right: 5px;" /> {{ location }}
+								<div style="display: inline-block; height: 1em; min-width: 2em;">
+									<img ng-src="local://local/ui/modModules/multiplayer/flags/{{ location.toLowerCase() }}.png" class="flag" style="height:1em" />
+								</div>
+								{{ location }}
 							</md-option>
 						</md-select>
 

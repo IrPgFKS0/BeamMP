@@ -14,7 +14,7 @@
       <div ng-repeat="mod in multiplayer.downloadingMods" class="mod-download-row" style="align-items: center; margin-bottom: 10px;">
         <div style="width: 1em; height: 1em; font-size: 1em; margin-right: 1em; float: left;">
 		  <img ng-show="$index != 0" class="button-icon button-icon-filter" style="filter: invert(66%) sepia(22%) saturate(1014%) hue-rotate(90deg) brightness(89%) contrast(88%);"
-		  src={{vueIconsPath}}checkmark.svg />
+		  ng-src={{getVueIconPath('checkmark')}} />
           <!--<md-icon ng-show="$index != 0" class="material-icons" style="vertical-align: middle;">check_mark</md-icon>-->
 		</div>
         <span style="flex: 1;">
@@ -29,7 +29,7 @@
     </div>
 	<div flex="" style="max-height: none;"></div>
     <button style="right:0; top:0; margin-top: 20px; margin-right: 0" class="bng-button-attention close-button" ng-class="" ng-click="multiplayer.closeLoadingPopup()">
-		<img class="button-icon button-icon-filter" src={{vueIconsPath}}xmark.svg />
+		<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('xmark')}} />
 		{{:: 'ui.common.cancel' | translate}}
 	</button>
   </div>
@@ -63,7 +63,7 @@
 	</div>
 	<div layout="row" style="float:right; width:min-content">
       <button class="default-case bng-button-link" ng-class="" ng-click="multiplayer.closePopup()">
-		<img class="button-icon button-icon-filter" src={{vueIconsPath}}xmark.svg />
+		<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('xmark')}} />
 		{{:: 'ui.common.cancel' | translate}}
 	  </button>
       <button class="default-case bng-button-main" ng-click="multiplayer.addCustomServer()">{{:: 'ui.multiplayer.save' | translate}}</button>
@@ -102,37 +102,37 @@
     <div flex layout="row" style="overflow: auto;">
       <md-content layout="column" id="left-menu">
         <button class="default-case sidebar-buttons servers-btn bng-button-link bng-button-outline" id="-servers-btn" ng-click="switchServerView('')">
-          <img class="button-icon button-icon-filter" src={{vueIconsPath}}globeSimplified.svg />
+          <img class="button-icon button-icon-filter" ng-src="{{getVueIconPath('globeSimplified')}}" />
 		      {{:: 'ui.multiplayer.servers' | translate}}
         </button>
 
         <button class="default-case sidebar-buttons servers-btn bng-button-link" id="featured-servers-btn" ng-click="switchServerView('featured')">
-		  <img class="button-icon button-icon-filter" src={{vueIconsPath}}cup.svg />
+		  <img class="button-icon button-icon-filter" ng-src="{{getVueIconPath('cup')}}" />
 		      {{:: 'ui.multiplayer.featured' | translate}}
         </button>
 
         <button class="default-case sidebar-buttons servers-btn bng-button-link" id="official-servers-btn" ng-click="switchServerView('official')">
-		  <img class="button-icon button-icon-filter" src={{vueIconsPath}}shieldCheckmark.svg />
+		  <img class="button-icon button-icon-filter" ng-src={{getVueIconPath('shieldCheckmark')}} />
 		      {{:: 'ui.multiplayer.official' | translate}}
         </button>
 
         <button class="default-case sidebar-buttons servers-btn bng-button-link" id="partner-servers-btn" ng-click="switchServerView('partner')">
-		  <img class="button-icon button-icon-filter" src={{vueIconsPath}}medal.svg />
+		  <img class="button-icon button-icon-filter" ng-src={{getVueIconPath('medal')}} />
 		      {{:: 'ui.multiplayer.partner' | translate}}
         </button>
 
         <button class="default-case sidebar-buttons servers-btn bng-button-link" id="favorites-servers-btn" ng-click="switchServerView('favorites')">
-		  <img class="button-icon button-icon-filter" src={{vueIconsPath}}bookmark.svg />
+		  <img class="button-icon button-icon-filter" ng-src={{getVueIconPath('bookmark')}} />
 				  {{:: 'ui.multiplayer.favorites' | translate}}
         </button>
 
         <button class="default-case sidebar-buttons servers-btn bng-button-link" id="recents-servers-btn" ng-click="switchServerView('recents')">
-          <img class="button-icon button-icon-filter" src={{vueIconsPath}}POITimeL.svg />
+          <img class="button-icon button-icon-filter" ng-src={{getVueIconPath('POITimeL')}} />
 				  {{:: 'ui.multiplayer.recent' | translate}}
         </button>
 
         <button class="default-case sidebar-buttons bng-button-link" id="direct-connect-btn" ng-class="{'md-primary md-raised': (multiplayer.stateName.indexOf('multiplayer.direct') !== -1)}" ui-sref="menu.multiplayer.direct">
-          <img class="button-icon button-icon-filter" src={{vueIconsPath}}globeSimpleNotSign.svg />
+          <img class="button-icon button-icon-filter" ng-src={{getVueIconPath('globeSimpleNotSign')}} />
 				  {{:: 'ui.multiplayer.direct_connect' | translate}}
         </button>
 	    
@@ -155,7 +155,7 @@
         </button>
 
         <button class="default-case sidebar-buttons bng-button-link" id="forum-btn" onclick="openExternalLink(`https://forum.beammp.com`)" ng-class="">
-          <img class="button-icon button-icon-filter" src={{vueIconsPath}}chatBubble.svg />
+          <img class="button-icon button-icon-filter" ng-src={{getVueIconPath('chatBubble')}} />
 		  {{:: 'ui.multiplayer.forum' | translate}}
         </button>
 
@@ -165,7 +165,7 @@
         </button>
 
 		<button class="default-case sidebar-buttons bng-button-link" onclick="openExternalLink(`https://docs.beammp.com`)" ng-class="">
-          <img class="button-icon button-icon-filter" src={{vueIconsPath}}info.svg></md-icon>
+          <img class="button-icon button-icon-filter" ng-src={{getVueIconPath('info')}}></md-icon>
           {{:: 'ui.multiplayer.docs' | translate}}
         </button>
 
@@ -181,7 +181,7 @@
         <span id="serverlist-profile-id" style="text-align: center;font-size: 0.9em; line-height: 1.5em; opacity: 0.8; cursor: pointer; margin-top: 6px;"></span>
 
         <button class="default-case sidebar-buttons bng-button-attention" ng-click="logout()" class="md-raised md-accent">
-		  <img class="button-icon button-icon-filter" src={{vueIconsPath}}exit.svg></md-icon>
+		  <img class="button-icon button-icon-filter" ng-src={{getVueIconPath('exit')}}></md-icon>
 				  {{:: 'ui.multiplayer.logout' | translate}}
         </button>
       </md-content>
