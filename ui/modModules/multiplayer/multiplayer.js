@@ -181,7 +181,7 @@ export default angular.module('multiplayer', ['ui.router'])
 		<img src="/ui/modModules/multiplayer/icons/dns.svg" style="padding: 5px" height="22px">
 		<span style="padding-left: 5px;">Servers: <strong id="beammpMetricsServers">${ beammpMetrics.servers }</strong> </span>
 		<span class="divider" id="beammp-profile-divider"></span>
-		<img src="${userData.avatar}" id="beammp-profile-avatar" style="filter: invert(100%) sepia(0%) saturate(22%) hue-rotate(36deg) brightness(104%) contrast(108%); padding: 5px; border-radius: 50%;" height="22px">
+		<img src="${userData.avatar}" id="beammp-profile-avatar" style="padding: 5px; border-radius: 50%;" height="22px">
 		<span><strong id="beammp-profile-name">${userData.username}</strong> </span>
 	</div>
 	`
@@ -194,13 +194,16 @@ export default angular.module('multiplayer', ['ui.router'])
 	`
 	beammpModInfo.id = 'BeamMPVersionInject'
 
-	$rootScope.$on('authReceived', function (event, data) {	
+	$rootScope.$on('authReceived', function (event, data) {
 		//console.log(event, data)
 		let nameElement = document.getElementById("beammp-profile-name")
 		let avatarElement = document.getElementById("beammp-profile-avatar")
 		let divider = document.getElementById("beammp-profile-divider")
 		if (!!data.avatar) {
-			data.avatar = '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg'
+			data.avatar = '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg';
+			avatarElement.style.filter = "invert(100%) sepia(0%) saturate(22%) hue-rotate(36deg) brightness(104%) contrast(108%)";
+		} else {
+			avatarElement.style.filter = "";
 		}
 
 		if (nameElement && avatarElement) {
@@ -885,6 +888,12 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 				nameElement.style.backgroundColor = "rgba(0, 0, 0, 0)"
 
 			nameElement.textContent = data.username;
+			if (!!data.avatar) {
+				data.avatar = '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg';
+				avatarElement.style.filter = "invert(100%) sepia(0%) saturate(22%) hue-rotate(36deg) brightness(104%) contrast(108%)";
+			} else {
+				avatarElement.style.filter = "";
+			}
 			avatarElement.src = data.avatar;
 
 			if (data.id != null) {
