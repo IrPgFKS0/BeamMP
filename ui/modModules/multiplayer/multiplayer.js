@@ -958,7 +958,7 @@ function($scope, $state, $timeout, $filter) {
 		vm.checkIsNotFull = serverListOptions.checkIsNotFull
 		vm.checkModSlider = serverListOptions.checkModSlider
 		vm.sliderMaxModSize = serverListOptions.sliderMaxModSize
-		vm.selectMap = serverListOptions.selectMap
+		vm.selectMap = Array.isArray(serverListOptions.selectMap) ? serverListOptions.selectMap : []
 		vm.serverVersions = serverListOptions.serverVersions
 		vm.tags = serverListOptions.tags
 		vm.serverLocations = serverListOptions.serverLocations
