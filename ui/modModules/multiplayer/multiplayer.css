@@ -500,17 +500,23 @@ h2 {
 
 	&.section-header {
 		position: relative;
-		padding-left: 1.5em;
+		padding-left: 1.3em;
 		width: fit-content;
 		&::before {
 			content: "";
 			position: absolute;
 			width: calc(1em * (4 / 7));
-			height: 1.25em;
+			height: 1.2em;
 			background: var(--bng-orange);
 			transform: matrix(0.94, 0, -0.38, 1, 0, 0);
-			left: 0.5em;
+			left: 0.3em;
 			top: 0.125em;
+		}
+		&.extra-right {
+			padding-left:1.45em;
+			&::before {
+				left:0.4em
+			}
 		}
 	}
 }

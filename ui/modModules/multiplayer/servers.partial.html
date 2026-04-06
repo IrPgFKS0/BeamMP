@@ -158,7 +158,7 @@
 						<div class="row serverInfoRows" style="padding-top:0">
 							<div style="display:grid;width:60%;grid-template-columns:2fr 1fr;align-items:start">
 								<div class="col" style="display:grid;width:100%;overflow-x:hidden">
-									<h2 class="section-header">{{:: 'ui.multiplayer.server.information' | translate}}</h2>
+									<h2 class="section-header extra-right">{{:: 'ui.multiplayer.server.information' | translate}}</h2>
 									<table class="description-table">
 										<tr><th scope="row">{{:: 'ui.multiplayer.server.owner' | translate}}</th><td>{{server.server.owner|| ""}}</td></tr>
 										<tr><th scope="row">{{:: 'ui.multiplayer.server.map' | translate}}</th><td>{{SmoothMapName(server.server.map || "")}}</td></tr>
@@ -184,7 +184,7 @@
 								</div>
 							</div>
 							<div class="col" style="width:40%">
-								<h2 class="section-header">{{:: 'ui.multiplayer.server.mods' | translate}}</h2>
+								<h2 class="section-header extra-right">{{:: 'ui.multiplayer.server.mods' | translate}}</h2>
 								<span ng-hide="{{customToNumber(server.server.modstotal) > 0}}">
 									<img class="button-icon button-icon-filter" ng-src="{{ getVueIconPath('shieldCheckmark') }}" /> {{:: 'ui.multiplayer.server.isUnmodded' | translate}}
 								</span>
