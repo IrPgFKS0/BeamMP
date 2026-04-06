@@ -1,9 +1,9 @@
 .theEntireMultiplayerModule {
 	font-family: var(--fnt-defs) !important;
+	--off-white-from-vue:oklch(92.5% 0 0);
 }
 
 .theEntireMultiplayerModule #bng-title-fix {
-	--off-white-from-vue:oklch(92.5% 0 0);
 	font-family: Overpass, var(--fnt-defs);
 	color: var(--off-white-from-vue);
 	font-weight: 1000;
@@ -68,7 +68,6 @@
 #left-menu {
   color: white;
   background-color: transparent;
-  max-width: 14em;
 }
 
 #filter-dropdown {
@@ -213,16 +212,56 @@ table#serversTable {
 }
 
 .patreon-button-highlight {
-	border-color: var(--bng-add-green-600) !important;
 	background-color: var(--bng-add-green-800);
+	border-color: var(--bng-add-green-600);
+
+	#patreonSidebarButtonSubtitle {
+		color: var(--bng-add-green-50);
+	}
 }
 .patreon-button-highlight:hover,
-.patreon-button-highlight:focus,
 .patreon-button-highlight:focus-within {
-	background-color: var(--bng-add-green-700) !important;
+	background-color: var(--bng-add-green-700);
 }
 .patreon-button-highlight-two {
-	border-color: #fe8cff !important; /* might want to make a variable for this */
+	border-color: #fe8cff; /* might want to make a variable for this */
+}
+#patreonSidebarButtonSubtitle {
+	width: 14em;
+	
+	font-size:0.8em;
+	color: var(--off-white-from-vue);
+
+	overflow-wrap:break-word;
+	text-wrap-mode: wrap;
+	white-space: normal;
+}
+
+.tagList {
+	background-color:var(--bng-black-o4);
+	max-width: fit-content;
+	height:fit-content;
+	padding: 0.25em 0.5em;
+	margin-right:1em;
+	word-break: keep-all;
+	border: solid var(--bng-cool-gray-600) 0.125em;
+	border-radius: var(--bng-corners-2);
+	&.tagListShort {
+		display: flex;
+		font-size: 0.8em;
+		line-height: 1.5em;
+		margin-right: 0.25em;
+		padding: 0.125em 0.25em;
+		border-radius: var(--bng-corners-1);
+	}
+}
+.tagListContainer {
+	display:inline-flex;
+	max-width: 30em; /*25em */
+	height: fit-content;
+	
+	flex-wrap: wrap;
+	gap: 0.25rem 0.25rem;
 }
 
 .sidebar-buttons {
@@ -352,6 +391,8 @@ input {
 
 tr#ServerInfoRow {
   background-color: #3535357a;
+  border: 20px transparent solid;
+  border-top: none;
 }
 
 ul.serverItemDetails {
@@ -422,8 +463,23 @@ md-slider.ng-pristine.ng-untouched.ng-valid.md-default-theme.ng-empty {
 }
 
 h2 {
-  font-family: Overpass var(--fnt-defs);
-  font-style: italic;
+	font-family: Overpass var(--fnt-defs);
+	font-style: italic;
+
+	&.section-header {
+		position: relative;
+		padding-left: 1.5em;
+		&::before {
+			content: "";
+			position: absolute;
+			width: calc(1em * (4 / 7));
+			height: 1.25em;
+			background: var(--bng-orange);
+			transform: matrix(0.94, 0, -0.38, 1, 0, 0);
+			left: 0.5em;
+			top: 0.125em;
+		}
+	}
 }
 
 .filter-content {

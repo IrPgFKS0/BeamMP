@@ -1034,6 +1034,8 @@ function($scope, $state, $timeout, $filter) {
 
 	$scope.selectServer = function(server) {
 		const serverId = server.id;
+		//console.log('Server '+serverId+' was selected')
+		//console.log(JSON.stringify(server.server))
 		highlightedServer = server.server
 		if ($scope.selectedServerId === serverId) {
 			$scope.selectedServerId = null;
@@ -1107,6 +1109,8 @@ function($scope, $state, $timeout, $filter) {
 	$scope.modList = modList;
 	$scope.formatBytes = formatBytes;
 	$scope.connect = connect;
+	$scope.customToNumber = customToNumber;
+	$scope.getTagCount = getTagCount;
 	// Page loading timeout
 	var timeOut = $timeout(function () {
 		if (vm.loadingPage === true) {
@@ -1441,6 +1445,14 @@ function listPlayers(s) {
 		return "No players..."
 	}
 }
+
+function customToNumber(string) {
+	return Number(string)
+}
+function getTagCount(string) {
+	return string.split(',').length
+}
+
 
 var serverStyleArray = [
     "^0",

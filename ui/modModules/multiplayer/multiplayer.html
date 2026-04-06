@@ -106,14 +106,14 @@
 		      {{:: 'ui.multiplayer.servers' | translate}}
         </button>
 
+		<button class="default-case sidebar-buttons servers-btn bng-button-link" id="official-servers-btn" ng-click="switchServerView('official')">
+		  <img class="button-icon button-icon-filter" ng-src={{getVueIconPath('shieldCheckmark')}} />
+		      {{:: 'ui.multiplayer.official' | translate}}
+        </button>
+
         <button class="default-case sidebar-buttons servers-btn bng-button-link" id="featured-servers-btn" ng-click="switchServerView('featured')">
 		  <img class="button-icon button-icon-filter" ng-src="{{getVueIconPath('cup')}}" />
 		      {{:: 'ui.multiplayer.featured' | translate}}
-        </button>
-
-        <button class="default-case sidebar-buttons servers-btn bng-button-link" id="official-servers-btn" ng-click="switchServerView('official')">
-		  <img class="button-icon button-icon-filter" ng-src={{getVueIconPath('shieldCheckmark')}} />
-		      {{:: 'ui.multiplayer.official' | translate}}
         </button>
 
         <button class="default-case sidebar-buttons servers-btn bng-button-link" id="partner-servers-btn" ng-click="switchServerView('partner')">
@@ -143,15 +143,7 @@
         <button class="default-case sidebar-buttons bng-button-link" id="patreonSidebarButton" onclick="openExternalLink(`https://www.patreon.com/BeamMP`)" ng-class="">
           <img src="local://local/ui/modModules/multiplayer/icons/PATREON_SYMBOL_1_WHITE_RGB.svg" class="button-icon"></img>
           {{:: 'ui.multiplayer.patreon' | translate}}
-		  <div id="patreonSidebarButtonSubtitle" style="
-			font-size:0.8em;
-			color: var(--bng-add-green-50);
-			overflow-wrap:break-word;
-			text-wrap-mode: wrap;
-			width: 100%;
-			max-width: 100%;
-			white-space: normal;
-		  "></div>
+		  <div id="patreonSidebarButtonSubtitle"></div>
         </button>
 
         <button class="default-case sidebar-buttons bng-button-link" id="forum-btn" onclick="openExternalLink(`https://forum.beammp.com`)" ng-class="">
