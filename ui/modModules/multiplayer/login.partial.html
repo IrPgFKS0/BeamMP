@@ -3,18 +3,19 @@
 	<div id="MultiplayerLoginBody">
 		<img src="local://local/ui/modModules/multiplayer/beammp_new_cropped.png" style="max-width:50%" alt="BeamMP Logo">
 		<h2 class="text-red" style="text-align: center;" id="LOGINERRORFIELD"></h2>
-<!--		<form id="LoginContainer">
+<!--
+		<form id="LoginContainer">
 			<h2 class="text-white" id="loginHeader">{{:: 'ui.multiplayer.loginDescription1' | translate}}</h2>
 			<div layout="column">
 				<div class="serverListSearch">
 					<div class="serverListSearchBar">
-						<input class="bng-input mp-search" (keyup.enter)="multiplayer.login()" type="text" id="loginUsername" placeholder="Username / Email" tabindex="1"/>
+						<input class="bng-input mp-search" (keyup.enter)="multiplayer.login()" type="text" id="loginUsername" placeholder="{{:: 'ui.multiplayer.login.username' | translate}}" tabindex="1"/>
 					</div>
 					<span class="mpSearchBarBottom"></span>
 				</div>
 				<div class="serverListSearch">
 					<div class="serverListSearchBar">
-						<input class="bng-input mp-search" (keyup.enter)="multiplayer.login()" type="password" id="loginPassword" placeholder="Password" tabindex="2"/>
+						<input class="bng-input mp-search" (keyup.enter)="multiplayer.login()" type="password" id="loginPassword" placeholder="{{:: 'ui.multiplayer.login.password' | translate}}" tabindex="2"/>
 					</div>
 					<span class="mpSearchBarBottom"></span>
 				</div>

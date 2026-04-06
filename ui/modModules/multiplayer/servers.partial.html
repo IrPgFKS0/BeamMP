@@ -155,52 +155,46 @@
 							ng-style="{'height': '23px', 'padding-right': '10px'}">
 							<span ng-bind-html="formatCodes(server.server.sname)" style="margin-left:5px"></span>
 						</h2>
-						<div class="row" flex>
-							<div class="col" flex="33">
-								<h2 class="section-header">{{:: 'ui.multiplayer.server.information'}}</h2>
-								<table class="description-table">
-									<tr><td>Owner:</td><td>{{server.server.owner|| ""}}</td></tr>
-									<tr><td>Map:</td><td>{{SmoothMapName(server.server.map || "")}}</td></tr>
-									<tr>
-										<td valign="top" style="width:fit-content">
-											<span>Description:</span>
-										</td>
-										<td>
-											<span ng-bind-html="formatCodes(server.server.sdesc|| '', true)"></span>
-										</td>
-									</tr>
-									<tr>
-										<td>Tags:</td>
-										<td>
-											<span ng-hide="{{ getTagCount(server.server.tags) > 0 }}">No tags</span>
-											<div class="tagListContainer" ng-show="{{ getTagCount(server.server.tags) > 0 }}">
-												<span class="tagList tagListShort" ng-repeat="text in server.server.tags.split(',')">{{ text }}</span>
-											</div>
-										</td>
-									</tr>
-								</table>
+						<div class="row" style="padding-top: 0">
+							<div style="display: grid;width: 60%; grid-template-columns: 2fr 1fr;align-items: start">
+								<div class="col" style="display: grid; width: 100%">
+									<h2 class="section-header">{{:: 'ui.multiplayer.server.information' | translate}}</h2>
+									<table class="description-table">
+										<tr><th scope="row">Owner:</th><td>{{server.server.owner|| ""}}</td></tr>
+										<tr><th scope="row">Map:</th><td>{{SmoothMapName(server.server.map || "")}}</td></tr>
+										<tr><th scope="row">Description:</th><td><span ng-bind-html="formatCodes(server.server.sdesc|| '', true)"></span></td></tr>
+										<tr><th scope="row">Tags:</th>
+											<td>
+												<span ng-hide="{{ getTagCount(server.server.tags) > 0 }}">No tags</span>
+												<div class="tagListContainer" style="max-width: 100%;" ng-show="{{ getTagCount(server.server.tags) > 0 }}">
+													<span class="tagList tagListShort" ng-repeat="text in server.server.tags.split(',')">{{ text }}</span>
+												</div>
+											</td>
+										</tr>
+									</table>
+								</div>
+								<div class="col" style="display:grid; width: 100%">
+									<h2 class="section-header">{{:: 'ui.multiplayer.server.playerList' | translate}}</h2>
+									<span>Players ({{server.server.players|| ""}}/{{server.server.maxplayers|| ""}}):
+										<span ng-hide="{{ customToNumber(server.server.players) > 0 }}">No players</span>
+										<div class="tagListContainer" style="max-width: 100%;" ng-show="{{ customToNumber(server.server.players) > 0 }}">
+											<span class="tagList tagListShort" ng-repeat="text in listPlayers(server.server.playerslist).substring(17).split(', ')">{{ text }}</span>
+										</div>
+									</span>
+								</div>
 							</div>
-							<div class="col" flex="20">
-								<h2 class="section-header">{{:: 'ui.multiplayer.server.playerList'}}</h2>
-								<span>Players ({{server.server.players|| ""}}/{{server.server.maxplayers|| ""}}):
-									<span ng-hide="{{ customToNumber(server.server.players) > 0 }}">No players</span>
-									<div class="tagListContainer" ng-show="{{ customToNumber(server.server.players) > 0 }}">
-										<span class="tagList tagListShort" ng-repeat="text in listPlayers(server.server.playerslist).substring(17).split(', ')">{{ text }}</span>
-									</div>
-								</span>
-							</div>
-							<div class="col" flex="7">
-								<h2 class="section-header">Mods</h2>
-								<span ng-hide="{{modCount(server.server.modlist) > 0}}">
+							<div class="col" style="width: 40%">
+								<h2 class="section-header">{{:: 'ui.multiplayer.server.mods' | translate}}</h2>
+								<span ng-hide="{{customToNumber(server.server.modstotal) > 0}}">
 									<img class="button-icon button-icon-filter" ng-src="{{ getVueIconPath('shieldCheckmark') }}" /> Vanilla
 								</span>
-								<div ng-show="{{modCount(server.server.modlist) > 0}}">
-									<div>{{:: 'ui.multiplayer.server.mods'}} ({{modCount(server.server.modlist || "")}}):</div>
-										<div class="tagListContainer" style="max-width: none;">
+								<div ng-show="{{customToNumber(server.server.modstotal) > 0}}">
+									<div>{{:: 'ui.multiplayer.server.mods' | translate}} ({{modCount(server.server.modlist || "")}}):</div>
+										<div class="tagListContainer" style="max-width: 100%;">
 											<span class="tagList tagListShort" ng-repeat="text in modList(server.server.modlist|| '').split(', ')">{{ text }}</span>
 										</div>
 										<!--<div style="margin-left: 10px; max-width: 75%; max-height: 200px; overflow-y: auto; background: rgba(0, 0, 0, 0.1);">{{modList(server.server.modlist|| "")}}</div></li>-->
-									<div>Total Filesize: {{formatBytes(server.server.modstotalsize) || "0"}}</div>
+									<div style="margin-top: 0.8em; font-size: 0.8em; color: var(--off-white-from-vue)">Total Filesize: {{formatBytes(server.server.modstotalsize) || "0"}}</div>
 								</div>
 							</div>
 						</div>
