@@ -700,11 +700,6 @@ h2 {
   width: 66.67%;
 }
 
-
-#serverListMainContainer .focus-visible::before {     
-  display: none; 
-}
-
 .server-item {
   height: 24px;
 }
