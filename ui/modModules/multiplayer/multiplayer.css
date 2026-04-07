@@ -1,6 +1,28 @@
 .theEntireMultiplayerModule {
-	font-family: var(--fnt-defs) !important;
+	--background-clr: #000000a8;
 	--off-white-from-vue:oklch(92.5% 0 0);
+	--mp-blur-amount: 10px;
+	font-family: var(--fnt-defs);
+	-webkit-font-smoothing: antialiased !important;
+	-moz-osx-font-smoothing: grayscale !important;
+
+	margin: 0.25em 1em 0.25em 1em;
+	padding-bottom: 0.5em;
+	display:flex;
+	flex-direction: column;
+	flex-wrap: nowrap;
+
+	.bng-button-main,
+	.bng-button-secondary,
+	.bng-button-white,
+	.bng-button-outline,
+	.bng-button-link,
+	.bng-button-attention {
+		min-width: 2.75em; /* for icon-only buttons */
+		margin: 0.375em 0.5em;
+		font-weight: 500;
+		white-space: nowrap;
+	}
 }
 
 .theEntireMultiplayerModule #bng-title-fix {
@@ -24,18 +46,92 @@
     line-height: 1.5em;
 	vertical-align: middle !important;
 }
-.theEntireMultiplayerModule {
-	.bng-button-main,
-	.bng-button-secondary,
-	.bng-button-white,
-	.bng-button-outline,
-	.bng-button-link,
-	.bng-button-attention {
-		min-width: 2.75em; /* for icon-only buttons */
-		margin: 0.375em 0.5em;
-		font-weight: 500;
-		white-space: nowrap;
+
+.backBar {
+	display:flex;
+	width: fit-content;
+	backdrop-filter: blur(var(--mp-blur-amount));
+	font-family: var(--fnt-defs) !important;
+	background-color: var(--background-clr);
+	border-radius: var(--bng-corners-2);
+	margin-bottom: 0.25em;
+	.back-button {
+		display: inline-flex;
+		align-items: center;
+		margin: 0.1875rem 0;
+		min-width: 2em;
+
+		padding-top:    0.3em;
+		padding-right:  0.5em;
+		padding-bottom: 0.325em;
+		padding-left:   0.5em;
+		
+		border-width: 0;
+		border-radius: 0;
+
+		background-color: transparent;
+		transition-duration: 0s;
+		&:hover, &:focus-within {
+			background-color: var(--bng-orange-600);
+			border-color: var(--bng-orange);
+		}
 	}
+	.backBarSelected {
+		text-decoration-line: underline;
+		text-decoration-style: solid;
+		text-decoration-thickness: 2px;
+		text-decoration-color: var(--bng-orange-500);
+	}
+	.backBarDisabled {
+		background-color: transparent !important;
+		cursor: default !important;
+		&:hover, &:focus-within {
+			background-color: transparent !important;
+		}
+	}
+}
+@font-face {
+    font-family: bngIcons;
+    src: url(/ui/ui-vue/src/assets/fonts/bngIcons/bngIcons.woff2)format("woff2"),url(/ui/ui-vue/src/assets/fonts/bngIcons/bngIcons.woff)format("woff"),url(/ui/ui-vue/src/assets/fonts/bngIcons/bngIcons.otf)format("opentype"),url(/ui/ui-vue/src/assets/fonts/bngIcons/bngIcons.ttf)format("truetype");
+    font-display: block;
+    font-weight: 500;
+    font-style: normal;
+    font-synthesis:none;
+	text-rendering:optimizeLegibility;
+	-webkit-font-smoothing:antialiased;
+	-moz-osx-font-smoothing:grayscale
+}
+
+.back-icon {
+	width: .5em;
+    transform: translate(-.25em);
+	align-self: center;
+    display: inline-block;
+	font-size: 1.5em;
+    color: white;
+    line-height: 1em;
+    font-family: bngIcons;
+    font-weight: 100;
+}
+.divider-icon {
+	min-width: unset;
+	transform: none;
+	display: flex;
+    position: relative;
+	font-size: 1em;
+	flex: none;
+	justify-content: center;
+    align-items: center;
+	width: 0.75em;
+	margin: .25rem 0;
+	box-sizing: border-box;
+	
+}
+
+#back {
+  background-color: #00000099; /* match bng top bar */
+  backdrop-filter: blur(var(--mp-blur-amount));
+  border-radius: var(--bng-corners-2);
 }
 
 .rounded-progress .md-container {
@@ -153,12 +249,6 @@
 	flex-direction:column;
 	align-items: center;
 	justify-content: center;
-}
-
-#back {
-  width: 100%;
-  height: 100%;
-  background-color: #00000099; /* match bng top bar */
 }
 #serversTableContainer {
 	overflow-x: hidden;

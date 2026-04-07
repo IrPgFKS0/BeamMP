@@ -2,7 +2,7 @@
 
 <link type="text/css" rel="stylesheet" href="/ui/modModules/multiplayer/multiplayer.css">
 
-<div class="theEntireMultiplayerModule">
+<div class="theEntireMultiplayerModule" flex>
 <div id="LoadingServer" style="display: none;">
   <div id="LoadingBody" flex layout="column">
     <h2 style="padding-bottom:0;">{{:: 'ui.multiplayer.connectingToServer' | translate}}</h2>
@@ -72,15 +72,24 @@
   </div>
 </div>
 
-<md-content id="back" layout="column">
+<div class="backBar" bng-blur="true">
+	<button class="bng-button-link back-button" ng-click="$state.go('menu.mainmenu')" style="padding-left:0.75em">
+		<!--<span class="back-icon"></span> <!-- bngIcons for back -->
+		<!--{{:: 'ui.common.back' | translate}}-->
+		{{:: 'ui.common.menu' | translate}}
+	</button>
+	<span class="back-icon divider-icon"></span>
+	<button tabindex="-1" class="bng-button-link back-button backBarSelected backBarDisabled" style="padding-right:0.75em">{{:: 'ui.playmodes.multiplayer' | translate}}</button>
+</div>
 
+<md-content id="back" layout="column" flex="" bng-blur="true">
     <md-toolbar class="md-primary" id="top-bar">
         <md-list-item layout="row" class="" style="padding:0;">
             <div class="bng-title-wrapper">
 				<link type="text/css" rel="stylesheet" href="/ui/modules/atom/title/title.css" />
 				<div class="bng-title" style="
 					font-family: Overpass, var(--fnt-defs);
-					color: oklch(92.5% 0 0);
+					color: #f5f5f5;
 					font-weight: 1000;
 					font-size: 1.642em;
 					letter-spacing: normal;
