@@ -8,7 +8,7 @@
 
 	margin: 0.25em 1em 0.25em 1em;
 	padding-bottom: 0.5em;
-	display:flex;
+	display: flex;
 	flex-direction: column;
 	flex-wrap: nowrap;
 
@@ -22,6 +22,38 @@
 		margin: 0.375em 0.5em;
 		font-weight: 500;
 		white-space: nowrap;
+	}
+}
+
+.mp-fancy-blur {
+  	--mp-fancy-blur-src: '';
+
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	pointer-events: none;
+	&::before {
+		content: '';
+		overflow: hidden;
+		position: absolute;
+		width: 100vw;
+		height: 100vh;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		top: 0;
+		border: none;
+		transform-origin: center;
+		transform: translate(-1em, -5.625em);
+		z-index: -1;
+		transition-duration: 1000ms;
+		background-image: var(--mp-fancy-blur-src);
+		background-origin: border-box;
+		background-repeat: no-repeat;
+		background-position: center;
+		background-size: cover;
+
 	}
 }
 
@@ -50,7 +82,6 @@
 .backBar {
 	display:flex;
 	width: fit-content;
-	backdrop-filter: blur(var(--mp-blur-amount));
 	font-family: var(--fnt-defs) !important;
 	background-color: var(--background-clr);
 	border-radius: var(--bng-corners-2);
@@ -130,7 +161,6 @@
 
 #back {
   background-color: #00000099; /* match bng top bar */
-  backdrop-filter: blur(var(--mp-blur-amount));
   border-radius: var(--bng-corners-2);
 }
 

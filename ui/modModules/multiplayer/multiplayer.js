@@ -278,7 +278,7 @@ export default angular.module('multiplayer', ['ui.router'])
 
 			if (nameElement) {
 				nameElement.style.display = "block";
-				console.log('name shown', nameElement)
+				//console.log('name shown', nameElement)
 			}
 			if (avatarElement) {
 				avatarElement.style.display = "block";
@@ -304,7 +304,7 @@ export default angular.module('multiplayer', ['ui.router'])
 
 			if (nameElement) {
 				nameElement.style.display = "none";
-				console.log('name hidden', nameElement)
+				//console.log('name hidden', nameElement)
 			}
 			if (avatarElement) {
 				avatarElement.style.display = "none";
@@ -524,7 +524,6 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		if (toState.url == "/multiplayer") {
 			// local://local/ui/#/menu/multiplayer/mpservers
 			document.getElementById('servers-btn').click();
-			
 		}
 
 		// Check if the user as aknowledged tos
@@ -548,6 +547,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 			$state.go('menu.multiplayer.login');
 			return;
 		}
+		
 	});
 	
 	$scope.$on('LauncherConnectionLost', function (event, data) {
@@ -937,11 +937,36 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 
 	$scope.$on('$destroy', function () {
 		$timeout.cancel(timeOut);
+		fancySync.disconnect();
 		//console.log('[MultiplayerController] destroyed.');
 	});
 
 	$scope.getVueIconPath = function(iconName) {
 		return "/ui/ui-vue/src/assets/fonts/bngIcons/svg/" + iconName + ".svg"
+	};
+
+	// This JS is independent from the .mp-fancy-blur elements. 
+	// But, the CSS is still single-purpose. Haven't found a good solution for the CSS yet.
+	var fancySync = new MutationObserver(function() {
+		var mainMenuBg = document.querySelector('.background-image');
+		if (mainMenuBg == null) return false
+		
+		var urls = mainMenuBg.getAttribute('style').match(/url\(.*?\)/ig);
+		if (!urls, urls.length == 0) return false;
+
+		var incoming = urls[urls.length - 1];
+		//console.log('Incoming bg url: '+incoming)
+		var blurredBg = incoming.replace('.jpg', '_blur.jpg');
+
+		document.querySelectorAll('.mp-fancy-blur').forEach(el => {
+			el.style.setProperty('--mp-fancy-blur-src', blurredBg);
+		});
+		return true
+	});
+
+	var mainMenuBg = document.querySelector('.background-image');
+	if (mainMenuBg) {
+		fancySync.observe(mainMenuBg, { attributes: true, attributeFilter: ['style'] });
 	};
 }])
 
@@ -1034,8 +1059,8 @@ function($scope, $state, $timeout, $filter) {
 
 	$scope.selectServer = function(server) {
 		const serverId = server.id;
-		//console.log('Server '+serverId+' was selected')
-		//console.log(JSON.stringify(server.server))
+		console.log('Server '+serverId+' was selected')
+		console.log(JSON.stringify(server.server))
 		highlightedServer = server.server
 		if ($scope.selectedServerId === serverId) {
 			$scope.selectedServerId = null;
@@ -1216,13 +1241,15 @@ function($scope, $state, $timeout, $filter) {
 		var clearFiltersButton = document.getElementById("clearFiltersButton");
 		//var FiltersPrefix = document.getElementById("FiltersPrefix");
 
-		if (vm.activeFiltersText.length > 0) { 
-			//activeFiltersText = activeFiltersText.slice(0, -2);
-			clearFiltersButton.style.display = "block"; 
-			//FiltersPrefix.style.display = "block";
-		} else {
-			clearFiltersButton.style.display = "none";
-			//FiltersPrefix.style.display = "none";
+		if (clearFiltersButton != null) {
+			if (vm.activeFiltersText.length > 0) { 
+				//activeFiltersText = activeFiltersText.slice(0, -2);
+				clearFiltersButton.style.display = "block"; 
+				//FiltersPrefix.style.display = "block";
+			} else {
+				clearFiltersButton.style.display = "none";
+				//FiltersPrefix.style.display = "none";
+			}
 		}
 
 		localStorage.setItem("serverListOptions", JSON.stringify(serverListOptions));

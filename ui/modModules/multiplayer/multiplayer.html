@@ -72,7 +72,7 @@
   </div>
 </div>
 
-<div class="backBar" bng-blur="true">
+<div class="backBar">
 	<button class="bng-button-link back-button" ng-click="$state.go('menu.mainmenu')" style="padding-left:0.75em">
 		<!--<span class="back-icon"></span> <!-- bngIcons for back -->
 		<!--{{:: 'ui.common.back' | translate}}-->
@@ -80,9 +80,10 @@
 	</button>
 	<span class="back-icon divider-icon"></span>
 	<button tabindex="-1" class="bng-button-link back-button backBarSelected backBarDisabled" style="padding-right:0.75em">{{:: 'ui.playmodes.multiplayer' | translate}}</button>
+	<div bng-blur="true" style="position:absolute;width:100%;height:100%;overflow:hidden;pointer-events:none"></div>
 </div>
 
-<md-content id="back" layout="column" flex="" bng-blur="true">
+<md-content id="back" layout="column" flex="">
     <md-toolbar class="md-primary" id="top-bar">
         <md-list-item layout="row" class="" style="padding:0;">
             <div class="bng-title-wrapper">
@@ -193,6 +194,7 @@
 
       <div ui-view="edit" layout="column"></div>
     </div>
+	<div class="mp-fancy-blur" bng-blur="true"></div>
 </md-content>
 </div>
 
