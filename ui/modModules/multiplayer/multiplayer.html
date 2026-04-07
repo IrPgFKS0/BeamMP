@@ -109,9 +109,9 @@
         </md-list-item>
     </md-toolbar>
 
-    <div flex layout="row" style="overflow: auto;">
+    <div flex layout="row" style="overflow:auto;gap:0.5em;margin-left:0.5em;margin-bottom:0.5em;border-radius:var(--bng-corners-1)">
       <md-content layout="column" id="left-menu">
-        <button class="default-case sidebar-buttons servers-btn bng-button-link bng-button-outline" style="margin-top: 0" id="-servers-btn" ng-click="switchServerView('')">
+        <button class="default-case sidebar-buttons servers-btn bng-button-link bng-button-outline" id="-servers-btn" ng-click="switchServerView('')">
           <img class="button-icon button-icon-filter" ng-src="{{getVueIconPath('globeSimplified')}}" />
 		      {{:: 'ui.multiplayer.servers' | translate}}
         </button>
@@ -141,7 +141,7 @@
 				  {{:: 'ui.multiplayer.recent' | translate}}
         </button>
 
-        <button class="default-case sidebar-buttons bng-button-link" id="direct-connect-btn" ng-class="{'md-primary md-raised': (multiplayer.stateName.indexOf('multiplayer.direct') !== -1)}" ui-sref="menu.multiplayer.direct">
+        <button class="default-case sidebar-buttons servers-btn bng-button-link" id="direct-connect-btn" ng-click="switchServerView('direct')">
           <img class="button-icon button-icon-filter" ng-src={{getVueIconPath('globeSimpleNotSign')}} />
 				  {{:: 'ui.multiplayer.direct_connect' | translate}}
         </button>
@@ -188,11 +188,9 @@
         </button>
       </md-content>
 
-      <div flex style="position: relative;">
+      <div flex style="position: relative;margin-right: 0.5em;border-radius: var(--bng-corners-1);overflow: overlay;">
         <md-content ui-view class="container" style="background: transparent; overflow: auto;"></md-content>
       </div>
-
-      <div ui-view="edit" layout="column"></div>
     </div>
 	<div class="mp-fancy-blur" bng-blur="true"></div>
 </md-content>

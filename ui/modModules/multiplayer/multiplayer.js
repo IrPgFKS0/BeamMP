@@ -453,6 +453,15 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	mdDialog = $mdDialog;
 
 	$scope.switchServerView = function(view) {
+		if (view=='direct') { // Doesnt really work xd
+			$state.go('menu.multiplayer.direct');
+			var buttons = document.getElementsByClassName("servers-btn");
+			for (var i = 0; i < buttons.length; i++) {
+				buttons[i].classList.remove("bng-button-outline");
+			}
+			document.getElementById("direct-connect-btn").classList.add("bng-button-outline");
+			return
+		}
 		var serversTableContainer = document.getElementById("serversTableContainer");
 		if (serversTableContainer) {
 			serversTableContainer.scrollTop = 0;

@@ -1,18 +1,18 @@
 <md-content style="background:none">
-	<div style="display:grid;padding-top:3px;">
+	<div style="display:grid">
 		<div layout="row">
-			<div class="serverListSearch" style="margin: 3px 0;">
+			<div class="serverListSearch" style="margin:0">
 				<div class="serverListSearchBar">
-					<input class="bng-input mp-search" type="text" id="directip" name="ip" placeholder="Server IP" value="" tabindex="1"/>
+					<input class="bng-input mp-search" type="text" id="directip" name="ip" placeholder="{{:: 'ui.multiplayer.direct_connect.server_ip' | translate}}" value="" tabindex="1"/>
 				</div>
 				<span class="mpSearchBarBottom"></span>
 			</div>
-			<button class="default-case bng-button-link" ng-class="" ng-click="multiplayer.pasteClipboardToDirectIP()">{{:: 'ui.multiplayer.pasteFromClipboard' | translate}}</button>
+			<button class="default-case bng-button-link" style="margin-top:0" ng-click="multiplayer.pasteClipboardToDirectIP()">{{:: 'ui.multiplayer.pasteFromClipboard' | translate}}</button>
 		</div>
 		<div layout="row">
-			<div class="serverListSearch" style="margin: 0 0;">
+			<div class="serverListSearch" style="margin:0">
 				<div class="serverListSearchBar">
-					<input class="bng-input mp-search" type="text" id="directport" name="port" placeholder="Server Port" value="" tabindex="2"/>
+					<input class="bng-input mp-search" type="text" id="directport" name="port" placeholder="{{:: 'ui.multiplayer.direct_connect.server_port' | translate}}" value="" tabindex="2"/>
 				</div>
 				<span class="mpSearchBarBottom"></span>
 			</div>
