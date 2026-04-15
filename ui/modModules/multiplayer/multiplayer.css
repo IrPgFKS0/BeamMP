@@ -75,6 +75,9 @@
 .default-case {
 	text-transform: none !important;
 }
+.tag-icon {
+	margin-right: 0.1em;
+}
 .button-icon-filter {
 	filter: invert(100%) sepia(0%) saturate(22%) hue-rotate(36deg) brightness(104%) contrast(108%);
 }
@@ -182,7 +185,10 @@
 
 #activeFilters {
 	display: flex;
-	line-height: 1em;
+	line-height: 1.5em;
+	align-self: center;
+	padding-left: 10px;
+	align-items: center
 }
 
 
@@ -606,7 +612,6 @@ md-slider.ng-pristine.ng-untouched.ng-valid.md-default-theme.ng-empty {
   display: flex;
   justify-content: center;
   align-items: center;
-  backdrop-filter: blur(2px);
 }
 
 .filter-body {

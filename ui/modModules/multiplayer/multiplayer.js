@@ -950,9 +950,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		//console.log('[MultiplayerController] destroyed.');
 	});
 
-	$scope.getVueIconPath = function(iconName) {
-		return "/ui/ui-vue/src/assets/fonts/bngIcons/svg/" + iconName + ".svg"
-	};
+	$scope.getVueIconPath = getVueIconPath
 
 	// This JS is independent from the .mp-fancy-blur elements. 
 	// But, the CSS is still single-purpose. Haven't found a good solution for the CSS yet.
@@ -1073,10 +1071,12 @@ function($scope, $state, $timeout, $filter) {
 		highlightedServer = server.server
 		if ($scope.selectedServerId === serverId) {
 			$scope.selectedServerId = null;
+			server.server.formattedTags = null;
 			highlightedServer = null
 			$scope.expandedRowHeight = 0;
 		} else {
 			$scope.selectedServerId = serverId;
+			server.server.formattedTags = formatServerTags(server.server.tags)
 			$scope.selectedIndex = $scope.serversArray.findIndex(s => s.id === $scope.selectedServerId);
 
 			$timeout(function() {	//timeout because the serverInfoRow is not rendered yet
@@ -1144,7 +1144,9 @@ function($scope, $state, $timeout, $filter) {
 	$scope.formatBytes = formatBytes;
 	$scope.connect = connect;
 	$scope.customToNumber = customToNumber;
+	$scope.customIsString = customIsString;
 	$scope.getTagCount = getTagCount;
+	$scope.formatServerTags = formatServerTags;
 	// Page loading timeout
 	var timeOut = $timeout(function () {
 		if (vm.loadingPage === true) {
@@ -1172,6 +1174,7 @@ function($scope, $state, $timeout, $filter) {
 		vm.availableServerVersions = [];
 		vm.availableMaps = [];
 		vm.availableTags = [];
+		vm.formattedTags = [];
 		vm.availableServerLocations = [];
 
 		for (const server of servers) {
@@ -1197,6 +1200,43 @@ function($scope, $state, $timeout, $filter) {
 		vm.availableServerLocations.sort();
 		
 		vm.availableTags.sort();
+
+		for (const tag of vm.availableTags) {
+			var tagTexts = tag.split(":")
+			var tagItem = {
+				icon: '',
+				text: tagTexts[1] || tag,
+				raw: tag
+			};
+			//console.log('Tag texts: '+tagTexts)
+			if (tagTexts.length > 1) {
+				//console.log('Tag has a prefix, looking for icon')
+				if (tagTexts[0] == "Racing") {
+					tagItem.icon = '<img src='+getVueIconPath('helmets')+' class="button-icon button-icon-filter tag-icon" />'
+					//console.log('--Detected "Racing:" prefix for tag')
+
+				} else if (tagTexts[0] == "Gamemode") {
+					tagItem.icon = '<img src='+getVueIconPath('gamepad')+' class="button-icon button-icon-filter tag-icon" />'
+					//console.log('--Detected "Gamemode:" prefix for tag')
+
+				} else if (tagTexts[0] == "Mod") {
+					tagItem.icon = '<img src='+getVueIconPath('puzzleModule')+' class="button-icon button-icon-filter tag-icon" />'
+					//console.log('--Detected "Mod:" prefix for tag')
+
+				} else if (tagTexts[0] == "Lang") {
+					tagItem.icon = '<img src='+getVueIconPath('language')+' class="button-icon button-icon-filter tag-icon" />'
+					//console.log('--Detected "Lang:" prefix for tag')
+				}
+			} else {
+				//console.log('Tag does not have a prefix')
+			}
+
+			//console.log('Tag item: '+JSON.stringify(tagItem))
+			//console.log('-')
+			vm.formattedTags.push(tagItem)
+		};
+		
+		vm.formattedTags.sort();
 
 		vm.repopulate();
 	});
@@ -1238,14 +1278,38 @@ function($scope, $state, $timeout, $filter) {
 		};
 
 		vm.activeFiltersText = [];
-		if (vm.checkIsEmpty) 				vm.activeFiltersText.push($filter('translate')('ui.multiplayer.filters.empty'));
-		if (vm.checkIsNotEmpty) 			vm.activeFiltersText.push($filter('translate')('ui.multiplayer.filters.notEmpty'));
-		if (vm.checkIsNotFull) 				vm.activeFiltersText.push($filter('translate')('ui.multiplayer.filters.notFull'));
-		if (vm.checkModSlider) 				vm.activeFiltersText.push($filter('translate')('ui.multiplayer.filters.modSize') + " < " + formatBytes(vm.sliderMaxModSize * 1e+6));
-		if (vm.selectMap.length > 0) 		vm.activeFiltersText.push($filter('translate')('ui.multiplayer.filters.map') + vm.selectMap.join(", "));
-		if (vm.serverVersions.length > 0) 	vm.activeFiltersText.push($filter('translate')('ui.multiplayer.filters.serverVersions') + vm.serverVersions.join(", "));
-		if (vm.tags.length > 0) 			vm.activeFiltersText.push($filter('translate')('ui.multiplayer.filters.tags') + vm.tags.join(", "));
-		if (vm.serverLocations.length > 0) 	vm.activeFiltersText.push($filter('translate')('ui.multiplayer.filters.serverLocations') + vm.serverLocations.join(", "));
+		if (vm.checkIsEmpty) 				vm.activeFiltersText.push([
+			($filter('translate')('ui.multiplayer.filters.empty')) ,
+			''
+		]);
+		if (vm.checkIsNotEmpty) 			vm.activeFiltersText.push([
+			($filter('translate')('ui.multiplayer.filters.notEmpty')) ,
+			''
+		]);
+		if (vm.checkIsNotFull) 				vm.activeFiltersText.push([
+			($filter('translate')('ui.multiplayer.filters.notFull')) ,
+			''
+		]);
+		if (vm.checkModSlider) 				vm.activeFiltersText.push([
+			$filter('translate')('ui.multiplayer.filters.modSize') + " < ",
+			formatBytes(vm.sliderMaxModSize * 1e+6)
+		]);
+		if (vm.selectMap.length > 0) 		vm.activeFiltersText.push([
+			$filter('translate')('ui.multiplayer.filters.map') ,
+			vm.selectMap.join(", ")
+		]);
+		if (vm.serverVersions.length > 0) 	vm.activeFiltersText.push([
+			$filter('translate')('ui.multiplayer.filters.serverVersions') ,
+			vm.serverVersions.join(", ")
+		]);
+		if (vm.tags.length > 0) 			vm.activeFiltersText.push([
+			$filter('translate')('ui.multiplayer.filters.tags') ,
+			vm.tags
+		]);
+		if (vm.serverLocations.length > 0) 	vm.activeFiltersText.push([
+			$filter('translate')('ui.multiplayer.filters.serverLocations') ,
+			vm.serverLocations.join(", ")
+		]);
 
 		var clearFiltersButton = document.getElementById("clearFiltersButton");
 		//var FiltersPrefix = document.getElementById("FiltersPrefix");
@@ -1485,6 +1549,9 @@ function listPlayers(s) {
 function customToNumber(string) {
 	return Number(string)
 }
+function customIsString(content, index) {
+	return typeof content[index] === 'string'
+}
 function getTagCount(string) {
 	return string.split(',').length
 }
@@ -1626,7 +1693,7 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 
 		var missingTag = false;
 		for (let tag of tags) {
-			if (!serverTags.includes(tag.toLowerCase())) missingTag = true;
+			if (!serverTags.includes(tag.raw.toLowerCase())) missingTag = true;
 		}
 
 		if (missingTag) continue;
@@ -1802,6 +1869,56 @@ async function isLauncherConnected() {
 			resolve(data);
 		});
 	});
+}
+
+function getVueIconPath(iconName) {
+	return "/ui/ui-vue/src/assets/fonts/bngIcons/svg/" + iconName + ".svg"
+};
+
+function formatServerTags(commaList) {
+	var tagList = []
+	var tags = commaList.split(",");
+	console.log('Server item tag input: "'+tags+'"')
+	for (const tag of tags) {
+		console.log('    Tag list item input: '+JSON.stringify(tag))
+
+		var tagTexts = tag.split(":");
+		var tagItem = {
+			icon: '',
+			text: tagTexts[1] || tag,
+			raw: tag
+		};
+		tagTexts[0] = tagTexts[0].split(" ").join("")
+		console.log('        Tag prefix input: "'+tagTexts[0]+'"')
+		if (tagTexts.length > 1) {
+			if (tagTexts[0] == "Racing") {
+				tagItem.icon = '<img src='+getVueIconPath('helmets')+' class="button-icon button-icon-filter tag-icon" />';
+				console.log('        Found "Racing"');
+
+			} else if (tagTexts[0] == "Gamemode") {
+				tagItem.icon = '<img src='+getVueIconPath('gamepad')+' class="button-icon button-icon-filter tag-icon" />';
+				console.log('        Found "Gamemode"');
+
+			} else if (tagTexts[0] == "Mod") {
+				tagItem.icon = '<img src='+getVueIconPath('puzzleModule')+' class="button-icon button-icon-filter tag-icon" />';
+				console.log('        Found "Mod"');
+
+			} else if (tagTexts[0] == "Lang") {
+				tagItem.icon = '<img src='+getVueIconPath('language')+' class="button-icon button-icon-filter tag-icon" />';
+				console.log('        Found "Lang"');
+			}
+		} else {
+			console.log('        No icon found');
+		}
+
+		console.log('    Tag list item output: '+JSON.stringify(tag))
+
+		//console.log('Tag item: '+JSON.stringify(tagItem));
+		//console.log('---');
+		tagList.push(tagItem);
+	};
+	console.log('Server item tag output: '+JSON.stringify(tagList))
+	return tagList
 }
 
 

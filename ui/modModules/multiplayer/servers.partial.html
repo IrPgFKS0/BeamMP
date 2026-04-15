@@ -24,8 +24,17 @@
 		</button>
 
 		<span id="FiltersPrefix" style="display: none; font-weight: bold; align-self: center;">{{:: 'ui.multiplayer.activeFilters' | translate}}</span>
-		<span id="activeFilters" style="align-self: center; padding-left: 10px;">
-			<span class="tagList" ng-repeat="text in multiplayermenu.activeFiltersText">{{ text }}</span>
+		<span id="activeFilters">
+			<span ng-repeat="content in multiplayermenu.activeFiltersText" style="padding:0">
+				<div ng-if="customIsString(content, 1)" ng-bind="content[0] + (content[1] || 'test')" class="tagList"></div>
+				<div ng-if="!customIsString(content, 1)" class="tagList">
+					<span ng-bind="content[0]"></span>
+					<span class="tagList tagListShort" ng-repeat="tag in content[1]" style="display:inline">
+						<span ng-bind-html="tag.icon">Icon</span>
+						<span ng-bind="tag.text" style="display:inline">Text</span>
+					</span>
+				</div>
+			</span>
 		</span>
 
 		<div class="filter-overlay" ng-show="isFilterOverlayVisible" ng-click="toggleFilterOverlay(); multiplayermenu.repopulate();">
@@ -84,8 +93,9 @@
 							<md-tooltip md-direction="right">
 								{{:: 'ui.multiplayer.tagFilterTooltip' | translate}}
 							</md-tooltip>
-							<md-option ng-repeat="tag in multiplayermenu.availableTags" ng-value="multiplayermenu.availableTags[$index]" style="height: 40px;">
-								{{ tag }}
+							<md-option ng-repeat="tag in multiplayermenu.formattedTags" ng-value="multiplayermenu.formattedTags[$index]" style="height: 40px;">
+								<div ng-bind-html="tag.icon" style="display:inline"></div>
+								<div ng-bind="tag.text" style="display:inline"></div>
 							</md-option>
 						</md-select>
 
@@ -166,8 +176,11 @@
 										<tr><th scope="row">{{:: 'ui.multiplayer.server.tags' | translate}}</th>
 											<td>
 												<span ng-hide="{{ getTagCount(server.server.tags) > 0 }}">No tags</span>
-												<div class="tagListContainer" style="max-width: 100%;" ng-show="{{ getTagCount(server.server.tags) > 0 }}">
-													<span class="tagList tagListShort" ng-repeat="text in server.server.tags.split(',')">{{ text }}</span>
+												<div class="tagListContainer" style="max-width:100%" ng-if="server.server.tags.split(',').length > 0">
+													<span class="tagList tagListShort" ng-repeat="tag in server.server.formattedTags">
+														<div ng-bind-html="tag.icon" style="display:inline;max-height:1.5em"></div>
+														<div ng-bind="tag.text" style="display:inline"></div>
+													</span>
 												</div>
 											</td>
 										</tr>
@@ -177,7 +190,7 @@
 									<h2 class="section-header">{{:: 'ui.multiplayer.server.playerList' | translate}}</h2>
 									<span>{{:: 'ui.multiplayer.players' | translate }} ({{server.server.players|| ""}}/{{server.server.maxplayers|| ""}}):
 										<span ng-hide="{{ customToNumber(server.server.players) > 0 }}">{{:: 'ui.multiplayer.server.noPlayers' | translate}}</span>
-										<div class="tagListContainer" style="max-width: 100%" ng-show="{{ customToNumber(server.server.players) > 0 }}">
+										<div class="tagListContainer" style="max-width:100%" ng-show="{{ customToNumber(server.server.players) > 0 }}">
 											<span class="tagList tagListShort" ng-repeat="text in listPlayers(server.server.playerslist).substring(17).split(', ')">{{ text }}</span>
 										</div>
 									</span>
