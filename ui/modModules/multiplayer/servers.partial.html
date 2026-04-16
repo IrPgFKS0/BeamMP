@@ -177,9 +177,12 @@
 											<td>
 												<span ng-hide="{{ getTagCount(server.server.tags) > 0 }}">No tags</span>
 												<div class="tagListContainer" style="max-width:100%" ng-if="server.server.tags.split(',').length > 0">
-													<span class="tagList tagListShort" ng-repeat="tag in server.server.formattedTags">
-														<div ng-bind-html="tag.icon" style="display:inline;max-height:1.5em"></div>
-														<div ng-bind="tag.text" style="display:inline"></div>
+													<span ng-repeat="tag in server.server.formattedTags">
+														<!-- Want to add ng-click="addTagToSearchFilter(tag)" here, but the md dropdowns don't like it -->
+														<span class="tagList tagListShort">
+															<div ng-bind-html="tag.icon" style="display:inline;max-height:1.5em"></div>
+															<div ng-bind="tag.text" style="display:inline"></div>
+														</span>
 													</span>
 												</div>
 											</td>

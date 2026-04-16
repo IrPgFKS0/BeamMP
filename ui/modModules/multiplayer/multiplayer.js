@@ -4,9 +4,6 @@
 
 var highlightedServer;
 var servers = [];
-var official = [];
-var featured = [];
-var partner = [];
 var favorites = [];
 var recents = [];
 var mdDialog;
@@ -28,7 +25,6 @@ var serverView = "";
 let repopulateServerList = async function() {
 
 };
-
 
 import('/ui/lib/ext/purify.min.js')
 
@@ -1027,7 +1023,8 @@ function($scope, $state, $timeout, $filter) {
 	$scope.expandedRowHeight = 0;
 	$scope.loadingShimmerCount = Math.ceil($scope.viewportHeight / $scope.itemHeight)
 
-	$scope.onScroll = function() {
+	$scope.onScroll = async function() {
+		//console.log('onScroll fired')
 		const scrollTop = serversTableContainer.scrollTop;
 		const total = $scope.serversArray.length;
 		const itemHeight = $scope.itemHeight;
@@ -1147,6 +1144,7 @@ function($scope, $state, $timeout, $filter) {
 	$scope.customIsString = customIsString;
 	$scope.getTagCount = getTagCount;
 	$scope.formatServerTags = formatServerTags;
+
 	// Page loading timeout
 	var timeOut = $timeout(function () {
 		if (vm.loadingPage === true) {
@@ -1328,7 +1326,6 @@ function($scope, $state, $timeout, $filter) {
 		localStorage.setItem("serverListOptions", JSON.stringify(serverListOptions));
 	};
 
-
 	$scope.isFilterOverlayVisible = false;
 
 	$scope.toggleFilterOverlay = function () {
@@ -1347,6 +1344,22 @@ function($scope, $state, $timeout, $filter) {
 		vm.serverLocations = [];
 		vm.repopulate();
 	}
+	//$scope.addTagToSearchFilter = function (tag) {
+	//	console.log('Trying to add "'+JSON.stringify(tag)+'" to search filters');
+	//	console.log('serverListOptions looks like: '+JSON.stringify(serverListOptions));
+	//	if (!vm.tags.find(item => item.raw === tag.raw)) {
+	//		tag.raw = tag.raw.trim();
+	//		tag.$$mdSelectId = 0;
+	//		console.log('Added "'+JSON.stringify(tag)+'" to the search filters');
+	//		vm.tags.push(tag);
+	//		serverListOptions.tags = vm.tags;
+	//		localStorage.setItem("serverListOptions", JSON.stringify(serverListOptions));
+	//		console.log('serverListOptions NOW looks like: '+JSON.stringify(serverListOptions));
+	//		vm.repopulate();
+	//	} else {
+	//		console.log('Tag already exists in search filters');
+	//	}
+	//};
 
 	repopulateServerList = function () { vm.repopulate().then(() => { }); }
 }])

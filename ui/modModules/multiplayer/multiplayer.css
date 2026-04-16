@@ -7,6 +7,7 @@
 	-moz-osx-font-smoothing: grayscale !important;
 
 	margin: 0.25em 1em 0.25em 1em;
+	gap: 0.25em;
 	padding-bottom: 0.5em;
 	display: flex;
 	flex-direction: column;
@@ -55,7 +56,7 @@
 		transform-origin: center;
 		transform: translate(-1em, -5.625em);
 		z-index: -1;
-		transition-duration: 1000ms;
+		transition: background-image 1s linear;
 		background-image: var(--mp-fancy-blur-src);
 		background-origin: border-box;
 		background-repeat: no-repeat;
@@ -95,7 +96,6 @@
 	font-family: var(--fnt-defs) !important;
 	background-color: var(--background-clr);
 	border-radius: var(--bng-corners-2);
-	margin-bottom: 0.25em;
 	.back-button {
 		display: inline-flex;
 		align-items: center;
@@ -297,6 +297,7 @@
 }
 #serversTableContainer {
 	overflow-x: hidden;
+	scroll-behavior: smooth;
 }
 
 table#serversTable {
