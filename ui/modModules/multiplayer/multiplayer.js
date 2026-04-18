@@ -992,6 +992,7 @@ function($scope, $state, $timeout, $filter) {
 		vm.serverVersions = serverListOptions.serverVersions
 		vm.tags = serverListOptions.tags
 		vm.serverLocations = serverListOptions.serverLocations
+		vm.matchAll = serverListOptions.matchAll
 		vm.searchText = ""
 	} else {
 		vm.checkIsEmpty = false
@@ -1003,6 +1004,7 @@ function($scope, $state, $timeout, $filter) {
 		vm.serverVersions = []
 		vm.tags = []
 		vm.serverLocations = []
+		vm.matchAll = serverListOptions.matchAll
 		vm.searchText = ""
 	}
 
@@ -1260,7 +1262,8 @@ function($scope, $state, $timeout, $filter) {
 			vm.selectMap,
 			vm.serverVersions,
 			vm.tags,
-			vm.serverLocations		
+			vm.serverLocations,
+			vm.matchAll
 		);
 
 		serverListOptions = {
@@ -1272,20 +1275,21 @@ function($scope, $state, $timeout, $filter) {
 			selectMap: vm.selectMap,
 			serverVersions: vm.serverVersions,
 			serverLocations: vm.serverLocations,
-			tags: vm.tags
+			tags: vm.tags,
+			matchAll: vm.matchAll
 		};
 
 		vm.activeFiltersText = [];
 		if (vm.checkIsEmpty) 				vm.activeFiltersText.push([
-			($filter('translate')('ui.multiplayer.filters.empty')) ,
+			$filter('translate')('ui.multiplayer.filters.empty') ,
 			''
 		]);
 		if (vm.checkIsNotEmpty) 			vm.activeFiltersText.push([
-			($filter('translate')('ui.multiplayer.filters.notEmpty')) ,
+			$filter('translate')('ui.multiplayer.filters.notEmpty') ,
 			''
 		]);
 		if (vm.checkIsNotFull) 				vm.activeFiltersText.push([
-			($filter('translate')('ui.multiplayer.filters.notFull')) ,
+			$filter('translate')('ui.multiplayer.filters.notFull') ,
 			''
 		]);
 		if (vm.checkModSlider) 				vm.activeFiltersText.push([
@@ -1307,6 +1311,10 @@ function($scope, $state, $timeout, $filter) {
 		if (vm.serverLocations.length > 0) 	vm.activeFiltersText.push([
 			$filter('translate')('ui.multiplayer.filters.serverLocations') ,
 			vm.serverLocations.join(", ")
+		]);
+		if (vm.matchAll) 				vm.activeFiltersText.push([
+			$filter('translate')('ui.multiplayer.filters.matchAll') ,
+			''
 		]);
 
 		var clearFiltersButton = document.getElementById("clearFiltersButton");
@@ -1342,6 +1350,7 @@ function($scope, $state, $timeout, $filter) {
 		vm.serverVersions = [];
 		vm.tags = [];
 		vm.serverLocations = [];
+		vm.matchAll = false;
 		vm.repopulate();
 	}
 	//$scope.addTagToSearchFilter = function (tag) {
@@ -1462,12 +1471,14 @@ globalThis.serverStyleMap = {
     '^l': 'bold',
     '^m': 'line-through',
     '^n': 'underline',
-    '^o': 'italic'
+    '^o': 'italic',
+    '^*': 'bngIcon'
 };
 
+import { icons as iconsOrig, iconsBySize, iconsByTag, getIconsWithTags } from "/ui/ui-vue/src/assets/fonts/bngIcons/bngIcons.js"
 function formatCodes(string, isdesc = false) {
     let result = '';
-    let currentText = '';
+    var currentText = '';
     let classes = new Set();
 
 	string = DOMPurify.sanitize(string)
@@ -1483,14 +1494,30 @@ function formatCodes(string, isdesc = false) {
         currentText = '';
     };
 
-    for (const token of tokens) {
+    for (let i = 0; i < tokens.length; i++) {
+		const token = tokens[i];
+		const nextToken = tokens[i+1]?.trim() || '';
         if (/^\^.$/.test(token)) {
             flush();
             if (token === '^r') {
                 classes.clear();
             } else if (isdesc && token === '^p') {
                 currentText += '<br>';
-            } else {
+			} else if (token === '^*') {
+				const cls = globalThis.serverStyleMap?.[token];
+				if(cls) classes.add(cls);
+
+				//console.log(iconsOrig);
+				//console.log('CurrentText:"', nextToken, '". iconsOrig:"', iconsOrig[nextToken], '"');
+				if (iconsOrig[nextToken]) {
+					console.log('Found icon');
+					let classList = Array.from(classes).join(' ');
+					let icon = iconsOrig[nextToken].glyph;
+					let originalString = `<span class="${classList}">${nextToken}</span>`;
+					let newString      = `<span class="${classList}">${icon}</span>`;
+					currentText = icon
+				};
+			} else {
                 const cls = globalThis.serverStyleMap?.[token];
                 if (cls?.startsWith('color-')) {
                     [...classes].forEach(c => c.startsWith('color-') && classes.delete(c));
@@ -1499,7 +1526,7 @@ function formatCodes(string, isdesc = false) {
                     classes.add(cls);
                 }
             }
-        } else {
+        } else if (tokens[i-1]!='^*') {
             currentText += token;
         }
     }
@@ -1592,7 +1619,8 @@ var serverStyleArray = [
     "^n",
     "^o",
     "^r",
-    "^p"
+    "^p",
+	"^*"
 ];
 
 function stripCustomFormatting(name){
@@ -1685,7 +1713,7 @@ globalThis.openExternalLink = function(url){
 }
 
 // /!\ IMPORTANT /!\ //// TYPE 0 = Normal / 1 = Favorites / 2 = Recents
-async function populateTable($filter, $scope, servers, tab, searchText = '', checkIsEmpty, checkIsNotEmpty, checkIsNotFull, checkModSlider, sliderMaxModSize, selectMap = [], SelectedServerVersions = [], tags = [], SelectedServerLocations = []) {
+async function populateTable($filter, $scope, servers, tab, searchText = '', checkIsEmpty, checkIsNotEmpty, checkIsNotFull, checkModSlider, sliderMaxModSize, selectMap = [], SelectedServerVersions = [], tags = [], SelectedServerLocations = [], matchAll) {
 	$scope.serversTable = {}; 
 	var type = 0;
 	if (tab == "favorites") type = 1;
@@ -1701,16 +1729,6 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 		if (tab == "featured" && !server.featured) continue;
 		if (tab == "partner" && !server.partner) continue;
 
-		//server.tags = "tag1,tag2"
-		var serverTags = server.tags.toLowerCase().split(",").map(tag => tag.trim());
-
-		var missingTag = false;
-		for (let tag of tags) {
-			if (!serverTags.includes(tag.raw.toLowerCase())) missingTag = true;
-		}
-
-		if (missingTag) continue;
-
 		var shown = true;
 		var smoothMapName = SmoothMapName(server.map);
 		var isFavorite = false;
@@ -1718,21 +1736,78 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 
 		// Filter by search
 		if (!server.strippedName.toLowerCase().includes(searchText.toLowerCase())) continue;
+
+		var activeFilters = 0;
+		var filterMatches = 0;
+
+		//server.tags = "tag1,tag2"
+		var serverTags = server.tags.toLowerCase().split(",").map(tag => tag.trim());
+
+		if(tags.length > 0) {
+			activeFilters = activeFilters + 1;
+			var missingTags = 0;
+			for (let tag of tags) {
+				if (!serverTags.includes(tag.toLowerCase())) missingTags+=1;
+			};
+			if (matchAll) {
+				if(missingTags==0) filterMatches+=1
+			else
+				if(missingTags < tags.length) filterMatches+=1
+			}
+		}
+
+		// ########################################################################
+		// ########################################################################
+		// ########################################################################
+		// known issue favorites/recents tabs dont work
+		// ########################################################################
+		// ########################################################################
+		// ########################################################################
 		
 		// Filter by empty or full
-		else if(checkIsEmpty && server.players > 0) continue;
-		else if(checkIsNotEmpty && server.players == 0) continue;
-		else if(checkIsNotFull && server.players >= parseInt(server.maxplayers)) continue;
+		if(checkIsEmpty) {
+			activeFilters = activeFilters + 1;
+			if(server.players == 0) filterMatches+=1
+		};
+		if(checkIsNotEmpty) {
+			activeFilters = activeFilters + 1;
+			if(server.players > 0) filterMatches+=1
+		};
+		if(checkIsNotFull) {
+			activeFilters = activeFilters + 1;
+			if(server.players < parseInt(server.maxplayers)) filterMatches+=1
+		};
 		
 		// Filter by mod size
-		else if(checkModSlider && sliderMaxModSize * 1048576 < server.modstotalsize) continue;
+		if(checkModSlider) {
+			activeFilters = activeFilters + 1;
+			if(sliderMaxModSize * 1048576 < server.modstotalsize) filterMatches+=1
+		};
 	
 		// Filter by map
-		else if (selectMap.length > 0 && !selectMap.includes(smoothMapName)) continue;
+		if (selectMap.length > 0) {
+			activeFilters = activeFilters + 1;
+			if(selectMap.includes(smoothMapName)) filterMatches+=1
+		};
 
-		else if (SelectedServerVersions.length > 0 && !SelectedServerVersions.includes("v" + server.version)) continue;
+		if (SelectedServerVersions.length > 0) {
+			activeFilters = activeFilters + 1;
+			if(SelectedServerVersions.includes("v" + server.version)) filterMatches+=1
+		};
 
-		else if (SelectedServerLocations.length > 0 && !SelectedServerLocations.includes(server.location)) continue;
+		if (SelectedServerLocations.length > 0) {
+			activeFilters = activeFilters + 1;
+			if(SelectedServerLocations.includes(server.location)) filterMatches+=1
+		}
+
+		if (matchAll && filterMatches < activeFilters) {
+			//console.log('Active filters: '+activeFilters+'. Matched filters: '+filterMatches);
+			continue
+		}
+		if (!matchAll && activeFilters > 0 && filterMatches < 1) {
+			//console.log('Active filters: '+activeFilters+'. Matched filters: '+filterMatches);
+			continue
+		}
 
 		// Favorite
 		for (let tmpServer of favorites) if (tmpServer.ip == server.ip && tmpServer.port == server.port) isFavorite = true;
@@ -1766,24 +1841,74 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 			}
 			if (!stillOk) {
 
-				var serverTags = (tmpServer1.tags || "").toLowerCase().split(",").map(tag => tag.trim());
-				var missingTag = false;
-				for (let tag of tags) {
-					if (!serverTags.includes(tag.toLowerCase())) missingTag = true;
-				}
-				if (missingTag) continue;
+				// Filter by search
+				if (!tmpServer1.strippedName.toLowerCase().includes(searchText.toLowerCase())) continue;
 
 				var smoothMapName = SmoothMapName(tmpServer1.map);
 
-				if (searchText && !tmpServer1.strippedName?.toLowerCase().includes(searchText.toLowerCase())) continue;
-				if (checkIsEmpty && tmpServer1.players > 0) continue;
-				if (checkIsNotEmpty && tmpServer1.players == 0) continue;
-				if (checkIsNotFull && tmpServer1.players >= parseInt(tmpServer1.maxplayers)) continue;
-				if (checkModSlider && sliderMaxModSize * 1048576 < tmpServer1.modstotalsize) continue;
-				if (selectMap.length > 0 && !selectMap.includes(smoothMapName)) continue;
-				if (SelectedServerVersions.length > 0 && !SelectedServerVersions.includes("v" + tmpServer1.version)) continue;
-				if (SelectedServerLocations.length > 0 && !SelectedServerLocations.includes(tmpServer1.location)) continue;
+				var activeFilters = 0;
+				var filterMatches = 0;
 
+				//server.tags = "tag1,tag2"
+				var serverTags = (tmpServer1.tags || "").toLowerCase().split(",").map(tag => tag.trim());
+				if(tags.length > 0) {
+					activeFilters = activeFilters + 1;
+					var missingTags = 0;
+					for (let tag of tags) {
+						if (!serverTags.includes(tag.toLowerCase())) missingTags+=1;
+					};
+					if (matchAll) {
+						if(missingTags==0) filterMatches+=1
+					else
+						if(missingTags < tags.length) filterMatches+=1
+					}
+				}
+				
+				// Filter by empty or full
+				if(checkIsEmpty) {
+					activeFilters = activeFilters + 1;
+					if(tmpServer1.players == 0) filterMatches+=1
+				};
+				if(checkIsNotEmpty) {
+					activeFilters = activeFilters + 1;
+					if(tmpServer1.players > 0) filterMatches+=1
+				};
+				if(checkIsNotFull) {
+					activeFilters = activeFilters + 1;
+					if(tmpServer1.players < parseInt(tmpServer1.maxplayers)) filterMatches+=1
+				};
+						
+
+				// Filter by mod size
+				if(checkModSlider) {
+					activeFilters = activeFilters + 1;
+					if(sliderMaxModSize * 1048576 < tmpServer1.modstotalsize) filterMatches+=1
+				};
+			
+				// Filter by map
+				if (selectMap.length > 0) {
+					activeFilters = activeFilters + 1;
+					if(selectMap.includes(smoothMapName)) filterMatches+=1
+				};
+
+				if (SelectedServerVersions.length > 0) {
+					activeFilters = activeFilters + 1;
+					if(SelectedServerVersions.includes("v" + tmpServer1.version)) filterMatches+=1
+				};
+
+				if (SelectedServerLocations.length > 0) {
+					activeFilters = activeFilters + 1;
+					if(SelectedServerLocations.includes(tmpServer1.location)) filterMatches+=1
+				}
+
+				if (matchAll && filterMatches < activeFilters) {
+					//console.log('Active filters: '+activeFilters+'. Matched filters: '+filterMatches);
+					continue
+				}
+				if (!matchAll && activeFilters > 0 && filterMatches < 1) {
+					//console.log('Active filters: '+activeFilters+'. Matched filters: '+filterMatches);
+					continue
+				}
 
 				var offline = false;
 				var custom = false;
@@ -1891,9 +2016,9 @@ function getVueIconPath(iconName) {
 function formatServerTags(commaList) {
 	var tagList = []
 	var tags = commaList.split(",");
-	console.log('Server item tag input: "'+tags+'"')
+	//console.log('Server item tag input: "'+tags+'"')
 	for (const tag of tags) {
-		console.log('    Tag list item input: '+JSON.stringify(tag))
+		//console.log('    Tag list item input: '+JSON.stringify(tag))
 
 		var tagTexts = tag.split(":");
 		var tagItem = {
@@ -1902,35 +2027,35 @@ function formatServerTags(commaList) {
 			raw: tag
 		};
 		tagTexts[0] = tagTexts[0].split(" ").join("")
-		console.log('        Tag prefix input: "'+tagTexts[0]+'"')
+		//console.log('        Tag prefix input: "'+tagTexts[0]+'"')
 		if (tagTexts.length > 1) {
 			if (tagTexts[0] == "Racing") {
 				tagItem.icon = '<img src='+getVueIconPath('helmets')+' class="button-icon button-icon-filter tag-icon" />';
-				console.log('        Found "Racing"');
+				c//onsole.log('        Found "Racing"');
 
 			} else if (tagTexts[0] == "Gamemode") {
 				tagItem.icon = '<img src='+getVueIconPath('gamepad')+' class="button-icon button-icon-filter tag-icon" />';
-				console.log('        Found "Gamemode"');
+				//console.log('        Found "Gamemode"');
 
 			} else if (tagTexts[0] == "Mod") {
 				tagItem.icon = '<img src='+getVueIconPath('puzzleModule')+' class="button-icon button-icon-filter tag-icon" />';
-				console.log('        Found "Mod"');
+				//console.log('        Found "Mod"');
 
 			} else if (tagTexts[0] == "Lang") {
 				tagItem.icon = '<img src='+getVueIconPath('language')+' class="button-icon button-icon-filter tag-icon" />';
-				console.log('        Found "Lang"');
+				//console.log('        Found "Lang"');
 			}
 		} else {
-			console.log('        No icon found');
+			//console.log('        No icon found');
 		}
 
-		console.log('    Tag list item output: '+JSON.stringify(tag))
+		//console.log('    Tag list item output: '+JSON.stringify(tag))
 
 		//console.log('Tag item: '+JSON.stringify(tagItem));
 		//console.log('---');
 		tagList.push(tagItem);
 	};
-	console.log('Server item tag output: '+JSON.stringify(tagList))
+	//console.log('Server item tag output: '+JSON.stringify(tagList))
 	return tagList
 }
 
