@@ -93,16 +93,22 @@ local function send(data) -- TODO currently the socket keeps retrying indefinite
 	end
 
 	if error then
+		if error == "Socket is not connected" then
+			-- tcp handshake still in progress; keep isConnecting=true and let onUpdate retry
+			return
+		end
 		isConnecting = false
 		log('E', 'send', 'Socket error: '..error)
 		if error == "closed" and launcherConnected then
 			log('W', 'send', 'Lost launcher connection!')
 			if launcherConnected then guihooks.trigger('LauncherConnectionLost') end
 			launcherConnected = false
+			TCPLauncherSocket = nop
 			authResult = {}
 			guihooks.trigger("authReceived", authResult)
-		elseif error == "Socket is not connected" then
-
+		elseif error == "closed" then
+			-- socket died before we finished connecting, force new socket next attempt
+			TCPLauncherSocket = nop
 		else
 			log('E', 'send', 'Stopped at index: '..index..' while trying to send '..#data..' bytes of data.')
 		end
@@ -122,11 +128,13 @@ local function connectToLauncher(silent)
 	isConnecting = true
 	if not silent then log('W', 'connectToLauncher', "connectToLauncher called! Current connection status: "..tostring(launcherConnected)) end
 	if not launcherConnected then
-		TCPLauncherSocket = socket.tcp()
-		TCPLauncherSocket:setoption("keepalive", true) -- Keepalive to avoid connection closing too quickly
-		TCPLauncherSocket:settimeout(0) -- Set timeout to 0 to avoid freezing
-		TCPLauncherSocket:connect(settings.getValue("launcherIp", '127.0.0.1'), settings.getValue("launcherPort", 4444))
-		send('A') -- immediately heartbeat to check if connection was established
+		if TCPLauncherSocket == nop then
+			TCPLauncherSocket = socket.tcp()
+			TCPLauncherSocket:setoption("keepalive", true) -- keepalive to avoid connection closing too quickly
+			TCPLauncherSocket:settimeout(0) -- set timeout to 0 to avoid freezing
+			TCPLauncherSocket:connect(settings.getValue("launcherIp", '127.0.0.1'), settings.getValue("launcherPort", 4444))
+		end
+		send('A') -- will succeed once handshake completes, triggering onLauncherConnected
 	else
 		log('W', 'connectToLauncher', 'Launcher already connected!')
 		guihooks.trigger('onLauncherConnected')
@@ -660,10 +668,17 @@ local function onUpdate(dt)
 			send('Up')
 		end
 	else
-		if reconnectAttempt < 10 and reconnectTimer >= 2 and not isConnecting then
+		if isConnecting then
+			-- socket exists but handshake is still completing; retry heartbeat frequently
+			if reconnectTimer >= 0.25 then
+				reconnectTimer = 0
+				send('A') -- succeeds once connected, fires onLauncherConnected
+			end
+		elseif reconnectAttempt < 10 and reconnectTimer >= 2 then
+			-- no socket or socket died; create a fresh one
 			reconnectAttempt = reconnectAttempt + 1
 			reconnectTimer = 0
-			connectToLauncher(true) --TODO: add counter and stop attempting after enough failed attempts
+			connectToLauncher(true)
 		end
 	end
 end
