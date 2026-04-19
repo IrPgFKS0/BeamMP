@@ -141,14 +141,14 @@
 				{{:: 'ui.multiplayer.recent' | translate}}
 		</button>
 
-		<button class="default-case sidebar-buttons servers-btn bng-button-link" id="direct-connect-btn" ng-click="switchServerView('direct')">
+		<button class="default-case sidebar-buttons servers-btn bng-button-link" id="direct-connect-btn" ng-click="switchServerView('direct')" style="margin-bottom:0">
 		<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('globeSimpleNotSign')}} />
 				{{:: 'ui.multiplayer.direct_connect' | translate}}
 		</button>
 		
 		<div flex="" style="max-height: none;"></div>
 
-		<md-divider style="padding-top: 2px"></md-divider>
+		<md-divider></md-divider>
 
 		<button class="default-case sidebar-buttons bng-button-link" id="patreonSidebarButton" onclick="openExternalLink(`https://www.patreon.com/BeamMP`)" ng-class="">
 		<img src="local://local/ui/modModules/multiplayer/icons/PATREON_SYMBOL_1_WHITE_RGB.svg" class="button-icon"></img>
@@ -171,7 +171,7 @@
 		{{:: 'ui.multiplayer.docs' | translate}}
 		</button>
 
-		<button class="default-case sidebar-buttons bng-button-link" onclick="openExternalLink(`https://github.com/BeamMP/`)">
+		<button class="default-case sidebar-buttons bng-button-link" onclick="openExternalLink(`https://github.com/BeamMP/`)" style="margin-bottom:0">
 		<img src="local://local/ui/modModules/multiplayer/icons/github-mark.svg" class="button-icon"></img>
 		{{:: 'ui.multiplayer.github' | translate}}
 		</button>
@@ -182,7 +182,7 @@
 		<span id="serverlist-profile-name" style="text-align: center; background-color: rgba(0, 0, 0, 0); border-radius: 10px; margin-left: 15px; margin-right: 15px; margin-top: 10px; padding: 2px;"></span>
 		<span id="serverlist-profile-id" style="text-align: center;font-size: 0.9em; line-height: 1.5em; opacity: 0.8; cursor: pointer; margin-top: 6px;"></span>
 
-		<button class="default-case sidebar-buttons bng-button-attention" ng-click="logout()" class="md-raised md-accent">
+		<button class="default-case sidebar-buttons bng-button-attention" ng-click="logout()" style="margin-bottom:0">
 		<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('exit')}}></md-icon>
 				{{:: 'ui.multiplayer.logout' | translate}}
 		</button>

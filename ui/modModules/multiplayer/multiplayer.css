@@ -206,7 +206,6 @@
 
 #left-menu {
 	display:flex;
-	gap: 0.75em;
 	color: white;
 	background-color: transparent;
 	.bng-button-main,
@@ -216,6 +215,10 @@
 	.bng-button-link,
 	.bng-button-attention {
 		margin: 0;
+		margin-bottom: 0.4em;
+	}
+	md-divider {
+		margin: 0.4em 0;
 	}
 }
 
