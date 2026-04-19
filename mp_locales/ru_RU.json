@@ -182,6 +182,7 @@
   "ui.multiplayer.filters.serverLocations": "Местоположение(я):",
   "ui.multiplayer.download.done": "Готово — Застряли на этом экране? Попробуйте эти шаги: https://docs.beammp.com/FAQ/How-to-deactivate-mods/\n и если это не поможет, свяжитесь с нами на Discord или форуме BeamMP.",
   "ui.multiplayer.download.downloaded": "Загружено",
+  "ui.multiplayer.loginDescription2temp": "Вход в систему временно отключен до дальнейшего уведомления, пожалуйста, используйте гостевой аккаунт.",
   "ui.apps.multiplayer.playerlist.copyname": "Копировать имя",
   "ui.apps.multiplayer.playerlist.deleteAllVehicles": "Удалить все транспортные средства",
   "ui.apps.multiplayer.playerlist.queueEvents": "Очередь событий",
