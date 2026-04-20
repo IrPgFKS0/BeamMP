@@ -187,24 +187,32 @@ function formatServerName(string) {
         currentText = '';
     };
 
-    for (const token of tokens) {
-        if (/^\^.$/.test(token)) {
-            flush();
-            if (token === '^r') {
-                classes.clear();
-            } else {
-                const cls = globalThis.serverStyleMap?.[token];
-                if (cls?.startsWith('color-')) {
-                    [...classes].forEach(c => c.startsWith('color-') && classes.delete(c));
-                    classes.add(cls);
-                } else if (cls) {
-                    classes.add(cls);
-                }
-            }
-        } else {
-            currentText += token;
-        }
-    }
+    for (let i = 0; i < tokens.length; i++) {
+		const token = tokens[i];
+		const nextToken = tokens[i+1]?.trim() || '';
+		if (/^\^.$/.test(token)) {
+			flush();
+			if (token === '^r') {
+				classes.clear();
+			} else if (token === '^*') {
+				const cls = globalThis.serverStyleMap?.[token];
+				if(cls) classes.add(cls);
+				if (iconsOrig[nextToken]) {
+					currentText = iconsOrig[nextToken].glyph
+				};
+			} else {
+				const cls = globalThis.serverStyleMap?.[token];
+				if (cls?.startsWith('color-')) {
+					[...classes].forEach(c => c.startsWith('color-') && classes.delete(c));
+					classes.add(cls);
+				} else if (cls) {
+					classes.add(cls);
+				}
+			}
+		} else if (tokens[i-1]!='^*') {
+			currentText += token;
+		}
+	}
 
     flush();
     return result;
