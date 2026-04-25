@@ -290,8 +290,8 @@ export default angular.module('multiplayer', ['ui.router'])
 			let userinfo =  document.getElementsByTagName("body")[0].appendChild(beammpUserInfo).children[1]
 			userinfo.style.marginRight = "0"
 			userinfo.style.top = "0"
-			userinfo.style.lineHeight = "2.4em"
-			userinfo.style.height = "2.4em"
+			userinfo.style.lineHeight = "2.5em"
+			userinfo.style.height = "2.5em"
 
 
 			let nameElement = document.getElementById("beammp-profile-name");
@@ -1065,8 +1065,8 @@ function($scope, $state, $timeout, $filter) {
 
 	$scope.selectServer = function(server) {
 		const serverId = server.id;
-		console.log('Server '+serverId+' was selected')
-		console.log(JSON.stringify(server.server))
+		//console.log('Server '+serverId+' was selected')
+		//console.log(JSON.stringify(server.server))
 		highlightedServer = server.server
 		if ($scope.selectedServerId === serverId) {
 			$scope.selectedServerId = null;
@@ -1507,15 +1507,8 @@ function formatCodes(string, isdesc = false) {
 				const cls = globalThis.serverStyleMap?.[token];
 				if(cls) classes.add(cls);
 
-				//console.log(iconsOrig);
-				//console.log('CurrentText:"', nextToken, '". iconsOrig:"', iconsOrig[nextToken], '"');
 				if (iconsOrig[nextToken]) {
-					console.log('Found icon');
-					let classList = Array.from(classes).join(' ');
-					let icon = iconsOrig[nextToken].glyph;
-					let originalString = `<span class="${classList}">${nextToken}</span>`;
-					let newString      = `<span class="${classList}">${icon}</span>`;
-					currentText = icon
+					currentText = iconsOrig[nextToken].glyph
 				};
 			} else {
                 const cls = globalThis.serverStyleMap?.[token];
@@ -2031,7 +2024,7 @@ function formatServerTags(commaList) {
 		if (tagTexts.length > 1) {
 			if (tagTexts[0] == "Racing") {
 				tagItem.icon = '<img src='+getVueIconPath('helmets')+' class="button-icon button-icon-filter tag-icon" />';
-				c//onsole.log('        Found "Racing"');
+				//console.log('        Found "Racing"');
 
 			} else if (tagTexts[0] == "Gamemode") {
 				tagItem.icon = '<img src='+getVueIconPath('gamepad')+' class="button-icon button-icon-filter tag-icon" />';
