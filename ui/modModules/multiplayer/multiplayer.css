@@ -222,6 +222,35 @@
 	}
 }
 
+.leftMenuGroups {
+	display: flex;
+	flex-direction: column;
+}
+#serverlist-profile-avatar {
+	width: 100px;
+	border-radius: 50%;
+	display: block;
+	margin-left: auto;
+	margin-right: auto;
+}
+#serverlist-profile-name {
+	text-align: center;
+	background-color: rgba(0, 0, 0, 0);
+	border-radius: 10px;
+	margin-left: 15px;
+	margin-right: 15px;
+	margin-top: 10px;
+	padding: 2px;
+}
+#serverlist-profile-id {
+	text-align: center;
+	font-size: 0.9em;
+	line-height: 1.5em;
+	opacity: 0.8;
+	cursor: pointer;
+	margin-top: 6px;
+}
+
 #filter-dropdown {
   height: 40px;
   background: unset;
@@ -282,13 +311,15 @@
   cursor: default;
 }
 
-#MultiplayerLoginBody {
+.centerPopup {
 	background-color: rgba(33, 33, 33, 0.8);
 	padding: 20px;
 	border-radius: var(--bng-corners-3);
 	border: solid var(--bng-cool-gray-700) 0.125em;
 	font-family: var(--fnt-defs);
+}
 
+#MultiplayerLoginBody {
   	display:flex;
 	position:relative;
 	height:fit-content;
@@ -871,22 +902,22 @@ h2 {
 }*/
 
 .featured {
-  background-color: rgba(0, 128, 0, 0.25);
+  background-color: rgba(var(--bng-add-green-500-rgb), 0.25);
 }
 .partner {
-  background-color: rgba(0, 123, 195, 0.3);
+  background-color: rgba(var(--bng-add-blue-500-rgb), 0.25);
 }
 .official {
   background-color: rgba(243, 109, 36, 0.25)
 }
 .favorite {
-  background-color: rgba(255, 215, 0, 0.25);
+  background-color: rgba(var(--bng-ter-yellow-500-rgb), 0.25);
 }
 .custom {
-  background-color: rgba(255, 215, 0, 0.25);
+  background-color: rgba(var(--bng-orange-500-rgb), 0.25);
 }
 .offline {
-  background-color: rgba(0, 0, 0, 0.35);
+  background-color: rgba(0, 0, 0, 0.25);
 }
 
 /*

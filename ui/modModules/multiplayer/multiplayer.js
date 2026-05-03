@@ -10,7 +10,7 @@ var mdDialog;
 var mdDialogVisible = false;
 var userData = {
 	username: 'Loading...',
-	avatar: '',
+	avatar: '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg',
 	role: 'USER',
 	color: '',
 	id: -1
@@ -134,6 +134,12 @@ export default angular.module('multiplayer', ['ui.router'])
 		}
 	})
 
+	let avatarFallbackClass = ""
+	if (userData.avatar === '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg' || userData.avatar.includes("Q291bGQgbm90IGVzdGFibGlzaCBjb25uZWN0aW9u")) {
+		userData.avatar = '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg'
+		avatarFallbackClass = 'style="filter:invert(100%) sepia(0%) saturate(22%) hue-rotate(36deg) brightness(104%) contrast(108%)"'
+	};
+	
 	var beammpUserInfo = document.createElement("div");
 	beammpUserInfo.innerHTML = `
 	<style>
@@ -177,7 +183,7 @@ export default angular.module('multiplayer', ['ui.router'])
 		<img src="/ui/modModules/multiplayer/icons/dns.svg" style="padding: 5px" height="22px">
 		<span style="padding-left: 5px;">Servers: <strong id="beammpMetricsServers">${ beammpMetrics.servers }</strong> </span>
 		<span class="divider" id="beammp-profile-divider"></span>
-		<img src="${userData.avatar}" id="beammp-profile-avatar" style="padding: 5px; border-radius: 50%;" height="22px">
+		<img src="${userData.avatar}" ${avatarFallbackClass} id="beammp-profile-avatar" style="padding: 5px; border-radius: 50%;" height="22px">
 		<span><strong id="beammp-profile-name">${userData.username}</strong> </span>
 	</div>
 	`
@@ -195,9 +201,10 @@ export default angular.module('multiplayer', ['ui.router'])
 		let nameElement = document.getElementById("beammp-profile-name")
 		let avatarElement = document.getElementById("beammp-profile-avatar")
 		let divider = document.getElementById("beammp-profile-divider")
-		if (!!data.avatar) {
+		if (data.avatar == undefined || data.avatar.includes("Q291bGQgbm90IGVzdGFibGlzaCBjb25uZWN0aW9u")) {
 			data.avatar = '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg';
 			avatarElement.style.filter = "invert(100%) sepia(0%) saturate(22%) hue-rotate(36deg) brightness(104%) contrast(108%)";
+			avatarElement.src = '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg'
 		} else {
 			avatarElement.style.filter = "";
 		}
@@ -218,7 +225,7 @@ export default angular.module('multiplayer', ['ui.router'])
 		nameElement.textContent = data.username;
 		avatarElement.src = data.avatar;
 
-		if (data.avatar == undefined) {
+		if (data.username == undefined) {
 			divider.style.display = 'none'
 			nameElement.style.display = 'none'
 			avatarElement.style.display = 'none'
@@ -448,16 +455,19 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	bngApi = bngApi;
 	mdDialog = $mdDialog;
 
-	$scope.switchServerView = function(view) {
-		if (view=='direct') { // Doesnt really work xd
-			$state.go('menu.multiplayer.direct');
-			var buttons = document.getElementsByClassName("servers-btn");
-			for (var i = 0; i < buttons.length; i++) {
-				buttons[i].classList.remove("bng-button-outline");
-			}
-			document.getElementById("direct-connect-btn").classList.add("bng-button-outline");
-			return
+	$scope.switchToDirectConnect = function() {
+		serverView = "direct";
+		$state.go('menu.multiplayer.direct');
+
+		var buttons = document.getElementsByClassName("servers-btn");
+		for (var i = 0; i < buttons.length; i++) {
+			buttons[i].classList.remove("bng-button-outline");
 		}
+		$timeout(function() {
+			document.getElementById("direct-connect-btn").classList.add("bng-button-outline");
+		}, 10)
+	}
+	$scope.switchServerView = function(view) {
 		var serversTableContainer = document.getElementById("serversTableContainer");
 		if (serversTableContainer) {
 			serversTableContainer.scrollTop = 0;
@@ -473,9 +483,8 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		document.getElementById(view+"-servers-btn").classList.add("bng-button-outline");
 
 		if (view == "recents") {
+			var extra = document.getElementById("extra-button");
 			$translate('ui.multiplayer.clearRecent').then(function (translation) {
-				var extra = document.getElementById("extra-button");
-
 				extra.style.display = "";
 				extra.innerText = translation;
 
@@ -484,9 +493,8 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 				};
 			});
 		} else if (view == "favorites") {
+			var extra = document.getElementById("extra-button");
 			$translate('ui.multiplayer.addCustomServer').then(function (translation) {
-				var extra = document.getElementById("extra-button");
-
 				extra.style.display = "";
 				extra.innerText = translation;
 
@@ -634,6 +642,25 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	$scope.logout = function() {
 		bngApi.engineLua(`MPCoreNetwork.logout()`);
 		$state.go('menu.multiplayer.login');
+
+		var accountSection = document.getElementById("serverlist-account-section");
+		if (accountSection != null) accountSection.style.display = "none";
+
+		var serverListCategories = document.getElementById("serverlist-categories");
+		if (serverListCategories != null) serverListCategories.style.display = "none";
+
+		var patreonButton = document.getElementById("patreonSidebarButton");
+		if (patreonButton != null) {
+			patreonButton.classList.remove("patreon-button-highlight");
+			patreonButton.classList.remove("patreon-button-highlight-two");
+		}
+		var patreonButtonText = document.getElementById("patreonSidebarButtonSubtitle")
+		if (patreonButtonText != null) patreonButtonText.innerHTML = "";
+
+		var buttons = document.getElementsByClassName("servers-btn");
+		for (var i = 0; i < buttons.length; i++) {
+			buttons[i].classList.remove("bng-button-outline");
+		}
 	}
 
 	vm.modelChanged = function($event) {
@@ -853,26 +880,27 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 
 		if (Object.keys(data).length > 1) {
 			let patreonText = $filter('translate')('ui.multiplayer.patreon.message.user')
-
-			let banner = document.getElementById("topRightStatus")
 			let patreonButton = document.getElementById("patreonSidebarButton")
 			var patreonButtonText = document.getElementById("patreonSidebarButtonSubtitle")
 
+			var accountSection = document.getElementById("serverlist-account-section")
+			var serverListCategories = document.getElementById("serverlist-categories");
+			if (data.role != null) {
+				accountSection.style.display = ""
+				serverListCategories.style.display = "";
+			} else {
+				accountSection.style.display = "none"
+				serverListCategories.style.display = "none";
+			}
+
+
 			if (data.role == "EA") {
 				patreonText = $filter('translate')('ui.multiplayer.patreon.message.ea')
-				if (banner != null) {
-					banner.children[0].style.display = "none"
-					banner.style.color = "#fe8cff";
-				}
 
 				patreonButton.classList.remove("patreon-button-highlight")
 				patreonButton.classList.add("patreon-button-highlight-two")
 				patreonButtonText.innerHTML = patreonText
 			} else {
-				if (banner != null) {
-					banner.children[0].style.display = ""
-					banner.style.color = "white";
-				}
 
 				if (patreonButton != null) {
 					patreonButton.classList.remove("patreon-button-highlight-two")
@@ -881,23 +909,28 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 				}
 			}
 
-			banner.firstChild.nodeValue = patreonText
-			banner.children[0].style.color = "var(--bng-orange)"
-			banner.children[0].children[0].innerText = $filter('translate')('ui.multiplayer.patreon.button.user')
-
 			if (data.color != null)
 				nameElement.style.backgroundColor = data.color
 			else
 				nameElement.style.backgroundColor = "rgba(0, 0, 0, 0)"
 
 			nameElement.textContent = data.username;
-			if (!!data.avatar) {
-				data.avatar = '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg';
-				avatarElement.style.filter = "invert(100%) sepia(0%) saturate(22%) hue-rotate(36deg) brightness(104%) contrast(108%)";
-			} else {
+			// Also check if avatar includes "Could not establish connection" in base64
+			if (
+				(data.avatar != undefined)
+				&& !data.avatar.includes("Q291bGQgbm90IGVzdGFibGlzaCBjb25uZWN0aW9u")
+				&& !data.avatar.includes("\\ui-vue\\src\\assets\\fonts\\bngIcons\\")
+			) {
+				//console.log('data.avatar properly exists. Using avatar data')
+				//console.log(data.avatar)
+				avatarElement.src = data.avatar;
 				avatarElement.style.filter = "";
+			} else {
+				//console.log('data.avatar does not exist or is using a fallback. Using fallback')
+				//console.log(data.avatar)
+				avatarElement.src = '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg';
+				avatarElement.style.filter = "invert(100%) sepia(0%) saturate(22%) hue-rotate(36deg) brightness(104%) contrast(108%)";
 			}
-			avatarElement.src = data.avatar;
 
 			if (data.id != null) {
 				nameElement.style.cursor = "pointer";
@@ -921,10 +954,17 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 				nameElement.style.cursor = "default";
 			}
 		} else {
-			nameElement.textContent = "";
-			nameElement.style.backgroundColor = "rgba(0, 0, 0, 0)";
-			idElement.textContent = "";
-			avatarElement.removeAttribute("src");
+			if (nameElement != null) {
+				nameElement.textContent = "";
+				nameElement.style.backgroundColor = "rgba(0, 0, 0, 0)";
+			}
+			if (idElement != null) idElement.textContent = "";
+			if (avatarElement != null) avatarElement.removeAttribute("src");
+		}
+
+		var buttons = document.getElementsByClassName("servers-btn");
+		for (var i = 0; i < buttons.length; i++) {
+			buttons[i].classList.remove("bng-button-outline");
 		}
 	});
 

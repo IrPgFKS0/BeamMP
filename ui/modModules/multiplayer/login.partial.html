@@ -1,8 +1,8 @@
-<div flex layout="row" style="margin:auto; position:relative; height:100%; background-color: rgba(0, 0, 0, 0.50);">
+<div flex layout="row" style="margin:auto;position:relative;height:100%">
 	<div flex="" style="max-height: 0;"></div>
-	<div id="MultiplayerLoginBody">
+	<div id="MultiplayerLoginBody" class="centerPopup">
 		<img src="local://local/ui/modModules/multiplayer/beammp_new_cropped.png" style="max-width:50%" alt="BeamMP Logo">
-		<h2 class="text-red" style="text-align: center;" id="LOGINERRORFIELD"></h2>
+		<h2 class="text-red" style="text-align:center" id="LOGINERRORFIELD"></h2>
 <!--
 		<form id="LoginContainer">
 			<h2 class="text-white" id="loginHeader">{{:: 'ui.multiplayer.loginDescription1' | translate}}</h2>
@@ -37,7 +37,7 @@
 		</form>
 -->
 		<form id="LoginContainer">
-			<div style="width:100%; display:flex; align-content: center; flex-direction: column;">
+			<div style="width:100%;display:flex;align-content:center;flex-direction:column">
 				<h2 class="text-white" id="loginHeader">{{:: 'ui.multiplayer.loginDescription2temp' | translate}}</h2>
 				<button class="default-case bng-button-main" ng-click="guestLogin()">{{:: 'ui.multiplayer.playAsGuest' | translate}}</button>
 			</div>
