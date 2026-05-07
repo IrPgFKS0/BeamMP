@@ -213,7 +213,7 @@
 								<div ng-show="{{customToNumber(server.server.modstotal) > 0}}" style="width:95%">
 									<div>{{:: 'ui.multiplayer.server.mods' | translate}} ({{modCount(server.server.modlist || "")}}):</div>
 										<div class="tagListContainer" style="max-width:100%">
-											<span class="tagList tagListShort" ng-repeat="text in modList(server.server.modlist|| '').split(', ')">{{ text }}</span>
+											<span class="tagList tagListShort" ng-repeat="text in modList(server.server.modlist|| '').split(', ')">{{ text.trim() }}</span>
 										</div>
 										<!--<div style="margin-left: 10px; max-width: 75%; max-height: 200px; overflow-y: auto; background: rgba(0, 0, 0, 0.1);">{{modList(server.server.modlist|| "")}}</div></li>-->
 									<div style="margin-top:0.8em;font-size:0.8em;color:var(--off-white-from-vue)">Total Filesize: {{formatBytes(server.server.modstotalsize) || "0"}}</div>
@@ -230,11 +230,6 @@
 								<button id="addFav-button" class="default-case bng-button-link" ng-class="" ng-click="addFav(server.server, true)" style="margin-left: 10px">{{:: 'ui.multiplayer.addFavorite' | translate}}</button>
 							</div>
 						</div>
-
-						<!--<div class="row">
-							<h4></h4>
-							<p>{{listPlayers(server.server.playerslist|| "")}}</p>
-						</div>-->
 					</td>
 				</tr>
     			<tr ng-style="{'height': afterHeight + 'px'}"></tr>

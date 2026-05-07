@@ -482,8 +482,9 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		}
 		document.getElementById(view+"-servers-btn").classList.add("bng-button-outline");
 
+		var extra = document.getElementById("extra-button");
+		if (extra)
 		if (view == "recents") {
-			var extra = document.getElementById("extra-button");
 			$translate('ui.multiplayer.clearRecent').then(function (translation) {
 				extra.style.display = "";
 				extra.innerText = translation;
@@ -493,7 +494,6 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 				};
 			});
 		} else if (view == "favorites") {
-			var extra = document.getElementById("extra-button");
 			$translate('ui.multiplayer.addCustomServer').then(function (translation) {
 				extra.style.display = "";
 				extra.innerText = translation;
@@ -503,8 +503,8 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 				};
 			});
 		} else {
-			document.getElementById("extra-button").style.display = "none";
-		}
+			extra.getElementById("extra-button").style.display = "none";
+		};
 	}
 
 	// Trigger Warning Prompt
@@ -971,6 +971,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	});
 
 	vm.exit = function ($event) {
+		console.log(`vm.exit triggered in ${$scope.name}`)
 		if ($event)
 		console.log('[MultiplayerController] exiting by keypress event %o', $event);
 		$state.go('menu.mainmenu');
@@ -1055,6 +1056,7 @@ function($scope, $state, $timeout, $filter) {
 
 	// Go back to the main menu on exit
 	vm.exit = function ($event) {
+		console.log(`vm.exit triggered in ${$scope.name}`)
 		if ($event) console.log('[MultiplayerServersController] exiting by keypress event %o', $event);
 		$state.go('menu.mainmenu');
 	};
@@ -1112,12 +1114,12 @@ function($scope, $state, $timeout, $filter) {
 		highlightedServer = server.server
 		if ($scope.selectedServerId === serverId) {
 			$scope.selectedServerId = null;
-			server.server.formattedTags = null;
+			server.server.formattedTags = undefined;
 			highlightedServer = null
 			$scope.expandedRowHeight = 0;
 		} else {
 			$scope.selectedServerId = serverId;
-			server.server.formattedTags = formatServerTags(server.server.tags)
+			server.server.formattedTags = formatServerTags(server.server.tags);
 			$scope.selectedIndex = $scope.serversArray.findIndex(s => s.id === $scope.selectedServerId);
 
 			$timeout(function() {	//timeout because the serverInfoRow is not rendered yet
@@ -1429,6 +1431,7 @@ function($scope, $state, $timeout) {
 	}, 10000);
 
 	vm.exit = function ($event) {
+		console.log(`vm.exit triggered in ${$scope.name}`)
 		if ($event)
 		console.log('[MultiplayerDirectController] exiting by keypress event %o', $event);
 		$state.go('menu.mainmenu');
@@ -1754,6 +1757,7 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 	if (tab == "favorites") type = 1;
 	else if (tab == "recents") type = 2;
 	let i = 0;
+	//console.log(tags)
 	for (const server of servers) {
 		i += 1;
 		if (!server) {
@@ -1777,27 +1781,33 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 
 		//server.tags = "tag1,tag2"
 		var serverTags = server.tags.toLowerCase().split(",").map(tag => tag.trim());
+		//console.log(serverTags);
 
 		if(tags.length > 0) {
 			activeFilters = activeFilters + 1;
 			var missingTags = 0;
+			//console.log(serverTags)
 			for (let tag of tags) {
-				if (!serverTags.includes(tag.toLowerCase())) missingTags+=1;
+				//console.log(tag.raw.toLowerCase(), serverTags.includes(tag.raw.toLowerCase()))
+				if (!serverTags.includes(tag.raw.toLowerCase())) missingTags+=1;
 			};
+			//console.log(missingTags, tags.length)
 			if (matchAll) {
-				if(missingTags==0) filterMatches+=1
-			else
-				if(missingTags < tags.length) filterMatches+=1
+				if(missingTags==0) {
+					//console.log('Matching all tags. Pass.')
+					filterMatches+=1
+				} else {
+					//console.log('Matching all tags. Fail.')
+				}
+			} else {
+				if(missingTags < tags.length) {
+					//console.log('Matching some tags. Pass.')
+					filterMatches+=1
+				} else {
+					//console.log('Matching some tags. Fail.')
+				}
 			}
 		}
-
-		// ########################################################################
-		// ########################################################################
-		// ########################################################################
-		// known issue favorites/recents tabs dont work
-		// ########################################################################
-		// ########################################################################
-		// ########################################################################
 		
 		// Filter by empty or full
 		if(checkIsEmpty) {
@@ -1835,13 +1845,11 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 			if(SelectedServerLocations.includes(server.location)) filterMatches+=1
 		}
 
-		if (matchAll && filterMatches < activeFilters) {
-			//console.log('Active filters: '+activeFilters+'. Matched filters: '+filterMatches);
-			continue
-		}
-		if (!matchAll && activeFilters > 0 && filterMatches < 1) {
-			//console.log('Active filters: '+activeFilters+'. Matched filters: '+filterMatches);
-			continue
+		//console.log(`${filterMatches}/${activeFilters} matches`)
+		if (matchAll) {
+			if (filterMatches < activeFilters) continue
+		} else {
+			if (activeFilters > 0 && filterMatches < 1 ) continue
 		}
 
 		// Favorite
@@ -1856,6 +1864,11 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 		if (type == 2 && !isRecent) continue; // Everything happens underneath for recents
 
 		// If the server passed the filter
+
+		if (`${server.ip}:${server.port}` === $scope.selectedServerId) {
+			console.log('Filling out formattedTags for the selected server')
+			server.formattedTags = formatServerTags(server.tags);
+		}
 
 		$scope.serversTable[server.ip + ":" + server.port] = {server: server, isFavorite: isFavorite, isRecent: isRecent, name: server.sname, offline: false, custom: false};
 		$scope.serversArray = Object.keys($scope.serversTable).map(function(key) {
@@ -1890,12 +1903,22 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 					activeFilters = activeFilters + 1;
 					var missingTags = 0;
 					for (let tag of tags) {
-						if (!serverTags.includes(tag.toLowerCase())) missingTags+=1;
+						if (!serverTags.includes(tag.raw.toLowerCase())) missingTags+=1;
 					};
 					if (matchAll) {
-						if(missingTags==0) filterMatches+=1
-					else
-						if(missingTags < tags.length) filterMatches+=1
+						if(missingTags==0) {
+							//console.log('Matching all tags. Pass.')
+							filterMatches+=1
+						} else {
+							//console.log('Matching all tags. Fail.')
+						}
+					} else {
+						if(missingTags < tags.length) {
+							//console.log('Matching some tags. Pass.')
+							filterMatches+=1
+						} else {
+							//console.log('Matching some tags. Fail.')
+						}
 					}
 				}
 				
