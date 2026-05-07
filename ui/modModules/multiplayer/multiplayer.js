@@ -266,7 +266,7 @@ export default angular.module('multiplayer', ['ui.router'])
 
 	$rootScope.$on('$stateChangeSuccess', async function (event, toState, toParams, fromState, fromParams) {
 		//console.log(`Going from "${fromState.name}" -> "${toState.name}"`)
-		if (toState.name == "menu.mainmenu") {
+		if (toState.name == "menu.mainmenu" || toState.name == "menu.multiplayerPause") {
 			bngApi.engineLua('MPCoreNetwork.getLoginState()');
 			bngApi.engineLua('MPCoreNetwork.sendBeamMPInfo()');
 			beammpUserInfo.style.display = "block";
@@ -291,7 +291,7 @@ export default angular.module('multiplayer', ['ui.router'])
 			}
 
 			injectVersion()
-		} else if (toState.name.includes("menu.multiplayer")) {
+		} else if (toState.name.includes("menu.multiplayer.")) {
 			bngApi.engineLua('MPCoreNetwork.sendBeamMPInfo()');
 			beammpUserInfo.style.display = "block";
 			let userinfo =  document.getElementsByTagName("body")[0].appendChild(beammpUserInfo).children[1]
@@ -886,11 +886,11 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 			var accountSection = document.getElementById("serverlist-account-section")
 			var serverListCategories = document.getElementById("serverlist-categories");
 			if (data.role != null) {
-				accountSection.style.display = ""
-				serverListCategories.style.display = "";
+				if (accountSection) accountSection.style.display = ""
+				if (serverListCategories) serverListCategories.style.display = "";
 			} else {
-				accountSection.style.display = "none"
-				serverListCategories.style.display = "none";
+				if (accountSection) accountSection.style.display = "none"
+				if (serverListCategories) serverListCategories.style.display = "none";
 			}
 
 
@@ -909,12 +909,14 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 				}
 			}
 
-			if (data.color != null)
-				nameElement.style.backgroundColor = data.color
-			else
-				nameElement.style.backgroundColor = "rgba(0, 0, 0, 0)"
+			if (nameElement) {
+				if (data.color != null)
+					nameElement.style.backgroundColor = data.color
+				else
+					nameElement.style.backgroundColor = "rgba(0, 0, 0, 0)"
 
-			nameElement.textContent = data.username;
+				nameElement.textContent = data.username;
+			}
 			// Also check if avatar includes "Could not establish connection" in base64
 			if (
 				(data.avatar != undefined)

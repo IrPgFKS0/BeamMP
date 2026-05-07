@@ -1,0 +1,461 @@
+@font-face {
+	font-family: VueNotoSans;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSans-VariableFont_wdth,wght.ttf);
+	font-weight: 100 900;
+	font-style: normal;
+	font-variation-settings: "wdth" 62.5 100
+}
+
+@font-face {
+	font-family: VueNotoSans;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSans-Italic-VariableFont_wdth,wght.ttf);
+	font-weight: 100 900;
+	font-style: italic;
+	font-variation-settings: "wdth" 62.5 100
+}
+
+@font-face {
+	font-family: VueNotoSans JP;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansJP-Light.otf);
+	font-weight: 300;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans JP;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansJP-Black.otf);
+	font-weight: 900;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans JP;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansJP-Bold.otf);
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans JP;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansJP-Regular.otf);
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans JP;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansJP-Medium.otf);
+	font-weight: 500;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans KR;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansKR-Light.otf);
+	font-weight: 300;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans KR;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansKR-Black.otf);
+	font-weight: 900;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans KR;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansKR-Bold.otf);
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans KR;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansKR-Regular.otf);
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans KR;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansKR-Medium.otf);
+	font-weight: 500;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans SC;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansSC-Light.otf);
+	font-weight: 300;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans SC;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansSC-Black.otf);
+	font-weight: 900;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans SC;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansSC-Bold.otf);
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans SC;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansSC-Regular.otf);
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans SC;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansSC-Medium.otf);
+	font-weight: 500;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans Mono;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansMono-VariableFont_wdth,wght.ttf);
+	font-weight: 100 950;
+	font-stretch: 75% 125%;
+	font-style: normal
+}
+
+@font-face {
+    font-family: bngIcons;
+    src: url(/ui/ui-vue/src/assets/fonts/bngIcons/bngIcons.woff2)format("woff2"),url(/ui/ui-vue/src/assets/fonts/bngIcons/bngIcons.woff)format("woff"),url(/ui/ui-vue/src/assets/fonts/bngIcons/bngIcons.otf)format("opentype"),url(/ui/ui-vue/src/assets/fonts/bngIcons/bngIcons.ttf)format("truetype");
+    font-display: block;
+    font-weight: 500;
+    font-style: normal;
+    font-synthesis:none;
+	text-rendering:optimizeLegibility;
+	-webkit-font-smoothing:antialiased;
+	-moz-osx-font-smoothing:grayscale
+}
+
+
+
+.mpPauseWrapper {
+	--mpFntDefs: 'VueNotoSans', 'VueNotoSans JP', 'VueNotoSans KR', 'VueNotoSans SC', sans-serif;
+	--off-white-from-vue:oklch(92.5% 0 0);
+	pointer-events: auto;
+	font-family: var(--mpFntDefs);
+	width: 100%;
+	height: 100%;
+
+	display:flex;
+	flex-direction: row;
+	justify-items: center;
+	align-items: center;
+	justify-content: center;
+	gap: 1rem;
+
+	.mpPauseMainContainer {
+		width: 40vw;
+		max-width: 66vh;
+		max-height: 50vh;
+
+		display:flex;
+		flex-direction: column;
+   		justify-content: center;
+		gap: 1rem;
+	};
+	.mpPauseSection {
+		background-color: rgba(0, 0, 0, 0.66);
+		border-radius: var(--bng-corners-2);
+		padding: 1rem;
+		display:flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		.mpPauseButtonCategory {
+			display:flex;
+			flex-direction: column;
+			gap: 0.5rem;
+		};
+		.bng-button {
+			margin: 0.25rem;
+			padding: .5em;
+			border-radius: var(--bng-corners-1);
+			border: none;
+			padding-top: .3em;
+			padding-bottom: .325em;
+			font-size: 1.1rem;
+			line-height: 1.5em;
+      		height: 2.5rem;
+		};
+	};
+	.mpPauseTitle {
+		box-sizing: border-box;
+   		width: 100%;
+		padding: 0.5rem 0 0.5rem 1.5em;
+		left:-1rem;
+
+		font-family: 'VueNotoSans', var(--fnt-defs);
+		font-weight: 700;
+		letter-spacing: normal;
+		font-size: 2.8em;
+
+		&:before {
+			width: 2em;
+			left: -0.8em;
+			
+  			font-size: 0.8em;
+		};
+		.bng-title {
+			font-size: 1em;
+		};
+		.bng-subtitle {
+			font-size: 0.5em;
+			text-wrap-mode: nowrap;
+			text-overflow: ellipsis;
+      		font-weight: normal;
+		};
+	};
+
+	.mpPauseButton-outline, .mpPauseButton-danger {
+		transition-duration: 0ms;
+		background-color: rgba(var(--bng-off-black-rgb), 0.4);
+		font-weight: 500;
+		text-wrap-mode: nowrap;
+		text-overflow: ellipsis;
+		overflow: hidden;
+	};
+	.mpPauseButton-outline {
+		outline: 2px solid rgba(var(--bng-orange-500-rgb), .5);
+		&:hover, &:focus {
+			background-color: rgba(var(--bng-orange-600-rgb), 0.6);
+		};
+	};
+	.mpPauseButton-danger {
+		background-color: rgba(var(--bng-add-red-900-rgb), 0.4);
+		outline: 2px solid rgba(var(--bng-add-red-500-rgb), .5);
+		&:hover, &:focus {
+			background-color: rgba(var(--bng-add-red-600-rgb), 0.6);
+		};
+	};
+}
+.mpPauseServerDetailsContainer {
+	font-family: VueNotoSans var(--fnt-defs);
+	display: flex;
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	z-index: 99;
+	
+	flex-direction: column;
+	gap: 0.5rem;
+	justify-content: center;
+	align-items: center;
+
+	background-color: rgba(0, 0, 0, 0.5);
+}
+.mpPauseServerDetailsHeader {
+	display: flex;
+	position: relative;
+
+	flex-direction: column;
+ 	justify-content: space-between;
+  	align-items: flex-start;
+}
+.serverStatusLabel {
+	display: none;
+	padding: 0.125rem 0.25rem;
+	margin-right: 0.5rem;
+
+	font-size: 0.75rem;
+	font-style: italic;
+	text-transform: capitalize;
+	
+	color: var(--off-white-from-vue);
+	background-color: rgba(0, 0, 0, 0.33);
+	border: 0.125rem solid transparent;
+	border-radius: var(--bng-corners-1);
+
+	&.serverStatusLabel-official,
+	&.serverStatusLabel-partner,
+	&.serverStatusLabel-featured {
+		display: inline-block;
+	};
+	&.serverStatusLabel-official {
+		background-color: rgba(243, 109, 36, 0.25);
+		border-color: rgba(243, 109, 36, 0.50);
+	};
+	&.serverStatusLabel-partner {
+		background-color: rgba(var(--bng-add-blue-500-rgb), 0.25);
+		border-color: rgba(var(--bng-add-blue-500-rgb), 0.50);
+	};
+	&.serverStatusLabel-featured {
+		background-color: rgba(var(--bng-add-green-500-rgb), 0.25);
+		border-color: rgba(var(--bng-add-green-500-rgb), 0.50);
+	}
+}
+.mpPauseBack {
+	position: absolute;
+	right: 0;
+	color: white;
+	background-color: var(--bng-black-o4);
+	border: .125rem solid var(--bng-cool-gray-600);
+	border-radius: var(--bng-corners-1);
+	padding: .5em;
+	padding-top: .3em;
+	padding-bottom: .325em;
+	&:hover, &:focus-within {	
+		background-color: var(--bng-orange-600);
+		border-color: var(--bng-orange-b400);
+	}
+}
+
+.tagList {
+	background-color:var(--bng-black-o4);
+	max-width: fit-content;
+	height:fit-content;
+	padding: 0.25em 0.5em;
+	margin-right:1em;
+	word-break: keep-all;
+	border: solid var(--bng-cool-gray-600) 0.125em;
+	border-radius: var(--bng-corners-2);
+	&.tagListShort {
+		display: flex;
+		font-size: 0.8em;
+		line-height: 1.5em;
+		margin-right: 0;
+		padding: 0.125em 0.25em;
+		border-radius: var(--bng-corners-1);
+	}
+}
+.tagListContainer {
+	display:inline-flex;
+	max-width: 30em; /*25em */
+	height: fit-content;
+	
+	flex-wrap: wrap;
+	gap: 0.25rem 0.25rem;
+}
+.tag-icon {
+	margin-right: 0.1em;
+	filter: contrast(0) brightness(2);
+	font-size: 1.5em;
+    width: 1em;
+    height: 1em;
+    line-height: 1.5em;
+	vertical-align: middle !important;
+}
+.modButtonModLabel {
+	position: absolute;
+	right: 0;
+	top: 0;
+	padding: 0.25rem;
+	background-color: rgba(0, 0, 0, 0.33);
+	color: var(--bng-add-green-400);
+	border-radius: 0 var(--bng-corners-1);
+	font-family: VueNotoSans var(--fnt-defs);
+	font-style: italic;
+	font-size: 0.8rem;
+	line-height: 1em;
+
+}
+
+#mpPausePlayerList {
+	--mpPlayerListGap: 0.5rem;
+	--mpPlayerListRow: 1.5rem;
+	display: flex;
+	gap: var(--mpPlayerListGap);
+	flex-direction: column;
+	color: white;
+	max-height: calc((var(--mpPlayerListGap) * 7) + (var(--mpPlayerListRow) * 8));
+	overflow-y: auto;
+}
+.mpPausePlayerListRow {
+	background-color: rgb(0, 0, 0, 0.66);
+	padding: 0.5rem;
+	height: var(--mpPlayerListRow);
+	border-radius: var(--bng-corners-2);
+	.mpPausePlayerRowId {
+		font-family: 'VueNotoSans Mono', monospace;
+	};
+	.mpPausePlayerRowName {
+		text-overflow: ellipsis;
+		text-wrap: nowrap;
+	};
+}
+.mpPausePlayerRowActionsIcon {
+	filter: contrast(0) brightness(2);
+	width: 1rem;
+	height: 1rem;
+	position: absolute;
+	left: 0.25rem;
+	bottom: 0.25rem;
+	z-index: 1;
+	pointer-events: none;
+}
+
+/* This is UNHOLY but it WORKS IT WORKS IT WORKS IT WORKS!!!!!!!!!!!!!!!! */
+.mpPausePlayerRowActions {
+	float: right;
+	position: relative;
+
+	display: inline-flex;
+	align-content: center;
+	justify-content: center;
+	align-items: center;
+
+	overflow: visible;
+
+	width: 1.5rem;
+	height: 1.5rem;
+	font-family: bngIcons;
+	background-color: rgba(var(--bng-off-black-rgb), 0.4);
+	border: none !important;
+	border-radius: var(--bng-corners-1);
+
+	md-select-value {
+		display: inline !important;
+		min-width: 0;
+		min-height: 0;
+		width: 0 !important;
+		height: 0 !important;
+		padding: 0 !important;
+		margin: 0 !important;
+		border: none !important;
+		border-bottom: none !important;
+		content: '';
+	};
+	span {
+		display: none;
+	};
+	.mpPausePlayerRowActionsDropdownButton {
+		display:inline;
+		padding: 0.25em 0.25em;
+		text-align: left;
+		color: white;
+		background-color: transparent;
+		border-radius: var(--bng-corners-1);
+		&:hover {
+			background-color: var(--bng-ter-blue-gray-600);
+		};
+	};
+	&:hover, &:focus {
+		background-color: rgba(var(--bng-orange-600-rgb), 0.6);
+	};
+}
