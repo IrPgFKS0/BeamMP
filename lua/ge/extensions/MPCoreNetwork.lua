@@ -481,6 +481,9 @@ local function leaveServer(goBack)
 	status = "" -- Reset status
 	updateUiTimer = 0
 	UI.updateLoading("")
+	UI.clearPauseMenuModButtons()
+	ui_topBar.removeEntry("multiplayerPause")
+	ui_topBar.requestEntries()
 	MPGameNetwork.disconnectLauncher()
 	MPVehicleGE.onDisconnect()
 	local callback = nop
@@ -718,6 +721,15 @@ runPostJoin = function() -- gets called once loaded into a map
 		isGoingMpSession = false
 		core_gamestate.setGameState('multiplayer', 'multiplayer', 'multiplayer')
 		status = "Playing"
+		ui_topBar.getEntries()["multiplayerPause"] = {
+			id = "multiplayerPause",
+			label = "ui.playmodes.multiplayer",
+			icon = "globeSimplified",
+			targetState = "menu.multiplayerPause",
+			flags = {'inGameOnly'},
+			order = 1.5
+		}
+		ui_topBar.requestEntries()
 		guihooks.trigger('onServerJoined')
 	end
 end
