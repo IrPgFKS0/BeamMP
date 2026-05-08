@@ -5,34 +5,37 @@
 
 <div class="theEntireMultiplayerModule" flex>
 <div id="LoadingServer" style="display: none;">
-  <div id="LoadingBody" flex layout="column">
-    <h2 style="padding-bottom:0;">{{:: 'ui.multiplayer.connectingToServer' | translate}}</h2>
+  <div id="LoadingBody" layout="column">
+	<h2 style="padding-bottom:0">{{:: 'ui.multiplayer.connectingToServer' | translate}}</h2>
+	<div>
+		<span id="OriginalLoadingStatus" hidden style="height: 0px;"></span>
+		<span id="LoadingStatus" hidden>{{multiplayer.loadingStatus}}</span>
+	</div>
 
-    <span id="OriginalLoadingStatus" hidden style="height: 0px;"></span>
-    <span id="LoadingStatus" hidden>{{multiplayer.loadingStatus}}</span>
-
-    <div id="mod-download-list" ng-if="multiplayer.downloadingMods.length > 0">
-      <div ng-repeat="mod in multiplayer.downloadingMods" class="mod-download-row" style="align-items: center; margin-bottom: 10px;">
-        <div style="width: 1em; height: 1em; font-size: 1em; margin-right: 1em; float: left;">
-		  <img ng-show="$index != 0" class="button-icon button-icon-filter" style="filter: invert(66%) sepia(22%) saturate(1014%) hue-rotate(90deg) brightness(89%) contrast(88%);"
-		  ng-src={{getVueIconPath('checkmark')}} />
-          <!--<md-icon ng-show="$index != 0" class="material-icons" style="vertical-align: middle;">check_mark</md-icon>-->
+	<div style="margin-top:0.5em" id="mod-download-list" ng-if="multiplayer.downloadingMods.length > 0">
+		<div ng-repeat="mod in multiplayer.downloadingMods" class="mod-download-row">
+			<div style="width: 1em; height: 1em; font-size: 1em; margin-right: 1em; float: left;">
+				<img ng-show="$index != 0" class="button-icon button-icon-filter" style="filter: invert(66%) sepia(22%) saturate(1014%) hue-rotate(90deg) brightness(89%) contrast(88%);"
+				ng-src={{getVueIconPath('checkmark')}} />
+			</div>
+			<span style="flex: 1;">
+			<code>{{mod.number}} - {{mod.name}}</code>
+			{{ ' - ' }}
+			<span style="color: white;font-size: 0.8em;">{{$index === 0 ? mod.speed : ('ui.multiplayer.download.downloaded' | translate)}}</span>
+			</span>
+			<div style="flex: 2;" ng-if="$index === 0 && mod.progress != 100">
+			<md-progress-linear md-mode="determinate" value="{{mod.progress}}" class="md-accent"></md-progress-linear>
+			</div>
 		</div>
-        <span style="flex: 1;">
-          <code>{{mod.number}} - {{mod.name}}</code>
-          {{ ' - ' }}
-          <span style="color: white;font-size: 0.8em;">{{$index === 0 ? mod.speed : ('ui.multiplayer.download.downloaded' | translate)}}</span>
-        </span>
-        <div style="flex: 2;" ng-if="$index === 0 && mod.progress != 100">
-          <md-progress-linear md-mode="determinate" value="{{mod.progress}}" class="md-accent"></md-progress-linear>
-        </div>
-      </div>
-    </div>
-	<div flex="" style="max-height: none;"></div>
-    <button style="right:0; top:0; margin-top: 20px; margin-right: 0" class="bng-button-attention close-button" ng-class="" ng-click="multiplayer.closeLoadingPopup()">
+	</div>
+	<div flex="" style="max-height:none;margin-top:0.5em" ng-if="!(multiplayer.downloadingMods.length > 0)"></div>
+
+	<div style="height:fit-content;width:100%;margin-top:0.5em">
+	<button class="bng-button-attention close-button" ng-click="multiplayer.closeLoadingPopup()">
 		<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('xmark')}} />
 		{{:: 'ui.common.cancel' | translate}}
 	</button>
+	</div>
   </div>
 </div>
 

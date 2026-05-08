@@ -463,9 +463,22 @@ table#serversTable {
 }
 
 .close-button {
-  margin-left: auto;
-  float: right;
-  text-transform: none !important;
+	display: flex;
+	height: fit-content;
+	float: right;
+	right: 0;
+	top: 0;
+	min-height: none !important;
+	overflow: hidden;
+
+	align-items: center;
+	justify-content: center;
+
+	margin-left: auto;
+	margin-top: 20px;
+	margin-right: 0;
+
+	text-transform: none !important;
 }
 
 #connect-button {
@@ -510,7 +523,7 @@ div#LoadingBody {
   width: 50%;
   max-width: 50%;
   max-height: 40%;
-  overflow-y: auto;
+  overflow-y: hidden;
   
   font-family: var(--fnt-defs);
   border-radius: var(--bng-corners-3);
@@ -520,26 +533,26 @@ div#LoadingBody {
   background-color: rgb(60, 60, 60);*/
 
   background-color: rgba(33, 33, 33, 0.8);
-  border: solid var(--bng-cool-gray-700) 0.125em;
+  border: 0.125em solid var(--bng-cool-gray-700);
 }
 
 #mod-download-list {
   margin-top: 20px;
+  height: 25vh; /* Sub-optimal but flex="" doesn't work and this is close enough*/
   overflow-x: hidden;
-  overflow-y: scroll;
+  overflow-y: auto;
+
   background-color: #ffffff10;
-  padding: 5px;
+  padding: 0.25em;
   border: none;
-  height: 200px;
-  max-height: 200px;
-  border-radius: 3px;
+  border-radius: var(--bng-corners-1);
   padding-bottom: 0;
   margin-bottom: 0;
 }
 
 .mod-download-row {
     align-items: center;
-    margin-bottom: 2px;
+    margin-bottom: 10px;
 }
 
 .addCustomFav {

@@ -503,7 +503,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 				};
 			});
 		} else {
-			extra.getElementById("extra-button").style.display = "none";
+			extra.style.display = "none";
 		};
 	}
 
@@ -925,35 +925,41 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 			) {
 				//console.log('data.avatar properly exists. Using avatar data')
 				//console.log(data.avatar)
-				avatarElement.src = data.avatar;
-				avatarElement.style.filter = "";
+				if (avatarElement)
+					avatarElement.src = data.avatar
+					avatarElement.style.filter = "";
 			} else {
 				//console.log('data.avatar does not exist or is using a fallback. Using fallback')
 				//console.log(data.avatar)
-				avatarElement.src = '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg';
-				avatarElement.style.filter = "invert(100%) sepia(0%) saturate(22%) hue-rotate(36deg) brightness(104%) contrast(108%)";
+				if (avatarElement) {
+					avatarElement.src = '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg';
+					avatarElement.style.filter = "invert(100%) sepia(0%) saturate(22%) hue-rotate(36deg) brightness(104%) contrast(108%)";
+				}
 			}
 
 			if (data.id != null) {
-				nameElement.style.cursor = "pointer";
-				nameElement.onclick = function () {
-					openExternalLink("https://forum.beammp.com/u/" + data.username + "/summary");
-				}
-
-				idElement.textContent = "ID: " + data.id
-				idElement.onclick = function () {
-					bngApi.engineLua(`setClipboard("` + data.id + `")`);
-					toastr.info("Copied ID to clipboard")
-				}
-				if (data.role != "USER") {
-					idElement.style.marginTop = "0"
-				} else {
-					idElement.style.marginTop = "6px"
-				}
+				if (nameElement)
+					nameElement.style.cursor = "pointer"
+					nameElement.onclick = function () {
+						openExternalLink("https://forum.beammp.com/u/" + data.username + "/summary")
+					};
+				if (idElement)
+					idElement.textContent = "ID: " + data.id
+					idElement.onclick = function () {
+						bngApi.engineLua(`setClipboard("` + data.id + `")`)
+						toastr.info("Copied ID to clipboard")
+					}
+					if (data.role != "USER") {
+						idElement.style.marginTop = "0"
+					} else {
+						idElement.style.marginTop = "6px"
+					};
 			} else {
-				idElement.textContent = "";
-				nameElement.onclick = null;
-				nameElement.style.cursor = "default";
+				if (idElement) idElement.textContent = "";
+				if (nameElement) {
+					nameElement.onclick = null
+					nameElement.style.cursor = "default";
+				}
 			}
 		} else {
 			if (nameElement != null) {
@@ -1752,6 +1758,7 @@ globalThis.openExternalLink = function(url){
 
 // /!\ IMPORTANT /!\ //// TYPE 0 = Normal / 1 = Favorites / 2 = Recents
 async function populateTable($filter, $scope, servers, tab, searchText = '', checkIsEmpty, checkIsNotEmpty, checkIsNotFull, checkModSlider, sliderMaxModSize, selectMap = [], SelectedServerVersions = [], tags = [], SelectedServerLocations = [], matchAll) {
+	console.log(`${servers.length} servers. tab: ${tab}`)
 	$scope.serversTable = {}; 
 	var type = 0;
 	if (tab == "favorites") type = 1;
