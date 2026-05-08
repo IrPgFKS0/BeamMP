@@ -8,16 +8,10 @@
 			<h2 class="text-white" id="loginHeader">{{:: 'ui.multiplayer.loginDescription1' | translate}}</h2>
 			<div layout="column">
 				<div class="serverListSearch">
-					<div class="serverListSearchBar">
-						<input class="bng-input mp-search" (keyup.enter)="multiplayer.login()" type="text" id="loginUsername" placeholder="{{:: 'ui.multiplayer.login.username' | translate}}" tabindex="1"/>
-					</div>
-					<span class="mpSearchBarBottom"></span>
+					<input flex="" class="bng-input mp-search" (keyup.enter)="multiplayer.login()" type="text" id="loginUsername" placeholder="{{:: 'ui.multiplayer.login.username' | translate}}" tabindex="1"/>
 				</div>
 				<div class="serverListSearch">
-					<div class="serverListSearchBar">
-						<input class="bng-input mp-search" (keyup.enter)="multiplayer.login()" type="password" id="loginPassword" placeholder="{{:: 'ui.multiplayer.login.password' | translate}}" tabindex="2"/>
-					</div>
-					<span class="mpSearchBarBottom"></span>
+					<input flex="" class="bng-input mp-search" (keyup.enter)="multiplayer.login()" type="password" id="loginPassword" placeholder="{{:: 'ui.multiplayer.login.password' | translate}}" tabindex="2"/>
 				</div>
 			</div>
 			<div layout="row">

@@ -1288,6 +1288,7 @@ function($scope, $state, $timeout, $filter) {
 		
 		vm.formattedTags.sort();
 
+		console.log('Server list received, repopulating...')
 		vm.repopulate();
 	});
 
@@ -1401,6 +1402,7 @@ function($scope, $state, $timeout, $filter) {
 		vm.tags = [];
 		vm.serverLocations = [];
 		vm.matchAll = false;
+		console.log('Cleared filters, repopulating...')
 		vm.repopulate();
 	}
 	//$scope.addTagToSearchFilter = function (tag) {
@@ -1420,7 +1422,7 @@ function($scope, $state, $timeout, $filter) {
 	//	}
 	//};
 
-	repopulateServerList = function () { vm.repopulate().then(() => { }); }
+	repopulateServerList = function () { console.log('repopulateServerList fired, repopulating...'); vm.repopulate().then(() => { }); }
 }])
 
 /* //////////////////////////////////////////////////////////////////////////////////////////////

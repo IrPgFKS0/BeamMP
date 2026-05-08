@@ -3,11 +3,8 @@
 
 	<div id="serverListHeader" layout="row" layout-padding="">
 		<div class="serverListSearch">
-			<div class="serverListSearchBar">
-				<input class="bng-input mp-search" ng-model="multiplayermenu.searchText" ng-change="multiplayermenu.repopulate();" type="text" id="search" name="search" placeholder="{{:: 'ui.multiplayer.searchPlaceholder' | translate}}" />
-				<img class="button-icon button-icon-filter" style="display:inline" ng-src={{getVueIconPath('search')}} />
-			</div>
-			<span class="mpSearchBarBottom"></span>
+			<input flex="" class="bng-input mp-search" ng-model="multiplayermenu.searchText" ng-change="multiplayermenu.repopulate();" type="text" id="search" name="search" placeholder="{{:: 'ui.multiplayer.searchPlaceholder' | translate}}" />
+			<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('search')}} />
 		</div>
 		<button id="refresh-button" class="default-case bng-button-main" ng-class="" ng-click="multiplayer.refreshList()">{{:: 'ui.multiplayer.refresh' | translate}}</button>
 
@@ -29,10 +26,12 @@
 				<div ng-if="customIsString(content, 1)" ng-bind="content[0] + (content[1] || '')" class="tagList"></div>
 				<div ng-if="!customIsString(content, 1)" class="tagList">
 					<span ng-bind="content[0]"></span>
-					<span class="tagList tagListShort" ng-repeat="tag in content[1]" style="display:inline">
-						<span ng-bind-html="tag.icon">Icon</span>
-						<span ng-bind="tag.text" style="display:inline">Text</span>
-					</span>
+					<div style="display:inline-flex;gap:0.25em">
+						<span class="tagList tagListShort" ng-repeat="tag in content[1]" style="display:inline">
+							<span ng-bind-html="tag.icon"></span>
+							<span ng-bind="tag.text" style="display:inline"></span>
+						</span>
+					</div>
 				</div>
 			</span>
 		</span>

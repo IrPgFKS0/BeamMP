@@ -1,8 +1,158 @@
+@font-face {
+	font-family: VueNotoSans;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSans-VariableFont_wdth,wght.ttf);
+	font-weight: 100 900;
+	font-style: normal;
+	font-variation-settings: "wdth" 62.5 100
+}
+
+@font-face {
+	font-family: VueNotoSans;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSans-Italic-VariableFont_wdth,wght.ttf);
+	font-weight: 100 900;
+	font-style: italic;
+	font-variation-settings: "wdth" 62.5 100
+}
+
+@font-face {
+	font-family: VueNotoSans JP;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansJP-Light.otf);
+	font-weight: 300;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans JP;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansJP-Black.otf);
+	font-weight: 900;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans JP;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansJP-Bold.otf);
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans JP;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansJP-Regular.otf);
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans JP;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansJP-Medium.otf);
+	font-weight: 500;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans KR;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansKR-Light.otf);
+	font-weight: 300;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans KR;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansKR-Black.otf);
+	font-weight: 900;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans KR;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansKR-Bold.otf);
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans KR;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansKR-Regular.otf);
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans KR;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansKR-Medium.otf);
+	font-weight: 500;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans SC;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansSC-Light.otf);
+	font-weight: 300;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans SC;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansSC-Black.otf);
+	font-weight: 900;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans SC;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansSC-Bold.otf);
+	font-weight: 700;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans SC;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansSC-Regular.otf);
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans SC;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansSC-Medium.otf);
+	font-weight: 500;
+	font-style: normal;
+	font-display: swap
+}
+
+@font-face {
+	font-family: VueNotoSans Mono;
+	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansMono-VariableFont_wdth,wght.ttf);
+	font-weight: 100 950;
+	font-stretch: 75% 125%;
+	font-style: normal
+}
+
+:root {
+	--bmp-patreon: #fe8cff;
+	--bmp-orange: 243, 109, 36;
+	--bmp-fnt-defs: VueNotoSans var(--fnt-defs);
+	--bmp-popup-background-color: rgba(33, 33, 33, 0.8);
+}
+
 .theEntireMultiplayerModule {
 	--background-clr: #000000a8;
-	--off-white-from-vue:oklch(92.5% 0 0);
-	--mp-blur-amount: 10px;
-	font-family: var(--fnt-defs);
+	--off-white-from-vue: oklch(92.5% 0 0);
+	font-family: var(--bmp-fnt-defs);
 	-webkit-font-smoothing: antialiased !important;
 	-moz-osx-font-smoothing: grayscale !important;
 
@@ -66,7 +216,7 @@
 }
 
 .theEntireMultiplayerModule #bng-title-fix {
-	font-family: Overpass, var(--fnt-defs);
+	font-family: Overpass, var(--bmp-fnt-defs);
 	color: var(--off-white-from-vue);
 	font-weight: 1000;
 	font-size: 1.84em !important;
@@ -76,24 +226,21 @@
 .default-case {
 	text-transform: none !important;
 }
-.tag-icon {
-	margin-right: 0.1em;
-}
 .button-icon-filter {
-	filter: invert(100%) sepia(0%) saturate(22%) hue-rotate(36deg) brightness(104%) contrast(108%);
+	filter: contrast(0) brightness(2);
 }
 .button-icon {
 	font-size: 1.5em;
     width: 1em;
     height: 1em;
     line-height: 1.5em;
-	vertical-align: middle !important;
+	vertical-align: middle;
 }
 
 .backBar {
-	display:flex;
+	display: flex;
 	width: fit-content;
-	font-family: var(--fnt-defs) !important;
+	font-family: var(--bmp-fnt-defs);
 	background-color: var(--background-clr);
 	border-radius: var(--bng-corners-2);
 	.back-button {
@@ -107,13 +254,13 @@
 		padding-bottom: 0.325em;
 		padding-left:   0.5em;
 		
-		border-width: 0;
-		border-radius: 0;
+		border: none;
+		border-radius: var(--bng-corners-1) 0 0 var(--bng-corners-1);
 
 		background-color: transparent;
 		transition-duration: 0s;
 		&:hover, &:focus-within {
-			background-color: var(--bng-orange-600);
+			background-color: rgba(var(--bng-orange-600-rgb), 0.6);
 			border-color: var(--bng-orange);
 		}
 	}
@@ -137,10 +284,10 @@
     font-display: block;
     font-weight: 500;
     font-style: normal;
-    font-synthesis:none;
-	text-rendering:optimizeLegibility;
-	-webkit-font-smoothing:antialiased;
-	-moz-osx-font-smoothing:grayscale
+    font-synthesis: none;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 .back-icon {
@@ -170,7 +317,7 @@
 }
 
 #back {
-  background-color: #00000099; /* match bng top bar */
+  background-color: var(--background-clr); /* match bng top bar */
   border-radius: var(--bng-corners-2);
 }
 
@@ -235,7 +382,7 @@
 }
 #serverlist-profile-name {
 	text-align: center;
-	background-color: rgba(0, 0, 0, 0);
+	background-color: rgba(0, 0, 0, 0); /* this gets adjusted by JS based on account role from auth */
 	border-radius: 10px;
 	margin-left: 15px;
 	margin-right: 15px;
@@ -257,48 +404,58 @@
   color: white !important;
   margin: 10px;
 }
+/*
 
+	Server list search bar
+
+*/
 #search {
   border-radius: var(--bng-corners-1);
 }
 
-.mpSearchBarBottom {
-	width: 400px; /* WHY IS THIS HARDCODED GOD NO */
-	display: block;
-	position: relative; 
-	/*transform: translate(0, 0);*/
-	height: 0.0625em;
-	background-color: oklch(92.5% 0 0);
-}
 .serverListSearch {
-	display: inline-block;
+	display: flex;
 	position: relative;
-	width: 400px;
-	height: 2.5em;
-	line-height: 1.25em;
-	font-size: 1em;
+	width: 25em;
+	height: 2.75em;
+	padding: 0.5em .25em;
 	margin: 6px 8px;
 	box-sizing: border-box;
-}
-.serverListSearch:focus-within .mpSearchBarBottom {
-	height: 0.125em !important;
-	background-color: var(--bng-orange-500);
-}
-.serverListSearchBar {
-	display: block;
-	height: fit-content;
-  	background-color: rgba(var(--bng-cool-gray-900-rgb), .66);
-	padding: 0.5em .25em;
+
+	flex-direction: row;
+	flex-wrap: nowrap;
+  	justify-content: space-between;
+
+	background-color: rgba(var(--bng-cool-gray-900-rgb), .66);
+
+	line-height: 1.25em;
+	font-size: 1em;
 	color: var(--off-white-from-vue);
-	cursor: default;
 
 	border: none;
-	border-radius: .25em .25em 0 0 !important;
-	box-sizing: border-box;
+	border-radius: var(--bng-corners-1) var(--bng-corners-1) 0 0;
+
+	&:focus-within {
+		background-color: var(--bng-cool-gray-900);
+		&::after {
+			height: 0.125em;
+			background-color: var(--bng-orange-500);
+		};
+	};
+
+	&::after {
+		content: '';
+		display: block;
+		width: 25em;
+		height: 0.0625em;
+		position: absolute;
+		bottom: 0;
+    	left: 0;
+
+		background-color: var(--off-white-from-vue);
+	};
 }
-.serverListSearchBar:focus-within {
-  	background-color: var(--bng-cool-gray-900);
-}
+
 .mp-search {
   display: inline;
   border: none !important;
@@ -306,32 +463,31 @@
   height: calc(1.5em);
   font-size: 1em;
   margin: 0;
-  max-width: calc(400px - 0.5em - 1.779em);
+  max-width: none;
   padding: 0;
   cursor: default;
 }
 
 .centerPopup {
-	background-color: rgba(33, 33, 33, 0.8);
+	background-color: var(--bmp-popup-background-color);
 	padding: 20px;
 	border-radius: var(--bng-corners-3);
 	border: solid var(--bng-cool-gray-700) 0.125em;
-	font-family: var(--fnt-defs);
+	font-family: var(--bmp-fnt-defs);
 }
 
 #MultiplayerLoginBody {
-  	display:flex;
-	position:relative;
-	height:fit-content;
-	width:fit-content;
+  	display: flex;
+	position: relative;
+	height: fit-content;
+	width: fit-content;
 	margin: auto;
-	flex-direction:column;
+	flex-direction: column;
 	align-items: center;
 	justify-content: center;
 }
 #serversTableContainer {
 	overflow-x: hidden;
-	scroll-behavior: smooth;
 }
 
 table#serversTable {
@@ -344,10 +500,6 @@ table#serversTable {
 }
 
 #serversTable th {
-	/*
-	position: sticky;
-	top: 0;
-	*/
 	z-index: 150;
 }
 
@@ -384,26 +536,11 @@ table#serversTable {
   cursor: pointer;
 }
 
-.servers-button {
-  width: 200px;
-  height: 40px;
-}
+/*
 
-.patreon-button-highlight {
-	background-color: var(--bng-add-green-800);
-	border-color: var(--bng-add-green-600);
+	Patreon sidebar button
 
-	#patreonSidebarButtonSubtitle {
-		color: var(--bng-add-green-50);
-	}
-}
-.patreon-button-highlight:hover,
-.patreon-button-highlight:focus-within {
-	background-color: var(--bng-add-green-700);
-}
-.patreon-button-highlight-two {
-	border-color: #fe8cff; /* might want to make a variable for this */
-}
+*/
 #patreonSidebarButtonSubtitle {
 	width: 14em;
 	
@@ -414,6 +551,23 @@ table#serversTable {
 	text-wrap-mode: wrap;
 	white-space: normal;
 }
+.patreon-button-highlight {
+	background-color: var(--bng-add-green-800);
+	border-color: var(--bng-add-green-600);
+
+	#patreonSidebarButtonSubtitle {
+		color: var(--bng-add-green-50);
+	};
+
+	&:hover, &:focus-within {
+		background-color: var(--bng-add-green-700);
+	};
+}
+.patreon-button-highlight-two {
+	border-color: #fe8cff; /* might want to make a variable for this */
+}
+
+
 .description-table {
 	table-layout: fixed;
 	width: 100%;
@@ -429,6 +583,19 @@ table#serversTable {
 	}
 }
 
+/*
+
+	Tag lists
+
+*/
+.tagListContainer {
+	display:inline-flex;
+	max-width: 30em;
+	height: fit-content;
+	
+	flex-wrap: wrap;
+	gap: 0.25rem 0.25rem;
+}
 .tagList {
 	background-color:var(--bng-black-o4);
 	max-width: fit-content;
@@ -438,6 +605,7 @@ table#serversTable {
 	word-break: keep-all;
 	border: solid var(--bng-cool-gray-600) 0.125em;
 	border-radius: var(--bng-corners-2);
+
 	&.tagListShort {
 		display: flex;
 		font-size: 0.8em;
@@ -445,40 +613,16 @@ table#serversTable {
 		margin-right: 0;
 		padding: 0.125em 0.25em;
 		border-radius: var(--bng-corners-1);
-	}
+	};
 }
-.tagListContainer {
-	display:inline-flex;
-	max-width: 30em; /*25em */
-	height: fit-content;
-	
-	flex-wrap: wrap;
-	gap: 0.25rem 0.25rem;
+.tag-icon {
+	margin-right: 0.1em;
 }
 
 .sidebar-buttons {
 	text-align:left;
 	min-height: fit-content;
 	margin: 0;
-}
-
-.close-button {
-	display: flex;
-	height: fit-content;
-	float: right;
-	right: 0;
-	top: 0;
-	min-height: none !important;
-	overflow: hidden;
-
-	align-items: center;
-	justify-content: center;
-
-	margin-left: auto;
-	margin-top: 20px;
-	margin-right: 0;
-
-	text-transform: none !important;
 }
 
 #connect-button {
@@ -505,6 +649,11 @@ md-content {
   background-color: rgba(101, 101, 101, 0.34);
 }
 
+/*
+
+	Loading (connecting) server popup
+
+*/
 div#LoadingServer {
   align-items: center;
   justify-content: center;
@@ -525,14 +674,11 @@ div#LoadingBody {
   max-height: 40%;
   overflow-y: hidden;
   
-  font-family: var(--fnt-defs);
+  font-family: var(--bmp-fnt-defs);
   border-radius: var(--bng-corners-3);
   padding: 20px;
-  /*border: solid rgb(90, 90, 90) 0.125em;
 
-  background-color: rgb(60, 60, 60);*/
-
-  background-color: rgba(33, 33, 33, 0.8);
+  background-color: var(--bmp-popup-background-color);
   border: 0.125em solid var(--bng-cool-gray-700);
 }
 
@@ -549,31 +695,52 @@ div#LoadingBody {
   padding-bottom: 0;
   margin-bottom: 0;
 }
-
 .mod-download-row {
     align-items: center;
     margin-bottom: 10px;
 }
 
+.close-button {
+	display: flex;
+	height: fit-content;
+	float: right;
+	right: 0;
+	top: 0;
+	min-height: none !important;
+	overflow: hidden;
+
+	align-items: center;
+	justify-content: center;
+
+	margin-left: auto;
+	margin-top: 20px;
+	margin-right: 0;
+
+	text-transform: none !important;
+}
+
+
+/* Add custom server to favorited servers popup */
 .addCustomFav {
   color: white;
 
   position: absolute;
   z-index: 100;
 
-  background-color: rgba(33, 33, 33, 0.8);
+  background-color: var(--bmp-popup-background-color);
   padding: 20px;
   border-radius: var(--bng-corners-3);
   border: solid var(--bng-cool-gray-700) 0.125em;
-  font-family: var(--fnt-defs);
+  font-family: var(--bmp-fnt-defs);
 
   width: 700px;
   h1 {
-    font-family: Overpass var(--fnt-defs);
+    font-family: Overpass var(--bmp-fnt-defs);
     font-style: italic;
   }
 }
 
+/**/
 input {
   display: block;
   width: 400px;
@@ -649,6 +816,11 @@ md-slider.ng-pristine.ng-untouched.ng-valid.md-default-theme.ng-empty {
   padding-top: 0px;
 }
 
+/*
+
+	Edit search filters popup
+
+*/
 .filter-overlay {
   position: fixed;
   top: 0;
@@ -663,7 +835,7 @@ md-slider.ng-pristine.ng-untouched.ng-valid.md-default-theme.ng-empty {
 }
 
 .filter-body {
-  background-color: rgba(33, 33, 33, 0.8);
+  background-color: var(--bmp-popup-background-color);
   /*background-color: rgba(var(--bng-cool-gray-900-rgb), 0.66);*/
   padding: 20px;
   border-radius: var(--bng-corners-3);
@@ -671,37 +843,10 @@ md-slider.ng-pristine.ng-untouched.ng-valid.md-default-theme.ng-empty {
   width: 800px;
   display: flex;
   flex-wrap: wrap;
-  font-family: var(--fnt-defs);
+  font-family: var(--bmp-fnt-defs);
   h2 {
 	margin-top: 10px;
   }
-}
-
-h2 {
-	font-family: Overpass var(--fnt-defs);
-	font-style: italic;
-
-	&.section-header {
-		position: relative;
-		padding-left: 1.3em;
-		width: fit-content;
-		&::before {
-			content: "";
-			position: absolute;
-			width: calc(1em * (4 / 7));
-			height: 1.2em;
-			background: var(--bng-orange);
-			transform: matrix(0.94, 0, -0.38, 1, 0, 0);
-			left: 0.3em;
-			top: 0.125em;
-		}
-		&.extra-right {
-			padding-left:1.45em;
-			&::before {
-				left:0.4em
-			}
-		}
-	}
 }
 
 .filter-content {
@@ -721,6 +866,38 @@ h2 {
 
 .dropdown-row md-select {
   width: 40%;
+}
+
+
+
+
+
+
+h2 {
+	font-family: Overpass var(--bmp-fnt-defs);
+	font-style: italic;
+
+	&.section-header {
+		position: relative;
+		padding-left: 1.3em;
+		width: fit-content;
+		&::before {
+			content: "";
+			position: absolute;
+			width: calc(1em * (4 / 7));
+			height: 1.2em;
+			background: var(--bng-orange);
+			transform: matrix(0.94, 0, -0.38, 1, 0, 0);
+			left: 0.3em;
+			top: 0.125em;
+		}
+		&.extra-right {
+			padding-left:1.45em;
+			&::before {
+				left:0.45em
+			}
+		}
+	}
 }
 
 [placeholder]::-webkit-input-placeholder {
@@ -753,89 +930,19 @@ h2 {
   color: transparent;
 }
 
+/* These are both only used in login.partial.html */
 .text-white {
   color: white;
 }
-
 .text-red {
   color: red;
 }
 
-/** ######################################################## **/
-/**             STRENGTH STYLING                             **/
-/** ######################################################## **/
-.icon__signal-strength {
-  display: inline-flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  width: 20px;
-  height: 13px;
-  padding: 4px;
-}
+/*
 
-.icon__signal-strength span {
-  display: inline-block;
-  width: 6px;
-  margin-left: 2px;
-  transform-origin: 100% 100%;
-  background-color: #00cc00;
-  border-radius: 2px;
-  animation-iteration-count: 1;
-  animation-timing-function: cubic-bezier(0.17, 0.67, 0.42, 1.3);
-  animation-fill-mode: both;
-  animation-play-state: paused;
-}
+	Server list
 
-.icon__signal-strength .bar-1 {
-  height: 25%;
-  animation-duration: 0.3s;
-  animation-delay: 0.1s;
-}
-.icon__signal-strength .bar-2 {
-  height: 50%;
-  animation-duration: 0.25s;
-  animation-delay: 0.2s;
-}
-.icon__signal-strength .bar-3 {
-  height: 75%;
-  animation-duration: 0.2s;
-  animation-delay: 0.3s;
-}
-.icon__signal-strength .bar-4 {
-  height: 100%;
-  animation-duration: 0.15s;
-  animation-delay: 0.4s;
-}
-
-.signal-0 .bar-1,
-.signal-0 .bar-2,
-.signal-0 .bar-3,
-.signal-0 .bar-4 {
-  opacity: 0.2;
-}
-
-.signal-1 .bar-2,
-.signal-1 .bar-3,
-.signal-1 .bar-4 {
-  opacity: 0.2;
-}
-
-.signal-2 .bar-3,
-.signal-2 .bar-4 {
-  opacity: 0.2;
-}
-
-.signal-3 .bar-4 {
-  opacity: 0.2;
-}
-
-@keyframes signal-intro {
-  from {
-    opacity: 0.2;
-    height: 2px;
-  }
-}
-
+*/
 @keyframes loadingShimmer{
   0%{
       background-position: -468px 0
@@ -897,23 +1004,12 @@ h2 {
 .server-item:hover {
   background-color: rgba(255, 255, 255, 0.15);
 }
-/*.server-item:nth-child(odd) {
-  backdrop-filter: brightness(0.90); /* Causes odd-numbered rows to fall behind in rendering */
-  /*
-}
 
-.bng-button-attention:hover {
-  background-color: hsla(360, 75%, 50%, 1) !important;
-}
+/*
 
-.bng-button-attention:active {
-  background-color: hsla(360, 75%, 30%, 1) !important;
-}
+	Special background colors for server list rows
 
-.bng-button-attention:focus {
-  background-color: hsla(360, 85%, 45%, 1) !important;
-}*/
-
+*/
 .featured {
   background-color: rgba(var(--bng-add-green-500-rgb), 0.25);
 }
@@ -921,7 +1017,7 @@ h2 {
   background-color: rgba(var(--bng-add-blue-500-rgb), 0.25);
 }
 .official {
-  background-color: rgba(243, 109, 36, 0.25)
+  background-color: rgba(var(--bmp-orange), 0.25)
 }
 .favorite {
   background-color: rgba(var(--bng-ter-yellow-500-rgb), 0.25);
