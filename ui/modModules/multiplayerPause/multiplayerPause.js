@@ -20,9 +20,9 @@ angular.module('BeamNG.ui')
 $rootScope.$on("GameStateUpdate", function(event, gameState) {
 	currentGameState = gameState.state;
 });
-$rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
-	if (currentGameState === "multiplayer" && toState.name === 'menu.mainmenu' && fromState.name === 'play') {
-		bngApi.engineLua('guihooks.trigger("ChangeState","menu.multiplayerPause"); ui_topBar.updateActiveItem()');
+$rootScope.$on('$stateChangeSuccess', function(event, toState, toParams, fromState, fromParams) {
+	if (currentGameState === "multiplayer" && fromState.name === 'play' && toState.name === 'menu.mainmenu') {
+		window.angular.element(document.querySelector('body')).controller().changeAngularStateFromVue('menu.multiplayerPause')
 	};
 });
 });
@@ -47,6 +47,7 @@ export default angular.module('multiplayerPause', ['ui.router'])
 .controller('multiplayerPause', ['$scope', '$rootScope', '$state', '$timeout', 'UiAppsService', 'Settings', '$translate', 'ConfirmationDialog', 
 function($scope, $rootScope, $state, $timeout, $UiAppsService, $Settings, $translate, ConfirmationDialog) {
 	console.log('The "multiplayerPause" controller says hello');
+	bngApi.engineLua('ui_topBar.updateActiveItem()')
 
 	$scope.$on("$destroy", function(event, data) {
 		console.log('The "multiplayerPause" controller says goodbye');
