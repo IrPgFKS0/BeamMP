@@ -13,15 +13,15 @@ var currentServer = undefined;
 var serverIp = undefined;
 
 var roleName = undefined;
-var currentStateName = undefined;
+var currentGameState = undefined;
 
 angular.module('BeamNG.ui')
 .run(function($rootScope, $templateCache) {
 $rootScope.$on("GameStateUpdate", function(event, gameState) {
-	currentStateName = gameState.state;
+	currentGameState = gameState.state;
 });
 $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
-	if (currentStateName === "multiplayer" && toState.name === 'menu.mainmenu' && fromState.name === 'play') {
+	if (currentGameState === "multiplayer" && toState.name === 'menu.mainmenu' && fromState.name === 'play') {
 		bngApi.engineLua('guihooks.trigger("ChangeState","menu.multiplayerPause"); ui_topBar.updateActiveItem()');
 	};
 });
