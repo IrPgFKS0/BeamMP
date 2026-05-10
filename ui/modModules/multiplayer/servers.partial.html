@@ -180,8 +180,8 @@
 										<tr><th scope="row">{{:: 'ui.multiplayer.server.description' | translate}}</th><td><span ng-bind-html="formatCodes(server.server.sdesc|| '', true)"></span></td></tr>
 										<tr><th scope="row">{{:: 'ui.multiplayer.server.tags' | translate}}</th>
 											<td>
-												<span ng-hide="{{ getTagCount(server.server.tags) > 0 }}">No tags</span>
-												<div class="tagListContainer" style="max-width:100%" ng-if="server.server.tags.split(',').length > 0">
+												<span ng-hide="server.server.formattedTags.length > 0">No tags</span>
+												<div class="tagListContainer" style="max-width:100%" ng-if="server.server.formattedTags.length > 0">
 													<span ng-repeat="tag in server.server.formattedTags">
 														<!-- Want to add ng-click="addTagToSearchFilter(tag)" here, but the md dropdowns don't like it -->
 														<span class="tagList tagListShort">

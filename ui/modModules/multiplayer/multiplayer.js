@@ -2105,6 +2105,7 @@ function formatServerTags(commaList) {
 	//console.log('Server item tag input: "'+tags+'"')
 	for (const tag of tags) {
 		//console.log('    Tag list item input: '+JSON.stringify(tag))
+		if (tag==="") continue;
 
 		var tagTexts = tag.split(":");
 		var tagItem = {
