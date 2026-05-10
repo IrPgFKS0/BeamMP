@@ -266,8 +266,9 @@ export default angular.module('multiplayer', ['ui.router'])
 
 	$rootScope.$on('$stateChangeSuccess', async function (event, toState, toParams, fromState, fromParams) {
 		//console.log(`Going from "${fromState.name}" -> "${toState.name}"`)
-		if (toState.name == "menu.mainmenu" || toState.name == "menu.multiplayerPause") {
+		if (toState.name == "menu.mainmenu") {
 			bngApi.engineLua('MPCoreNetwork.getLoginState()');
+			console.log('Asking for BeamMP info from main menu or multiplayerPause')
 			bngApi.engineLua('MPCoreNetwork.sendBeamMPInfo()');
 			beammpUserInfo.style.display = "block";
 			let userinfo =  document.getElementsByTagName("body")[0].appendChild(beammpUserInfo).children[1]
@@ -292,7 +293,10 @@ export default angular.module('multiplayer', ['ui.router'])
 
 			injectVersion()
 		} else if (toState.name.includes("menu.multiplayer.")) {
-			bngApi.engineLua('MPCoreNetwork.sendBeamMPInfo()');
+			if (toState.name === "menu.multiplayer.servers") {
+				console.log('Asking for BeamMP info because menu.multiplayer.servers was opened');
+				bngApi.engineLua('MPCoreNetwork.sendBeamMPInfo()');
+			};
 			beammpUserInfo.style.display = "block";
 			let userinfo =  document.getElementsByTagName("body")[0].appendChild(beammpUserInfo).children[1]
 			userinfo.style.marginRight = "0"
@@ -675,7 +679,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	
 	vm.clearRecents = function() {
 		localStorage.removeItem("recents");
-		vm.refreshList();
+		repopulateServerList();
 	}
 
 	vm.directConnect = function() {
@@ -732,7 +736,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		name.value = '';
 		ip.value = '';
 		port.value = '';
-		vm.refreshList();
+		repopulateServerList();
 	};
 
 	vm.directConnectFavorite = async function() {
@@ -1058,7 +1062,7 @@ function($scope, $state, $timeout, $filter) {
 	}
 
 
-	bngApi.engineLua('MPCoreNetwork.requestServerList()');
+	//bngApi.engineLua('MPCoreNetwork.requestServerList()');
 
 	// Go back to the main menu on exit
 	vm.exit = function ($event) {
@@ -1076,18 +1080,23 @@ function($scope, $state, $timeout, $filter) {
 	$scope.loadingShimmerCount = Math.ceil($scope.viewportHeight / $scope.itemHeight)
 
 	$scope.onScroll = async function() {
-		//console.log('onScroll fired')
+		//console.log('onScroll fired');
+		if ($scope.viewportHeight === 0) $scope.viewportHeight = serversTableContainer.clientHeight;
+
 		const scrollTop = serversTableContainer.scrollTop;
 		const total = $scope.serversArray.length;
 		const itemHeight = $scope.itemHeight;
 		const viewportHeight = $scope.viewportHeight;
 		const buffer = $scope.buffer;
 		
+		//console.log(`viewportHeight:${viewportHeight} itemHeight:${itemHeight}`)
 		const itemsPerView = Math.ceil(viewportHeight / itemHeight);
 		const scrollRow = Math.floor(scrollTop / itemHeight);
 		
+		//console.log(`scrollRow:'${scrollRow}' itemsPerView:'${itemsPerView}'`);
 		let startIndex = Math.max(0, scrollRow - Math.ceil(itemsPerView) + buffer);
 		let endIndex = Math.min(total, scrollRow + Math.ceil(itemsPerView) + buffer);
+		//console.log(`start:'${startIndex}' end:'${endIndex}'`)
 		
 		let beforeHeight = startIndex * itemHeight;
 		let afterHeight = (total - endIndex) * itemHeight;
@@ -1102,15 +1111,18 @@ function($scope, $state, $timeout, $filter) {
 						beforeHeight += $scope.expandedRowHeight;
 					}else{	//if the selected server is below the current view
 						afterHeight += $scope.expandedRowHeight;
-					}
-				}
-			}
-		}
+					};
+				};
+			};
+		};
 
 		$scope.visibleServers = $scope.serversArray.slice(startIndex, endIndex);
 		$scope.beforeHeight = beforeHeight;
 		$scope.afterHeight = afterHeight;
-		if (!$scope.$$phase) $scope.$digest();
+		if (!$scope.$$phase) {
+			//console.log('Digesting from onScroll');
+			$scope.$digest();
+		};
 	};
 
 	$scope.selectServer = function(server) {
@@ -1403,7 +1415,7 @@ function($scope, $state, $timeout, $filter) {
 		vm.serverLocations = [];
 		vm.matchAll = false;
 		console.log('Cleared filters, repopulating...')
-		vm.repopulate();
+		repopulateServerList()
 	}
 	//$scope.addTagToSearchFilter = function (tag) {
 	//	console.log('Trying to add "'+JSON.stringify(tag)+'" to search filters');
@@ -1422,7 +1434,10 @@ function($scope, $state, $timeout, $filter) {
 	//	}
 	//};
 
-	repopulateServerList = function () { console.log('repopulateServerList fired, repopulating...'); vm.repopulate().then(() => { }); }
+	repopulateServerList = function () {
+		console.log('repopulateServerList fired, repopulating...');
+		vm.repopulate().then(() => { });
+	}
 }])
 
 /* //////////////////////////////////////////////////////////////////////////////////////////////
@@ -1710,7 +1725,7 @@ function removeFav(server) {
 		}
 	}
 	saveFav();
-	bngApi.engineLua('MPCoreNetwork.sendBeamMPInfo()'); // request cached server list
+	bngApi.engineLua('MPCoreNetwork.requestServerList()');
 }
 
 function saveFav() {
@@ -1760,17 +1775,16 @@ globalThis.openExternalLink = function(url){
 
 // /!\ IMPORTANT /!\ //// TYPE 0 = Normal / 1 = Favorites / 2 = Recents
 async function populateTable($filter, $scope, servers, tab, searchText = '', checkIsEmpty, checkIsNotEmpty, checkIsNotFull, checkModSlider, sliderMaxModSize, selectMap = [], SelectedServerVersions = [], tags = [], SelectedServerLocations = [], matchAll) {
-	console.log(`${servers.length} servers. tab: ${tab}`)
 	$scope.serversTable = {}; 
 	var type = 0;
 	if (tab == "favorites") type = 1;
 	else if (tab == "recents") type = 2;
 	let i = 0;
-	//console.log(tags)
 	for (const server of servers) {
 		i += 1;
 		if (!server) {
-			break;
+			console.log('server not found. Continuing anyways')
+			continue;
 		}
 
 		if (tab == "official" && !server.official) continue;
@@ -1995,7 +2009,12 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 	$scope.serversArray.forEach(server => {
 		server.id = server.server.ip + ':' + server.server.port;
 	});
-	if (type == 2) $scope.sortTable("addTime", true, -1) ; else $scope.onScroll();
+	if (type == 2) {
+		$scope.sortTable("addTime", true, -1)
+	};
+
+	console.log('Completed repopulating')
+	$scope.onScroll();
 }
 
 // Used to connect to the backend with ids

@@ -96,7 +96,7 @@
 				<button class="bng-button bng-button-outline mpPauseButton-outline" ng-click="resume()" bng-sound-class="bng_click_hover_generic">{{:: 'ui.common.action.resume' | translate}}</button>
 			</div>
 			<div id="mpPauseMpButtons" class="mpPauseButtonCategory">
-				<button class="bng-button bng-button-outline mpPauseButton-outline" ng-click="openPopupOfId('mpPauseServerDetails')" bng-sound-class="bng_click_hover_generic">Server Details</button>
+				<button id="mpPauseServerDetailsButton" class="bng-button bng-button-outline mpPauseButton-outline" ng-click="openPopupOfId('mpPauseServerDetails')" bng-sound-class="bng_click_hover_generic">Server Details</button>
 				<!--
 				<button disabled class="bng-button bng-button-outline mpPauseButton-outline">Players</button>
 				-->
@@ -122,29 +122,43 @@
 				<link type="text/css" rel="stylesheet" href="/ui/modules/atom/title/title.css" />
 				<div class="bng-title">
 					{{:: 'ui.multiplayer.server.playerList' | translate}}
-					<span> ({{((playersList.length && maxPlayers) && playersList.length+'/'+maxPlayers) || ('ui.multiplayer.loading' | translate)}})</span>
+					<span> ({{
+					(
+						joinedViaBackend &&
+							((playersList.length && maxPlayers) && playersList.length+'/'+maxPlayers)
+						||
+							((playersList.length && playersText) && playersList.length+' '+playersText)
+					)
+					|| ('ui.multiplayer.loading' | translate)
+					}})</span>
 				</div>
 			</div>
 			<div id="mpPausePlayerList">
 				<!-- ng-if="!player.self" -->
 				<div ng-repeat="player in playersList" bng-nav-scroll bng-nav-scroll-force class="mpPausePlayerListRow">
-					<span class="mpPausePlayerRowId" ng-style="{'color': (player.id!=='?' && 'var(--bng-add-green-400)') || 'var(--bng-orange-500)'}">{{ (showPlayerIDs && ''+player.id) || '•' }}</span>
-					<span class="mpPausePlayerRowName" ng-style="
-					{
-						'color': player.color
-					}
-					">{{ player.name }}</span>
-					<md-input-container style="float:right;padding:0;margin:0">
-						<img ng-src={{getVueIconPath('adjust')}} class="mpPausePlayerRowActionsIcon"/>
-						<md-select class="md-no-underline dropdown mpPausePlayerRowActions" ng-model="dummy" bng-sound-class="bng_click_hover_generic">
-							<md-option class="mpPausePlayerRowActionsDropdownButton" bng-sound-class="bng_click_generic_small" ng-click="copyPlayerName(player.name)"									>{{:: 'ui.apps.multiplayer.playerlist.copyname' | translate}}</md-option>
-							<md-option class="mpPausePlayerRowActionsDropdownButton" bng-sound-class="bng_click_generic_small" ng-click="deleteAllVehicles(player.name)" 	ng-if="player.id !== '?'"	>{{:: 'ui.apps.multiplayer.playerlist.deleteAllVehicles' | translate}}</md-option>
-							<md-option class="mpPausePlayerRowActionsDropdownButton" bng-sound-class="bng_click_generic_small" ng-click="queueEvents(player.id)" 			ng-if="player.id !== '?'"	>{{:: 'ui.apps.multiplayer.playerlist.queueEvents' | translate}}</md-option>
-							<md-option class="mpPausePlayerRowActionsDropdownButton" bng-sound-class="bng_click_generic_small" ng-click="switchCameraTo(player.name)"		ng-if="player.id !== '?'"	>{{:: 'ui.apps.multiplayer.playerlist.switchCameraTo' | translate}}</md-option>
-							<md-option class="mpPausePlayerRowActionsDropdownButton" bng-sound-class="bng_click_generic_small" ng-click="openProfile(player.name)"										>{{:: 'ui.apps.multiplayer.playerlist.openProfile' | translate}}</md-option>
-							<md-option class="mpPausePlayerRowActionsDropdownButton" bng-sound-class="bng_click_generic_small" ng-click="restoreVehicles(player.name)" 		ng-if="player.id !== '?'"	>{{:: 'ui.apps.multiplayer.playerlist.restoreVehicles' | translate}}</md-option>
-						</md-select>
-					</md-input-container>
+					<div flex style="display:inline-flex;flex-wrap:nowrap;gap:0.25rem;min-width:0">
+						<span class="mpPausePlayerRowId" ng-style="{'color': (player.id!=='?' && 'var(--bng-add-green-400)') || 'var(--bng-orange-500)'}">{{ (showPlayerIDs && ''+player.id) || '•' }}</span>
+						<div flex="" class="mpPausePlayerRowName" ng-style="
+						{
+							'color': player.color
+						}
+						">{{ player.name }}</div>
+					</div>
+
+					<div style="display:inline-flex;flex-wrap:nowrap;min-width:fit-content;gap:0.25rem">
+						<span style="font-family:'VueNotoSans Mono',monospace;color:#ccc">{{ player.ping || '?' }}ms</span>
+						<md-input-container style="padding:0;margin:0">
+							<img ng-src={{getVueIconPath('adjust')}} class="mpPausePlayerRowActionsIcon"/>
+							<md-select class="md-no-underline dropdown mpPausePlayerRowActions" ng-model="dummy" bng-sound-class="bng_click_hover_generic">
+								<md-option class="mpPausePlayerRowActionsDropdownButton" bng-sound-class="bng_click_generic_small" ng-click="copyPlayerName(player.name)"									>{{:: 'ui.apps.multiplayer.playerlist.copyname' | translate}}</md-option>
+								<md-option class="mpPausePlayerRowActionsDropdownButton" bng-sound-class="bng_click_generic_small" ng-click="deleteAllVehicles(player.name)" 	ng-if="player.id !== '?'"	>{{:: 'ui.apps.multiplayer.playerlist.deleteAllVehicles' | translate}}</md-option>
+								<md-option class="mpPausePlayerRowActionsDropdownButton" bng-sound-class="bng_click_generic_small" ng-click="queueEvents(player.id)" 			ng-if="player.id !== '?'"	>{{:: 'ui.apps.multiplayer.playerlist.queueEvents' | translate}}</md-option>
+								<md-option class="mpPausePlayerRowActionsDropdownButton" bng-sound-class="bng_click_generic_small" ng-click="switchCameraTo(player.name)"		ng-if="player.id !== '?'"	>{{:: 'ui.apps.multiplayer.playerlist.switchCameraTo' | translate}}</md-option>
+								<md-option class="mpPausePlayerRowActionsDropdownButton" bng-sound-class="bng_click_generic_small" ng-click="openProfile(player.name)"										>{{:: 'ui.apps.multiplayer.playerlist.openProfile' | translate}}</md-option>
+								<md-option class="mpPausePlayerRowActionsDropdownButton" bng-sound-class="bng_click_generic_small" ng-click="restoreVehicles(player.name)" 		ng-if="player.id !== '?'"	>{{:: 'ui.apps.multiplayer.playerlist.restoreVehicles' | translate}}</md-option>
+							</md-select>
+						</md-input-container>
+					</div>
 				</div>
 			</div>
 		</div>

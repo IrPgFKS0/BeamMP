@@ -13,16 +13,15 @@ var currentServer = undefined;
 var serverIp = undefined;
 
 var roleName = undefined;
-var currentGameState = undefined;
 
+var rootController = undefined;
 angular.module('BeamNG.ui')
 .run(function($rootScope, $templateCache) {
-$rootScope.$on("GameStateUpdate", function(event, gameState) {
-	currentGameState = gameState.state;
-});
 $rootScope.$on('$stateChangeSuccess', function(event, toState, toParams, fromState, fromParams) {
-	if (currentGameState === "multiplayer" && fromState.name === 'play' && toState.name === 'menu.mainmenu') {
-		window.angular.element(document.querySelector('body')).controller().changeAngularStateFromVue('menu.multiplayerPause')
+	if (!rootController) rootController = window.angular.element(document.querySelector('body')).controller();
+	
+	if (rootController.gameState === "multiplayer" && fromState.name === 'play' && toState.name === 'menu.mainmenu') {
+		rootController.switchState('menu.multiplayerPause')
 	};
 });
 });
@@ -44,8 +43,8 @@ export default angular.module('multiplayerPause', ['ui.router'])
 	});
 }])
 
-.controller('multiplayerPause', ['$scope', '$rootScope', '$state', '$timeout', 'UiAppsService', 'Settings', '$translate', 'ConfirmationDialog', 
-function($scope, $rootScope, $state, $timeout, $UiAppsService, $Settings, $translate, ConfirmationDialog) {
+.controller('multiplayerPause', ['$scope', '$state', '$timeout', 'UiAppsService', 'Settings', '$translate', 'ConfirmationDialog', 
+function($scope, $state, $timeout, $UiAppsService, $Settings, $translate, ConfirmationDialog) {
 	console.log('The "multiplayerPause" controller says hello');
 	bngApi.engineLua('ui_topBar.updateActiveItem()')
 
@@ -59,6 +58,7 @@ function($scope, $rootScope, $state, $timeout, $UiAppsService, $Settings, $trans
 	$scope.serverDesc = $translate.instant('ui.common.loading');
 	$scope.serverTags = {};
 	$scope.playersList = playerListCache;
+	$scope.pingList = {}
 	$scope.dummy = undefined;
 	$scope.maxPlayers = undefined;
 	$scope.showPlayerIDs = $Settings.values.showPlayerIDs;
@@ -112,6 +112,18 @@ function($scope, $rootScope, $state, $timeout, $UiAppsService, $Settings, $trans
 						break
 					};
 				};
+				let serverDetailsButton = document.getElementById("mpPauseServerDetailsButton")
+				if (currentServer) {
+					console.log('Joined current server via backend? Enabling server details');
+					serverDetailsButton.removeAttribute('disabled');
+					$scope.joinedViaBackend = true;
+				} else {
+					console.log('Joined current server via direct connect? Disabling server details');
+					serverDetailsButton.setAttribute('disabled', '');
+					$scope.joinedViaBackend = false;
+					$scope.serverName = $translate.instant('ui.multiplayer.direct_connect');
+					$scope.playersText = $translate.instant('ui.multiplayer.players');
+				};
 			} else {
 				console.log('Getting current server...')
 				bngApi.engineLua(`MPCoreNetwork.getCurrentServer()`, function(currentServer) {
@@ -155,7 +167,6 @@ function($scope, $rootScope, $state, $timeout, $UiAppsService, $Settings, $trans
 			console.log(`Pushed mod button with id ${id}`);
 		};
 		$scope.modButtons = modButtons;
-		$scope.$digest();
 	});
 	bngApi.engineLua('UI.sendPauseMenuModButtons()');
 	
@@ -164,9 +175,21 @@ function($scope, $rootScope, $state, $timeout, $UiAppsService, $Settings, $trans
 		$scope.$emit(eventName);
 	};
 
+	$scope.$on('playerPings', function(event, data) {
+		const pingList = JSON.parse(data);
+		for (const [username, ping] of Object.entries(pingList)) {
+			if(username !== "") {
+				for (const player of $scope.playersList.values()) {
+					if (player.name === username) {
+						player.ping = ping
+					}
+				}
+			}
+		};
+		$scope.$applyAsync();
+	});
 	$scope.$on('playerList', function(event, data) {
 		let parsedList = JSON.parse(data);
-		//console.log(data)
 
 		parsedList.sort(function(a, b) {
 		var keyA = a.id,
@@ -181,17 +204,17 @@ function($scope, $rootScope, $state, $timeout, $UiAppsService, $Settings, $trans
 		const b = JSON.stringify(angular.toJson($scope.playersList))
 
 		if (a != b) {
-		$scope.playersList = parsedList;
-		playerListCache = parsedList;
+			playerListCache = parsedList;
+			$scope.playersList = playerListCache;
 		}
-	})
+	});
 
-	$scope.getVueIconPath = getVueIconPath
+	$scope.getVueIconPath = getVueIconPath;
 
 	$scope.copyPlayerName = function(name) {
 		$scope.dummy = undefined;
 		bngApi.engineLua(`setClipboard(require("mime").unb64('` + btoa(name) + `'))`)
-	}
+	};
 	$scope.deleteAllVehicles = function(name) {
 		bngApi.engineLua(`
 			for id, veh in pairs(MPVehicleGE.getVehicles()) do
@@ -201,29 +224,29 @@ function($scope, $rootScope, $state, $timeout, $UiAppsService, $Settings, $trans
 				end
 			end
 		`)
-	}
+	};
 	$scope.queueEvents = function(id) {
 		$scope.dummy = undefined;
 		bngApi.engineLua(`MPVehicleGE.applyPlayerQueues(${id})`)
-	}
+	};
 	$scope.switchCameraTo = function(name) {
 		$scope.dummy = undefined;
 		bngApi.engineLua(`MPVehicleGE.focusCameraOnPlayer("${name}")`)
-	}
+	};
 	$scope.openProfile = function(name) {
 		$scope.dummy = undefined;
 		openExternalLink(`https://forum.beammp.com/u/${name}/summary`)
-	}
+	};
 	$scope.restoreVehicles = function(name) {
 		$scope.dummy = undefined;
 		bngApi.engineLua(`MPVehicleGE.restorePlayerVehicle("${name}")`)
-	}
+	};
 
 	$scope.resume = function() {
 		$state.go('play')
-	}
+	};
 	$scope.openPopupOfId = function(id) {
-		const elements = document.getElementsByClassName('mpPauseContainer')
+		const elements = document.getElementsByClassName('mpPauseContainer');
 		for (let i = 0; i < elements.length; i++) {
 			const element = elements[i];
 
@@ -231,15 +254,16 @@ function($scope, $rootScope, $state, $timeout, $UiAppsService, $Settings, $trans
 				element.style.display = ""
 			} else {
 				element.style.display = "none"
-			}
-		}
-	}
+			};
+		};
+	};
 	$scope.mainMenu = function() {
-		$state.go('menu.mainmenu')
-	}
+		$state.go('menu.mainmenu');
+	};
 	$scope.leaveServer = function() {
 		ConfirmationDialog.open(
-			"ui.multiplayer.pauseMenu.areYouSure", "ui.multiplayer.pauseMenu.disconnectConfirmation",
+			"ui.multiplayer.pauseMenu.areYouSure",
+			"ui.multiplayer.pauseMenu.disconnectConfirmation",
 			[
 				{ label: "ui.multiplayer.pauseMenu.disconnect", key: true, default: false },
 				{ label: "ui.common.cancel", key: false, default: true, isCancel: true },
@@ -247,11 +271,12 @@ function($scope, $rootScope, $state, $timeout, $UiAppsService, $Settings, $trans
 			{ class: "" }
 		).then(res => {
 			if (res) bngApi.engineLua(`MPCoreNetwork.leaveServer(true)`)
-		})
-	}
+		});
+	};
 	$scope.quitGame = function() {
 		ConfirmationDialog.open(
-			"ui.multiplayer.pauseMenu.areYouSure", "ui.multiplayer.pauseMenu.quitToDesktopConfirmation",
+			"ui.multiplayer.pauseMenu.areYouSure",
+			"ui.multiplayer.pauseMenu.quitToDesktopConfirmation",
 			[
 				{ label: "ui.multiplayer.pauseMenu.quitToDesktop", key: true, default: false },
 				{ label: "ui.common.cancel", key: false, default: true, isCancel: true },
@@ -259,9 +284,9 @@ function($scope, $rootScope, $state, $timeout, $UiAppsService, $Settings, $trans
 			{ class: "" }
 		).then(res => {
 			if (res) bngApi.engineLua(`quit()`)
-		})
-	}
-}])
+		});
+	};
+}]);
 
 function getVueIconPath(iconName) {
 	return "/ui/ui-vue/src/assets/fonts/bngIcons/svg/" + iconName + ".svg"
@@ -290,11 +315,11 @@ function formatServerName(isdesc, string) {
 		const nextToken = tokens[i+1]?.trim() || '';
 		if (/^\^.$/.test(token)) {
 			flush();
-			if (token === '^r') {
+			if (token === '^r') { // reset
 				classes.clear();
-            } else if (isdesc && token === '^p') {
+            } else if (isdesc && token === '^p') { // newline
                 currentText += '<br>';
-			} else if (token === '^*') {
+			} else if (token === '^*') { // bngIcons
 				const cls = globalThis.serverStyleMap?.[token];
 				if(cls) classes.add(cls);
 				if (iconsOrig[nextToken]) {
@@ -302,7 +327,7 @@ function formatServerName(isdesc, string) {
 				};
 			} else {
 				const cls = globalThis.serverStyleMap?.[token];
-				if (cls?.startsWith('color-')) {
+				if (cls?.startsWith('color-')) { // color
 					[...classes].forEach(c => c.startsWith('color-') && classes.delete(c));
 					classes.add(cls);
 				} else if (cls) {
