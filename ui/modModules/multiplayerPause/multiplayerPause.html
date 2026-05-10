@@ -124,8 +124,8 @@
 					{{:: 'ui.multiplayer.server.playerList' | translate}}
 					<span> ({{
 					(
-						joinedViaBackend &&
-							((playersList.length && maxPlayers) && playersList.length+'/'+maxPlayers)
+						(joinedViaBackend &&
+							((playersList.length && maxPlayers) && playersList.length+'/'+maxPlayers))
 						||
 							((playersList.length && playersText) && playersList.length+' '+playersText)
 					)
