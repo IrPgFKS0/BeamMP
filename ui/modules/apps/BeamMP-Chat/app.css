@@ -8,7 +8,7 @@
     height: 100%;
     width: 100%;
     font-size: 1em;
-    font-family: sans-serif, Arial, Helvetica;
+	font-family: var(--bmp-fnt-defs);
 }
 
 #chat-input {
@@ -35,6 +35,7 @@
     transition: 0.20s;
     background-color: rgba(0, 0, 0, 0.45);
     height: 100%;
+	font-family: var(--bmp-fnt-defs);
 }
 
 .multiplayerChat .buttons:hover {
@@ -90,6 +91,7 @@ ul#chat-list {
     line-height: 0.7em;
     color: rgba(255, 255, 255, 0.6);
     padding-right: 5px;
+	font-family: 'VueNotoSans Mono';
 }
 
 #chat-list::-webkit-scrollbar {
@@ -98,38 +100,3 @@ ul#chat-list {
     background: transparent;
     /* Optional: just make scrollbar invisible */
 }
-
-.color-0 { color: #131313; }
-.color-1 { color: var(--bng-add-indigoblue-600); }
-.color-2 { color: var(--bng-add-green-400); }
-.color-3 { color: var(--bng-add-babyblue-400); }
-.color-4 { color: var(--bng-add-red-600); }
-.color-5 { color: var(--bng-add-magenta-550); }
-.color-6 { color: var(--bng-orange-b400); }
-.color-7 { color: #AAAAAA; }
-.color-8 { color: #555555; }
-.color-9 { color: var(--bng-add-indigoblue-500); }
-.color-a { color: var(--bng-add-green-200); }
-.color-b { color: var(--bng-add-babyblue-200); }
-.color-c { color: #ff4545; }
-.color-d { color: var(--bng-add-magenta-300); }
-.color-e { color: var(--bng-ter-yellow-50); }
-.color-f { color: #FFFFFF; }
-
-.bold {
-    font-weight: bold;
-}
-
-.line-through {
-    text-decoration: line-through;
-}
-
-.underline {
-    text-decoration: underline;
-}
-
-.italic {
-    font-style: italic;
-}
-
-.bngIcon { font-family: bngIcons !important; }

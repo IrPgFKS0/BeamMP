@@ -1,7 +1,7 @@
 div#Session {
 		display: -webkit-box;
 		height: 30px;
-		font-family: 'Segoe UI', Roboto, sans-serif;
+		font-family: var(--bmp-fnt-defs);
     	font-weight: bold;
 		color: white;
 	}
@@ -19,6 +19,7 @@ div#Session {
 	#quit-button {
 		width: 55px;
 		height: 100%;
+		font-family: var(--bmp-fnt-defs);
 	}
 
 	.outerDiv {
