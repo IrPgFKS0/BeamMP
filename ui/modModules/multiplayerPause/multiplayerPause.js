@@ -10,6 +10,7 @@ var playerListCache = [];
 var modButtons = {};
 
 var currentServer = undefined;
+var directConnect = undefined;
 var serverIp = undefined;
 
 var roleName = undefined;
@@ -45,12 +46,12 @@ export default angular.module('multiplayerPause', ['ui.router'])
 
 .controller('multiplayerPause', ['$scope', '$state', '$timeout', 'UiAppsService', 'Settings', '$translate', 'ConfirmationDialog', 
 function($scope, $state, $timeout, $UiAppsService, $Settings, $translate, ConfirmationDialog) {
-	console.log('The "multiplayerPause" controller says hello');
+	//console.log('Multiplayer pause menu opened');
 	bngApi.engineLua('ui_topBar.updateActiveItem()')
 
-	$scope.$on("$destroy", function(event, data) {
-		console.log('The "multiplayerPause" controller says goodbye');
-	});
+	//$scope.$on("$destroy", function(event, data) {
+	//	//console.log('Multiplayer pause menu closed');
+	//});
 
 	$scope.modButtons = modButtons;
 
@@ -69,6 +70,22 @@ function($scope, $state, $timeout, $UiAppsService, $Settings, $translate, Confir
 		onServerListReceived(data)
 	});
 	async function onServerListReceived(serverList) {
+		function checkDirectConnect() {
+			const serverDetailsButton = document.getElementById("mpPauseServerDetailsButton");
+			if (!directConnect) {
+				console.log('Joined current server via backend? Enabling server details');
+
+				serverDetailsButton.removeAttribute('disabled');
+				$scope.joinedViaBackend = true;
+			} else {
+				console.log('Joined current server via direct connect? Simplifying server details');
+
+				serverDetailsButton.setAttribute('disabled', '');
+				$scope.joinedViaBackend = false;
+				$scope.serverName = $translate.instant('ui.multiplayer.direct_connect');
+				$scope.playersText = $translate.instant('ui.multiplayer.players');
+			};
+		};
 		if (currentServer) {
 			console.log('Using cached current server data...');
 
@@ -86,7 +103,9 @@ function($scope, $state, $timeout, $UiAppsService, $Settings, $translate, Confir
 			if (currentServer.partner) $scope.serverStatus = "partner";
 			if (currentServer.featured) $scope.serverStatus = "featured";
 
+			checkDirectConnect()
 		} else {
+
 			if (serverIp) {
 				console.log('Iterating through the server list to find the current server...')
 				for (let i = 0; i < serverList.length; i++) {
@@ -109,25 +128,16 @@ function($scope, $state, $timeout, $UiAppsService, $Settings, $translate, Confir
 						if (currentServer.partner) $scope.serverStatus = "partner";
 						if (currentServer.featured) $scope.serverStatus = "featured";
 
+						checkDirectConnect()
+
 						break
 					};
-				};
-				let serverDetailsButton = document.getElementById("mpPauseServerDetailsButton")
-				if (currentServer) {
-					console.log('Joined current server via backend? Enabling server details');
-					serverDetailsButton.removeAttribute('disabled');
-					$scope.joinedViaBackend = true;
-				} else {
-					console.log('Joined current server via direct connect? Disabling server details');
-					serverDetailsButton.setAttribute('disabled', '');
-					$scope.joinedViaBackend = false;
-					$scope.serverName = $translate.instant('ui.multiplayer.direct_connect');
-					$scope.playersText = $translate.instant('ui.multiplayer.players');
 				};
 			} else {
 				console.log('Getting current server...')
 				bngApi.engineLua(`MPCoreNetwork.getCurrentServer()`, function(currentServer) {
 					if (currentServer) {
+						directConnect = !currentServer.name
 						serverIp = `${currentServer.ip}:${currentServer.port}`;
 						onServerListReceived(serverList);
 					} else {

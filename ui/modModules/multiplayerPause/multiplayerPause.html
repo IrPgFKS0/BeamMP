@@ -122,15 +122,13 @@
 				<link type="text/css" rel="stylesheet" href="/ui/modules/atom/title/title.css" />
 				<div class="bng-title">
 					{{:: 'ui.multiplayer.server.playerList' | translate}}
-					<span> ({{
-					(
-						(joinedViaBackend &&
+					<span> ({{((joinedViaBackend &&
 							((playersList.length && maxPlayers) && playersList.length+'/'+maxPlayers))
-						||
+							||
 							((playersList.length && playersText) && playersList.length+' '+playersText)
-					)
-					|| ('ui.multiplayer.loading' | translate)
-					}})</span>
+						)
+						|| ('ui.multiplayer.loading' | translate)}})
+					</span>
 				</div>
 			</div>
 			<div id="mpPausePlayerList">

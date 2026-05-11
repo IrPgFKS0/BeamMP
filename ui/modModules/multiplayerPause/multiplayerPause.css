@@ -154,12 +154,15 @@
 	-moz-osx-font-smoothing:grayscale
 }
 
+/*
 
+	Base menu
 
+*/
 .mpPauseWrapper {
 	--mpFntDefs: 'VueNotoSans', 'VueNotoSans JP', 'VueNotoSans KR', 'VueNotoSans SC', sans-serif;
 	--off-white-from-vue:oklch(92.5% 0 0);
-	pointer-events: auto;
+	pointer-events: none;
 	font-family: var(--mpFntDefs);
 	width: 100%;
 	height: 100%;
@@ -171,16 +174,13 @@
 	justify-content: center;
 	gap: 1rem;
 
-	.mpPauseMainContainer {
-		width: 40vw;
-		max-width: 66vh;
-		max-height: 50vh;
-
+	.mpPauseContainer {
+		pointer-events: all;
 		display:flex;
 		flex-direction: column;
    		justify-content: center;
 		gap: 1rem;
-	};
+	}
 	.mpPauseSection {
 		background-color: rgba(0, 0, 0, 0.66);
 		border-radius: var(--bng-corners-2);
@@ -256,127 +256,21 @@
 		};
 	};
 }
-.mpPauseServerDetailsContainer {
-	font-family: VueNotoSans var(--fnt-defs);
-	display: flex;
-	position: absolute;
-	width: 100%;
-	height: 100%;
-	z-index: 99;
-	
-	flex-direction: column;
-	gap: 0.5rem;
-	justify-content: center;
-	align-items: center;
 
-	background-color: rgba(0, 0, 0, 0.5);
-}
-.mpPauseServerDetailsHeader {
-	display: flex;
-	position: relative;
+/*
 
-	flex-direction: column;
- 	justify-content: space-between;
-  	align-items: flex-start;
-}
-.serverStatusLabel {
-	display: none;
-	padding: 0.125rem 0.25rem;
-	margin-right: 0.5rem;
+	Main pause menu
 
-	font-size: 0.75rem;
-	font-style: italic;
-	text-transform: capitalize;
-	
-	color: var(--off-white-from-vue);
-	background-color: rgba(0, 0, 0, 0.33);
-	border: 0.125rem solid transparent;
-	border-radius: var(--bng-corners-1);
-
-	&.serverStatusLabel-official,
-	&.serverStatusLabel-partner,
-	&.serverStatusLabel-featured {
-		display: inline-block;
-	};
-	&.serverStatusLabel-official {
-		background-color: rgba(243, 109, 36, 0.25);
-		border-color: rgba(243, 109, 36, 0.50);
-	};
-	&.serverStatusLabel-partner {
-		background-color: rgba(var(--bng-add-blue-500-rgb), 0.25);
-		border-color: rgba(var(--bng-add-blue-500-rgb), 0.50);
-	};
-	&.serverStatusLabel-featured {
-		background-color: rgba(var(--bng-add-green-500-rgb), 0.25);
-		border-color: rgba(var(--bng-add-green-500-rgb), 0.50);
-	}
-}
-.mpPauseBack {
-	position: absolute;
-	right: 0;
-	color: white;
-	background-color: var(--bng-black-o4);
-	border: .125rem solid var(--bng-cool-gray-600);
-	border-radius: var(--bng-corners-1);
-	padding: .5em;
-	padding-top: .3em;
-	padding-bottom: .325em;
-	&:hover, &:focus-within {	
-		background-color: var(--bng-orange-600);
-		border-color: var(--bng-orange-b400);
-	}
+*/
+.mpPauseMainContainer {
+	width: 40vw;
+	max-width: 66vh;
+	max-height: 50vh;
 }
 
-.tagList {
-	background-color:var(--bng-black-o4);
-	max-width: fit-content;
-	height:fit-content;
-	padding: 0.25em 0.5em;
-	margin-right:1em;
-	word-break: keep-all;
-	border: solid var(--bng-cool-gray-600) 0.125em;
-	border-radius: var(--bng-corners-2);
-	&.tagListShort {
-		display: flex;
-		font-size: 0.8em;
-		line-height: 1.5em;
-		margin-right: 0;
-		padding: 0.125em 0.25em;
-		border-radius: var(--bng-corners-1);
-	}
-}
-.tagListContainer {
-	display:inline-flex;
-	max-width: 30em; /*25em */
-	height: fit-content;
-	
-	flex-wrap: wrap;
-	gap: 0.25rem 0.25rem;
-}
-.tag-icon {
-	margin-right: 0.1em;
-	filter: contrast(0) brightness(2);
-	font-size: 1.5em;
-    width: 1em;
-    height: 1em;
-    line-height: 1.5em;
-	vertical-align: middle !important;
-}
-.modButtonModLabel {
-	position: absolute;
-	right: 0;
-	top: 0;
-	padding: 0.25rem;
-	background-color: rgba(0, 0, 0, 0.33);
-	color: var(--bng-add-green-400);
-	border-radius: 0 var(--bng-corners-1);
-	font-family: VueNotoSans var(--fnt-defs);
-	font-style: italic;
-	font-size: 0.8rem;
-	line-height: 1em;
-
-}
-
+/*
+	Main pause menu, Player list
+*/
 #mpPausePlayerList {
 	--mpPlayerListGap: 0.5rem;
 	--mpPlayerListRow: 1.5rem;
@@ -470,4 +364,136 @@
 	&:hover, &:focus {
 		background-color: rgba(var(--bng-orange-600-rgb), 0.6);
 	};
+}
+
+/*
+
+	Server details submenu
+
+*/
+.mpPauseServerDetailsContainer {
+	font-family: VueNotoSans var(--fnt-defs);
+	display: flex;
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	z-index: 99;
+	
+	flex-direction: column;
+	gap: 0.5rem;
+	justify-content: center;
+	align-items: center;
+
+	background-color: rgba(0, 0, 0, 0.5);
+}
+.mpPauseServerDetailsHeader {
+	display: flex;
+	position: relative;
+
+	flex-direction: column;
+ 	justify-content: space-between;
+  	align-items: flex-start;
+}
+.serverStatusLabel {
+	display: none;
+	padding: 0.125rem 0.25rem;
+	margin-right: 0.5rem;
+
+	font-size: 0.75rem;
+	font-style: italic;
+	text-transform: capitalize;
+	
+	color: var(--off-white-from-vue);
+	background-color: rgba(0, 0, 0, 0.33);
+	border: 0.125rem solid transparent;
+	border-radius: var(--bng-corners-1);
+
+	&.serverStatusLabel-official,
+	&.serverStatusLabel-partner,
+	&.serverStatusLabel-featured {
+		display: inline-block;
+	};
+	&.serverStatusLabel-official {
+		background-color: rgba(243, 109, 36, 0.25);
+		border-color: rgba(243, 109, 36, 0.50);
+	};
+	&.serverStatusLabel-partner {
+		background-color: rgba(var(--bng-add-blue-500-rgb), 0.25);
+		border-color: rgba(var(--bng-add-blue-500-rgb), 0.50);
+	};
+	&.serverStatusLabel-featured {
+		background-color: rgba(var(--bng-add-green-500-rgb), 0.25);
+		border-color: rgba(var(--bng-add-green-500-rgb), 0.50);
+	}
+}
+.mpPauseBack {
+	position: absolute;
+	right: 0;
+	color: white;
+	background-color: var(--bng-black-o4);
+	border: .125rem solid var(--bng-cool-gray-600);
+	border-radius: var(--bng-corners-1);
+	padding: .5em;
+	padding-top: .3em;
+	padding-bottom: .325em;
+	&:hover, &:focus-within {	
+		background-color: var(--bng-orange-600);
+		border-color: var(--bng-orange-b400);
+	}
+}
+
+/*
+
+	Tag lists (also used for modlist)
+
+*/
+.tagList {
+	background-color:var(--bng-black-o4);
+	max-width: fit-content;
+	height:fit-content;
+	padding: 0.25em 0.5em;
+	margin-right:1em;
+	word-break: keep-all;
+	border: solid var(--bng-cool-gray-600) 0.125em;
+	border-radius: var(--bng-corners-2);
+
+	&.tagListShort {
+		display: flex;
+		font-size: 0.8em;
+		line-height: 1.5em;
+		margin-right: 0;
+		padding: 0.125em 0.25em;
+		border-radius: var(--bng-corners-1);
+	};
+}
+.tagListContainer {
+	display:inline-flex;
+	max-width: 30em;
+	height: fit-content;
+	
+	flex-wrap: wrap;
+	gap: 0.25rem 0.25rem;
+}
+.tag-icon {
+	margin-right: 0.1em;
+	filter: contrast(0) brightness(2);
+	font-size: 1.5em;
+    width: 1em;
+    height: 1em;
+    line-height: 1.5em;
+	vertical-align: middle;
+}
+.modButtonModLabel {
+	position: absolute;
+	right: 0;
+	top: 0;
+	padding: 0.25rem;
+	background-color: rgba(0, 0, 0, 0.33);
+	color: var(--bng-add-green-400);
+	border-radius: 0 var(--bng-corners-1);
+	font-family: VueNotoSans var(--fnt-defs);
+	font-style: italic;
+	font-size: 0.8rem;
+	line-height: 1em;
+
 }
