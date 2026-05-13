@@ -133,7 +133,7 @@
 			</div>
 			<div id="mpPausePlayerList">
 				<!-- ng-if="!player.self" -->
-				<div ng-repeat="player in playersList" bng-nav-scroll bng-nav-scroll-force class="mpPausePlayerListRow">
+				<div ng-repeat="player in playersList" bng-nav-scroll bng-nav-scroll-force class="mpPausePlayerListRow" id="mpPause-playerList-{{player.id}}">
 					<div flex style="display:inline-flex;flex-wrap:nowrap;gap:0.25rem;min-width:0">
 						<span class="mpPausePlayerRowId" ng-style="{'color': (player.id!=='?' && 'var(--bng-add-green-400)') || 'var(--bng-orange-500)'}">{{ (showPlayerIDs && ''+player.id) || '•' }}</span>
 						<div flex="" class="mpPausePlayerRowName" ng-style="

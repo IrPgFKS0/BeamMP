@@ -295,6 +295,9 @@
 	min-height: var(--mpPlayerListRow);
 	height: var(--mpPlayerListRow);
 	border-radius: var(--bng-corners-2);
+	&.mpPausePlayerListRowEventQueued {
+		background-color: rgba(243, 109, 36, 0.66);
+	};
 	.mpPausePlayerRowId {
 		font-family: 'VueNotoSans Mono', monospace;
 	};

@@ -198,6 +198,8 @@ function($scope, $state, $timeout, $UiAppsService, $Settings, $translate, Confir
 		};
 		$scope.$applyAsync();
 	});
+
+
 	$scope.$on('playerList', function(event, data) {
 		let parsedList = JSON.parse(data);
 
@@ -216,8 +218,34 @@ function($scope, $state, $timeout, $UiAppsService, $Settings, $translate, Confir
 		if (a != b) {
 			playerListCache = parsedList;
 			$scope.playersList = playerListCache;
-		}
+		};
 	});
+
+	var queuedPlayers = {};
+	$scope.$on('setQueue', function(event, data) {
+		queuedPlayers = data.queuedPlayers || {};
+		setQueue();
+	});
+	function setQueue() {
+		queuedPlayers = Object.keys(queuedPlayers);
+		for (const element of document.getElementsByClassName('mpPausePlayerListRowEventQueued')) {
+			element.classList.remove('mpPausePlayerListRowEventQueued');
+		};
+		for (const index in playerListCache) {
+			const player = playerListCache[index]
+			let playerListRowElement = document.getElementById(`mpPause-playerList-${player.id}`);
+			if (playerListRowElement) {
+				if (queuedPlayers.includes(String(player.id))) {
+					//console.log(`Adding event queued class for ${player.id}`);
+					playerListRowElement.classList.add('mpPausePlayerListRowEventQueued');
+				} else {
+					//console.log(`Removing event queued class for ${player.id}`);
+					playerListRowElement.classList.remove('mpPausePlayerListRowEventQueued');
+				};
+			};
+		};
+	}
+	bngApi.engineLua('UI.updatePlayersList(); UI.sendQueue()');
 
 	$scope.getVueIconPath = getVueIconPath;
 

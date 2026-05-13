@@ -166,6 +166,27 @@ local function updateQueue( spawnCount, editCount, queuedPlayers)
 
 	UIqueue = {spawnCount = spawnCount, editCount = editCount, queuedPlayers = queuedPlayersJS}
 	UIqueue.show = spawnCount+editCount > 0
+
+	if UIqueue.show then
+		--log('D', 'queueNotification', 'Creating queue message')
+		guihooks.trigger('Message', {
+			msg = string.format(
+				MPTranslate('ui.multiplayer.queuedEvents', 'ui.multiplayer.queuedEvents'),
+				(UIqueue.editCount or "?"),
+				(UIqueue.spawnCount or "?")
+			),
+			ttl = 60,
+			category = 'queuedEvents',
+			icon = 'carClock'
+		})
+	else
+		--log('D', 'queueNotification', 'Deleting queue message')
+		guihooks.trigger('Message', {
+			category = 'queuedEvents',
+			clear = true
+		})
+	end
+	
 	sendQueue()
 end
 
