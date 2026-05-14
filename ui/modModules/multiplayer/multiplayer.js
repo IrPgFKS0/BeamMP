@@ -189,12 +189,35 @@ export default angular.module('multiplayer', ['ui.router'])
 	`
 	var beammpModInfo = document.createElement("div");
 	beammpModInfo.innerHTML = `
+		<style>
+			#BeamMPVersionInject {
+				display: flex;
+				align-items: center;
+
+				span {
+					padding: 0 0.25em 0 0.25em;
+				};
+				.divider {
+					background-color: #f60;
+					width: .25rem;
+					height: 1.8em;
+					margin-left: .5rem;
+					margin-right: .2rem;
+					display: inline-block;
+					transform: skew(-23deg);
+				};
+				.divider, #beammpModVersion {
+					padding: 0;
+				};
+			}
+		</style>
+
 		<span class="divider"></span>
-		<span style="margin-right: 5px;">
-			<span>BeamMP v<span id="beammpModVersion">${beammpMetrics.beammpGameVer}</span></span>
+		<span>
+			<span>BeamMP v.<span id="beammpModVersion">${beammpMetrics.beammpGameVer}</span>
 		</span>
-	`
-	beammpModInfo.id = 'BeamMPVersionInject'
+	`;
+	beammpModInfo.id = 'BeamMPVersionInject';
 
 	$rootScope.$on('authReceived', function (event, data) {
 		//console.log(event, data)
