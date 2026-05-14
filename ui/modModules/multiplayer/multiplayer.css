@@ -509,8 +509,7 @@ table#serversTable {
 
 #serversTable th {
   background-color: rgba(0, 0, 0, 0);
-  color: white;
-  transition: 0.2s;
+  transition: background-color 0.20s;
 }
 
 #serversTable th:hover {
@@ -518,7 +517,7 @@ table#serversTable {
 }
 
 .highlight {
-  background-color: #99aab5 !important;
+  background-color: var(--bng-cool-gray-400);
 }
 
 .dropdown {
