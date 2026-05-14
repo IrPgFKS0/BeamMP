@@ -733,7 +733,7 @@ div#LoadingBody {
   border: solid var(--bng-cool-gray-700) 0.125em;
   font-family: var(--bmp-fnt-defs);
 
-  width: 700px;
+  max-width: 700px;
   h1 {
     font-family: Overpass var(--bmp-fnt-defs);
     font-style: italic;
@@ -842,7 +842,7 @@ ul.serverItemDetails {
   padding: 20px;
   border-radius: var(--bng-corners-3);
   border: solid var(--bng-cool-gray-700) 0.125em;
-  width: 800px;
+  max-width: 800px;
   display: flex;
   flex-wrap: wrap;
   font-family: var(--bmp-fnt-defs);

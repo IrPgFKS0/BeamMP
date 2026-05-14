@@ -176,7 +176,7 @@ export default angular.module('multiplayer', ['ui.router'])
 }
 	</style>
 	<div class="beammp-info-bar">
-		<img src="/ui/modModules/multiplayer/beammp.png" style="padding-left: .5rem; margin: 0px 8px;" height="32px">
+		<img src="/ui/modModules/multiplayer/beammp.png" style="padding-left: .5rem; margin: 0px 8px; height: 2em;">
 		<span class="divider"></span>
 		<img src="/ui/modModules/multiplayer/icons/account-multiple.svg" style="padding: 5px" height="22px">
 		<span style="padding-left: 5px; padding-right: 10px;">Players: <strong id="beammpMetricsPlayers">${ beammpMetrics.players }</strong> </span>
