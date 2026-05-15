@@ -288,7 +288,8 @@ export default angular.module('multiplayer', ['ui.router'])
 	}
 
 	$rootScope.$on('$stateChangeSuccess', async function (event, toState, toParams, fromState, fromParams) {
-		//console.log(`Going from "${fromState.name}" -> "${toState.name}"`)
+		//console.log(`Going from "${fromState.name}" -> "${toState.name}"`);
+
 		if (toState.name == "menu.mainmenu") {
 			bngApi.engineLua('MPCoreNetwork.getLoginState()');
 			console.log('Asking for BeamMP info from main menu or multiplayerPause')
@@ -321,11 +322,15 @@ export default angular.module('multiplayer', ['ui.router'])
 				bngApi.engineLua('MPCoreNetwork.sendBeamMPInfo()');
 			};
 			beammpUserInfo.style.display = "block";
-			let userinfo =  document.getElementsByTagName("body")[0].appendChild(beammpUserInfo).children[1]
-			userinfo.style.marginRight = "0"
-			userinfo.style.top = "0"
-			userinfo.style.lineHeight = "2.5em"
-			userinfo.style.height = "2.5em"
+			let userinfo = document.getElementsByTagName("body")[0].appendChild(beammpUserInfo).children[1];
+			//userinfo.style.marginRight = "0";
+			//userinfo.style.top = "0";
+			//userinfo.style.lineHeight = "2.5em";
+			//userinfo.style.height = "2.5em";
+			userinfo.style.top = "5.625em";
+			userinfo.style.marginRight = "1em";
+			userinfo.style.background = "none";
+			userinfo.style.borderRadius = "var(--bng-corners-2)";
 
 
 			let nameElement = document.getElementById("beammp-profile-name");
@@ -348,7 +353,7 @@ export default angular.module('multiplayer', ['ui.router'])
 			injectVersion()
 		} else {
 			beammpUserInfo.style.display = "none";
-		}
+		};
   })
 }])
 
