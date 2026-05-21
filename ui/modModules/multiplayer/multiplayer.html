@@ -78,30 +78,55 @@
 </div>
 
 <md-content id="back" layout="column" flex>
-	<md-toolbar class="md-primary" id="top-bar">
-		<md-list-item layout="row" class="" style="padding:0;">
-			<div class="bng-title-wrapper">
-				<link type="text/css" rel="stylesheet" href="/ui/modules/atom/title/title.css" />
-				<div class="bng-title" style="
-					font-family: Overpass, var(--fnt-defs);
-					color: #f5f5f5;
-					font-weight: 1000;
-					font-size: 1.642em;
-					letter-spacing: normal;
-				">{{:: 'ui.multiplayer.multiplayer' | translate}}</div>
-			</div>
-			<p id="topRightStatus" style="display:none; text-align: center;margin: 0 auto;position: absolute;width: 100%;color: white;">{{:: 'ui.multiplayer.patreon.message.user' | translate}}
-			<button class="" style="
-			display:none;
-			margin: 5px;
-			border: 2px solid;
-			border-radius: 5px;
-			padding: 2px 5px;
-			color: var(--bng-orange);
+	<div id="top-bar" layout="row" class="" style="padding:0;">
+		<div class="bng-title-wrapper" style="font-size: 1.35em; padding-right: 0;">
+			<link type="text/css" rel="stylesheet" href="/ui/modules/atom/title/title.css" />
+			<div class="bng-title" style="
+				font-family: Overpass, var(--fnt-defs);
+				color: #f5f5f5;
+				font-weight: 1000;
+				font-size: 1.642em;
+				letter-spacing: normal;
+  				padding-right: 0.125em;
+			">{{:: 'ui.multiplayer.multiplayer' | translate}}</div>
+		</div>
+		<p id="topRightStatus" style="display:none; text-align: center;margin: 0 auto;position: absolute;width: 100%;color: white;">{{:: 'ui.multiplayer.patreon.message.user' | translate}}
+		<button class="" style="
+		display:none;
+		margin: 5px;
+		border: 2px solid;
+		border-radius: 5px;
+		padding: 2px 5px;
+		color: var(--bng-orange);
 		" ng-click="multiplayer.showMessage()"><span>{{:: 'ui.multiplayer.patreon.button.user' | translate}}</span></button></p>
-			<!--<button id="launcher-connect-button" class="button" ng-click="multiplayer.resetLauncherConnection()">Connect to launcher</button>-->
-		</md-list-item>
-	</md-toolbar>
+
+		<div style="
+			display: inline-flex;
+			position: absolute;
+			right: 0;
+			top: 0;
+			padding: 0.5em;
+
+			flex-direction: row;
+  			align-items: center;
+			gap: 0.25em;
+		">
+			<img style="height: 1.375em;" src="/ui/modModules/multiplayer/icons/dns.svg">
+			<span ng-bind="'Players: ' + beammpMetrics.players"></span>
+			<span style="
+				background-color: #f60;
+				width: .25rem;
+				height: 1.8em;
+				margin-left: calc(.5rem + 0.25em);
+				margin-right: calc(.2rem + 0.25em);
+				display: inline-block;
+				transform: skew(-23deg);">
+			</span>
+			<img style="height: 1.375em;" src="/ui/modModules/multiplayer/icons/account-multiple.svg">
+			<span ng-bind="'Servers: ' + beammpMetrics.servers"></span>
+		</div>
+		<!--<button id="launcher-connect-button" class="button" ng-click="multiplayer.resetLauncherConnection()">Connect to launcher</button>-->
+	</div>
 
 	<div flex layout="row" style="overflow:auto;gap:0.5em;margin-left:0.5em;margin-bottom:0.5em;border-radius:var(--bng-corners-1)">
 	<md-content layout="column" id="left-menu">

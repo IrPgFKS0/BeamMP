@@ -348,7 +348,13 @@
 }
 
 #top-bar {
-  background: transparent
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  align-items: center;
+
+  font-family: var(--bmp-fnt-defs);
 }
 
 #left-menu {

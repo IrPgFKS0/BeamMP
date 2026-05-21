@@ -162,6 +162,7 @@ export default angular.module('multiplayer', ['ui.router'])
   height: 2.9em;
   line-height: 2.9em;
   overflow: hidden;
+  font-family var(--fnt-defs);
 }
 
 .beammp-info-bar > span.divider {
@@ -174,17 +175,31 @@ export default angular.module('multiplayer', ['ui.router'])
   background-color: #f60;
   transform: skew(23deg);
 }
+.beammp-info-bar .section {
+	display: inline-flex;
+	padding: 0 0.25em 0 0.25em;
+	flex-direction: row;
+	flex-wrap: nowrap;
+	gap: 0.25em;
+	align-items: center;
+}
 	</style>
 	<div class="beammp-info-bar">
-		<img src="/ui/modModules/multiplayer/beammp.png" style="padding-left: .5rem; margin: 0px 8px; height: 2em;">
+		<img src="/ui/modModules/multiplayer/beammp_new_cropped.png" style="padding-left: .5rem; margin: 0px 8px; height: 2em;">
 		<span class="divider"></span>
-		<img src="/ui/modModules/multiplayer/icons/account-multiple.svg" style="padding: 5px" height="22px">
-		<span style="padding-left: 5px; padding-right: 10px;">Players: <strong id="beammpMetricsPlayers">${ beammpMetrics.players }</strong> </span>
-		<img src="/ui/modModules/multiplayer/icons/dns.svg" style="padding: 5px" height="22px">
-		<span style="padding-left: 5px;">Servers: <strong id="beammpMetricsServers">${ beammpMetrics.servers }</strong> </span>
+		<div class="section">
+			<div class="section">
+				<img src="/ui/modModules/multiplayer/icons/account-multiple.svg" height="22px">
+				<span>Players: <span id="beammpMetricsPlayers">${ beammpMetrics.players }</span></span>
+				<img style="margin-left: 0.25em;" src="/ui/modModules/multiplayer/icons/dns.svg" height="22px">
+				<span>Servers: <span id="beammpMetricsServers">${ beammpMetrics.servers }</span></span>
+			</div>
+		</div>
 		<span class="divider" id="beammp-profile-divider"></span>
-		<img src="${userData.avatar}" ${avatarFallbackClass} id="beammp-profile-avatar" style="padding: 5px; border-radius: 50%;" height="22px">
-		<span><strong id="beammp-profile-name">${userData.username}</strong> </span>
+		<div class="section">
+			<img src="${userData.avatar}" ${avatarFallbackClass} id="beammp-profile-avatar" style="padding: 5px; border-radius: 50%;" height="22px">
+			<span id="beammp-profile-name">${userData.username}</span>
+		</div>
 	</div>
 	`
 	var beammpModInfo = document.createElement("div");
@@ -321,14 +336,14 @@ export default angular.module('multiplayer', ['ui.router'])
 				console.log('Asking for BeamMP info because menu.multiplayer.servers was opened');
 				bngApi.engineLua('MPCoreNetwork.sendBeamMPInfo()');
 			};
-			beammpUserInfo.style.display = "block";
+			beammpUserInfo.style.display = "none";
 			let userinfo = document.getElementsByTagName("body")[0].appendChild(beammpUserInfo).children[1];
 			//userinfo.style.marginRight = "0";
 			//userinfo.style.top = "0";
 			//userinfo.style.lineHeight = "2.5em";
 			//userinfo.style.height = "2.5em";
 			userinfo.style.top = "5.625em";
-			userinfo.style.marginRight = "1em";
+			userinfo.style.marginRight = "0";
 			userinfo.style.background = "none";
 			userinfo.style.borderRadius = "var(--bng-corners-2)";
 
@@ -487,6 +502,8 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	bngApi = bngApi;
 	mdDialog = $mdDialog;
 
+	$scope.beammpMetrics = beammpMetrics
+
 	$scope.switchToDirectConnect = function() {
 		serverView = "direct";
 		$state.go('menu.multiplayer.direct');
@@ -613,7 +630,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 							font-family: var(--fnt-defs);
 							border-radius: var(--bng-corners-3);
 							flex-direction: column;
-							padding: 24px;
+							padding: 1em;
 							text-shadow: none;
 						">
 							<div class="alertDialogTitle" style="
@@ -634,10 +651,8 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 								${data.text}
 							</div>
 							<div style="display: flex; justify-content: flex-end;">
-								<md-button ng-click="continueOffline()" class="bng-button-link" style="text-transform: none">Continue offline</md-button>
-								<md-button ng-click="close()" class="bng-button-main" style="text-transform: none">
-								${data.okText}
-								</md-button>
+								<button ng-click="continueOffline()" class="bng-button-link" style="text-transform: none">{{:: 'ui.multiplayer.mdDialog.continueOffline' | translate}}</button>
+								<button ng-click="close()" class="bng-button-main" style="text-transform: none">${data.okText}</button>
 							</div>
 						</md-dialog>
 					`,
