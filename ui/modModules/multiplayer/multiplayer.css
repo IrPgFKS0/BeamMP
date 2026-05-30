@@ -1060,7 +1060,7 @@ ul.serverItemDetails {
 
 */
 .featured {
-  background-color: rgba(var(--bng-add-green-500-rgb), 0.25);
+  background-color: rgba(var(--bng-add-green-550-rgb), 0.25);
 }
 .partner {
   background-color: rgba(var(--bng-add-blue-500-rgb), 0.25);
@@ -1072,7 +1072,7 @@ ul.serverItemDetails {
   background-color: rgba(var(--bng-ter-yellow-500-rgb), 0.25);
 }
 .custom {
-  background-color: rgba(var(--bng-orange-500-rgb), 0.25);
+  background-color: rgba(var(--bng-ter-peach-400-rgb), 0.25);
 }
 .offline {
   background-color: rgba(0, 0, 0, 0.25);

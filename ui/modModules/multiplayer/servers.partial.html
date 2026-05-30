@@ -155,10 +155,10 @@
 				</tr>	
     			<tr ng-style="{'height': beforeHeight + 'px'}"></tr>
 				<tr class="server-item" ng-repeat-start="server in visibleServers track by server.id" ng-show="serversTable" ng-click="selectServer(server)" ng-class="{'highlight': server.server.ip + ':' + server.server.port === selectedServerId}">
-					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" class="server-flag" style="font-size: initial; padding-left: 3px; text-align: right; padding-right: 10px" ><img ng-src="local://local/ui/modModules/multiplayer/flags/{{server.server.location.toLowerCase()}}.png" class="flag"></img> {{server.server.location}}</td>
+					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" class="server-flag" style="font-size: initial; padding-left: 3px; text-align: right; padding-right: 10px" ><img ng-src="local://local/ui/modModules/multiplayer/flags/{{server.server.location.toLowerCase()}}.png" class="flag"></img> <span ng-bind="{{server.server.location}}"></span></td>
 					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" class="server-servername" ng-bind-html="formatCodes(server.name)" ></td>
-					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" class="server-mapname" style="font-size: initial">{{SmoothMapName(server.server.map)}}</td>
-					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" class="server-maxplayers" style="font-size: initial"><span ng-if="!server.server.custom==true">{{server.server.players}}/{{server.server.maxplayers}}</span></td>
+					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" class="server-mapname" style="font-size: initial" ng-bind="SmoothMapName(server.server.map)"></td>
+					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" class="server-maxplayers" style="font-size: initial"><span ng-if="!server.server.custom==true" ng-bind="'{{server.server.players}}'+'/'+'{{server.server.maxplayers}}'"></span></td>
 				</tr>
 				
 				<tr ng-if="server.id === selectedServerId" ng-repeat-end id="ServerInfoRow">
@@ -175,9 +175,9 @@
 								<div class="col" style="display:grid;width:100%;overflow-x:hidden">
 									<h2 class="section-header extra-right">{{:: 'ui.multiplayer.server.information' | translate}}</h2>
 									<table class="description-table">
-										<tr><th scope="row">{{:: 'ui.multiplayer.server.owner' | translate}}</th><td>{{server.server.owner || ""}}</td></tr>
-										<tr><th scope="row">{{:: 'ui.multiplayer.server.map' | translate}}</th><td>{{SmoothMapName(server.server.map || "")}}</td></tr>
-										<tr><th scope="row">{{:: 'ui.multiplayer.server.description' | translate}}</th><td><span ng-bind-html="formatCodes(server.server.sdesc|| '', true)"></span></td></tr>
+										<tr><th scope="row">{{:: 'ui.multiplayer.server.owner' | translate}}</th><td ng-bind="server.server.owner || ''"></td></tr>
+										<tr><th scope="row">{{:: 'ui.multiplayer.server.map' | translate}}</th><td ng-bind="SmoothMapName(server.server.map || '')"></td></tr>
+										<tr><th scope="row">{{:: 'ui.multiplayer.server.description' | translate}}</th><td><span ng-bind-html="formatCodes(server.server.sdesc || '', true)"></span></td></tr>
 										<tr><th scope="row">{{:: 'ui.multiplayer.server.tags' | translate}}</th>
 											<td>
 												<span ng-hide="server.server.formattedTags.length > 0">No tags</span>
@@ -196,9 +196,10 @@
 								</div>
 								<div class="col" style="display:grid;width:100%" ng-if="customIsFinite(server.server.maxplayers)==true">
 									<h2 class="section-header">{{:: 'ui.multiplayer.server.playerList' | translate}}</h2>
-									<span>{{:: 'ui.multiplayer.players' | translate }} ({{server.server.players|| ""}}/{{server.server.maxplayers|| ""}}):
-										<span ng-hide="customIsFinite(server.server.players)==true">{{:: 'ui.multiplayer.server.noPlayers' | translate}}</span>
-										<div class="tagListContainer" style="max-width:100%" ng-show="customIsFinite(server.server.players)==true">
+									<span>
+										<span ng-bind="'{{:: 'ui.multiplayer.players' | translate }}'+' ('+server.server.players+'/'+server.server.maxplayers+'):'"></span>
+										<span ng-hide="server.server.players > 0">{{:: 'ui.multiplayer.server.noPlayers' | translate}}</span>
+										<div class="tagListContainer" style="max-width:100%" ng-show="server.server.players > 0">
 											<span class="tagList tagListShort" ng-repeat="text in listPlayers(server.server.playerslist).substring(17).split(', ')">{{ text }}</span>
 										</div>
 									</span>
@@ -213,12 +214,12 @@
 									<img class="button-icon button-icon-filter" ng-src="{{ getVueIconPath('danger') }}" /> {{:: 'ui.multiplayer.server.unknownMods' | translate}}
 								</span>
 								<div ng-show="{{customToNumber(server.server.modstotal) > 0}}" style="width:95%">
-									<div>{{:: 'ui.multiplayer.server.mods' | translate}} ({{modCount(server.server.modlist || "")}}):</div>
+									<div ng-bind="'{{:: 'ui.multiplayer.server.mods' | translate}}'+' ('+modCount(server.server.modlist || '')+'):'"></div>
 										<div class="tagListContainer" style="max-width:100%">
-											<span class="tagList tagListShort" ng-repeat="text in modList(server.server.modlist|| '').split(', ')">{{ text.trim() }}</span>
+											<span class="tagList tagListShort" ng-repeat="text in modList(server.server.modlist|| '').split(', ')" ng-bind="text.trim()"></span>
 										</div>
 										<!--<div style="margin-left: 10px; max-width: 75%; max-height: 200px; overflow-y: auto; background: rgba(0, 0, 0, 0.1);">{{modList(server.server.modlist|| "")}}</div></li>-->
-									<div style="margin-top:0.8em;font-size:0.8em;color:var(--off-white-from-vue)">Total Filesize: {{formatBytes(server.server.modstotalsize) || "0"}}</div>
+									<div style="margin-top:0.8em;font-size:0.8em;color:var(--off-white-from-vue)" ng-bind="'Total Filesize: '+formatBytes(server.server.modstotalsize)"></div>
 								</div>
 							</div>
 						</div>
