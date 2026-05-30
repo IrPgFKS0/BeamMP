@@ -173,15 +173,24 @@
 		margin: 0.375em 0.5em;
 		font-weight: 500;
 		white-space: nowrap;
+		transition: none;
 	}
 	.focus-visible::before {
 		content: unset;
-	}
-	.bng-button-outline {
-		background-color: hsla(24, 100%, 35%, 0.4);
-		border-color: hsla(24, 100%, 50%, 1);
-		pointer-events: none;
-	}
+	};
+	.bng-button-secondary {
+		background-color: var(--bng-ter-blue-gray-700);
+		border-color: var(--bng-ter-blue-gray-700);
+
+		&:hover, &:focus-within {
+			background-color: var(--bng-ter-blue-gray-600);
+			border-color: var(--bng-ter-blue-gray-600);
+		};
+	};
+	.bng-button-main:hover, .bng-button-main:focus-within {
+		background-color: var(--bng-orange-400);
+		border-color: var(--bng-orange-400);
+	};
 }
 
 .mp-fancy-blur {
@@ -258,7 +267,6 @@
 		border-radius: var(--bng-corners-1) 0 0 var(--bng-corners-1);
 
 		background-color: transparent;
-		transition-duration: 0s;
 		&:hover, &:focus-within {
 			background-color: rgba(var(--bng-orange-600-rgb), 0.6);
 			border-color: var(--bng-orange);
@@ -317,8 +325,8 @@
 }
 
 #back {
-  background-color: var(--background-clr); /* match bng top bar */
-  border-radius: var(--bng-corners-2);
+	background-color: var(--background-clr); /* match bng top bar */
+	border-radius: var(--bng-corners-2);
 }
 
 .rounded-progress .md-container {
@@ -361,6 +369,7 @@
 	display:flex;
 	color: white;
 	background-color: transparent;
+	
 	.bng-button-main,
 	.bng-button-secondary,
 	.bng-button-white,
@@ -369,10 +378,15 @@
 	.bng-button-attention {
 		margin: 0;
 		margin-bottom: 0.4em;
-	}
+	};
+	.bng-button-outline {
+		background-color: hsla(24, 100%, 35%, 0.4);
+		border-color: hsla(24, 100%, 50%, 1);
+		pointer-events: none;
+	};
 	md-divider {
 		margin: 0.4em 0;
-	}
+	};
 }
 
 .leftMenuGroups {
@@ -476,7 +490,7 @@
 
 .centerPopup {
 	background-color: var(--bmp-popup-background-color);
-	padding: 20px;
+	padding: 1em;
 	border-radius: var(--bng-corners-3);
 	border: solid var(--bng-cool-gray-700) 0.125em;
 	font-family: var(--bmp-fnt-defs);
@@ -486,11 +500,39 @@
   	display: flex;
 	position: relative;
 	height: fit-content;
-	width: fit-content;
-	margin: auto;
+	max-width: fit-content;
+	place-self: center;
 	flex-direction: column;
 	align-items: center;
-	justify-content: center;
+	button {
+		min-width: fit-content;
+	}
+}
+#LoginContainer {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+}
+#loginHeader {
+	text-align: center;
+}
+.loginInputs {
+	p {
+		margin-bottom: 0;
+	};
+	.serverListSearch {
+		margin: 0;
+	}
+}
+.loginButtons {
+	display: flex;
+	justify-content: space-between;
+	margin-top: 1em;
+	gap: 0.5em;
+
+	button {
+		margin: 0 !important;
+	};
 }
 #serversTableContainer {
 	overflow-x: hidden;

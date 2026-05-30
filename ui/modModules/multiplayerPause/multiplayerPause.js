@@ -71,37 +71,37 @@ function($scope, $state, $timeout, $UiAppsService, $Settings, $translate, Confir
 	});
 	async function onServerListReceived(serverList) {
 		function checkDirectConnect() {
-			const serverDetailsButton = document.getElementById("mpPauseServerDetailsButton");
+			const serverDetailsButton = document.getElementById("mpPauseServerDetailsButton")
 			if (!directConnect) {
-				console.log('Joined current server via backend? Enabling server details');
+				console.log('Joined current server via backend? Enabling server details')
 
-				serverDetailsButton.removeAttribute('disabled');
-				$scope.joinedViaBackend = true;
+				serverDetailsButton.removeAttribute('disabled')
+				$scope.joinedViaBackend = true
 			} else {
-				console.log('Joined current server via direct connect? Simplifying server details');
+				console.log('Joined current server via direct connect? Simplifying server details')
 
-				serverDetailsButton.setAttribute('disabled', '');
-				$scope.joinedViaBackend = false;
-				$scope.serverName = $translate.instant('ui.multiplayer.direct_connect');
-				$scope.playersText = $translate.instant('ui.multiplayer.players');
-			};
-		};
+				serverDetailsButton.setAttribute('disabled', '')
+				$scope.joinedViaBackend = false
+				$scope.serverName = ""
+				$scope.playersText = $translate.instant('ui.multiplayer.players')
+			}
+		}
 		if (currentServer) {
-			console.log('Using cached current server data...');
+			console.log('Using cached current server data...')
 
-			$scope.serverName = formatServerName(false, currentServer.sname);
-			$scope.serverOwner = currentServer.owner;
-			$scope.serverDesc = formatServerName(true, currentServer.sdesc);
-			$scope.serverTags = formatServerTags(currentServer.tags);
-			$scope.maxPlayers = currentServer.maxplayers;
+			$scope.serverName = formatServerName(false, currentServer.sname)
+			$scope.serverOwner = currentServer.owner
+			$scope.serverDesc = formatServerName(true, currentServer.sdesc)
+			$scope.serverTags = formatServerTags(currentServer.tags)
+			$scope.maxPlayers = currentServer.maxplayers
 			$scope.mods = {
 				list: modList(currentServer.modlist || '').split(', '),
 				total: Number(currentServer.modstotal),
 				size: formatBytes(currentServer.modstotalsize)
-			};
-			if (currentServer.official) $scope.serverStatus = "official";
-			if (currentServer.partner) $scope.serverStatus = "partner";
-			if (currentServer.featured) $scope.serverStatus = "featured";
+			}
+			if (currentServer.official) $scope.serverStatus = "official"
+			if (currentServer.partner) $scope.serverStatus = "partner"
+			if (currentServer.featured) $scope.serverStatus = "featured"
 
 			checkDirectConnect()
 		} else {
@@ -110,40 +110,51 @@ function($scope, $state, $timeout, $UiAppsService, $Settings, $translate, Confir
 				console.log('Iterating through the server list to find the current server...')
 				for (let i = 0; i < serverList.length; i++) {
 					if (`${serverList[i].ip}:${serverList[i].port}` === serverIp) {
-						console.log(`Found the current server in the server list after ${i} iterations`);
-						//console.log(serverList[i]);
-						currentServer = serverList[i];
+						console.log(`Found the current server in the server list after ${i} iterations`)
+						//console.log(serverList[i])
+						currentServer = serverList[i]
 
-						$scope.serverName = formatServerName(false, currentServer.sname);
-						$scope.serverOwner = currentServer.owner;
-						$scope.serverDesc = formatServerName(true, currentServer.sdesc);
-						$scope.serverTags = formatServerTags(currentServer.tags);
-						$scope.maxPlayers = currentServer.maxplayers;
+						$scope.serverName = formatServerName(false, currentServer.sname)
+						$scope.serverOwner = currentServer.owner
+						$scope.serverDesc = formatServerName(true, currentServer.sdesc)
+						$scope.serverTags = formatServerTags(currentServer.tags)
+						$scope.maxPlayers = currentServer.maxplayers
 						$scope.mods = {
 							list: modList(currentServer.modlist || '').split(', '),
 							total: Number(currentServer.modstotal),
 							size: formatBytes(Number(currentServer.modstotalsize))
-						};
-						if (currentServer.official) $scope.serverStatus = "official";
-						if (currentServer.partner) $scope.serverStatus = "partner";
-						if (currentServer.featured) $scope.serverStatus = "featured";
+						}
+						if (currentServer.official) $scope.serverStatus = "official"
+						if (currentServer.partner) $scope.serverStatus = "partner"
+						if (currentServer.featured) $scope.serverStatus = "featured"
 
 						checkDirectConnect()
 
 						break
-					};
-				};
+					}
+				}
+				if (!currentServer) {
+					console.log("Didn't find the current server in the server list. Assuming custom server.")
+					document.getElementById("mpPauseServerDetailsButton").setAttribute('disabled', '')
+					$scope.serverName = ""
+					$scope.joinedViaBackend = false
+					$scope.playersText = $translate.instant('ui.multiplayer.players')
+				}
 			} else {
 				console.log('Getting current server...')
-				bngApi.engineLua(`MPCoreNetwork.getCurrentServer()`, function(currentServer) {
-					if (currentServer) {
-						directConnect = !currentServer.name
-						serverIp = `${currentServer.ip}:${currentServer.port}`;
-						onServerListReceived(serverList);
+				bngApi.engineLua(`MPCoreNetwork.getCurrentServer()`, function(coreCurrentServer) {
+					if (coreCurrentServer) {
+						if ((typeof serverIp==='string') && `${coreCurrentServer.ip}:${coreCurrentServer.port}`!==serverIp) {
+							console.log('Clearing cached current server')
+							currentServer = undefined;
+						}
+						directConnect = !coreCurrentServer.name
+						serverIp = `${coreCurrentServer.ip}:${coreCurrentServer.port}`
+						onServerListReceived(serverList)
 					} else {
 						console.log('Not connected to a server!')
 					}
-				});
+				})
 			}
 		}
 	};
@@ -174,7 +185,7 @@ function($scope, $state, $timeout, $UiAppsService, $Settings, $translate, Confir
 				class: modButton.class ?? 'mpPauseButton-outline'
 			};
 
-			console.log(`Pushed mod button with id ${id}`);
+			//console.log(`Pushed mod button with id ${id}`);
 		};
 		$scope.modButtons = modButtons;
 	});

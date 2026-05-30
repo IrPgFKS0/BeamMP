@@ -8,9 +8,9 @@
 		</div>
 		<button id="refresh-button" class="default-case bng-button-main" ng-class="" ng-click="multiplayer.refreshList()">{{:: 'ui.multiplayer.refresh' | translate}}</button>
 
-		<button id="extra-button" class="default-case bng-button-link" style="display: none;"></button>
+		<button id="extra-button" class="default-case bng-button-secondary" style="display: none;"></button>
 
-		<button class="default-case bng-button-link" style="display: flex; padding: 0.5em 0.5em;" ng-click="toggleFilterOverlay()">
+		<button class="default-case bng-button-secondary" style="display: flex; padding: 0.5em 0.5em;" ng-click="toggleFilterOverlay()">
 			<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('filter')}} />
 			<md-tooltip md-direction="top">{{:: 'ui.multiplayer.openFilters' | translate}}</md-tooltip>
 		</button>
@@ -158,7 +158,7 @@
 					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" class="server-flag" style="font-size: initial; padding-left: 3px; text-align: right; padding-right: 10px" ><img ng-src="local://local/ui/modModules/multiplayer/flags/{{server.server.location.toLowerCase()}}.png" class="flag"></img> {{server.server.location}}</td>
 					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" class="server-servername" ng-bind-html="formatCodes(server.name)" ></td>
 					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" class="server-mapname" style="font-size: initial">{{SmoothMapName(server.server.map)}}</td>
-					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" class="server-maxplayers" style="font-size: initial">{{server.server.players}}/{{server.server.maxplayers}}</td>
+					<td ng-class="{'offline': server.offline, 'custom': server.custom, 'favorite': server.isFavorite, 'featured': server.server.featured, 'official': server.server.official, 'partner': server.server.partner}" class="server-maxplayers" style="font-size: initial"><span ng-if="!server.server.custom==true">{{server.server.players}}/{{server.server.maxplayers}}</span></td>
 				</tr>
 				
 				<tr ng-if="server.id === selectedServerId" ng-repeat-end id="ServerInfoRow">
@@ -171,11 +171,11 @@
 							<span ng-bind-html="formatCodes(server.server.sname)" style="margin-left:5px"></span>
 						</h2>
 						<div class="row serverInfoRows" style="padding-top:0">
-							<div style="display:grid;width:60%;grid-template-columns:2fr 1fr;align-items:start">
+							<div style="display:grid;width:60%;grid-template-columns:2fr 1fr;align-items:start" ng-show="!server.server.custom==true">
 								<div class="col" style="display:grid;width:100%;overflow-x:hidden">
 									<h2 class="section-header extra-right">{{:: 'ui.multiplayer.server.information' | translate}}</h2>
 									<table class="description-table">
-										<tr><th scope="row">{{:: 'ui.multiplayer.server.owner' | translate}}</th><td>{{server.server.owner|| ""}}</td></tr>
+										<tr><th scope="row">{{:: 'ui.multiplayer.server.owner' | translate}}</th><td>{{server.server.owner || ""}}</td></tr>
 										<tr><th scope="row">{{:: 'ui.multiplayer.server.map' | translate}}</th><td>{{SmoothMapName(server.server.map || "")}}</td></tr>
 										<tr><th scope="row">{{:: 'ui.multiplayer.server.description' | translate}}</th><td><span ng-bind-html="formatCodes(server.server.sdesc|| '', true)"></span></td></tr>
 										<tr><th scope="row">{{:: 'ui.multiplayer.server.tags' | translate}}</th>
@@ -194,11 +194,11 @@
 										</tr>
 									</table>
 								</div>
-								<div class="col" style="display:grid;width:100%">
+								<div class="col" style="display:grid;width:100%" ng-if="customIsFinite(server.server.maxplayers)==true">
 									<h2 class="section-header">{{:: 'ui.multiplayer.server.playerList' | translate}}</h2>
 									<span>{{:: 'ui.multiplayer.players' | translate }} ({{server.server.players|| ""}}/{{server.server.maxplayers|| ""}}):
-										<span ng-hide="{{ customToNumber(server.server.players) > 0 }}">{{:: 'ui.multiplayer.server.noPlayers' | translate}}</span>
-										<div class="tagListContainer" style="max-width:100%" ng-show="{{ customToNumber(server.server.players) > 0 }}">
+										<span ng-hide="customIsFinite(server.server.players)==true">{{:: 'ui.multiplayer.server.noPlayers' | translate}}</span>
+										<div class="tagListContainer" style="max-width:100%" ng-show="customIsFinite(server.server.players)==true">
 											<span class="tagList tagListShort" ng-repeat="text in listPlayers(server.server.playerslist).substring(17).split(', ')">{{ text }}</span>
 										</div>
 									</span>
@@ -206,8 +206,11 @@
 							</div>
 							<div class="col" style="width:40%">
 								<h2 class="section-header extra-right">{{:: 'ui.multiplayer.server.mods' | translate}}</h2>
-								<span ng-hide="{{customToNumber(server.server.modstotal) > 0}}">
+								<span ng-show="{{server.server.modstotalsize && customToNumber(server.server.modstotal) <= 0}}">
 									<img class="button-icon button-icon-filter" ng-src="{{ getVueIconPath('shieldCheckmark') }}" /> {{:: 'ui.multiplayer.server.isUnmodded' | translate}}
+								</span>
+								<span ng-show="{{!server.server.modstotalsize}}">
+									<img class="button-icon button-icon-filter" ng-src="{{ getVueIconPath('danger') }}" /> {{:: 'ui.multiplayer.server.unknownMods' | translate}}
 								</span>
 								<div ng-show="{{customToNumber(server.server.modstotal) > 0}}" style="width:95%">
 									<div>{{:: 'ui.multiplayer.server.mods' | translate}} ({{modCount(server.server.modlist || "")}}):</div>

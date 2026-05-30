@@ -144,8 +144,8 @@
     "ui.multiplayer.login.password": "Password",
     "ui.multiplayer.register": "Register",
     "ui.multiplayer.playAsGuest": "Play as Guest",
-    "ui.multiplayer.loginDescription1": "Login with your BeamMP account.",
-    "ui.multiplayer.guestDescription1": "Playing as a guest may have some server restrictions, for the full experience we recommend using a registered account.",
+    "ui.multiplayer.loginDescription1": "Login with your BeamMP account",
+    "ui.multiplayer.guestDescription1": "Playing as a guest may have some server restrictions. For the full experience we recommend using a registered account.",
     "ui.multiplayer.iHaveAnAccount": "I have an account",
     "ui.multiplayer.play": "Play",
     "ui.multiplayerlauncher.lost": "The game is not connected to the launcher! Please start the game using the BeamMP Launcher.",
@@ -201,11 +201,12 @@
 	"ui.multiplayer.server.tags": "Tags:",
 	"ui.multiplayer.server.playerList": "Player List",
 	"ui.multiplayer.server.mods": "Mods",
+	"ui.multiplayer.server.unknownMods": "Unknown mod list",
 	"ui.multiplayer.server.noPlayers": "No players",
 	"ui.multiplayer.server.isUnmodded": "Vanilla",
     "ui.multiplayer.download.done": "Done — Are you stuck on this screen? Try these steps: https://docs.beammp.com/FAQ/Clearing-mods/ and if that doesn't help, contact us on the BeamMP discord or forum.",
-    "ui.multiplayer.download.downloaded": "Downloaded",
-    "ui.multiplayer.loginDescription2temp": "Login is temporarily disabled until further notice, please use a guest account.",
+    "ui.multiplayer.download.downloaded": "Activated",
+    "ui.multiplayer.loginDescription2temp": "Please use a guest account for now. The accounts system is currently being rebuilt.",
     "ui.apps.multiplayer.playerlist.copyname": "Copy name",
     "ui.apps.multiplayer.playerlist.deleteAllVehicles": "Delete all vehicles",
     "ui.apps.multiplayer.playerlist.queueEvents": "Queue events",
@@ -226,5 +227,8 @@
 	"ui.multiplayer.pauseMenu.disconnectConfirmation": "This will disconnect you from the server and return you to the main menu. Proceed?",
 	"ui.multiplayer.pauseMenu.quitToDesktop": "Quit to Desktop",
 	"ui.multiplayer.pauseMenu.quitToDesktopConfirmation": "This will close the game. Proceed?",
-	"ui.multiplayer.queuedEvents": "There are %d|%d queued events.\nPress [action=applyQueuedEvents] to apply the queued events."
+	"ui.multiplayer.queuedEvents": "There are %d|%d queued events.\nPress [action=applyQueuedEvents] to apply the queued events.",
+	"ui.multiplayer.mdDialog.disconnectGeneric": "You have been disconnected from the server",
+	"ui.multiplayer.mdDialog.continueOffline": "Continue offline"
+
 }

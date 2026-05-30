@@ -1,32 +1,37 @@
-<div flex layout="row" style="margin:auto;position:relative;height:100%">
-	<div flex="" style="max-height: 0;"></div>
+<div flex layout="row" style="
+	display:flex;
+	align-items:center;
+	justify-content: center;
+	position:relative;
+	height:100%
+">
 	<div id="MultiplayerLoginBody" class="centerPopup">
-		<img src="local://local/ui/modModules/multiplayer/beammp_new_cropped.png" style="max-width:50%" alt="BeamMP Logo">
-		<h2 class="text-red" style="text-align:center" id="LOGINERRORFIELD"></h2>
+		<img src="local://local/ui/modModules/multiplayer/beammp_new_cropped.png" style="height: 4em;" alt="BeamMP Logo">
+		<p class="text-red" style="text-align:center" id="LOGINERRORFIELD"></p>
 <!--
 		<form id="LoginContainer">
 			<h2 class="text-white" id="loginHeader">{{:: 'ui.multiplayer.loginDescription1' | translate}}</h2>
-			<div layout="column">
+			<div layout="column" class="loginInputs">
+				<p>{{:: 'ui.multiplayer.login.username' | translate}}</p>
 				<div class="serverListSearch">
-					<input flex="" class="bng-input mp-search" (keyup.enter)="multiplayer.login()" type="text" id="loginUsername" placeholder="{{:: 'ui.multiplayer.login.username' | translate}}" tabindex="1"/>
+					<input flex="" class="bng-input mp-search" (keyup.enter)="multiplayer.login()" type="text" id="loginUsername" placeholder=""/>
 				</div>
+				<p>{{:: 'ui.multiplayer.login.password' | translate}}</p>
 				<div class="serverListSearch">
-					<input flex="" class="bng-input mp-search" (keyup.enter)="multiplayer.login()" type="password" id="loginPassword" placeholder="{{:: 'ui.multiplayer.login.password' | translate}}" tabindex="2"/>
+					<input flex="" class="bng-input mp-search" (keyup.enter)="multiplayer.login()" type="password" id="loginPassword" placeholder=""/>
 				</div>
 			</div>
-			<div layout="row">
-				<div flex>
-					<button class="default-case bng-button-main" style="margin-left: 0;" ng-click="login()" tabindex="3">{{:: 'ui.multiplayer.login' | translate}}</button>
-					<button class="default-case bng-button-outline" style="margin-right: 0;" onclick="openExternalLink('https://forum.beammp.com/signup')" tabindex="4">{{:: 'ui.multiplayer.register' | translate}}</button>
-					<button class="default-case bng-button-link" ng-click="switchConnection()" tabindex="4">{{:: 'ui.multiplayer.playAsGuest' | translate}}</button>
-				</div>
+			<div layout="row" flex class="loginButtons">
+				<button flex class="default-case bng-button-main" ng-click="login()" bng-sound-class="bng_click_hover_generic">{{:: 'ui.multiplayer.login' | translate}}</button>
+				<button flex class="default-case bng-button-secondary" onclick="openExternalLink('https://forum.beammp.com/signup')" bng-sound-class="bng_click_hover_generic">{{:: 'ui.multiplayer.register' | translate}}</button>
+				<button flex class="default-case bng-button-secondary" ng-click="switchConnection()" bng-sound-class="bng_click_hover_generic">{{:: 'ui.multiplayer.playAsGuest' | translate}}</button>
 			</div>
 		</form>
 		<form id="GuestContainer" style="display: none;">
-			<h3 class="text-white">{{:: 'ui.multiplayer.guestDescription1' | translate}}</h3>
-			<div style="display:flex;  align-content: space-evenly;">
-				<button class="default-case bng-button-main" ng-click="switchConnection()" tabindex="1">{{:: 'ui.multiplayer.iHaveAnAccount' | translate}}</button>
-				<button class="default-case bng-button-link" ng-click="guestLogin()" tabindex="2">{{:: 'ui.multiplayer.play' | translate}}</button>
+			<p class="text-white" style="max-width: 40em; text-align: center;">{{:: 'ui.multiplayer.guestDescription1' | translate}}</p>
+			<div layout="row" flex class="loginButtons">
+				<button flex class="default-case bng-button-main" ng-click="switchConnection()" bng-sound-class="bng_cancel_hover_generic">{{:: 'ui.multiplayer.iHaveAnAccount' | translate}}</button>
+				<button flex class="default-case bng-button-secondary" ng-click="guestLogin()" bng-sound-class="bng_click_hover_generic">{{:: 'ui.multiplayer.play' | translate}}</button>
 			</div>
 		</form>
 -->
@@ -36,6 +41,6 @@
 				<button class="default-case bng-button-main" ng-click="guestLogin()">{{:: 'ui.multiplayer.playAsGuest' | translate}}</button>
 			</div>
 		</form>
+
 	</div>
-	<div flex="" style="max-height: 0;"></div>
 </div>

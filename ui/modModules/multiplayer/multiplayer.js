@@ -505,33 +505,35 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	$scope.beammpMetrics = beammpMetrics
 
 	$scope.switchToDirectConnect = function() {
-		serverView = "direct";
-		$state.go('menu.multiplayer.direct');
+		serverView = "direct"
+		$state.go('menu.multiplayer.direct')
 
-		var buttons = document.getElementsByClassName("servers-btn");
+		var buttons = document.getElementsByClassName("servers-btn")
 		for (var i = 0; i < buttons.length; i++) {
-			buttons[i].classList.remove("bng-button-outline");
+			buttons[i].classList.remove("bng-button-outline")
 		}
 		$timeout(function() {
-			document.getElementById("direct-connect-btn").classList.add("bng-button-outline");
-		}, 10)
+			var button = document.getElementById("direct-connect-btn")
+			button.classList.add("bng-button-outline")
+		}, 200) // Unsure how to *properly* fix this. It works at >=5 fps
 	}
 	$scope.switchServerView = function(view) {
-		var serversTableContainer = document.getElementById("serversTableContainer");
+		var serversTableContainer = document.getElementById("serversTableContainer")
 		if (serversTableContainer) {
-			serversTableContainer.scrollTop = 0;
+			serversTableContainer.scrollTop = 0
 		}
 		serverView = view;
-		$state.go('menu.multiplayer.servers');
-		repopulateServerList();
+		$state.go('menu.multiplayer.servers')
+		repopulateServerList()
 
-		var buttons = document.getElementsByClassName("servers-btn");
+		var buttons = document.getElementsByClassName("servers-btn")
 		for (var i = 0; i < buttons.length; i++) {
-			buttons[i].classList.remove("bng-button-outline");
+			buttons[i].classList.remove("bng-button-outline")
 		}
-		document.getElementById(view+"-servers-btn").classList.add("bng-button-outline");
+		var button = document.getElementById(view+"-servers-btn")
+		button.classList.add("bng-button-outline")
 
-		var extra = document.getElementById("extra-button");
+		var extra = document.getElementById("extra-button")
 		if (extra)
 		if (view == "recents") {
 			$translate('ui.multiplayer.clearRecent').then(function (translation) {
@@ -650,7 +652,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 							">
 								${data.text}
 							</div>
-							<div style="display: flex; justify-content: flex-end;">
+							<div style="display: flex; justify-content: flex-end;gap:0.5em;">
 								<button ng-click="continueOffline()" class="bng-button-link" style="text-transform: none">{{:: 'ui.multiplayer.mdDialog.continueOffline' | translate}}</button>
 								<button ng-click="close()" class="bng-button-main" style="text-transform: none">${data.okText}</button>
 							</div>
@@ -741,7 +743,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		var ip = document.getElementById('directip').value.trim();
 		var port = document.getElementById('directport').value.trim();
 		document.getElementById('LoadingServer').style.display = 'flex';
-		bngApi.engineLua(`MPCoreNetwork.connectToServer("${ip}","${port}")`);
+		bngApi.engineLua(`MPCoreNetwork.connectToServer("${ip || "127.0.0.1"}","${port || "30184"}")`);
 	};
 
 	vm.closePopup =  function() {
@@ -770,9 +772,10 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		var valid = (ip.value.length > 0) && (port.value.length > 0) && !isNaN(port.value)
 		if (!valid) return;
 		var server = {
-			cversion: await getLauncherVersion(), ip: ip.value, location: "--", map: "", maxplayers: "0", players: "0",
-			owner: "", playersList: "", sdesc: "", sname: name.value, strippedName: name.value,
-			custom: true, port: port.value
+			cversion: await getLauncherVersion(), ip: ip.value, location: "--", map: "", maxplayers: undefined, players: undefined,
+			owner: undefined, playersList: undefined, sdesc: "", sname: name.value, strippedName: name.value,
+			custom: true, port: port.value,
+			tags: ""
 		};
 		addFav(server);
 		document.getElementById('addCustomFav').style.display = 'none';
@@ -1248,6 +1251,7 @@ function($scope, $state, $timeout, $filter) {
 	$scope.formatBytes = formatBytes;
 	$scope.connect = connect;
 	$scope.customToNumber = customToNumber;
+	$scope.customIsFinite = customIsFinite;
 	$scope.customIsString = customIsString;
 	$scope.getTagCount = getTagCount;
 	$scope.formatServerTags = formatServerTags;
@@ -1680,7 +1684,7 @@ function returnDefault(data, type) {
 
 
 function listPlayers(s) {
-	if (s != undefined || s != "") {
+	if (s != undefined && s != "") {
 		var re = new RegExp(";", 'g');
 		s = s.replace(re, ', ');
 		s = s.substring(0, s.length -2);
@@ -1693,8 +1697,15 @@ function listPlayers(s) {
 function customToNumber(string) {
 	return Number(string)
 }
+function customIsFinite(value) {
+	return Number.isFinite(Number(value)) || false
+}
 function customIsString(content, index) {
-	return typeof content[index] === 'string'
+	if (typeof content !== 'object') {
+		return (typeof content) === 'string'
+	} else {
+		return (typeof content[index]) === 'string'
+	}
 }
 function getTagCount(string) {
 	return string.split(',').length
@@ -2037,7 +2048,7 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 				var offline = false;
 				var custom = false;
 				var name = tmpServer1.sname;
-				if (!tmpServer1.custom) { name += " [OFFLINE]"; offline = true; }
+				if (!tmpServer1.custom) { name = '^c[^*globeSimpleNotSign^r^c Offline]^r ' + name; offline = true; }
 				else { name += " [CUSTOM]"; custom = true }
 				$scope.serversTable[tmpServer1.ip + ":" + tmpServer1.port] = {server: tmpServer1, isFavorite: type == 1, isRecent: type == 2, name: name, offline: offline, custom: custom};
 				$scope.serversArray = Object.keys($scope.serversTable).map(function(key) {
@@ -2143,6 +2154,8 @@ function getVueIconPath(iconName) {
 };
 
 function formatServerTags(commaList) {
+	if (typeof commaList !== "string") {return []}
+
 	var tagList = []
 	var tags = commaList.split(",");
 	//console.log('Server item tag input: "'+tags+'"')
