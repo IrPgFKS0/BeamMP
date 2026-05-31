@@ -1610,24 +1610,26 @@ function formatCodes(string, isdesc = false) {
     };
 
     for (let i = 0; i < tokens.length; i++) {
-		const token = tokens[i];
-		const nextToken = tokens[i+1]?.trim() || '';
+		const token = tokens[i]
+		const nextToken = tokens[i+1]?.trim() || ''
         if (/^\^.$/.test(token)) {
-            flush();
-            if (token === '^r') {
-                classes.clear();
-            } else if (isdesc && token === '^p') {
+            flush()
+            if (token === '^r') { // reset
+                classes.clear()
+            } else if (isdesc && token === '^p') { // newline
                 currentText += '<br>';
-			} else if (token === '^*') {
+			} else if (isdesc && token === '^h') { // header
+				classes.add('header');
+			} else if (token === '^*') { // bngIcons
 				const cls = globalThis.serverStyleMap?.[token];
-				if(cls) classes.add(cls);
+				if(cls) classes.add(cls)
 
 				if (iconsOrig[nextToken]) {
 					currentText = iconsOrig[nextToken].glyph
-				};
+				}
 			} else {
-                const cls = globalThis.serverStyleMap?.[token];
-                if (cls?.startsWith('color-')) {
+                const cls = globalThis.serverStyleMap?.[token]
+                if (cls?.startsWith('color-')) { // color
                     [...classes].forEach(c => c.startsWith('color-') && classes.delete(c));
                     classes.add(cls);
                 } else if (cls) {

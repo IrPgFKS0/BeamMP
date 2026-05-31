@@ -39,3 +39,4 @@
 .underline { text-decoration: underline; }
 .italic { font-style: italic; }
 .bngIcon { font-family: bngIcons !important; }
+.header { font-size: 1.25em; }

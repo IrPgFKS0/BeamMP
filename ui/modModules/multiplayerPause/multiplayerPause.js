@@ -368,6 +368,8 @@ function formatServerName(isdesc, string) {
 				classes.clear();
             } else if (isdesc && token === '^p') { // newline
                 currentText += '<br>';
+			} else if (isdesc && token === '^h') { // header
+				classes.add('header');
 			} else if (token === '^*') { // bngIcons
 				const cls = globalThis.serverStyleMap?.[token];
 				if(cls) classes.add(cls);
