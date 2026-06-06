@@ -2,29 +2,96 @@
 // Licensed under AGPL-3.0 (or later), see <https://www.gnu.org/licenses/>.
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-var highlightedServer;
-var servers = [];
-var favorites = [];
-var recents = [];
-var mdDialog;
-var mdDialogVisible = false;
+var highlightedServer
+var servers = []
+var favorites = []
+var recents = []
+var mdDialog
+var mdDialogVisible = false
 var userData = {
 	username: 'Loading...',
 	avatar: '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg',
 	role: 'USER',
 	color: '',
 	id: -1
-};
+}
+var searchFilters = {}
 var beammpMetrics = {
 	players: "...", 
 	servers: "...",
 	beammpGameVer: "...",
 	beammpLauncherVer: "..."
 }
-var serverView = "";
+var serverView = ""
 let repopulateServerList = async function() {
 
-};
+}
+
+// Per-tag data for all available server tags
+// undefined - don't show in tiles menu
+// string - show in tiles menu with specified file name & extension from /ui/modModules/multiplayer/tiles/
+const tagThemes = {
+	'Mature/18+': undefined,
+
+	'Freeroam': 'freeroam.jpg',
+	'Roleplay': 'lineup.jpg',
+	'Economy': 'sunrise.jpg',
+	'Traffic': 'freeroam.jpg',
+	'Drift': 'drift.jpg',
+	'Derby': 'derby.jpg',
+	'Crawling': 'favorites.jpg',
+
+	'Racing': undefined,
+	'Racing:NASCAR': undefined,
+	'Racing:Track': undefined,
+	'Racing:Drag': undefined,
+	'Racing:Rally': undefined,
+	'Touge': 'racedrift.jpg',
+
+	'Offroad': '',
+	'Crawling': '',
+	'Dakar': undefined,
+	'Challenge': '',
+
+	'Derby': undefined,
+	'Arena': undefined,
+
+	'Snow/Ice': undefined,
+	'Rain': undefined,
+	'Night': undefined,
+	'Weather': undefined,
+
+	'Gamemode': undefined,
+	'Gamemode:Racing': 'racing.jpg',
+	'Gamemode:Rally': 'rally.jpg',
+	'Gamemode:Drag': 'drag.jpg',
+	'Gamemode:Derby': 'derby.jpg',
+	'Gamemode:Infection': 'crash.jpg',
+	'Gamemode:Cops-Robbers': 'crash.jpg',
+	'Gamemode:Delivery': 'delivery.jpg',
+	'Gamemode:Sumo': '',
+
+	'Scenarios': '',
+	'Events': '',
+	'Leaderboard': undefined,
+
+	'Modded': 'mod.jpg',
+	'Mod:BeamPaint': undefined,
+	'Mod:BeamJoy': undefined,
+	'Mod:CEI': undefined,
+
+	'Lang:English': undefined,
+	'Lang:Russian': undefined,
+	'Lang:French': undefined,
+	'Lang:Spanish': undefined,
+	'Lang:Portuguese': undefined,
+	'Lang:German': undefined,
+	'Lang:Polish': undefined,
+	'Lang:Arabic': undefined,
+
+	'Vanilla': '',
+	'Moderated': ''
+}
 
 import('/ui/lib/ext/purify.min.js')
 
@@ -62,6 +129,12 @@ export default angular.module('multiplayer', ['ui.router'])
 		url: '/mplogin',
 		templateUrl: '/ui/modModules/multiplayer/login.partial.html',
 		controller: 'MultiplayerLoginController as multiplayerlogin',
+		backState: 'BACK_TO_MENU'
+	})
+	.state('menu.multiplayer.tiles', {
+		url: '/mpdirect',
+		templateUrl: '/ui/modModules/multiplayer/tiles.partial.html',
+		controller: 'MultiplayerTilesController as multiplayermenu',
 		backState: 'BACK_TO_MENU'
 	})
 	.state('menu.multiplayer.servers', {
@@ -332,43 +405,47 @@ export default angular.module('multiplayer', ['ui.router'])
 
 			injectVersion()
 		} else if (toState.name.includes("menu.multiplayer.")) {
+			var searchFiltersPanel = document.getElementById('searchFilters')
 			if (toState.name === "menu.multiplayer.servers") {
-				console.log('Asking for BeamMP info because menu.multiplayer.servers was opened');
-				bngApi.engineLua('MPCoreNetwork.sendBeamMPInfo()');
-			};
-			beammpUserInfo.style.display = "none";
-			let userinfo = document.getElementsByTagName("body")[0].appendChild(beammpUserInfo).children[1];
-			//userinfo.style.marginRight = "0";
-			//userinfo.style.top = "0";
-			//userinfo.style.lineHeight = "2.5em";
-			//userinfo.style.height = "2.5em";
-			userinfo.style.top = "5.625em";
-			userinfo.style.marginRight = "0";
-			userinfo.style.background = "none";
-			userinfo.style.borderRadius = "var(--bng-corners-2)";
+				console.log('Asking for BeamMP info because menu.multiplayer.servers was opened')
+				bngApi.engineLua('MPCoreNetwork.sendBeamMPInfo()')
+				if (searchFiltersPanel) searchFiltersPanel.style.display = ""
+			} else {
+				if (searchFiltersPanel) searchFiltersPanel.style.display = "none"
+			}
+			beammpUserInfo.style.display = "none"
+			let userinfo = document.getElementsByTagName("body")[0].appendChild(beammpUserInfo).children[1]
+			//userinfo.style.marginRight = "0"
+			//userinfo.style.top = "0"
+			//userinfo.style.lineHeight = "2.5em"
+			//userinfo.style.height = "2.5em"
+			userinfo.style.top = "5.625em"
+			userinfo.style.marginRight = "0"
+			userinfo.style.background = "none"
+			userinfo.style.borderRadius = "var(--bng-corners-2)"
 
 
-			let nameElement = document.getElementById("beammp-profile-name");
-			let avatarElement = document.getElementById("beammp-profile-avatar");
-			let divider = document.getElementById("beammp-profile-divider");
+			let nameElement = document.getElementById("beammp-profile-name")
+			let avatarElement = document.getElementById("beammp-profile-avatar")
+			let divider = document.getElementById("beammp-profile-divider")
 
 			if (nameElement) {
-				nameElement.style.display = "none";
+				nameElement.style.display = "none"
 				//console.log('name hidden', nameElement)
 			}
 			if (avatarElement) {
-				avatarElement.style.display = "none";
+				avatarElement.style.display = "none"
 			}
 			if (divider) {
-				divider.style.display = "none";
+				divider.style.display = "none"
 			}
 
 			
 			//console.log('Adding Mod Version Info')
 			injectVersion()
 		} else {
-			beammpUserInfo.style.display = "none";
-		};
+			beammpUserInfo.style.display = "none"
+		}
   })
 }])
 
@@ -384,7 +461,7 @@ function($scope, $state, $timeout, $document) {
 		// Check if the user as acknowledged tos
 		const tosAccepted = localStorage.getItem("tosAccepted");
 		if (tosAccepted == "true") {
-			$state.go('menu.multiplayer.servers');
+			$state.go('menu.multiplayer.tiles');
 			return;
 		}
 	});
@@ -394,7 +471,7 @@ function($scope, $state, $timeout, $document) {
 	$scope.validate = function () {
 		localStorage.setItem("tosAccepted", "true");
 		bngApi.engineLua(`MPConfig.acceptTos()`);
-		$state.go('menu.multiplayer.servers');
+		$state.go('menu.multiplayer.tiles');
 	};
 
 	$scope.openExternalLink = function(url) {
@@ -405,7 +482,7 @@ function($scope, $state, $timeout, $document) {
 		if (data != null) {
 			if (!localStorage.getItem("tosAccepted")) {
 				localStorage.setItem("tosAccepted", data.tos);
-				$state.go('menu.multiplayer.servers');
+				$state.go('menu.multiplayer.tiles');
 			}
 		}
 	});
@@ -496,8 +573,8 @@ function($scope, $state, $timeout, $document) {
 /* //////////////////////////////////////////////////////////////////////////////////////////////
 *	MAIN CONTROLLER
 */ //////////////////////////////////////////////////////////////////////////////////////////////
-.controller('MultiplayerController', ['$scope', '$state', '$timeout', '$mdDialog', '$filter', 'ConfirmationDialog', 'toastr', '$translate',
-function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toastr, $translate) {
+.controller('MultiplayerController', ['$scope', '$state', '$timeout', '$mdDialog', '$filter', 'ConfirmationDialog', 'toastr', '$translate', '$rootScope',
+function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toastr, $translate, $rootScope) {
 	var vm = this;
 	bngApi = bngApi;
 	mdDialog = $mdDialog;
@@ -1045,6 +1122,138 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		//console.log('[MultiplayerController] destroyed.');
 	});
 
+	$scope.formatBytes = formatBytes;
+
+	$scope.availableServerVersions = []
+	$scope.availableMaps = []
+	$scope.availableTags = []
+	$scope.formattedTags = []
+	$scope.availableServerLocations = []
+
+	$scope.selectedServerLocations = []
+	$scope.selectedMaps = []
+	$scope.selectedTags = []
+	$scope.selectedServerVersions = []
+
+	vm.playerCountMin = 0
+	vm.playerCountMax = 64
+
+	vm.sliderMaxModSize = 10240 // in MB
+
+	$scope.updatePlayerCountRange = async function() {
+		var activeFilters = JSON.parse(localStorage.getItem("serverListOptions"))
+
+		activeFilters.playerCountMin = vm.playerCountMin
+		activeFilters.playerCountMax = vm.playerCountMax
+
+		searchFilters = activeFilters
+		localStorage.setItem("serverListOptions", JSON.stringify(activeFilters))
+		setSearchFilters(Object.values(searchFilters))
+		$scope.$emit('searchFiltersUpdated')
+		repopulateServerList()
+	}
+
+	$scope.updateMaxModSize = function () {
+		var activeFilters = JSON.parse(localStorage.getItem("serverListOptions"))
+
+		activeFilters.sliderMaxModSize = vm.sliderMaxModSize
+
+		searchFilters = activeFilters
+		localStorage.setItem("serverListOptions", JSON.stringify(activeFilters))
+		setSearchFilters(Object.values(searchFilters))
+		$scope.$emit('searchFiltersUpdated')
+		repopulateServerList()
+	}
+
+	$scope.$on('onServerListReceived', async function (event, data) {
+		setSearchFilters(await getSearchFilterData(data))
+	})
+	$scope.$on('reloadSearchFilters', function (event, data) {
+		console.log('received reloadSearchFilters with data: ', data)
+		setSearchFilters(data)
+	})
+	function setSearchFilters(serverSearchFilters) {
+		$timeout(function() {
+			$scope.availableServerLocations = serverSearchFilters[0]
+			$scope.availableMaps = serverSearchFilters[1]
+			$scope.availableTags = serverSearchFilters[2]
+			$scope.formattedTags = serverSearchFilters[3]
+			$scope.availableServerVersions = serverSearchFilters[4]
+
+			$scope.selectedServerLocations = serverSearchFilters[5]
+			$scope.selectedMaps = serverSearchFilters[6]
+			$scope.selectedTags = serverSearchFilters[7]
+			$scope.selectedServerVersions = serverSearchFilters[8]
+
+			vm.playerCountMin = serverSearchFilters[9]
+			vm.playerCountMax = serverSearchFilters[10]
+
+			vm.sliderMaxModSize = serverSearchFilters[11]
+		})
+	}
+
+	$scope.toggleTag = function(tag) {
+		var activeFilters = JSON.parse(localStorage.getItem("serverListOptions"))
+		var isTagActive = -1
+		console.log(`Attempting to toggle tag ${tag.raw}`)
+		for (var i = 0; i < activeFilters.tags.length; i++) {
+			//console.log(`Checking tag ${activeFilters.tags[i].raw}`)
+			if (activeFilters.tags[i].raw === tag.raw) {
+				//console.log(`We have a match everybody!! isTagActive=true on ${tag.raw}`)
+				isTagActive = i
+				break
+			}
+		}
+		console.log(tag)
+		if (isTagActive > -1) {
+			console.log(`Active tags includes ${tag.raw}, removing`)
+			activeFilters.tags.splice(isTagActive, 1)
+		} else {
+			console.log(`Active tags does not include ${tag.raw}, adding`)
+			tag.active = true
+			activeFilters.tags.splice(activeFilters.tags.length, 0, tag)
+		}
+
+		searchFilters = activeFilters
+		localStorage.setItem("serverListOptions", JSON.stringify(activeFilters))
+		setSearchFilters(Object.values(searchFilters))
+		$scope.$emit('searchFiltersUpdated')
+		repopulateServerList()
+	}
+	$scope.toggleSimple = function(category, value) {
+		var activeFilters = JSON.parse(localStorage.getItem("serverListOptions"))
+
+		switch (category) {
+			case 'serverLocation':
+				if (activeFilters.selectedServerLocations.includes(value)) {
+					activeFilters.selectedServerLocations.splice(activeFilters.selectedServerLocations.findIndex((element) => element === value), 1)
+				} else {
+					activeFilters.selectedServerLocations.splice(activeFilters.selectedServerLocations.length, 0, value)
+				}
+				break
+			case 'map':
+				if (activeFilters.selectedMaps.includes(value)) {
+					activeFilters.selectedMaps.splice(activeFilters.selectedMaps.findIndex((element) => element === value), 1)
+				} else {
+					activeFilters.selectedMaps.splice(activeFilters.selectedMaps.length, 0, value)
+				}
+				break
+			case 'serverVersion':
+				if (activeFilters.selectedServerVersions.includes(value)) {
+					activeFilters.selectedServerVersions.splice(activeFilters.selectedServerVersions.findIndex((element) => element === value), 1)
+				} else {
+					activeFilters.selectedServerVersions.splice(activeFilters.selectedServerVersions.length, 0, value)
+				}
+				break
+		}
+
+		searchFilters = activeFilters
+		localStorage.setItem("serverListOptions", JSON.stringify(activeFilters))
+		setSearchFilters(Object.values(searchFilters))
+		$scope.$emit('searchFiltersUpdated')
+		repopulateServerList()
+	}
+
 	$scope.getVueIconPath = getVueIconPath
 
 	// This JS is independent from the .mp-fancy-blur elements. 
@@ -1073,40 +1282,153 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 }])
 
 /* //////////////////////////////////////////////////////////////////////////////////////////////
+*	TILES CONTROLLER
+*/ //////////////////////////////////////////////////////////////////////////////////////////////
+.controller('MultiplayerTilesController', ['$scope', '$state', '$timeout', '$document', 
+function($scope, $state, $timeout, $document) {
+	'use strict';
+
+	var vm = this
+
+	vm.availableServerVersions = []
+	vm.availableMaps = []
+	vm.availableTags = []
+	vm.formattedTags = []
+	vm.availableServerLocations = []
+
+	$scope.$on('onServerListReceived', async function (event, data) {
+		setSearchFilters(await getSearchFilterData(data))
+	})
+	$scope.$on('reloadSearchFilters', function (event, data) {
+		console.log('received reloadSearchFilters with data: ', data)
+		setSearchFilters(data)
+	})
+	function setSearchFilters(serverSearchFilters) {
+		vm.availableServerLocations = serverSearchFilters[0]
+		vm.availableMaps = serverSearchFilters[1]
+		vm.availableTags = serverSearchFilters[2]
+		vm.formattedTags = serverSearchFilters[3]
+		vm.availableServerVersions = serverSearchFilters[4]
+	}
+	bngApi.engineLua('MPCoreNetwork.requestServerList()')
+
+	$scope.getTileBackground = function(filename) {
+		if (filename && filename!='') {
+			return `'url("/ui/modModules/multiplayer/tiles/${filename}")'`
+		} else {
+			return `'url("/ui/images/appDefault.png")'`
+		}
+	}
+
+	$scope.viewServersWithTag = function(tag) {
+		console.log('Viewing servers with the following tag:', tag)
+		
+		let serverListOptions = JSON.parse(localStorage.getItem("serverListOptions"))
+		serverListOptions.tags = [tag]
+		localStorage.setItem("serverListOptions", JSON.stringify(serverListOptions))
+		console.log(serverListOptions)
+
+		$scope.switchServerView('')
+	}
+
+	$scope.switchServerView = function(view) {
+		var serversTableContainer = document.getElementById("serversTableContainer")
+		if (serversTableContainer) {
+			serversTableContainer.scrollTop = 0
+		}
+		serverView = view;
+		$state.go('menu.multiplayer.servers')
+		repopulateServerList()
+
+		var buttons = document.getElementsByClassName("servers-btn")
+		for (var i = 0; i < buttons.length; i++) {
+			buttons[i].classList.remove("bng-button-outline")
+		}
+		var button = document.getElementById(view+"-servers-btn")
+		button.classList.add("bng-button-outline")
+
+		var extra = document.getElementById("extra-button")
+		if (extra)
+		if (view == "recents") {
+			$translate('ui.multiplayer.clearRecent').then(function (translation) {
+				extra.style.display = "";
+				extra.innerText = translation;
+
+				extra.onclick = function() {
+					vm.clearRecents();
+				};
+			});
+		} else if (view == "favorites") {
+			$translate('ui.multiplayer.addCustomServer').then(function (translation) {
+				extra.style.display = "";
+				extra.innerText = translation;
+
+				extra.onclick = function() {
+					vm.showCustomServer();
+				};
+			});
+		} else {
+			extra.style.display = "none";
+		};
+	}
+	
+}])
+
+
+/* //////////////////////////////////////////////////////////////////////////////////////////////
 *	SERVERS TAB
 */ //////////////////////////////////////////////////////////////////////////////////////////////
 .controller('MultiplayerServersController', ['$scope', '$state', '$timeout', '$filter',
 function($scope, $state, $timeout, $filter) {
 
 	var vm = this;
-	let serverListOptions = JSON.parse(localStorage.getItem("serverListOptions"))
+	$scope.$on('searchFiltersUpdated', function(event, data) {
+		updateSearchFilters()
+	})
+	function updateSearchFilters() {
+		searchFilters = JSON.parse(localStorage.getItem("serverListOptions")) ?? {
+			playerCountMin: 0,
+			playerCountMax: 250,
+			sliderMaxModSize: 10240, // in MB
+			selectMap: [],
+			serverVersions: [],
+			tags: [],
+			serverLocations: [],
+			matchAll: true,
+			searchText: "",
 
-	if (serverListOptions != null && serverListOptions.serverVersions != null && serverListOptions.tags != null && serverListOptions.serverLocations != null) {
-		vm.checkIsEmpty = serverListOptions.checkIsEmpty
-		vm.checkIsNotEmpty = serverListOptions.checkIsNotEmpty
-		vm.checkIsNotFull = serverListOptions.checkIsNotFull
-		vm.checkModSlider = serverListOptions.checkModSlider
-		vm.sliderMaxModSize = serverListOptions.sliderMaxModSize
-		vm.selectMap = Array.isArray(serverListOptions.selectMap) ? serverListOptions.selectMap : []
-		vm.serverVersions = serverListOptions.serverVersions
-		vm.tags = serverListOptions.tags
-		vm.serverLocations = serverListOptions.serverLocations
-		vm.matchAll = serverListOptions.matchAll
-		vm.searchText = ""
-	} else {
-		vm.checkIsEmpty = false
-		vm.checkIsNotEmpty = false
-		vm.checkIsNotFull = false
-		vm.checkModSlider = false
-		vm.sliderMaxModSize = 500 // in MB
-		vm.selectMap = []
-		vm.serverVersions = []
-		vm.tags = []
-		vm.serverLocations = []
-		vm.matchAll = serverListOptions.matchAll
-		vm.searchText = ""
+			formattedTags: [],
+
+			selectedServerLocations: [],
+			selectedMaps: [],
+			selectedTags: [],
+			selectedServerVersions: []
+		}
+
+		vm.playerCountMin = searchFilters.playerCountMin
+		vm.playerCountMax = searchFilters.playerCountMax
+		vm.sliderMaxModSize = searchFilters.sliderMaxModSize
+		vm.selectMap = searchFilters.selectedMaps
+		vm.serverVersions = searchFilters.selectedServerVersions
+		vm.tags = searchFilters.tags
+		vm.serverLocations = searchFilters.selectedServerLocations
+		vm.matchAll = searchFilters.matchAll
+		vm.searchText = searchFilters.searchText
+		vm.formattedTags = searchFilters.formattedTags
+		vm.selectedTags = searchFilters.selectedTags
 	}
+	updateSearchFilters()
+	
+	vm.updateSearchText = function () {
+		var activeFilters = JSON.parse(localStorage.getItem("serverListOptions"))
 
+		activeFilters.searchText = vm.searchText
+
+		searchFilters = activeFilters
+		localStorage.setItem("serverListOptions", JSON.stringify(activeFilters))
+		$scope.$emit('searchFiltersUpdated')
+		repopulateServerList()
+	}
 
 	//bngApi.engineLua('MPCoreNetwork.requestServerList()');
 
@@ -1275,156 +1597,57 @@ function($scope, $state, $timeout, $filter) {
 	});
 	
 	$scope.$on('onServerListReceived', async function (event, data) {
-		
 		servers = await receiveServers(data);
+
 		recents = await getRecents();
 		favorites = await getFavorites();
 
-		vm.availableServerVersions = [];
-		vm.availableMaps = [];
-		vm.availableTags = [];
-		vm.formattedTags = [];
-		vm.availableServerLocations = [];
-
-		for (const server of servers) {
-			if (!vm.availableServerVersions.includes("v" + server.version)) vm.availableServerVersions.push("v" + server.version);
-
-			if (!vm.availableServerLocations.includes(server.location)) vm.availableServerLocations.push(server.location);
-
-			var smoothMapName = SmoothMapName(server.map);
-
-			if(!vm.availableMaps.includes(smoothMapName)) vm.availableMaps.push(smoothMapName);
-
-			var serverTags = server.tags.split(",");
-			for (const tag of serverTags) {
-				if (!vm.availableTags.includes(tag.trim())) vm.availableTags.push(tag.trim());	
-			}
-		}
-
 		
-		vm.availableMaps.sort();
-
-		vm.availableServerVersions.sort();
-
-		vm.availableServerLocations.sort();
-		
-		vm.availableTags.sort();
-
-		for (const tag of vm.availableTags) {
-			var tagTexts = tag.split(":")
-			var tagItem = {
-				icon: '',
-				text: tagTexts[1] || tag,
-				raw: tag
-			};
-			//console.log('Tag texts: '+tagTexts)
-			if (tagTexts.length > 1) {
-				//console.log('Tag has a prefix, looking for icon')
-				if (tagTexts[0] == "Racing") {
-					tagItem.icon = '<img src='+getVueIconPath('helmets')+' class="button-icon button-icon-filter tag-icon" />'
-					//console.log('--Detected "Racing:" prefix for tag')
-
-				} else if (tagTexts[0] == "Gamemode") {
-					tagItem.icon = '<img src='+getVueIconPath('gamepad')+' class="button-icon button-icon-filter tag-icon" />'
-					//console.log('--Detected "Gamemode:" prefix for tag')
-
-				} else if (tagTexts[0] == "Mod") {
-					tagItem.icon = '<img src='+getVueIconPath('puzzleModule')+' class="button-icon button-icon-filter tag-icon" />'
-					//console.log('--Detected "Mod:" prefix for tag')
-
-				} else if (tagTexts[0] == "Lang") {
-					tagItem.icon = '<img src='+getVueIconPath('language')+' class="button-icon button-icon-filter tag-icon" />'
-					//console.log('--Detected "Lang:" prefix for tag')
-				}
-			} else {
-				//console.log('Tag does not have a prefix')
-			}
-
-			//console.log('Tag item: '+JSON.stringify(tagItem))
-			//console.log('-')
-			vm.formattedTags.push(tagItem)
-		};
-		
-		vm.formattedTags.sort();
 
 		console.log('Server list received, repopulating...')
 		vm.repopulate();
+
+		const serverSearchFilters = await getSearchFilterData(data)
+		$scope.$emit('reloadSearchFilters', serverSearchFilters)
 	});
 
 	vm.repopulate = async function () {
-		if (serverListOptions != null) {
-			if (serverListOptions.checkIsEmpty && vm.checkIsNotEmpty) vm.checkIsEmpty = false;
-			if (serverListOptions.checkIsNotEmpty && vm.checkIsEmpty) vm.checkIsNotEmpty = false;
-		}
-
-
 		await populateTable(
 			$filter,
 			$scope,
 			servers,
 			serverView,
-			vm.searchText,
-			vm.checkIsEmpty,
-			vm.checkIsNotEmpty,
-			vm.checkIsNotFull,
-			vm.checkModSlider,
-			vm.sliderMaxModSize,
-			vm.selectMap,
-			vm.serverVersions,
-			vm.tags,
-			vm.serverLocations,
-			vm.matchAll
+			searchFilters.searchText,
+			searchFilters.playerCountMin,
+			searchFilters.playerCountMax,
+			searchFilters.sliderMaxModSize,
+			searchFilters.selectedMaps,
+			searchFilters.selectedServerVersions,
+			searchFilters.tags,
+			searchFilters.selectedServerLocations,
+			searchFilters.matchAll
 		);
 
-		serverListOptions = {
-			checkIsEmpty: vm.checkIsEmpty,
-			checkIsNotEmpty: vm.checkIsNotEmpty,
-			checkIsNotFull: vm.checkIsNotFull,
-			checkModSlider: vm.checkModSlider,
-			sliderMaxModSize: vm.sliderMaxModSize,
-			selectMap: vm.selectMap,
-			serverVersions: vm.serverVersions,
-			serverLocations: vm.serverLocations,
-			tags: vm.tags,
-			matchAll: vm.matchAll
-		};
-
 		vm.activeFiltersText = [];
-		if (vm.checkIsEmpty) 				vm.activeFiltersText.push([
-			$filter('translate')('ui.multiplayer.filters.empty') ,
-			''
-		]);
-		if (vm.checkIsNotEmpty) 			vm.activeFiltersText.push([
-			$filter('translate')('ui.multiplayer.filters.notEmpty') ,
-			''
-		]);
-		if (vm.checkIsNotFull) 				vm.activeFiltersText.push([
-			$filter('translate')('ui.multiplayer.filters.notFull') ,
-			''
-		]);
-		if (vm.checkModSlider) 				vm.activeFiltersText.push([
+		vm.activeFiltersText.push([
 			$filter('translate')('ui.multiplayer.filters.modSize') + " < ",
-			formatBytes(vm.sliderMaxModSize * 1e+6)
+			formatBytes(searchFilters.sliderMaxModSize * 1e+6)
 		]);
-		if (vm.selectMap.length > 0) 		vm.activeFiltersText.push([
+		if (searchFilters.selectMap.length > 0) 		vm.activeFiltersText.push([
 			$filter('translate')('ui.multiplayer.filters.map') ,
-			vm.selectMap.join(", ")
+			searchFilters.selectMap.join(", ")
 		]);
-		if (vm.serverVersions.length > 0) 	vm.activeFiltersText.push([
+		if (searchFilters.serverVersions.length > 0) 	vm.activeFiltersText.push([
 			$filter('translate')('ui.multiplayer.filters.serverVersions') ,
-			vm.serverVersions.join(", ")
+			searchFilters.serverVersions.join(", ")
 		]);
-		if (vm.tags.length > 0) 			vm.activeFiltersText.push([
+		if (searchFilters.tags.length > 0) 			vm.activeFiltersText.push([
 			$filter('translate')('ui.multiplayer.filters.tags') ,
-			vm.tags
+			searchFilters.tags
 		]);
-		if (vm.serverLocations.length > 0) 	vm.activeFiltersText.push([
+		if (searchFilters.serverLocations.length > 0) 	vm.activeFiltersText.push([
 			$filter('translate')('ui.multiplayer.filters.serverLocations') ,
-			vm.serverLocations.join(", ")
-		]);
-		if (vm.matchAll) 				vm.activeFiltersText.push([
-			$filter('translate')('ui.multiplayer.filters.matchAll') ,
-			''
+			searchFilters.serverLocations.join(", ")
 		]);
 
 		var clearFiltersButton = document.getElementById("clearFiltersButton");
@@ -1441,7 +1664,7 @@ function($scope, $state, $timeout, $filter) {
 			}
 		}
 
-		localStorage.setItem("serverListOptions", JSON.stringify(serverListOptions));
+		localStorage.setItem("serverListOptions", JSON.stringify(searchFilters));
 	};
 
 	$scope.isFilterOverlayVisible = false;
@@ -1451,16 +1674,16 @@ function($scope, $state, $timeout, $filter) {
 	};
 
 	$scope.clearFilters = function () {
-		vm.checkIsEmpty = false;
-		vm.checkIsNotEmpty = false;
-		vm.checkIsNotFull = false;
-		vm.checkModSlider = false;
-		vm.sliderMaxModSize = 500;
-		vm.selectMap = [];
-		vm.serverVersions = [];
-		vm.tags = [];
-		vm.serverLocations = [];
-		vm.matchAll = false;
+		searchFilters.playerCountMin = 0;
+		searchFilters.playerCountMax = 64;
+		searchFilters.sliderMaxModSize = 10240;
+		searchFilters.selectMap = [];
+		searchFilters.serverVersions = [];
+		searchFilters.tags = [];
+		searchFilters.serverLocations = [];
+		searchFilters.matchAll = true;
+
+		localStorage.setItem('serverListOptions', JSON.stringify(searchFilters))
 		console.log('Cleared filters, repopulating...')
 		repopulateServerList()
 	}
@@ -1830,7 +2053,8 @@ globalThis.openExternalLink = function(url){
 }
 
 // /!\ IMPORTANT /!\ //// TYPE 0 = Normal / 1 = Favorites / 2 = Recents
-async function populateTable($filter, $scope, servers, tab, searchText = '', checkIsEmpty, checkIsNotEmpty, checkIsNotFull, checkModSlider, sliderMaxModSize, selectMap = [], SelectedServerVersions = [], tags = [], SelectedServerLocations = [], matchAll) {
+async function populateTable($filter, $scope, servers, tab, searchText = '', playerCountMin, playerCountMax, sliderMaxModSize, selectMap = [], SelectedServerVersions = [], tags = [], SelectedServerLocations = [], matchAll) {
+	console.log(tags)
 	$scope.serversTable = {}; 
 	var type = 0;
 	if (tab == "favorites") type = 1;
@@ -1889,24 +2113,18 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 		}
 		
 		// Filter by empty or full
-		if(checkIsEmpty) {
-			activeFilters = activeFilters + 1;
-			if(server.players == 0) filterMatches+=1
+		activeFilters = activeFilters + 1;
+		if(server.players >= playerCountMin) {
+			filterMatches+=1
 		};
-		if(checkIsNotEmpty) {
-			activeFilters = activeFilters + 1;
-			if(server.players > 0) filterMatches+=1
-		};
-		if(checkIsNotFull) {
-			activeFilters = activeFilters + 1;
-			if(server.players < parseInt(server.maxplayers)) filterMatches+=1
+		activeFilters = activeFilters + 1;
+		if(server.players <= playerCountMax) {
+			filterMatches+=1
 		};
 		
 		// Filter by mod size
-		if(checkModSlider) {
-			activeFilters = activeFilters + 1;
-			if(sliderMaxModSize * 1048576 < server.modstotalsize) filterMatches+=1
-		};
+		activeFilters = activeFilters + 1;
+		if(sliderMaxModSize * 1048576 >= server.modstotalsize) filterMatches+=1
 	
 		// Filter by map
 		if (selectMap.length > 0) {
@@ -2002,25 +2220,19 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 				}
 				
 				// Filter by empty or full
-				if(checkIsEmpty) {
-					activeFilters = activeFilters + 1;
+				activeFilters = activeFilters + 1;
+				if(tmpServer1.players >= playerCountMin) {
 					if(tmpServer1.players == 0) filterMatches+=1
 				};
-				if(checkIsNotEmpty) {
-					activeFilters = activeFilters + 1;
+				activeFilters = activeFilters + 1;
+				if(tmpServer1.players <= playerCountMax) {
 					if(tmpServer1.players > 0) filterMatches+=1
-				};
-				if(checkIsNotFull) {
-					activeFilters = activeFilters + 1;
-					if(tmpServer1.players < parseInt(tmpServer1.maxplayers)) filterMatches+=1
 				};
 						
 
 				// Filter by mod size
-				if(checkModSlider) {
-					activeFilters = activeFilters + 1;
-					if(sliderMaxModSize * 1048576 < tmpServer1.modstotalsize) filterMatches+=1
-				};
+				activeFilters = activeFilters + 1;
+				if(sliderMaxModSize * 1048576 >= tmpServer1.modstotalsize) filterMatches+=1
 			
 				// Filter by map
 				if (selectMap.length > 0) {
@@ -2071,6 +2283,8 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 
 	console.log('Completed repopulating')
 	$scope.onScroll();
+
+	$scope.$emit("reloadSearchFilters", await getSearchFilterData(servers))
 }
 
 // Used to connect to the backend with ids
@@ -2202,6 +2416,103 @@ function formatServerTags(commaList) {
 	};
 	//console.log('Server item tag output: '+JSON.stringify(tagList))
 	return tagList
+}
+
+async function getSearchFilterData(serverList) {
+	if (!serverList) {
+		return searchFilters
+	}
+	servers = await receiveServers(serverList)
+
+	var availableServerVersions = []
+	var availableMaps = []
+	var availableTags = []
+	var formattedTags = []
+	var availableServerLocations = []
+
+	var selectedServerLocations = []
+	var selectedMaps = []
+	var selectedTags = []
+	var selectedServerVersions = []
+
+	for (const server of servers) {
+		if (!availableServerVersions.includes("v" + server.version)) availableServerVersions.push("v" + server.version);
+
+		if (!availableServerLocations.includes(server.location)) availableServerLocations.push(server.location);
+
+		var smoothMapName = SmoothMapName(server.map);
+
+		if(!availableMaps.includes(smoothMapName) && (typeof smoothMapName==='string' && smoothMapName.length > 0)) availableMaps.push(smoothMapName);
+
+		var serverTags = server.tags.split(",");
+		for (const tag of serverTags) {
+			if (!availableTags.includes(tag.trim()) && tag.trim().length > 0) availableTags.push(tag.trim());	
+		}
+	}
+
+	availableServerVersions.sort()
+	availableMaps.sort()
+	availableTags.sort()
+	availableServerLocations.sort()
+
+	const activeFilters = JSON.parse(localStorage.getItem("serverListOptions"))
+	for (const tag of availableTags) {
+		var tagTexts = tag.split(":")
+		var tagItem = {
+			icon: '',
+			text: tagTexts[1] || tag,
+			raw: tag,
+			active: false
+		}
+
+		//console.log('Tag texts: '+tagTexts)
+		if (tagTexts[0] == "Racing") {
+			tagItem.icon = '<img src='+getVueIconPath('helmets')+' class="button-icon button-icon-filter tag-icon" />'
+
+		} else if (tagTexts[0] == "Gamemode") {
+			tagItem.icon = '<img src='+getVueIconPath('gamepad')+' class="button-icon button-icon-filter tag-icon" />'
+
+		} else if (tagTexts[0] == "Mod") {
+			tagItem.icon = '<img src='+getVueIconPath('puzzleModule')+' class="button-icon button-icon-filter tag-icon" />'
+
+		} else if (tagTexts[0] == "Lang") {
+			tagItem.icon = '<img src='+getVueIconPath('language')+' class="button-icon button-icon-filter tag-icon" />'
+		}
+		tagItem.theme = tagThemes[tagItem.raw.trim()] ?? null
+		//console.log(tagItem)
+
+		if (activeFilters && activeFilters.selectedTags) {
+			for (var i = 0; i < activeFilters.selectedTags.length; i++) {
+				if (tagItem.raw === activeFilters.selectedTags[i].raw) {
+					tagItem.active = true
+					selectedTags.push(tagItem)
+					break
+				}
+			}
+		}
+
+		//console.log('Tag item: '+JSON.stringify(tagItem))
+		//console.log('-')
+		formattedTags.push(tagItem)
+	}
+	formattedTags.sort()
+
+	return [
+		availableServerLocations,
+		availableMaps,
+		availableTags,
+		formattedTags,
+		availableServerVersions,
+		
+		activeFilters?.selectedServerLocations ?? [],
+		activeFilters?.selectedMaps ?? [],
+		selectedTags,
+		activeFilters?.selectedServerVersions ?? [],
+
+		activeFilters?.playerCountMin ?? 0,
+		activeFilters?.playerCountMax ?? 64,
+		activeFilters?.sliderMaxModSize ?? 10240,
+	]
 }
 
 

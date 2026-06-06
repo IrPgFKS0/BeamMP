@@ -3,17 +3,12 @@
 
 	<div id="serverListHeader" layout="row" layout-padding="">
 		<div class="serverListSearch">
-			<input flex="" class="bng-input mp-search" ng-model="multiplayermenu.searchText" ng-change="multiplayermenu.repopulate();" type="text" id="search" name="search" placeholder="{{:: 'ui.multiplayer.searchPlaceholder' | translate}}" />
+			<input flex="" class="bng-input mp-search" ng-model="multiplayermenu.searchText" ng-change="multiplayermenu.updateSearchText();" type="text" id="search" name="search" placeholder="{{:: 'ui.multiplayer.searchPlaceholder' | translate}}" />
 			<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('search')}} />
 		</div>
 		<button id="refresh-button" class="default-case bng-button-main" ng-class="" ng-click="multiplayer.refreshList()">{{:: 'ui.multiplayer.refresh' | translate}}</button>
 
 		<button id="extra-button" class="default-case bng-button-secondary" style="display: none;"></button>
-
-		<button class="default-case bng-button-secondary" style="display: flex; padding: 0.5em 0.5em;" ng-click="toggleFilterOverlay()">
-			<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('filter')}} />
-			<md-tooltip md-direction="top">{{:: 'ui.multiplayer.openFilters' | translate}}</md-tooltip>
-		</button>
 
 		<button class="default-case bng-button-attention" style="display: none; padding: 0.5em 0.5em;" id="clearFiltersButton" ng-click="clearFilters()">
 			<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('xmark')}} />
@@ -35,107 +30,6 @@
 				</div>
 			</span>
 		</span>
-
-		<div class="filter-overlay" ng-show="isFilterOverlayVisible" ng-click="toggleFilterOverlay(); multiplayermenu.repopulate();">
-			<div class="filter-body" ng-click="$event.stopPropagation();">
-				<h2>{{:: 'ui.multiplayer.filterOptions' | translate}}</h2>
-
-				<!--<button class="md-icon-button" style="margin-left: auto;" ng-click="toggleFilterOverlay(); multiplayermenu.repopulate();">
-					<md-icon>close</md-icon>
-				</button>-->
-
-				<div class="filter-content">
-					<md-checkbox ng-model="multiplayermenu.matchAll" tabindex="1">
-						<md-tooltip md-direction="right">
-							{{:: 'ui.multiplayer.matchAllTooltip' | translate}}
-						</md-tooltip>
-						{{:: 'ui.multiplayer.matchAll' | translate}}
-					</md-checkbox>
-					<md-checkbox ng-model="multiplayermenu.checkIsEmpty" tabindex="2">
-						<md-tooltip md-direction="right">
-							{{:: 'ui.multiplayer.emptyOnlyTooltip' | translate}}
-						</md-tooltip>
-						{{:: 'ui.multiplayer.emptyOnly' | translate}}
-					</md-checkbox>
-
-					<md-checkbox ng-model="multiplayermenu.checkIsNotEmpty" tabindex="3">
-						<md-tooltip md-direction="right">
-							{{:: 'ui.multiplayer.notEmptyTooltip' | translate}}
-						</md-tooltip>
-						{{:: 'ui.multiplayer.notEmpty' | translate}}
-					</md-checkbox>
-
-					<md-checkbox ng-model="multiplayermenu.checkIsNotFull" tabindex="4">
-						<md-tooltip md-direction="right">
-							{{:: 'ui.multiplayer.notFullTooltip' | translate}}
-						</md-tooltip>
-						{{:: 'ui.multiplayer.notFull' | translate}}
-					</md-checkbox>
-
-					<div class="dropdown-row">
-						<md-select id="filter-dropdown" ng-model="multiplayermenu.serverLocations" multiple placeholder="{{:: 'ui.multiplayer.filters.selectServerLocations' | translate}}" class="md-no-underline dropdown" tabindex="5">
-							<md-tooltip md-direction="right">
-								{{:: 'ui.multiplayer.serverLocationFilterTooltip' | translate}}
-							</md-tooltip>
-							<md-option ng-repeat="location in multiplayermenu.availableServerLocations" ng-value="multiplayermenu.availableServerLocations[$index]" style="height: 40px;">
-								<div style="display: inline-block; height: 1em; min-width: 2em;">
-									<img ng-src="local://local/ui/modModules/multiplayer/flags/{{ location.toLowerCase() }}.png" class="flag" style="height:1em" />
-								</div>
-								{{ location }}
-							</md-option>
-						</md-select>
-
-						<md-select id="filter-dropdown" ng-model="multiplayermenu.selectMap" multiple placeholder="{{:: 'ui.multiplayer.filters.selectMaps' | translate}}" class="md-no-underline dropdown" tabindex="6">
-							<md-tooltip md-direction="right">
-								{{:: 'ui.multiplayer.mapFilterTooltip' | translate}}
-							</md-tooltip>
-							<md-option ng-repeat="map in multiplayermenu.availableMaps" ng-value="multiplayermenu.availableMaps[$index]" style="height: 40px;">
-								{{ map }}
-							</md-option>
-						</md-select>
-
-						<md-select id="filter-dropdown" ng-model="multiplayermenu.tags" multiple placeholder="{{:: 'ui.multiplayer.filters.selectTags' | translate}}" class="md-no-underline dropdown" tabindex="7">
-							<md-tooltip md-direction="right">
-								{{:: 'ui.multiplayer.tagFilterTooltip' | translate}}
-							</md-tooltip>
-							<md-option ng-repeat="tag in multiplayermenu.formattedTags" ng-value="multiplayermenu.formattedTags[$index]" style="height: 40px;">
-								<div ng-bind-html="tag.icon" style="display:inline"></div>
-								<div ng-bind="tag.text" style="display:inline"></div>
-							</md-option>
-						</md-select>
-
-						<md-select id="filter-dropdown" ng-model="multiplayermenu.serverVersions" multiple placeholder="{{:: 'ui.multiplayer.filters.selectVersions' | translate}}" class="md-no-underline dropdown" tabindex="8">
-							<md-tooltip md-direction="right">
-								{{:: 'ui.multiplayer.serverVersionFilterTooltip' | translate}}
-							</md-tooltip>
-							<md-option ng-repeat="version in multiplayermenu.availableServerVersions" ng-value="multiplayermenu.availableServerVersions[$index]" style="height: 40px;">
-								{{ version }}
-							</md-option>
-						</md-select>
-					</div>
-
-					<md-checkbox ng-model="multiplayermenu.checkModSlider" style="display: flex; align-items: center;" tabindex="9">
-						<md-tooltip md-direction="right">
-							{{:: 'ui.multiplayer.modSliderTooltip' | translate}}
-						</md-tooltip>
-
-						<div class="md-label" style="margin-left: 8px;">
-							{{:: 'ui.multiplayer.modSlider' | translate}}
-						</div>
-					</md-checkbox>
-
-					<div class="md-slider-container" ng-if="multiplayermenu.checkModSlider" style="width: 60%;" tabindex="10">
-						<md-slider flex ng-model="multiplayermenu.sliderMaxModSize" min="0" max="10000" step="10" aria-label="_"></md-slider>
-						<span style="margin: 0px 15px; padding-top: 13px; color: white;">
-							{{ formatBytes(multiplayermenu.sliderMaxModSize * 1e+6) }}
-						</span>
-					</div>
-				</div>
-				<button class="default-case bng-button-main" style="margin-left: auto;" ng-click="toggleFilterOverlay(); multiplayermenu.repopulate();" tabindex="11">
-					{{:: 'ui.common.apply' | translate}}
-				</button>
-			</div>
-		</div>
 	</div>
 	<md-divider></md-divider>
 	

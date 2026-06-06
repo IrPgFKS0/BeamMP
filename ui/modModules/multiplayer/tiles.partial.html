@@ -1,0 +1,61 @@
+<div flex layout="row" style="
+	display:flex;
+	position:relative;
+	height:100%
+">
+	<div class="tileList" flex>
+		<div class="tileItem" bng-sound-class="bng_click_hover_generic" ng-click="switchServerView('official')">
+			<span ng-style="{'background-image': {{getTileBackground('official.jpg')}}}" class="tileThumbnail"></span>
+			<div class="tileContent" flex>
+				<p><strong>{{:: 'ui.multiplayer.official' | translate}}</strong></p>
+			</div>
+		</div>
+		<div class="tileItem" bng-sound-class="bng_click_hover_generic" ng-click="switchServerView('featured')">
+			<span ng-style="{'background-image': {{getTileBackground('featured.jpg')}}}" class="tileThumbnail"></span>
+			<div class="tileContent" flex>
+				<p><strong>{{:: 'ui.multiplayer.featured' | translate}}</strong></p>
+			</div>
+		</div>
+		<div class="tileItem" bng-sound-class="bng_click_hover_generic" ng-click="switchServerView('partner')">
+			<span ng-style="{'background-image': {{getTileBackground('partner.jpg')}}}" class="tileThumbnail"></span>
+			<div class="tileContent" flex>
+				<p><strong>{{:: 'ui.multiplayer.partner' | translate}}</strong></p>
+			</div>
+		</div>
+		<div class="tileItem" bng-sound-class="bng_click_hover_generic" ng-click="switchServerView('favorites')">
+			<span ng-style="{'background-image': {{getTileBackground('favorites.jpg')}}}" class="tileThumbnail"></span>
+			<div class="tileContent" flex>
+				<p><strong>{{:: 'ui.multiplayer.favorites' | translate}}</strong></p>
+			</div>
+		</div>
+		<div class="tileItem" bng-sound-class="bng_click_hover_generic" ng-click="switchServerView('recents')">
+			<span ng-style="{'background-image': {{getTileBackground('recents.png')}}}" class="tileThumbnail"></span>
+			<div class="tileContent" flex>
+				<p><strong>{{:: 'ui.multiplayer.recent' | translate}}</strong></p>
+			</div>
+		</div>
+
+
+		<div class="tileItem tileItemGhost" ng-if="!multiplayermenu.formattedTags"></div>
+		<div class="tileItem tileItemGhost" ng-if="!multiplayermenu.formattedTags"></div>
+		<div class="tileItem tileItemGhost" ng-if="!multiplayermenu.formattedTags"></div>
+		<div class="tileItem tileItemGhost" ng-if="!multiplayermenu.formattedTags"></div>
+		<div class="tileItem tileItemGhost" ng-if="!multiplayermenu.formattedTags"></div>
+		<div class="tileItem tileItemGhost" ng-if="!multiplayermenu.formattedTags"></div>
+		<div class="tileItem tileItemGhost" ng-if="!multiplayermenu.formattedTags"></div>
+		<div class="tileItem tileItemGhost" ng-if="!multiplayermenu.formattedTags"></div>
+		<div class="tileItem tileItemGhost" ng-if="!multiplayermenu.formattedTags"></div>
+		<div class="tileItem tileItemGhost" ng-if="!multiplayermenu.formattedTags"></div>
+		
+
+		<div class="tileItem" bng-sound-class="bng_click_hover_generic" ng-repeat="tag in multiplayermenu.formattedTags track by $index" ng-if="tag.theme" ng-click="viewServersWithTag(tag)">
+			<span ng-style="{'background-image': {{getTileBackground(tag.theme)}}}" class="tileThumbnail"></span>
+			<div class="tileContent" flex>
+				<div ng-bind-html="tag.icon" style="display:inline"></div>
+				<div ng-bind="tag.text" style="display:inline"></div>
+			</div>
+		</div>
+	</div>
+	<div id="footer"></div>
+
+</div>
