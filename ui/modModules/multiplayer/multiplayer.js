@@ -27,26 +27,26 @@ let repopulateServerList = async function() {
 
 }
 
-// Per-tag data for all available server tags
+// Per-tag thumbnail filename for all known server tags
 // undefined - don't show in tiles menu
 // string - show in tiles menu with specified file name & extension from /ui/modModules/multiplayer/tiles/
 const tagThemes = {
 	'Mature/18+': undefined,
 
-	'Freeroam': 'freeroam.jpg',
-	'Roleplay': 'lineup.jpg',
-	'Economy': 'sunrise.jpg',
-	'Traffic': 'freeroam.jpg',
-	'Drift': 'drift.jpg',
-	'Derby': 'derby.jpg',
-	'Crawling': 'favorites.jpg',
+	'Freeroam': '',
+	'Roleplay': '',
+	'Economy': '',
+	'Traffic': '',
+	'Drift': '',
+	'Derby': '',
+	'Crawling': '',
 
 	'Racing': undefined,
 	'Racing:NASCAR': undefined,
 	'Racing:Track': undefined,
 	'Racing:Drag': undefined,
 	'Racing:Rally': undefined,
-	'Touge': 'racedrift.jpg',
+	'Touge': '',
 
 	'Offroad': '',
 	'Crawling': '',
@@ -62,20 +62,20 @@ const tagThemes = {
 	'Weather': undefined,
 
 	'Gamemode': undefined,
-	'Gamemode:Racing': 'racing.jpg',
-	'Gamemode:Rally': 'rally.jpg',
-	'Gamemode:Drag': 'drag.jpg',
-	'Gamemode:Derby': 'derby.jpg',
-	'Gamemode:Infection': 'crash.jpg',
-	'Gamemode:Cops-Robbers': 'crash.jpg',
-	'Gamemode:Delivery': 'delivery.jpg',
+	'Gamemode:Racing': '',
+	'Gamemode:Rally': '',
+	'Gamemode:Drag': '',
+	'Gamemode:Derby': '',
+	'Gamemode:Infection': '',
+	'Gamemode:Cops-Robbers': '',
+	'Gamemode:Delivery': '',
 	'Gamemode:Sumo': '',
 
 	'Scenarios': '',
 	'Events': '',
 	'Leaderboard': undefined,
 
-	'Modded': 'mod.jpg',
+	'Modded': '',
 	'Mod:BeamPaint': undefined,
 	'Mod:BeamJoy': undefined,
 	'Mod:CEI': undefined,
@@ -97,16 +97,16 @@ import('/ui/lib/ext/purify.min.js')
 
 angular.module('BeamNG.ui')
 .run(function($rootScope, $templateCache) {
-  $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
-    if (toState.name === 'loading' || fromState.name === 'loading') {
-      $templateCache.remove('/ui/modules/loading/loading.html');
-    }
-  });
-});
+$rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+	if (toState.name === 'loading' || fromState.name === 'loading') {
+	$templateCache.remove('/ui/modules/loading/loading.html')
+	}
+})
+})
 
 export default angular.module('multiplayer', ['ui.router'])
 .config(['$stateProvider', function($stateProvider) {
-  $stateProvider.state('menu.multiplayer', {
+$stateProvider.state('menu.multiplayer', {
 		url: '/multiplayer',
 		templateUrl: '/ui/modModules/multiplayer/multiplayer.html',
 		controller: 'MultiplayerController as multiplayer',
@@ -188,65 +188,65 @@ export default angular.module('multiplayer', ['ui.router'])
 }])
 
 .run(['$rootScope', function ($rootScope) {
-  $rootScope.$on('MainMenuButtons', function (event, addButton) {
-    addButton({
-      translateid: 'ui.playmodes.multiplayer',
-      icon: '/ui/modModules/multiplayer/icons/account-multiple.svg',
-      targetState: 'menu.multiplayer.tos'
-    })
-  })
-
-	// Check for server to join
-	$rootScope.$on('AutoJoinConfirmation', function(evt, data) {
-		console.log('AutoJoinConfirmation',evt,data)
-		var d = JSON.parse(decodeURI(data.message))
-		confirmationMessage = `Do you want to connect to the server at ${d.ip}:${d.port}?`
-		userConfirmed = window.confirm(confirmationMessage); 
-		if (userConfirmed) {
-			bngApi.engineLua(`MPCoreNetwork.connectToServer("${d.ip}","${d.port}","${d.sname}")`);
-		}
+$rootScope.$on('MainMenuButtons', function (event, addButton) {
+	addButton({
+	translateid: 'ui.playmodes.multiplayer',
+	icon: '/ui/modModules/multiplayer/icons/account-multiple.svg',
+	targetState: 'menu.multiplayer.tos'
 	})
+})
 
-	let avatarFallbackClass = ""
-	if (userData.avatar === '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg' || userData.avatar.includes("Q291bGQgbm90IGVzdGFibGlzaCBjb25uZWN0aW9u")) {
-		userData.avatar = '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg'
-		avatarFallbackClass = 'style="filter:invert(100%) sepia(0%) saturate(22%) hue-rotate(36deg) brightness(104%) contrast(108%)"'
-	};
-	
-	var beammpUserInfo = document.createElement("div");
-	beammpUserInfo.innerHTML = `
-	<style>
+// Check for server to join
+$rootScope.$on('AutoJoinConfirmation', function(evt, data) {
+	console.log('AutoJoinConfirmation',evt,data)
+	var d = JSON.parse(decodeURI(data.message))
+	confirmationMessage = `Do you want to connect to the server at ${d.ip}:${d.port}?`
+	userConfirmed = window.confirm(confirmationMessage)
+	if (userConfirmed) {
+		bngApi.engineLua(`MPCoreNetwork.connectToServer("${d.ip}","${d.port}","${d.sname}")`)
+	}
+})
+
+let avatarFallbackClass = ""
+if (userData.avatar === '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg' || userData.avatar.includes("Q291bGQgbm90IGVzdGFibGlzaCBjb25uZWN0aW9u")) {
+	userData.avatar = '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg'
+	avatarFallbackClass = 'style="filter:invert(100%) sepia(0%) saturate(22%) hue-rotate(36deg) brightness(104%) contrast(108%)"'
+}
+
+var beammpUserInfo = document.createElement("div")
+beammpUserInfo.innerHTML = `
+<style>
 .beammp-info-bar {
-  z-index: 96;
-  position: absolute;
-  top: 3em;
-  right: 0;
-  padding-left: 1.2rem;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  margin-right: 3em;
-  padding-right: 10px;
-  background-image: linear-gradient(67deg,transparent 1.05rem,#f60 1.15rem 1.4rem,#00000099 1.5rem);
-  border-top-right-radius: var(--bng-corners-1);
-  border-bottom-right-radius: var(--bng-corners-1);
-  color: #fff;
-  pointer-events: all;
-  height: 2.9em;
-  line-height: 2.9em;
-  overflow: hidden;
-  font-family var(--fnt-defs);
+	z-index: 96;
+	position: absolute;
+	top: 3em;
+	right: 0;
+	padding-left: 1.2rem;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	margin-right: 3em;
+	padding-right: 10px;
+	background-image: linear-gradient(67deg,transparent 1.05rem,#f60 1.15rem 1.4rem,#00000099 1.5rem);
+	border-top-right-radius: var(--bng-corners-1);
+	border-bottom-right-radius: var(--bng-corners-1);
+	color: #fff;
+	pointer-events: all;
+	height: 2.9em;
+	line-height: 2.9em;
+	overflow: hidden;
+	font-family var(--fnt-defs);
 }
 
 .beammp-info-bar > span.divider {
-  display: inline-block;
-  width: .25rem;
-  height: 1.8em;
-  margin-left: .5rem;
-  margin-right: .2rem;
-  padding: 0!important;
-  background-color: #f60;
-  transform: skew(23deg);
+	display: inline-block;
+	width: .25rem;
+	height: 1.8em;
+	margin-left: .5rem;
+	margin-right: .2rem;
+	padding: 0!important;
+	background-color: #f60;
+	transform: skew(23deg);
 }
 .beammp-info-bar .section {
 	display: inline-flex;
@@ -256,69 +256,95 @@ export default angular.module('multiplayer', ['ui.router'])
 	gap: 0.25em;
 	align-items: center;
 }
-	</style>
-	<div class="beammp-info-bar">
-		<img src="/ui/modModules/multiplayer/beammp_new_cropped.png" style="padding-left: .5rem; margin: 0px 8px; height: 2em;">
-		<span class="divider"></span>
+</style>
+<div class="beammp-info-bar">
+	<img src="/ui/modModules/multiplayer/beammp_new_cropped.png" style="padding-left: .5rem; margin: 0px 8px; height: 2em;">
+	<span class="divider"></span>
+	<div class="section">
 		<div class="section">
-			<div class="section">
-				<img src="/ui/modModules/multiplayer/icons/account-multiple.svg" height="22px">
-				<span>Players: <span id="beammpMetricsPlayers">${ beammpMetrics.players }</span></span>
-				<img style="margin-left: 0.25em;" src="/ui/modModules/multiplayer/icons/dns.svg" height="22px">
-				<span>Servers: <span id="beammpMetricsServers">${ beammpMetrics.servers }</span></span>
-			</div>
-		</div>
-		<span class="divider" id="beammp-profile-divider"></span>
-		<div class="section">
-			<img src="${userData.avatar}" ${avatarFallbackClass} id="beammp-profile-avatar" style="padding: 5px; border-radius: 50%;" height="22px">
-			<span id="beammp-profile-name">${userData.username}</span>
+			<img src="/ui/modModules/multiplayer/icons/account-multiple.svg" height="22px">
+			<span>Players: <span id="beammpMetricsPlayers">${ beammpMetrics.players }</span></span>
+			<img style="margin-left: 0.25em;" src="/ui/modModules/multiplayer/icons/dns.svg" height="22px">
+			<span>Servers: <span id="beammpMetricsServers">${ beammpMetrics.servers }</span></span>
 		</div>
 	</div>
-	`
-	var beammpModInfo = document.createElement("div");
-	beammpModInfo.innerHTML = `
-		<style>
-			#BeamMPVersionInject {
-				display: flex;
-				align-items: center;
+	<span class="divider" id="beammp-profile-divider"></span>
+	<div class="section">
+		<img src="${userData.avatar}" ${avatarFallbackClass} id="beammp-profile-avatar" style="padding: 5px; border-radius: 50%;" height="22px">
+		<span id="beammp-profile-name">${userData.username}</span>
+	</div>
+</div>
+`
+var beammpModInfo = document.createElement("div")
+beammpModInfo.innerHTML = `
+	<style>
+		#BeamMPVersionInject {
+			display: flex;
+			align-items: center;
 
-				span {
-					padding: 0 0.25em 0 0.25em;
-				};
-				.divider {
-					background-color: #f60;
-					width: .25rem;
-					height: 1.8em;
-					margin-left: .5rem;
-					margin-right: .2rem;
-					display: inline-block;
-					transform: skew(-23deg);
-				};
-				.divider, #beammpModVersion {
-					padding: 0;
-				};
-			}
-		</style>
-
-		<span class="divider"></span>
-		<span>
-			<span>BeamMP v.<span id="beammpModVersion">${beammpMetrics.beammpGameVer}</span>
-		</span>
-	`;
-	beammpModInfo.id = 'BeamMPVersionInject';
-
-	$rootScope.$on('authReceived', function (event, data) {
-		//console.log(event, data)
-		let nameElement = document.getElementById("beammp-profile-name")
-		let avatarElement = document.getElementById("beammp-profile-avatar")
-		let divider = document.getElementById("beammp-profile-divider")
-		if (data.avatar == undefined || data.avatar.includes("Q291bGQgbm90IGVzdGFibGlzaCBjb25uZWN0aW9u")) {
-			data.avatar = '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg';
-			avatarElement.style.filter = "invert(100%) sepia(0%) saturate(22%) hue-rotate(36deg) brightness(104%) contrast(108%)";
-			avatarElement.src = '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg'
-		} else {
-			avatarElement.style.filter = "";
+			span {
+				padding: 0 0.25em 0 0.25em;
+			};
+			.divider {
+				background-color: #f60;
+				width: .25rem;
+				height: 1.8em;
+				margin-left: .5rem;
+				margin-right: .2rem;
+				display: inline-block;
+				transform: skew(-23deg);
+			};
+			.divider, #beammpModVersion {
+				padding: 0;
+			};
 		}
+	</style>
+
+	<span class="divider"></span>
+	<span>
+		<span>BeamMP v.<span id="beammpModVersion">${beammpMetrics.beammpGameVer}</span>
+	</span>
+`
+beammpModInfo.id = 'BeamMPVersionInject'
+
+$rootScope.$on('authReceived', function (event, data) {
+	//console.log(event, data)
+	let nameElement = document.getElementById("beammp-profile-name")
+	let avatarElement = document.getElementById("beammp-profile-avatar")
+	let divider = document.getElementById("beammp-profile-divider")
+	if (data.avatar == undefined || data.avatar.includes("Q291bGQgbm90IGVzdGFibGlzaCBjb25uZWN0aW9u")) {
+		data.avatar = '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg'
+		avatarElement.style.filter = "invert(100%) sepia(0%) saturate(22%) hue-rotate(36deg) brightness(104%) contrast(108%)"
+		avatarElement.src = '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg'
+	} else {
+		avatarElement.style.filter = ""
+	}
+
+	if (nameElement && avatarElement) {
+		userData = {
+			username: data.username,
+			avatar: data.avatar,
+			role: data.role,
+			color: data.color,
+			id: data.id
+		}
+	} else {
+		return
+	}
+
+	
+	nameElement.textContent = data.username
+	avatarElement.src = data.avatar
+
+	if (data.username == undefined) {
+		divider.style.display = 'none'
+		nameElement.style.display = 'none'
+		avatarElement.style.display = 'none'
+	} else if (window.location.href.includes("menu.mainmenu")) {
+		divider.style.display = 'block'
+
+		nameElement.style.display = 'block'
+		avatarElement.style.display = 'block'
 
 		if (nameElement && avatarElement) {
 			userData = {
@@ -328,125 +354,99 @@ export default angular.module('multiplayer', ['ui.router'])
 				color: data.color,
 				id: data.id
 			}
+		}
+
+		nameElement.textContent = data.username
+		avatarElement.src = data.avatar
+	}
+})
+
+$rootScope.$on('BeamMPInfo', function (event, data) {
+	beammpMetrics = data	
+	injectVersion()
+	document.getElementById("beammpMetricsPlayers").textContent = beammpMetrics.players
+	document.getElementById("beammpMetricsServers").textContent = beammpMetrics.servers
+
+	document.getElementById("beammpModVersion").textContent = beammpMetrics.beammpGameVer
+})
+
+function injectVersion() {
+	if (document.querySelector('#vue-app > div.vue-app-main.click-through > div.info-bar > div.info-bar-stats'))
+		document.querySelector('#vue-app > div.vue-app-main.click-through > div.info-bar > div.info-bar-stats').appendChild(beammpModInfo)
+}
+
+$rootScope.$on('$stateChangeSuccess', async function (event, toState, toParams, fromState, fromParams) {
+	//console.log(`Going from "${fromState.name}" -> "${toState.name}"`)
+
+	if (toState.name == "menu.mainmenu") {
+		bngApi.engineLua('MPCoreNetwork.getLoginState()')
+		console.log('Asking for BeamMP info from main menu or multiplayerPause')
+		bngApi.engineLua('MPCoreNetwork.sendBeamMPInfo()')
+		beammpUserInfo.style.display = "block"
+		let userinfo =  document.getElementsByTagName("body")[0].appendChild(beammpUserInfo).children[1]
+		//console.log(userinfo)
+		userinfo.style = null
+
+
+		let nameElement = document.getElementById("beammp-profile-name")
+		let avatarElement = document.getElementById("beammp-profile-avatar")
+		let divider = document.getElementById("beammp-profile-divider")
+
+		if (nameElement) {
+			nameElement.style.display = "block"
+			//console.log('name shown', nameElement)
+		}
+		if (avatarElement) {
+			avatarElement.style.display = "block"
+		}
+		if (divider) {
+			divider.style.display = "block"
+		}
+
+		injectVersion()
+	} else if (toState.name.includes("menu.multiplayer.")) {
+		var searchFiltersPanel = document.getElementById('searchFilters')
+		if (toState.name === "menu.multiplayer.servers") {
+			console.log('Asking for BeamMP info because menu.multiplayer.servers was opened')
+			bngApi.engineLua('MPCoreNetwork.sendBeamMPInfo()')
+			if (searchFiltersPanel) searchFiltersPanel.style.display = ""
 		} else {
-			return;
+			if (searchFiltersPanel) searchFiltersPanel.style.display = "none"
+		}
+		beammpUserInfo.style.display = "none"
+		let userinfo = document.getElementsByTagName("body")[0].appendChild(beammpUserInfo).children[1]
+		//userinfo.style.marginRight = "0"
+		//userinfo.style.top = "0"
+		//userinfo.style.lineHeight = "2.5em"
+		//userinfo.style.height = "2.5em"
+		userinfo.style.top = "5.625em"
+		userinfo.style.marginRight = "0"
+		userinfo.style.background = "none"
+		userinfo.style.borderRadius = "var(--bng-corners-2)"
+
+
+		let nameElement = document.getElementById("beammp-profile-name")
+		let avatarElement = document.getElementById("beammp-profile-avatar")
+		let divider = document.getElementById("beammp-profile-divider")
+
+		if (nameElement) {
+			nameElement.style.display = "none"
+			//console.log('name hidden', nameElement)
+		}
+		if (avatarElement) {
+			avatarElement.style.display = "none"
+		}
+		if (divider) {
+			divider.style.display = "none"
 		}
 
 		
-		nameElement.textContent = data.username;
-		avatarElement.src = data.avatar;
-
-		if (data.username == undefined) {
-			divider.style.display = 'none'
-			nameElement.style.display = 'none'
-			avatarElement.style.display = 'none'
-		} else if (window.location.href.includes("menu.mainmenu")) {
-			divider.style.display = 'block'
-
-			nameElement.style.display = 'block';
-			avatarElement.style.display = 'block';
-
-			if (nameElement && avatarElement) {
-				userData = {
-					username: data.username,
-					avatar: data.avatar,
-					role: data.role,
-					color: data.color,
-					id: data.id
-				}
-			}
-
-			nameElement.textContent = data.username;
-			avatarElement.src = data.avatar;
-		}
-	})
-
-	$rootScope.$on('BeamMPInfo', function (event, data) {
-		beammpMetrics = data	
+		//console.log('Adding Mod Version Info')
 		injectVersion()
-		document.getElementById("beammpMetricsPlayers").textContent = beammpMetrics.players
-		document.getElementById("beammpMetricsServers").textContent = beammpMetrics.servers
-
-		document.getElementById("beammpModVersion").textContent = beammpMetrics.beammpGameVer
-	})
-
-	function injectVersion() {
-		if (document.querySelector('#vue-app > div.vue-app-main.click-through > div.info-bar > div.info-bar-stats'))
-			document.querySelector('#vue-app > div.vue-app-main.click-through > div.info-bar > div.info-bar-stats').appendChild(beammpModInfo);
+	} else {
+		beammpUserInfo.style.display = "none"
 	}
-
-	$rootScope.$on('$stateChangeSuccess', async function (event, toState, toParams, fromState, fromParams) {
-		//console.log(`Going from "${fromState.name}" -> "${toState.name}"`);
-
-		if (toState.name == "menu.mainmenu") {
-			bngApi.engineLua('MPCoreNetwork.getLoginState()');
-			console.log('Asking for BeamMP info from main menu or multiplayerPause')
-			bngApi.engineLua('MPCoreNetwork.sendBeamMPInfo()');
-			beammpUserInfo.style.display = "block";
-			let userinfo =  document.getElementsByTagName("body")[0].appendChild(beammpUserInfo).children[1]
-			//console.log(userinfo)
-			userinfo.style = null
-
-
-			let nameElement = document.getElementById("beammp-profile-name");
-			let avatarElement = document.getElementById("beammp-profile-avatar");
-			let divider = document.getElementById("beammp-profile-divider");
-
-			if (nameElement) {
-				nameElement.style.display = "block";
-				//console.log('name shown', nameElement)
-			}
-			if (avatarElement) {
-				avatarElement.style.display = "block";
-			}
-			if (divider) {
-				divider.style.display = "block";
-			}
-
-			injectVersion()
-		} else if (toState.name.includes("menu.multiplayer.")) {
-			var searchFiltersPanel = document.getElementById('searchFilters')
-			if (toState.name === "menu.multiplayer.servers") {
-				console.log('Asking for BeamMP info because menu.multiplayer.servers was opened')
-				bngApi.engineLua('MPCoreNetwork.sendBeamMPInfo()')
-				if (searchFiltersPanel) searchFiltersPanel.style.display = ""
-			} else {
-				if (searchFiltersPanel) searchFiltersPanel.style.display = "none"
-			}
-			beammpUserInfo.style.display = "none"
-			let userinfo = document.getElementsByTagName("body")[0].appendChild(beammpUserInfo).children[1]
-			//userinfo.style.marginRight = "0"
-			//userinfo.style.top = "0"
-			//userinfo.style.lineHeight = "2.5em"
-			//userinfo.style.height = "2.5em"
-			userinfo.style.top = "5.625em"
-			userinfo.style.marginRight = "0"
-			userinfo.style.background = "none"
-			userinfo.style.borderRadius = "var(--bng-corners-2)"
-
-
-			let nameElement = document.getElementById("beammp-profile-name")
-			let avatarElement = document.getElementById("beammp-profile-avatar")
-			let divider = document.getElementById("beammp-profile-divider")
-
-			if (nameElement) {
-				nameElement.style.display = "none"
-				//console.log('name hidden', nameElement)
-			}
-			if (avatarElement) {
-				avatarElement.style.display = "none"
-			}
-			if (divider) {
-				divider.style.display = "none"
-			}
-
-			
-			//console.log('Adding Mod Version Info')
-			injectVersion()
-		} else {
-			beammpUserInfo.style.display = "none"
-		}
-  })
+})
 }])
 
 /* //////////////////////////////////////////////////////////////////////////////////////////////
@@ -454,38 +454,38 @@ export default angular.module('multiplayer', ['ui.router'])
 */ //////////////////////////////////////////////////////////////////////////////////////////////
 .controller('MultiplayerTOSController', ['$scope', '$state', '$timeout', '$document', 
 function($scope, $state, $timeout, $document) {
-	'use strict';
+	'use strict'
 
 	$scope.$on('$stateChangeSuccess', async function (event, toState, toParams, fromState, fromParams) {
 
 		// Check if the user as acknowledged tos
-		const tosAccepted = localStorage.getItem("tosAccepted");
+		const tosAccepted = localStorage.getItem("tosAccepted")
 		if (tosAccepted == "true") {
-			$state.go('menu.multiplayer.tiles');
-			return;
+			$state.go('menu.multiplayer.servers')
+			return
 		}
-	});
+	})
 
 	// The lua setting need to be functional before we redirect, otherwise we'll land here again.
 	// for that reason, we listen for the settings changed event that will ensure that the main menu will not get back here again
 	$scope.validate = function () {
-		localStorage.setItem("tosAccepted", "true");
-		bngApi.engineLua(`MPConfig.acceptTos()`);
-		$state.go('menu.multiplayer.tiles');
-	};
+		localStorage.setItem("tosAccepted", "true")
+		bngApi.engineLua(`MPConfig.acceptTos()`)
+		$state.go('menu.multiplayer.servers')
+	}
 
 	$scope.openExternalLink = function(url) {
-		bngApi.engineLua(`MPCoreNetwork.openURL("`+url+`")`);
+		bngApi.engineLua(`MPCoreNetwork.openURL("`+url+`")`)
 	}
 
 	bngApi.engineLua(`MPConfig.getConfig()`, (data) => {
 		if (data != null) {
 			if (!localStorage.getItem("tosAccepted")) {
-				localStorage.setItem("tosAccepted", data.tos);
-				$state.go('menu.multiplayer.tiles');
+				localStorage.setItem("tosAccepted", data.tos)
+				$state.go('menu.multiplayer.servers')
 			}
 		}
-	});
+	})
 }])
 
 
@@ -495,16 +495,16 @@ function($scope, $state, $timeout, $document) {
 */ //////////////////////////////////////////////////////////////////////////////////////////////
 .controller('MultiplayerLauncherController', ['$scope', '$state', '$timeout', '$document', 
 function($scope, $state, $timeout, $document) {
-	'use strict';
+	'use strict'
 	// The lua setting need to be functional before we redirect, otherwise we'll land here again.
 	// for that reason, we listen for the settings changed event that will ensure that the main menu will not get back here again
 	$scope.connect = function () {
-		bngApi.engineLua('MPCoreNetwork.connectToLauncher()');
-	};
+		bngApi.engineLua('MPCoreNetwork.connectToLauncher()')
+	}
 	
 	$scope.$on('onLauncherConnected', function (event, data) {
-		$state.go('menu.multiplayer.login');
-	});
+		$state.go('menu.multiplayer.login')
+	})
 	
 	// The game's lua has an auto launcher reconnect in case
 }])
@@ -516,56 +516,56 @@ function($scope, $state, $timeout, $document) {
 */ //////////////////////////////////////////////////////////////////////////////////////////////
 .controller('MultiplayerLoginController', ['$scope', '$state', '$timeout', '$document', 
 function($scope, $state, $timeout, $document) {
-	'use strict';
+	'use strict'
 	// The lua setting need to be functional before we redirect, otherwise we'll land here again.
 	// for that reason, we listen for the settings changed event that will ensure that the main menu will not get back here again
-	var vm = this;
+	var vm = this
 	$scope.login = function() {
 		let credentials = {}
-		credentials.username = document.getElementById('loginUsername').value.trim();
-		credentials.password = document.getElementById('loginPassword').value.trim();
+		credentials.username = document.getElementById('loginUsername').value.trim()
+		credentials.password = document.getElementById('loginPassword').value.trim()
 		if (credentials.username == "" || credentials.password == ""){
-			document.getElementById('loginHeader').textContent = 'Missing credentials';
-			return;
+			document.getElementById('loginHeader').textContent = 'Missing credentials'
+			return
 		}	
-		document.getElementById('loginPassword').value = '';
-		document.getElementById('loginHeader').textContent = 'Attempting to log in...';
-		bngApi.engineLua('MPCoreNetwork.login(' + bngApi.serializeToLua(credentials) + ')');
+		document.getElementById('loginPassword').value = ''
+		document.getElementById('loginHeader').textContent = 'Attempting to log in...'
+		bngApi.engineLua('MPCoreNetwork.login(' + bngApi.serializeToLua(credentials) + ')')
 	}
 
 	$scope.switchConnection = function() {
-		var x = document.getElementById('LOGINERRORFIELD').textContent = "";
-		var loginContainer = document.getElementById('LoginContainer');
-		var guestContainer = document.getElementById('GuestContainer');
+		var x = document.getElementById('LOGINERRORFIELD').textContent = ""
+		var loginContainer = document.getElementById('LoginContainer')
+		var guestContainer = document.getElementById('GuestContainer')
 		if (loginContainer.style.display == "none") {
-			loginContainer.style.display = 'block';
-			guestContainer.style.display = 'none';
+			loginContainer.style.display = 'block'
+			guestContainer.style.display = 'none'
 		} else {
-			loginContainer.style.display = 'none';
-			guestContainer.style.display = 'block';
+			loginContainer.style.display = 'none'
+			guestContainer.style.display = 'block'
 		}
 		
 	}
 
 	$scope.guestLogin = function() {
-		bngApi.engineLua('MPCoreNetwork.login()');
+		bngApi.engineLua('MPCoreNetwork.login()')
 	}
 	
 	$scope.$on('LoggedIn', function (event, data) {
-		$state.go('menu.multiplayer.servers');
-	});
+		$state.go('menu.multiplayer.servers')
+	})
 	
 	$scope.$on('LoginError', function (event, data) {
-		var x = document.getElementById('LOGINERRORFIELD').textContent= data;
-	});
+		var x = document.getElementById('LOGINERRORFIELD').textContent= data
+	})
 	
 	//Workaround for sticky login UI
 	$scope.$on('actuallyLoggedIn', function (event, data) {
 		if (data == true) {
-			$state.go('menu.multiplayer.servers');
+			$state.go('menu.multiplayer.servers')
 		}
-	});
-	bngApi.engineLua('MPCoreNetwork.isLoggedIn()');
+	})
+	bngApi.engineLua('MPCoreNetwork.isLoggedIn()')
 }])
 
 
@@ -575,9 +575,9 @@ function($scope, $state, $timeout, $document) {
 */ //////////////////////////////////////////////////////////////////////////////////////////////
 .controller('MultiplayerController', ['$scope', '$state', '$timeout', '$mdDialog', '$filter', 'ConfirmationDialog', 'toastr', '$translate', '$rootScope',
 function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toastr, $translate, $rootScope) {
-	var vm = this;
-	bngApi = bngApi;
-	mdDialog = $mdDialog;
+	var vm = this
+	bngApi = bngApi
+	mdDialog = $mdDialog
 
 	$scope.beammpMetrics = beammpMetrics
 
@@ -599,7 +599,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		if (serversTableContainer) {
 			serversTableContainer.scrollTop = 0
 		}
-		serverView = view;
+		serverView = view
 		$state.go('menu.multiplayer.servers')
 		repopulateServerList()
 
@@ -614,25 +614,25 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		if (extra)
 		if (view == "recents") {
 			$translate('ui.multiplayer.clearRecent').then(function (translation) {
-				extra.style.display = "";
-				extra.innerText = translation;
+				extra.style.display = ""
+				extra.innerText = translation
 
 				extra.onclick = function() {
-					vm.clearRecents();
-				};
-			});
+					vm.clearRecents()
+				}
+			})
 		} else if (view == "favorites") {
 			$translate('ui.multiplayer.addCustomServer').then(function (translation) {
-				extra.style.display = "";
-				extra.innerText = translation;
+				extra.style.display = ""
+				extra.innerText = translation
 
 				extra.onclick = function() {
-					vm.showCustomServer();
-				};
-			});
+					vm.showCustomServer()
+				}
+			})
 		} else {
-			extra.style.display = "none";
-		};
+			extra.style.display = "none"
+		}
 	}
 
 	// Trigger Warning Prompt
@@ -649,63 +649,63 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		).then(res => {
 			if (res) {
 				o = false
-				bngApi.engineLua(`MPCoreNetwork.approveModDownload()`);
+				bngApi.engineLua(`MPCoreNetwork.approveModDownload()`)
 			}
 			if (o) {
 				o = false
-				bngApi.engineLua(`MPCoreNetwork.rejectModDownload()`);
+				bngApi.engineLua(`MPCoreNetwork.rejectModDownload()`)
 				vm.closeLoadingPopup()
 			}			
-		});
+		})
 	})
 
 	// Display the servers list page once the page is loaded
 	$scope.$on('$stateChangeSuccess', async function (event, toState, toParams, fromState, fromParams) {
-		bngApi.engineLua('MPCoreNetwork.getLoginState()');
+		bngApi.engineLua('MPCoreNetwork.getLoginState()')
 		if (toState.url == "/multiplayer") {
 			// local://local/ui/#/menu/multiplayer/mpservers
-			document.getElementById('servers-btn').click();
+			document.getElementById('servers-btn').click()
 		}
 
 		// Check if the user as aknowledged tos
-		const tosAccepted = localStorage.getItem("tosAccepted");
-		//console.log(toState.url);
+		const tosAccepted = localStorage.getItem("tosAccepted")
+		//console.log(toState.url)
 		if (tosAccepted != "true") {
-			$state.go('menu.multiplayer.tos');
-			return;
+			$state.go('menu.multiplayer.tos')
+			return
 		}
 
 		// Check launcher is not connected
-		const launcherConnected = await isLauncherConnected();
+		const launcherConnected = await isLauncherConnected()
 		if (!launcherConnected) {
-			$state.go('menu.multiplayer.launcher');
-			return;
+			$state.go('menu.multiplayer.launcher')
+			return
 		}
 
 		// Check if we are logged in
-		const loggedIn = await isLoggedIn();
+		const loggedIn = await isLoggedIn()
 		if (!loggedIn) {
-			$state.go('menu.multiplayer.login');
-			return;
+			$state.go('menu.multiplayer.login')
+			return
 		}
 		
-	});
+	})
 	
 	$scope.$on('LauncherConnectionLost', function (event, data) {
-		$state.go('menu.multiplayer.launcher');
-	});
+		$state.go('menu.multiplayer.launcher')
+	})
 
 	$scope.$on('showMdDialog', function (event, data) {
 		switch (data.dialogtype) {
 			case "alert":
-				if (mdDialogVisible) { return; }
-				mdDialogVisible = true;
+				if (mdDialogVisible) { return }
+				mdDialogVisible = true
 
 				$mdDialog.show({
 					template: `
 						<md-dialog aria-label="Alert Dialog" style="
 							display: flex;
-  							background-color: #252525;
+							background-color: #252525;
 							font-family: var(--fnt-defs);
 							border-radius: var(--bng-corners-3);
 							flex-direction: column;
@@ -737,171 +737,171 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 					`,
 					controller: function ($scope, $mdDialog) {
 						$scope.close = function () {
-							$mdDialog.hide();
-							mdDialogVisible = false;
+							$mdDialog.hide()
+							mdDialogVisible = false
 
 							if (data.okJS !== undefined) {
-								eval(data.okJS);
-								return;
+								eval(data.okJS)
+								return
 							} else if (data.okLua !== undefined) {
-								bngApi.engineLua(data.okLua);
-								return;
+								bngApi.engineLua(data.okLua)
+								return
 							}
-						};
+						}
 						$scope.continueOffline = function () {
-							$mdDialog.hide();
-							mdDialogVisible = false;
-						};
+							$mdDialog.hide()
+							mdDialogVisible = false
+						}
 					}
 				}).then(function () {
-					mdDialogVisible = false;
-				});
+					mdDialogVisible = false
+				})
 
-				break;
+				break
 		}
-	});
+	})
 
 	$scope.$on('onServerJoined', function (event, data) {
-		$state.go('play');
-	});
+		$state.go('play')
+	})
 
 	$scope.logout = function() {
-		bngApi.engineLua(`MPCoreNetwork.logout()`);
-		$state.go('menu.multiplayer.login');
+		bngApi.engineLua(`MPCoreNetwork.logout()`)
+		$state.go('menu.multiplayer.login')
 
-		var accountSection = document.getElementById("serverlist-account-section");
-		if (accountSection != null) accountSection.style.display = "none";
+		var accountSection = document.getElementById("serverlist-account-section")
+		if (accountSection != null) accountSection.style.display = "none"
 
-		var serverListCategories = document.getElementById("serverlist-categories");
-		if (serverListCategories != null) serverListCategories.style.display = "none";
+		var serverListCategories = document.getElementById("serverlist-categories")
+		if (serverListCategories != null) serverListCategories.style.display = "none"
 
-		var patreonButton = document.getElementById("patreonSidebarButton");
+		var patreonButton = document.getElementById("patreonSidebarButton")
 		if (patreonButton != null) {
-			patreonButton.classList.remove("patreon-button-highlight");
-			patreonButton.classList.remove("patreon-button-highlight-two");
+			patreonButton.classList.remove("patreon-button-highlight")
+			patreonButton.classList.remove("patreon-button-highlight-two")
 		}
 		var patreonButtonText = document.getElementById("patreonSidebarButtonSubtitle")
-		if (patreonButtonText != null) patreonButtonText.innerHTML = "";
+		if (patreonButtonText != null) patreonButtonText.innerHTML = ""
 
-		var buttons = document.getElementsByClassName("servers-btn");
+		var buttons = document.getElementsByClassName("servers-btn")
 		for (var i = 0; i < buttons.length; i++) {
-			buttons[i].classList.remove("bng-button-outline");
+			buttons[i].classList.remove("bng-button-outline")
 		}
 	}
 
 	vm.modelChanged = function($event) {
-		var src = event.srcElement;
-		//console.log(src.value);
+		var src = event.srcElement
+		//console.log(src.value)
 	}
 
 	vm.refreshList = function() {
 		//console.log("Attempting to refresh server list.")
-		bngApi.engineLua('MPCoreNetwork.requestServerList()');
+		bngApi.engineLua('MPCoreNetwork.requestServerList()')
 	}
 	
 	vm.clearRecents = function() {
-		localStorage.removeItem("recents");
-		repopulateServerList();
+		localStorage.removeItem("recents")
+		repopulateServerList()
 	}
 
 	vm.directConnect = function() {
-		let modlist = document.getElementById('mod-download-list');
+		let modlist = document.getElementById('mod-download-list')
 		if (modlist) {
-			modlist.style.display = 'none';
+			modlist.style.display = 'none'
 		}
 
 		vm.loadingStatus = ""
-		vm.downloadingMods = [];
-		$scope.$applyAsync();
+		vm.downloadingMods = []
+		$scope.$applyAsync()
 
-		document.getElementById('LoadingStatus').innerText = "";
+		document.getElementById('LoadingStatus').innerText = ""
 
 		//console.log('Clicked')
-		var ip = document.getElementById('directip').value.trim();
-		var port = document.getElementById('directport').value.trim();
-		document.getElementById('LoadingServer').style.display = 'flex';
-		bngApi.engineLua(`MPCoreNetwork.connectToServer("${ip || "127.0.0.1"}","${port || "30184"}")`);
-	};
+		var ip = document.getElementById('directip').value.trim()
+		var port = document.getElementById('directport').value.trim()
+		document.getElementById('LoadingServer').style.display = 'flex'
+		bngApi.engineLua(`MPCoreNetwork.connectToServer("${ip || "127.0.0.1"}","${port || "30184"}")`)
+	}
 
 	vm.closePopup =  function() {
-		document.getElementById('addCustomFav').style.display = 'none';
-	};
+		document.getElementById('addCustomFav').style.display = 'none'
+	}
 	vm.closeLoadingPopup =  function() {
-		document.getElementById('OriginalLoadingStatus').removeAttribute("hidden");
-		document.getElementById('LoadingStatus').setAttribute("hidden", "hidden");
-		document.getElementById('LoadingStatus').innerText = "";
-		document.getElementById('LoadingServer').style.display = 'none';
-		vm.downloadingMods.length = 0;
-		vm.downloadingMods = [];
-		vm.loadingStatus = "";
-		lastModInfo = '';
-		bngApi.engineLua('MPCoreNetwork.leaveServer()');
-	};
+		document.getElementById('OriginalLoadingStatus').removeAttribute("hidden")
+		document.getElementById('LoadingStatus').setAttribute("hidden", "hidden")
+		document.getElementById('LoadingStatus').innerText = ""
+		document.getElementById('LoadingServer').style.display = 'none'
+		vm.downloadingMods.length = 0
+		vm.downloadingMods = []
+		vm.loadingStatus = ""
+		lastModInfo = ''
+		bngApi.engineLua('MPCoreNetwork.leaveServer()')
+	}
 
 	vm.showCustomServer = function() {
-		document.getElementById('addCustomFav').style.display = 'flex';
-	};
+		document.getElementById('addCustomFav').style.display = 'flex'
+	}
 
 	vm.addCustomServer = async function() {
-		var ip = document.getElementById('customFavIP');
-		var port = document.getElementById('customFavPort');
-		var name = document.getElementById('customFavName');
+		var ip = document.getElementById('customFavIP')
+		var port = document.getElementById('customFavPort')
+		var name = document.getElementById('customFavName')
 		var valid = (ip.value.length > 0) && (port.value.length > 0) && !isNaN(port.value)
-		if (!valid) return;
+		if (!valid) return
 		var server = {
 			cversion: await getLauncherVersion(), ip: ip.value, location: "--", map: "", maxplayers: undefined, players: undefined,
 			owner: undefined, playersList: undefined, sdesc: "", sname: name.value, strippedName: name.value,
 			custom: true, port: port.value,
 			tags: ""
-		};
-		addFav(server);
-		document.getElementById('addCustomFav').style.display = 'none';
-		name.value = '';
-		ip.value = '';
-		port.value = '';
-		repopulateServerList();
-	};
+		}
+		addFav(server)
+		document.getElementById('addCustomFav').style.display = 'none'
+		name.value = ''
+		ip.value = ''
+		port.value = ''
+		repopulateServerList()
+	}
 
 	vm.directConnectFavorite = async function() {
-		var ip = document.getElementById('directip').value.trim();
-		var port = document.getElementById('directport').value.trim();
+		var ip = document.getElementById('directip').value.trim()
+		var port = document.getElementById('directport').value.trim()
 
 		var valid = (ip.length > 0) && (port.length > 0) && !isNaN(port)
-		if (!valid) return;
+		if (!valid) return
 		var name = new Date().toLocaleString()
 		var server = {
 			cversion: await getLauncherVersion(), ip: ip, location: "--", map: "", maxplayers: "0", players: "0",
 			owner: "", playersList: "", sdesc: "", sname: name, strippedName: name,
 			custom: true, port: port
 		}
-		favorites = await getFavorites();
+		favorites = await getFavorites()
 		addFav(server)
-		toastr.info($filter('translate')('ui.multiplayer.favoritedToast.description'), $filter('translate')('ui.multiplayer.favoritedToast.title'));
+		toastr.info($filter('translate')('ui.multiplayer.favoritedToast.description'), $filter('translate')('ui.multiplayer.favoritedToast.title'))
 	}
 
-	vm.stateName = $state.current.name;
-	bngApi.engineLua('settings.requestState()');
+	vm.stateName = $state.current.name
+	bngApi.engineLua('settings.requestState()')
 	$scope.$on('$stateChangeSuccess', function (event, toState, toParams, fromState, fromParams) {
-		vm.stateName = toState.name;
-	});
+		vm.stateName = toState.name
+	})
 
 	vm.pasteClipboardToDirectIP = function() {
 		bngApi.engineLua('getClipboard()', function (str) {
 			$scope.$evalAsync(() =>  {
-				if(!str.includes('.')) return;
+				if(!str.includes('.')) return
 
-				var split = str.split(':');
+				var split = str.split(':')
 
-				document.getElementById('directip').value = split[0];
-				if (split.length==2) document.getElementById('directport').value = split[1];
-			});
-		});
+				document.getElementById('directip').value = split[0]
+				if (split.length==2) document.getElementById('directport').value = split[1]
+			})
+		})
 
-	};
+	}
 
-	vm.downloadingMods = [];
-	vm.loadingStatus = "";
-	var lastModInfo = '';
+	vm.downloadingMods = []
+	vm.loadingStatus = ""
+	var lastModInfo = ''
 
 	$scope.$on('LoadingInfo', function (event, data) {
 		//console.log(vm, event, data)
@@ -909,95 +909,95 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		//console.log(data.message)
 
 		// Split the message into parts: mod number, mod name, progress, speed
-		let modNumber = null;
-		let modName = null;
-		let progress = null;
-		let speed = null;
+		let modNumber = null
+		let modName = null
+		let progress = null
+		let speed = null
 
 		if (data.message.startsWith("Downloading Resource")) {
-			let modlist = document.getElementById('mod-download-list');
+			let modlist = document.getElementById('mod-download-list')
 			if (modlist) {
-				modlist.style.display = 'block';
+				modlist.style.display = 'block'
 			}
 			// Sample: 'Downloading Resource 1/10: Nissan 350z.zip (1.0%) at 12.8 Mbit/s'
 			// Extract mod number, name, progress, and speed from the message
 			const regex = /Downloading Resource (\d+\/\d+): (.+?) \((\d+\.\d+)%\)(?: at (.+))?/;
-			const matches = data.message.match(regex);
+			const matches = data.message.match(regex)
 			if (matches) {
-				modNumber = matches[1];
-				modName = matches[2];
-				progress = matches[3];
-				speed = matches[4] || '...';
+				modNumber = matches[1]
+				modName = matches[2]
+				progress = matches[3]
+				speed = matches[4] || '...'
 			}
-			//console.log(`Mod ${modNumber}: ${modName} - ${progress}% at ${speed}`);
+			//console.log(`Mod ${modNumber}: ${modName} - ${progress}% at ${speed}`)
 
 			// Update current downloading mod info and if complete then push this mod into the downloaded mods info
 			$scope.$apply(function() {
 				// Update or add the current mod being downloaded
-				const existingMod = vm.downloadingMods.find(mod => mod.name === modName);
+				const existingMod = vm.downloadingMods.find(mod => mod.name === modName)
 				if (existingMod) {
-					existingMod.progress = progress;
-					existingMod.speed = speed;
+					existingMod.progress = progress
+					existingMod.speed = speed
 				} else {
 					// add this new mod to the beginning of the array
-					vm.downloadingMods = [{ number: modNumber, name: modName, progress: progress, speed: speed }, ...vm.downloadingMods];
+					vm.downloadingMods = [{ number: modNumber, name: modName, progress: progress, speed: speed }, ...vm.downloadingMods]
 				}
 
 				// If we switched to a new mod, mark the last one as done
 				if (lastModInfo != '' && lastModInfo != modName) {
-					const lastMod = vm.downloadingMods.find(mod => mod.name === lastModInfo);
-					lastMod.progress = 100;
-					lastMod.speed = $filter('translate')('ui.multiplayer.download.done');
-					lastModInfo = modName;
+					const lastMod = vm.downloadingMods.find(mod => mod.name === lastModInfo)
+					lastMod.progress = 100
+					lastMod.speed = $filter('translate')('ui.multiplayer.download.done')
+					lastModInfo = modName
 				}
-			});
+			})
 		} else if (data.message.startsWith("Loading Resource")) {
-			let modlist = document.getElementById('mod-download-list');
+			let modlist = document.getElementById('mod-download-list')
 			if (modlist) {
-				modlist.style.display = 'block';
+				modlist.style.display = 'block'
 			}
 			// Sample: 'Loading Resource 1/70: Scintillacamaf.zip'
-			const regex = /Loading Resource (\d+\/\d+): (.+)/;
-			const matches = data.message.match(regex);
+			const regex = /Loading Resource (\d+\/\d+): (.+)/
+			const matches = data.message.match(regex)
 			if (matches) {
-				modNumber = matches[1];
-				modName = matches[2];
+				modNumber = matches[1]
+				modName = matches[2]
 			}
-			//console.log(`Mod ${modNumber}: ${modName} - Loading`);
+			//console.log(`Mod ${modNumber}: ${modName} - Loading`)
 
 			// Update current downloading mod info and if complete then push this mod into the downloaded mods info
 			$scope.$apply(function() {
 				// Update or add the current mod being downloaded
-				const existingMod = vm.downloadingMods.find(mod => mod.name === modName);
+				const existingMod = vm.downloadingMods.find(mod => mod.name === modName)
 				if (existingMod) {
-					existingMod.progress = '100';
-					existingMod.speed = $filter('translate')('ui.multiplayer.loading');
+					existingMod.progress = '100'
+					existingMod.speed = $filter('translate')('ui.multiplayer.loading')
 				} else {
-					vm.downloadingMods = [{ number: modNumber, name: modName, progress: '100', speed: $filter('translate')('ui.multiplayer.loading') }, ...vm.downloadingMods];
+					vm.downloadingMods = [{ number: modNumber, name: modName, progress: '100', speed: $filter('translate')('ui.multiplayer.loading') }, ...vm.downloadingMods]
 				}
-			});
+			})
 		} else {
 			if (data.message == "done") {
-				vm.loadingStatus = $filter('translate')('ui.multiplayer.download.done');
-				lastModInfo = '';
+				vm.loadingStatus = $filter('translate')('ui.multiplayer.download.done')
+				lastModInfo = ''
 			} else {
-				vm.loadingStatus = data.message;
+				vm.loadingStatus = data.message
 			}
 
-			document.getElementById('LoadingStatus').innerText = vm.loadingStatus;
+			document.getElementById('LoadingStatus').innerText = vm.loadingStatus
 
 			vm.downloadingMods = []
 		
-			document.getElementById('OriginalLoadingStatus').setAttribute("hidden", "hidden");
-			loadingStatusElement.removeAttribute("hidden");
+			document.getElementById('OriginalLoadingStatus').setAttribute("hidden", "hidden")
+			loadingStatusElement.removeAttribute("hidden")
 		}
 
-		$scope.$applyAsync();
-	});
+		$scope.$applyAsync()
+	})
 
 
 	vm.showMessage = function() {
-		openExternalLink("https://beammp.gg/patreonbenefits");
+		openExternalLink("https://beammp.gg/patreonbenefits")
 	}
 
 	$scope.$on('authReceived', function (event, data) {
@@ -1011,13 +1011,13 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 			var patreonButtonText = document.getElementById("patreonSidebarButtonSubtitle")
 
 			var accountSection = document.getElementById("serverlist-account-section")
-			var serverListCategories = document.getElementById("serverlist-categories");
+			var serverListCategories = document.getElementById("serverlist-categories")
 			if (data.role != null) {
 				if (accountSection) accountSection.style.display = ""
-				if (serverListCategories) serverListCategories.style.display = "";
+				if (serverListCategories) serverListCategories.style.display = ""
 			} else {
 				if (accountSection) accountSection.style.display = "none"
-				if (serverListCategories) serverListCategories.style.display = "none";
+				if (serverListCategories) serverListCategories.style.display = "none"
 			}
 
 
@@ -1042,7 +1042,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 				else
 					nameElement.style.backgroundColor = "rgba(0, 0, 0, 0)"
 
-				nameElement.textContent = data.username;
+				nameElement.textContent = data.username
 			}
 			// Also check if avatar includes "Could not establish connection" in base64
 			if (
@@ -1054,13 +1054,13 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 				//console.log(data.avatar)
 				if (avatarElement)
 					avatarElement.src = data.avatar
-					avatarElement.style.filter = "";
+					avatarElement.style.filter = ""
 			} else {
 				//console.log('data.avatar does not exist or is using a fallback. Using fallback')
 				//console.log(data.avatar)
 				if (avatarElement) {
-					avatarElement.src = '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg';
-					avatarElement.style.filter = "invert(100%) sepia(0%) saturate(22%) hue-rotate(36deg) brightness(104%) contrast(108%)";
+					avatarElement.src = '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg'
+					avatarElement.style.filter = "invert(100%) sepia(0%) saturate(22%) hue-rotate(36deg) brightness(104%) contrast(108%)"
 				}
 			}
 
@@ -1069,7 +1069,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 					nameElement.style.cursor = "pointer"
 					nameElement.onclick = function () {
 						openExternalLink("https://forum.beammp.com/u/" + data.username + "/summary")
-					};
+					}
 				if (idElement)
 					idElement.textContent = "ID: " + data.id
 					idElement.onclick = function () {
@@ -1080,49 +1080,49 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 						idElement.style.marginTop = "0"
 					} else {
 						idElement.style.marginTop = "6px"
-					};
+					}
 			} else {
-				if (idElement) idElement.textContent = "";
+				if (idElement) idElement.textContent = ""
 				if (nameElement) {
 					nameElement.onclick = null
-					nameElement.style.cursor = "default";
+					nameElement.style.cursor = "default"
 				}
 			}
 		} else {
 			if (nameElement != null) {
-				nameElement.textContent = "";
-				nameElement.style.backgroundColor = "rgba(0, 0, 0, 0)";
+				nameElement.textContent = ""
+				nameElement.style.backgroundColor = "rgba(0, 0, 0, 0)"
 			}
-			if (idElement != null) idElement.textContent = "";
-			if (avatarElement != null) avatarElement.removeAttribute("src");
+			if (idElement != null) idElement.textContent = ""
+			if (avatarElement != null) avatarElement.removeAttribute("src")
 		}
 
-		var buttons = document.getElementsByClassName("servers-btn");
+		var buttons = document.getElementsByClassName("servers-btn")
 		for (var i = 0; i < buttons.length; i++) {
-			buttons[i].classList.remove("bng-button-outline");
+			buttons[i].classList.remove("bng-button-outline")
 		}
-	});
+	})
 
 	vm.exit = function ($event) {
 		console.log(`vm.exit triggered in ${$scope.name}`)
 		if ($event)
-		console.log('[MultiplayerController] exiting by keypress event %o', $event);
-		$state.go('menu.mainmenu');
-	};
+		console.log('[MultiplayerController] exiting by keypress event %o', $event)
+		$state.go('menu.mainmenu')
+	}
 
 	var timeOut = $timeout(function() {
 		if (vm.loadingPage === true) {
-			vm.loadTimeout = true;
+			vm.loadTimeout = true
 		}
-	}, 10000);
+	}, 10000)
 
 	$scope.$on('$destroy', function () {
-		$timeout.cancel(timeOut);
-		fancySync.disconnect();
-		//console.log('[MultiplayerController] destroyed.');
-	});
+		$timeout.cancel(timeOut)
+		fancySync.disconnect()
+		//console.log('[MultiplayerController] destroyed.')
+	})
 
-	$scope.formatBytes = formatBytes;
+	$scope.formatBytes = formatBytes
 
 	$scope.availableServerVersions = []
 	$scope.availableMaps = []
@@ -1143,8 +1143,8 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	$scope.updatePlayerCountRange = async function() {
 		var activeFilters = JSON.parse(localStorage.getItem("serverListOptions"))
 
-		activeFilters.playerCountMin = vm.playerCountMin
-		activeFilters.playerCountMax = vm.playerCountMax
+		activeFilters.playerCountMin = Number(vm.playerCountMin)
+		activeFilters.playerCountMax = Number(vm.playerCountMax)
 
 		searchFilters = activeFilters
 		localStorage.setItem("serverListOptions", JSON.stringify(activeFilters))
@@ -1169,7 +1169,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		setSearchFilters(await getSearchFilterData(data))
 	})
 	$scope.$on('reloadSearchFilters', function (event, data) {
-		console.log('received reloadSearchFilters with data: ', data)
+		//console.log('received reloadSearchFilters with data: ', data)
 		setSearchFilters(data)
 	})
 	function setSearchFilters(serverSearchFilters) {
@@ -1193,30 +1193,30 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	}
 
 	$scope.toggleTag = function(tag) {
+		tag.raw = tag.raw.trim()
 		var activeFilters = JSON.parse(localStorage.getItem("serverListOptions"))
 		var isTagActive = -1
 		console.log(`Attempting to toggle tag ${tag.raw}`)
-		for (var i = 0; i < activeFilters.tags.length; i++) {
+		for (var i = 0; i < activeFilters.selectedTags.length; i++) {
 			//console.log(`Checking tag ${activeFilters.tags[i].raw}`)
-			if (activeFilters.tags[i].raw === tag.raw) {
+			if (activeFilters.selectedTags[i].raw === tag.raw) {
 				//console.log(`We have a match everybody!! isTagActive=true on ${tag.raw}`)
 				isTagActive = i
 				break
 			}
 		}
-		console.log(tag)
 		if (isTagActive > -1) {
 			console.log(`Active tags includes ${tag.raw}, removing`)
-			activeFilters.tags.splice(isTagActive, 1)
+			activeFilters.selectedTags.splice(isTagActive, 1)
 		} else {
 			console.log(`Active tags does not include ${tag.raw}, adding`)
 			tag.active = true
-			activeFilters.tags.splice(activeFilters.tags.length, 0, tag)
+			activeFilters.selectedTags.push(tag)
 		}
 
 		searchFilters = activeFilters
 		localStorage.setItem("serverListOptions", JSON.stringify(activeFilters))
-		setSearchFilters(Object.values(searchFilters))
+		setSearchFilters(Object.values(activeFilters))
 		$scope.$emit('searchFiltersUpdated')
 		repopulateServerList()
 	}
@@ -1228,21 +1228,21 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 				if (activeFilters.selectedServerLocations.includes(value)) {
 					activeFilters.selectedServerLocations.splice(activeFilters.selectedServerLocations.findIndex((element) => element === value), 1)
 				} else {
-					activeFilters.selectedServerLocations.splice(activeFilters.selectedServerLocations.length, 0, value)
+					activeFilters.selectedServerLocations.push(value)
 				}
 				break
 			case 'map':
 				if (activeFilters.selectedMaps.includes(value)) {
 					activeFilters.selectedMaps.splice(activeFilters.selectedMaps.findIndex((element) => element === value), 1)
 				} else {
-					activeFilters.selectedMaps.splice(activeFilters.selectedMaps.length, 0, value)
+					activeFilters.selectedMaps.push(value)
 				}
 				break
 			case 'serverVersion':
 				if (activeFilters.selectedServerVersions.includes(value)) {
 					activeFilters.selectedServerVersions.splice(activeFilters.selectedServerVersions.findIndex((element) => element === value), 1)
 				} else {
-					activeFilters.selectedServerVersions.splice(activeFilters.selectedServerVersions.length, 0, value)
+					activeFilters.selectedServerVersions.push(value)
 				}
 				break
 		}
@@ -1259,26 +1259,26 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	// This JS is independent from the .mp-fancy-blur elements. 
 	// But, the CSS is still single-purpose. Haven't found a good solution for the CSS yet.
 	var fancySync = new MutationObserver(function() {
-		var mainMenuBg = document.querySelector('.background-image');
+		var mainMenuBg = document.querySelector('.background-image')
 		if (mainMenuBg == null) return false
 		
-		var urls = mainMenuBg.getAttribute('style').match(/url\(.*?\)/ig);
-		if (!urls, urls.length == 0) return false;
+		var urls = mainMenuBg.getAttribute('style').match(/url\(.*?\)/ig)
+		if (!urls, urls.length == 0) return false
 
-		var incoming = urls[urls.length - 1];
+		var incoming = urls[urls.length - 1]
 		//console.log('Incoming bg url: '+incoming)
-		var blurredBg = incoming.replace('.jpg', '_blur.jpg');
+		var blurredBg = incoming.replace('.jpg', '_blur.jpg')
 
 		document.querySelectorAll('.mp-fancy-blur').forEach(el => {
-			el.style.setProperty('--mp-fancy-blur-src', blurredBg);
-		});
+			el.style.setProperty('--mp-fancy-blur-src', blurredBg)
+		})
 		return true
-	});
+	})
 
-	var mainMenuBg = document.querySelector('.background-image');
+	var mainMenuBg = document.querySelector('.background-image')
 	if (mainMenuBg) {
-		fancySync.observe(mainMenuBg, { attributes: true, attributeFilter: ['style'] });
-	};
+		fancySync.observe(mainMenuBg, { attributes: true, attributeFilter: ['style'] })
+	}
 }])
 
 /* //////////////////////////////////////////////////////////////////////////////////////////////
@@ -1286,7 +1286,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 */ //////////////////////////////////////////////////////////////////////////////////////////////
 .controller('MultiplayerTilesController', ['$scope', '$state', '$timeout', '$document', 
 function($scope, $state, $timeout, $document) {
-	'use strict';
+	'use strict'
 
 	var vm = this
 
@@ -1300,7 +1300,7 @@ function($scope, $state, $timeout, $document) {
 		setSearchFilters(await getSearchFilterData(data))
 	})
 	$scope.$on('reloadSearchFilters', function (event, data) {
-		console.log('received reloadSearchFilters with data: ', data)
+		//console.log('received reloadSearchFilters with data: ', data)
 		setSearchFilters(data)
 	})
 	function setSearchFilters(serverSearchFilters) {
@@ -1313,7 +1313,7 @@ function($scope, $state, $timeout, $document) {
 	bngApi.engineLua('MPCoreNetwork.requestServerList()')
 
 	$scope.getTileBackground = function(filename) {
-		if (filename && filename!='') {
+		if (filename && filename!=='') {
 			return `'url("/ui/modModules/multiplayer/tiles/${filename}")'`
 		} else {
 			return `'url("/ui/images/appDefault.png")'`
@@ -1323,10 +1323,11 @@ function($scope, $state, $timeout, $document) {
 	$scope.viewServersWithTag = function(tag) {
 		console.log('Viewing servers with the following tag:', tag)
 		
-		let serverListOptions = JSON.parse(localStorage.getItem("serverListOptions"))
-		serverListOptions.tags = [tag]
-		localStorage.setItem("serverListOptions", JSON.stringify(serverListOptions))
-		console.log(serverListOptions)
+		searchFilters.selectedTags = [tag]
+
+		let activeFilters = JSON.parse(localStorage.getItem("serverListOptions"))
+		activeFilters.selectedTags = [tag]
+		localStorage.setItem("serverListOptions", JSON.stringify(activeFilters))
 
 		$scope.switchServerView('')
 	}
@@ -1336,7 +1337,7 @@ function($scope, $state, $timeout, $document) {
 		if (serversTableContainer) {
 			serversTableContainer.scrollTop = 0
 		}
-		serverView = view;
+		serverView = view
 		$state.go('menu.multiplayer.servers')
 		repopulateServerList()
 
@@ -1351,25 +1352,25 @@ function($scope, $state, $timeout, $document) {
 		if (extra)
 		if (view == "recents") {
 			$translate('ui.multiplayer.clearRecent').then(function (translation) {
-				extra.style.display = "";
-				extra.innerText = translation;
+				extra.style.display = ""
+				extra.innerText = translation
 
 				extra.onclick = function() {
-					vm.clearRecents();
-				};
-			});
+					vm.clearRecents()
+				}
+			})
 		} else if (view == "favorites") {
 			$translate('ui.multiplayer.addCustomServer').then(function (translation) {
-				extra.style.display = "";
-				extra.innerText = translation;
+				extra.style.display = ""
+				extra.innerText = translation
 
 				extra.onclick = function() {
-					vm.showCustomServer();
-				};
-			});
+					vm.showCustomServer()
+				}
+			})
 		} else {
-			extra.style.display = "none";
-		};
+			extra.style.display = "none"
+		}
 	}
 	
 }])
@@ -1381,7 +1382,7 @@ function($scope, $state, $timeout, $document) {
 .controller('MultiplayerServersController', ['$scope', '$state', '$timeout', '$filter',
 function($scope, $state, $timeout, $filter) {
 
-	var vm = this;
+	var vm = this
 	$scope.$on('searchFiltersUpdated', function(event, data) {
 		updateSearchFilters()
 	})
@@ -1410,7 +1411,7 @@ function($scope, $state, $timeout, $filter) {
 		vm.sliderMaxModSize = searchFilters.sliderMaxModSize
 		vm.selectMap = searchFilters.selectedMaps
 		vm.serverVersions = searchFilters.selectedServerVersions
-		vm.tags = searchFilters.tags
+		vm.tags = searchFilters.selectedTags
 		vm.serverLocations = searchFilters.selectedServerLocations
 		vm.matchAll = searchFilters.matchAll
 		vm.searchText = searchFilters.searchText
@@ -1430,186 +1431,185 @@ function($scope, $state, $timeout, $filter) {
 		repopulateServerList()
 	}
 
-	//bngApi.engineLua('MPCoreNetwork.requestServerList()');
+	//bngApi.engineLua('MPCoreNetwork.requestServerList()')
 
 	// Go back to the main menu on exit
 	vm.exit = function ($event) {
 		console.log(`vm.exit triggered in ${$scope.name}`)
-		if ($event) console.log('[MultiplayerServersController] exiting by keypress event %o', $event);
-		$state.go('menu.mainmenu');
-	};
+		if ($event) console.log('[MultiplayerServersController] exiting by keypress event %o', $event)
+		$state.go('menu.mainmenu')
+	}
 
-	const serversTableContainer = document.getElementById("serversTableContainer");
-	$scope.itemHeight = 24;
-	$scope.buffer = 10;
-	$scope.viewportHeight = serversTableContainer.clientHeight;
-	$scope.selectedServerId = null;
-	$scope.expandedRowHeight = 0;
+	const serversTableContainer = document.getElementById("serversTableContainer")
+	$scope.itemHeight = 24
+	$scope.buffer = 10
+	$scope.viewportHeight = serversTableContainer.clientHeight
+	$scope.selectedServerId = null
+	$scope.expandedRowHeight = 0
 	$scope.loadingShimmerCount = Math.ceil($scope.viewportHeight / $scope.itemHeight)
 
 	$scope.onScroll = async function() {
-		//console.log('onScroll fired');
-		if ($scope.viewportHeight === 0) $scope.viewportHeight = serversTableContainer.clientHeight;
+		//console.log('onScroll fired')
+		if ($scope.viewportHeight === 0) $scope.viewportHeight = serversTableContainer.clientHeight
 
-		const scrollTop = serversTableContainer.scrollTop;
-		const total = $scope.serversArray.length;
-		const itemHeight = $scope.itemHeight;
-		const viewportHeight = $scope.viewportHeight;
-		const buffer = $scope.buffer;
+		const scrollTop = serversTableContainer.scrollTop
+		const total = $scope.serversArray.length
+		const itemHeight = $scope.itemHeight
+		const viewportHeight = $scope.viewportHeight
+		const buffer = $scope.buffer
 		
 		//console.log(`viewportHeight:${viewportHeight} itemHeight:${itemHeight}`)
-		const itemsPerView = Math.ceil(viewportHeight / itemHeight);
-		const scrollRow = Math.floor(scrollTop / itemHeight);
+		const itemsPerView = Math.ceil(viewportHeight / itemHeight)
+		const scrollRow = Math.floor(scrollTop / itemHeight)
 		
-		//console.log(`scrollRow:'${scrollRow}' itemsPerView:'${itemsPerView}'`);
-		let startIndex = Math.max(0, scrollRow - Math.ceil(itemsPerView) + buffer);
-		let endIndex = Math.min(total, scrollRow + Math.ceil(itemsPerView) + buffer);
+		//console.log(`scrollRow:'${scrollRow}' itemsPerView:'${itemsPerView}'`)
+		let startIndex = Math.max(0, scrollRow - Math.ceil(itemsPerView) + buffer)
+		let endIndex = Math.min(total, scrollRow + Math.ceil(itemsPerView) + buffer)
 		//console.log(`start:'${startIndex}' end:'${endIndex}'`)
 		
-		let beforeHeight = startIndex * itemHeight;
-		let afterHeight = (total - endIndex) * itemHeight;
+		let beforeHeight = startIndex * itemHeight
+		let afterHeight = (total - endIndex) * itemHeight
 
 		if ($scope.selectedServerId && $scope.selectedIndex !== -1) {
-			const selectedServerExists = $scope.serversArray.some(s => s.id === $scope.selectedServerId);
+			const selectedServerExists = $scope.serversArray.some(s => s.id === $scope.selectedServerId)
 			if (selectedServerExists) {
 				// when selectedIndex is not in the view anymore
 				if ($scope.selectedIndex < startIndex || $scope.selectedIndex >= endIndex) {
 					//if the selected server is above the current view
 					if ($scope.selectedIndex < scrollRow) {		//this compense the height of the expanded row that is not rendered anymore
-						beforeHeight += $scope.expandedRowHeight;
-					}else{	//if the selected server is below the current view
-						afterHeight += $scope.expandedRowHeight;
-					};
-				};
-			};
-		};
+						beforeHeight += $scope.expandedRowHeight
+					} else {	//if the selected server is below the current view
+						afterHeight += $scope.expandedRowHeight
+					}
+				}
+			}
+		}
 
-		$scope.visibleServers = $scope.serversArray.slice(startIndex, endIndex);
-		$scope.beforeHeight = beforeHeight;
-		$scope.afterHeight = afterHeight;
+		$scope.visibleServers = $scope.serversArray.slice(startIndex, endIndex)
+		$scope.beforeHeight = beforeHeight
+		$scope.afterHeight = afterHeight
 		if (!$scope.$$phase) {
-			//console.log('Digesting from onScroll');
-			$scope.$digest();
-		};
-	};
+			$scope.$digest()
+		}
+	}
 
 	$scope.selectServer = function(server) {
-		const serverId = server.id;
+		const serverId = server.id
 		//console.log('Server '+serverId+' was selected')
 		//console.log(JSON.stringify(server.server))
 		highlightedServer = server.server
 		if ($scope.selectedServerId === serverId) {
-			$scope.selectedServerId = null;
-			server.server.formattedTags = undefined;
+			$scope.selectedServerId = null
+			server.server.formattedTags = undefined
 			highlightedServer = null
-			$scope.expandedRowHeight = 0;
+			$scope.expandedRowHeight = 0
 		} else {
-			$scope.selectedServerId = serverId;
-			server.server.formattedTags = formatServerTags(server.server.tags);
-			$scope.selectedIndex = $scope.serversArray.findIndex(s => s.id === $scope.selectedServerId);
+			$scope.selectedServerId = serverId
+			server.server.formattedTags = formatServerTags(server.server.tags)
+			$scope.selectedIndex = $scope.serversArray.findIndex(s => s.id === $scope.selectedServerId)
 
 			$timeout(function() {	//timeout because the serverInfoRow is not rendered yet
-				const row = document.getElementById('ServerInfoRow');
-				$scope.expandedRowHeight = row.offsetHeight;
+				const row = document.getElementById('ServerInfoRow')
+				$scope.expandedRowHeight = row.offsetHeight
 			})
 		}
-		$scope.onScroll();
-	};
+		$scope.onScroll()
+	}
 
 	serversTableContainer.addEventListener('scroll', () => {
-		$scope.onScroll();
-	}, { passive: true });
+		$scope.onScroll()
+	}, { passive: true })
 
 
 	$scope.addFav = function(server) {
-		addFav(server);	
+		addFav(server)
 		const index = $scope.serversArray.findIndex(s => 
 			s.server.ip === server.ip && s.server.port === server.port
-		);
+		)
 
 		if (index !== -1) {
-			$scope.serversArray[index].isFavorite = true;
+			$scope.serversArray[index].isFavorite = true
 			
-			$scope.$applyAsync(); 
+			$scope.$applyAsync()
 
 		}
-	};
+	}
 	$scope.removeFav = function(server) {
-		removeFav(server);
+		removeFav(server)
 		const index = $scope.serversArray.findIndex(s => 
 			s.server.ip === server.ip && s.server.port === server.port
-		);
+		)
 
 		if (index !== -1) {
-			$scope.serversArray[index].isFavorite = false;
+			$scope.serversArray[index].isFavorite = false
 			
-			$scope.$applyAsync(); 
+			$scope.$applyAsync()
 
 		}
-	};
-
-	$scope.sortTable = function(sortType, isNumber, dir) {
-		const direction = dir || $scope.sortDirection || 1;
-		$scope.sortDirection = -direction; // toggle direction
-
-		$scope.serversArray.sort((a, b) => {
-			const aVal = a.server[sortType];
-			const bVal = b.server[sortType];
-			if (isNumber) {
-			return direction * (Number(aVal) - Number(bVal));
-			} else {
-			return direction * aVal.toString().localeCompare(bVal.toString(), undefined, { numeric: true });
-			}
-		});
-
-		$scope.onScroll();
 	}
 
-	$scope.listPlayers = listPlayers;
-	$scope.formatCodes = formatCodes;
-	$scope.SmoothMapName = SmoothMapName;
-	$scope.modCount = modCount;
-	$scope.modList = modList;
-	$scope.formatBytes = formatBytes;
-	$scope.connect = connect;
-	$scope.customToNumber = customToNumber;
-	$scope.customIsFinite = customIsFinite;
-	$scope.customIsString = customIsString;
-	$scope.getTagCount = getTagCount;
-	$scope.formatServerTags = formatServerTags;
+	$scope.sortTable = function(sortType, isNumber, dir) {
+		const direction = dir || $scope.sortDirection || 1
+		$scope.sortDirection = -direction // toggle direction
+
+		$scope.serversArray.sort((a, b) => {
+			const aVal = a.server[sortType]
+			const bVal = b.server[sortType]
+			if (isNumber) {
+			return direction * (Number(aVal) - Number(bVal))
+			} else {
+			return direction * aVal.toString().localeCompare(bVal.toString(), undefined, { numeric: true })
+			}
+		})
+
+		$scope.onScroll()
+	}
+
+	$scope.listPlayers = listPlayers
+	$scope.formatCodes = formatCodes
+	$scope.SmoothMapName = SmoothMapName
+	$scope.modCount = modCount
+	$scope.modList = modList
+	$scope.formatBytes = formatBytes
+	$scope.connect = connect
+	$scope.customToNumber = customToNumber
+	$scope.customIsFinite = customIsFinite
+	$scope.customIsString = customIsString
+	$scope.getTagCount = getTagCount
+	$scope.formatServerTags = formatServerTags
 
 	// Page loading timeout
 	var timeOut = $timeout(function () {
 		if (vm.loadingPage === true) {
-			vm.loadTimeout = true;
+			vm.loadTimeout = true
 		}
-	}, 10000);
+	}, 10000)
 
 	// Called when the page is left
 	$scope.$on('$destroy', function () {
-		serverView = "";
-		$timeout.cancel(timeOut);
-		//console.log('[MultiplayerServersController] destroyed.');
-		var buttons = document.getElementsByClassName("servers-btn");
+		serverView = ""
+		$timeout.cancel(timeOut)
+		//console.log('[MultiplayerServersController] destroyed.')
+		var buttons = document.getElementsByClassName("servers-btn")
 		for (var i = 0; i < buttons.length; i++) {
-			buttons[i].classList.remove("bng-button-outline");
+			buttons[i].classList.remove("bng-button-outline")
 		}
-	});
+	})
 	
 	$scope.$on('onServerListReceived', async function (event, data) {
-		servers = await receiveServers(data);
+		servers = await receiveServers(data)
 
-		recents = await getRecents();
-		favorites = await getFavorites();
+		recents = await getRecents()
+		favorites = await getFavorites()
 
 		
 
 		console.log('Server list received, repopulating...')
-		vm.repopulate();
+		vm.repopulate()
 
 		const serverSearchFilters = await getSearchFilterData(data)
 		$scope.$emit('reloadSearchFilters', serverSearchFilters)
-	});
+	})
 
 	vm.repopulate = async function () {
 		await populateTable(
@@ -1623,90 +1623,103 @@ function($scope, $state, $timeout, $filter) {
 			searchFilters.sliderMaxModSize,
 			searchFilters.selectedMaps,
 			searchFilters.selectedServerVersions,
-			searchFilters.tags,
+			searchFilters.selectedTags,
 			searchFilters.selectedServerLocations,
 			searchFilters.matchAll
-		);
+		)
 
-		vm.activeFiltersText = [];
+		vm.activeFiltersText = []
 		vm.activeFiltersText.push([
 			$filter('translate')('ui.multiplayer.filters.modSize') + " < ",
 			formatBytes(searchFilters.sliderMaxModSize * 1e+6)
-		]);
-		if (searchFilters.selectMap.length > 0) 		vm.activeFiltersText.push([
-			$filter('translate')('ui.multiplayer.filters.map') ,
-			searchFilters.selectMap.join(", ")
-		]);
-		if (searchFilters.serverVersions.length > 0) 	vm.activeFiltersText.push([
-			$filter('translate')('ui.multiplayer.filters.serverVersions') ,
-			searchFilters.serverVersions.join(", ")
-		]);
-		if (searchFilters.tags.length > 0) 			vm.activeFiltersText.push([
-			$filter('translate')('ui.multiplayer.filters.tags') ,
-			searchFilters.tags
-		]);
-		if (searchFilters.serverLocations.length > 0) 	vm.activeFiltersText.push([
-			$filter('translate')('ui.multiplayer.filters.serverLocations') ,
-			searchFilters.serverLocations.join(", ")
-		]);
+		])
+		if (searchFilters.selectedMaps.length > 0) 		vm.activeFiltersText.push([
+			$filter('translate')('ui.multiplayer.filters.map'),
+			searchFilters.selectedMaps.join(", ")
+		])
+		if (searchFilters.selectedServerVersions.length > 0) 	vm.activeFiltersText.push([
+			$filter('translate')('ui.multiplayer.filters.serverVersions'),
+			searchFilters.selectedServerVersions.join(", ")
+		])
+		if (searchFilters.selectedTags.length > 0) 			vm.activeFiltersText.push([
+			$filter('translate')('ui.multiplayer.filters.tags'),
+			searchFilters.selectedTags
+		])
+		if (searchFilters.selectedServerLocations.length > 0) 	vm.activeFiltersText.push([
+			$filter('translate')('ui.multiplayer.filters.serverLocations'),
+			searchFilters.selectedServerLocations.join(", ")
+		])
 
-		var clearFiltersButton = document.getElementById("clearFiltersButton");
-		//var FiltersPrefix = document.getElementById("FiltersPrefix");
+		var clearFiltersButton = document.getElementById("clearFiltersButton")
+		//var FiltersPrefix = document.getElementById("FiltersPrefix")
 
 		if (clearFiltersButton != null) {
 			if (vm.activeFiltersText.length > 0) { 
-				//activeFiltersText = activeFiltersText.slice(0, -2);
-				clearFiltersButton.style.display = "block"; 
-				//FiltersPrefix.style.display = "block";
+				//activeFiltersText = activeFiltersText.slice(0, -2)
+				clearFiltersButton.style.display = "block"
+				//FiltersPrefix.style.display = "block"
 			} else {
-				clearFiltersButton.style.display = "none";
-				//FiltersPrefix.style.display = "none";
+				clearFiltersButton.style.display = "none"
+				//FiltersPrefix.style.display = "none"
 			}
 		}
 
-		localStorage.setItem("serverListOptions", JSON.stringify(searchFilters));
-	};
+		localStorage.setItem("serverListOptions", JSON.stringify(searchFilters))
+	}
 
-	$scope.isFilterOverlayVisible = false;
+	$scope.isFilterOverlayVisible = false
 
 	$scope.toggleFilterOverlay = function () {
-		$scope.isFilterOverlayVisible = !$scope.isFilterOverlayVisible;
-	};
+		$scope.isFilterOverlayVisible = !$scope.isFilterOverlayVisible
+	}
 
 	$scope.clearFilters = function () {
-		searchFilters.playerCountMin = 0;
-		searchFilters.playerCountMax = 64;
-		searchFilters.sliderMaxModSize = 10240;
-		searchFilters.selectMap = [];
-		searchFilters.serverVersions = [];
-		searchFilters.tags = [];
-		searchFilters.serverLocations = [];
-		searchFilters.matchAll = true;
+		searchFilters.playerCountMin = 0
+		searchFilters.playerCountMax = 64
+		searchFilters.sliderMaxModSize = 10240
+		searchFilters.selectedMaps = []
+		searchFilters.selectedServerVersions = []
+		searchFilters.selectedTags = []
+		searchFilters.selectedServerLocations = []
+		searchFilters.matchAll = true
 
 		localStorage.setItem('serverListOptions', JSON.stringify(searchFilters))
 		console.log('Cleared filters, repopulating...')
+		$scope.$emit('searchFiltersUpdated')
 		repopulateServerList()
 	}
-	//$scope.addTagToSearchFilter = function (tag) {
-	//	console.log('Trying to add "'+JSON.stringify(tag)+'" to search filters');
-	//	console.log('serverListOptions looks like: '+JSON.stringify(serverListOptions));
-	//	if (!vm.tags.find(item => item.raw === tag.raw)) {
-	//		tag.raw = tag.raw.trim();
-	//		tag.$$mdSelectId = 0;
-	//		console.log('Added "'+JSON.stringify(tag)+'" to the search filters');
-	//		vm.tags.push(tag);
-	//		serverListOptions.tags = vm.tags;
-	//		localStorage.setItem("serverListOptions", JSON.stringify(serverListOptions));
-	//		console.log('serverListOptions NOW looks like: '+JSON.stringify(serverListOptions));
-	//		vm.repopulate();
-	//	} else {
-	//		console.log('Tag already exists in search filters');
-	//	}
-	//};
+	$scope.addTagToSearchFilter = function (tag) {
+		tag.raw = tag.raw.trim()
+		console.log('Trying to add "'+tag.raw+'" to search filters')
+		var isTagActive = -1
+		console.log(searchFilters)
+		for (var i = 0; i < searchFilters.selectedTags.length; i++) {
+			//console.log(`Checking tag ${activeFilters.tags[i].raw}`)
+			if (searchFilters.selectedTags[i].raw === tag.raw) {
+				//console.log(`We have a match everybody!! isTagActive=true on ${tag.raw}`)
+				isTagActive = i
+				break
+			}
+		}
+		if (isTagActive > -1) {
+			console.log('Removing "'+tag.raw+'" from the search filters')
+			searchFilters.selectedTags.splice(searchFilters.selectedTags.findIndex((included) => included === tag), 1)
+			localStorage.setItem("serverListOptions", JSON.stringify(searchFilters))
+			$scope.$emit('searchFiltersUpdated')
+			repopulateServerList()
+		} else {
+			tag.active = true
+			console.log('Added "'+JSON.stringify(tag)+'" to the search filters')
+			searchFilters.selectedTags.push(tag)
+			localStorage.setItem("serverListOptions", JSON.stringify(searchFilters))
+			$scope.$emit('searchFiltersUpdated')
+			repopulateServerList()
+		}
+	}
 
 	repopulateServerList = function () {
-		console.log('repopulateServerList fired, repopulating...');
-		vm.repopulate().then(() => { });
+		console.log('repopulateServerList fired, repopulating...')
+		vm.repopulate().then(() => { })
 	}
 }])
 
@@ -1715,46 +1728,45 @@ function($scope, $state, $timeout, $filter) {
 */ //////////////////////////////////////////////////////////////////////////////////////////////
 .controller('MultiplayerDirectController', ['$scope', '$state', '$timeout',
 function($scope, $state, $timeout) {
-	var vm = this;
+	var vm = this
 
 	var timeOut = $timeout(function() {
 		if (vm.loadingPage === true) {
-			vm.loadTimeout = true;
+			vm.loadTimeout = true
 		}
-	}, 10000);
+	}, 10000)
 
 	vm.exit = function ($event) {
 		console.log(`vm.exit triggered in ${$scope.name}`)
 		if ($event)
-		console.log('[MultiplayerDirectController] exiting by keypress event %o', $event);
-		$state.go('menu.mainmenu');
-	};
+		console.log('[MultiplayerDirectController] exiting by keypress event %o', $event)
+		$state.go('menu.mainmenu')
+	}
 
 	$scope.$on('$destroy', function () {
-		$timeout.cancel(timeOut);
-		//console.log('[MultiplayerDirectController] destroyed.');
-	});
+		$timeout.cancel(timeOut)
+		//console.log('[MultiplayerDirectController] destroyed.')
+	})
 }])
 
 .directive('compile', ['$compile', function ($compile) {
-  return function(scope, element, attrs) {
-    scope.$watch(
-      function(scope) {
-        // watch the 'compile' expression for changes
-        return scope.$eval(attrs.compile);
-      },
-      function(value) {
-        // when the 'compile' expression changes
-        // assign it into the current DOM
-        element.html(value);
-				// compile the new DOM and link it to the current
-			  // scope.
-			  // NOTE: we only compile .childNodes so that
-			  // we don't get into infinite loop compiling ourselves
-			  $compile(element.contents())(scope);
+return function(scope, element, attrs) {
+	scope.$watch(
+	function(scope) {
+		// watch the 'compile' expression for changes
+		return scope.$eval(attrs.compile)
+	},
+	function(value) {
+		// when the 'compile' expression changes
+		// assign it into the current DOM
+		element.html(value)
+			// compile the new DOM and link it to the current scope.
+			// NOTE: we only compile .childNodes so that
+			// we don't get into infinite loop compiling ourselves
+			$compile(element.contents())(scope)
 			}
-		);
-	};
+		)
+	}
 }])
 
 
@@ -1766,12 +1778,12 @@ function($scope, $state, $timeout) {
 // Set the first letter of each word upper case
 function toTitleCase(str) {
 	return str.replace(/\w\S*/g, function(txt){
-		return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-	});
+		return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+	})
 }
 
 function SmoothMapName(map) {
-	if (!map) return;
+	if (!map) return
 	map = map.replace("/info.json","")
 	map = map.split('/').pop().replace(/\s*/g,'')
 	map = map.replace(/_/g," ")
@@ -1781,117 +1793,117 @@ function SmoothMapName(map) {
 }
 
 function formatBytes(bytes = 0, decimals = 2) {
-    if (bytes == 0 || bytes == undefined) return '0 Bytes';
-    const k = 1024;
-    const dm = decimals < 0 ? 0 : decimals;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+	if (bytes == 0 || bytes == undefined) return '0 Bytes'
+	const k = 1024
+	const dm = decimals < 0 ? 0 : decimals
+	const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+	const i = Math.floor(Math.log(bytes) / Math.log(k))
+	return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
 }
 
 globalThis.serverStyleMap = {
-    '^0': 'color-0',
-    '^1': 'color-1',
-    '^2': 'color-2',
-    '^3': 'color-3',
-    '^4': 'color-4',
-    '^5': 'color-5',
-    '^6': 'color-6',
-    '^7': 'color-7',
-    '^8': 'color-8',
-    '^9': 'color-9',
-    '^a': 'color-a',
-    '^b': 'color-b',
-    '^c': 'color-c',
-    '^d': 'color-d',
-    '^e': 'color-e',
-    '^f': 'color-f',
-    '^l': 'bold',
-    '^m': 'line-through',
-    '^n': 'underline',
-    '^o': 'italic',
-    '^*': 'bngIcon'
-};
+	'^0': 'color-0',
+	'^1': 'color-1',
+	'^2': 'color-2',
+	'^3': 'color-3',
+	'^4': 'color-4',
+	'^5': 'color-5',
+	'^6': 'color-6',
+	'^7': 'color-7',
+	'^8': 'color-8',
+	'^9': 'color-9',
+	'^a': 'color-a',
+	'^b': 'color-b',
+	'^c': 'color-c',
+	'^d': 'color-d',
+	'^e': 'color-e',
+	'^f': 'color-f',
+	'^l': 'bold',
+	'^m': 'line-through',
+	'^n': 'underline',
+	'^o': 'italic',
+	'^*': 'bngIcon'
+}
 
 import { icons as iconsOrig, iconsBySize, iconsByTag, getIconsWithTags } from "/ui/ui-vue/src/assets/fonts/bngIcons/bngIcons.js"
 function formatCodes(string, isdesc = false) {
-    let result = '';
-    var currentText = '';
-    let classes = new Set();
+	let result = ''
+	var currentText = ''
+	let classes = new Set()
 
 	string = DOMPurify.sanitize(string)
 
-    const tokens = string.split(/(\^.)/g);
+	const tokens = string.split(/(\^.)/g)
 
-    const flush = () => {
-        if (!currentText) return;
-        const classList = Array.from(classes);
-        result += classList.length
-            ? `<span class="${classList.join(' ')}">${currentText}</span>`
-            : currentText;
-        currentText = '';
-    };
+	const flush = () => {
+		if (!currentText) return
+		const classList = Array.from(classes)
+		result += classList.length
+			? `<span class="${classList.join(' ')}">${currentText}</span>`
+			: currentText
+		currentText = ''
+	}
 
-    for (let i = 0; i < tokens.length; i++) {
+	for (let i = 0; i < tokens.length; i++) {
 		const token = tokens[i]
 		const nextToken = tokens[i+1]?.trim() || ''
-        if (/^\^.$/.test(token)) {
-            flush()
-            if (token === '^r') { // reset
-                classes.clear()
-            } else if (isdesc && token === '^p') { // newline
-                currentText += '<br>';
+		if (/^\^.$/.test(token)) {
+			flush()
+			if (token === '^r') { // reset
+				classes.clear()
+			} else if (isdesc && token === '^p') { // newline
+				currentText += '<br>'
 			} else if (isdesc && token === '^h') { // header
-				classes.add('header');
+				classes.add('header')
 			} else if (token === '^*') { // bngIcons
-				const cls = globalThis.serverStyleMap?.[token];
+				const cls = globalThis.serverStyleMap?.[token]
 				if(cls) classes.add(cls)
 
 				if (iconsOrig[nextToken]) {
 					currentText = iconsOrig[nextToken].glyph
 				}
 			} else {
-                const cls = globalThis.serverStyleMap?.[token]
-                if (cls?.startsWith('color-')) { // color
-                    [...classes].forEach(c => c.startsWith('color-') && classes.delete(c));
-                    classes.add(cls);
-                } else if (cls) {
-                    classes.add(cls);
-                }
-            }
-        } else if (tokens[i-1]!='^*') {
-            currentText += token;
-        }
-    }
+				const cls = globalThis.serverStyleMap?.[token]
+				if (cls?.startsWith('color-')) { // color
+					[...classes].forEach(c => c.startsWith('color-') && classes.delete(c))
+					classes.add(cls)
+				} else if (cls) {
+					classes.add(cls)
+				}
+			}
+		} else if (tokens[i-1]!='^*') {
+			currentText += token
+		}
+	}
 
-    flush();
-    return result;
+	flush()
+	return result
 }
 
 
 function modCount(s) {
-	if(s.length==0) return 0;
-	return s.split(";").length-1;
+	if(s.length==0) return 0
+	return s.split(";").length-1
 }
 
 function modList(s) {
-	var modarray = s.split(';');
+	var modarray = s.split(';')
 	
 	// Sort the mod array alphabetically
-  	modarray.sort();
+	modarray.sort()
 
-	s = "";
+	s = ""
 	for (var i=0; i<modarray.length; i++){
 		if (modarray[i] != '') {
-			var modName = modarray[i].split('/').pop();
-			modName = modName.replace(".zip","");
-			s += modName;
+			var modName = modarray[i].split('/').pop()
+			modName = modName.replace(".zip","")
+			s += modName
 			//if (i<modarray.length-2)
-			s += ", ";
+			s += ", "
 		}
 	}
-	//console.log(s);
-	s = s.substring(0, s.length -2);
+	//console.log(s)
+	s = s.substring(0, s.length -2)
 	return s
 }
 
@@ -1904,15 +1916,15 @@ function returnDefault(data, type) {
 				return "Not set"
 		}
 	}
-	else return data;
+	else return data
 }
 
 
 function listPlayers(s) {
 	if (s != undefined && s != "") {
-		var re = new RegExp(";", 'g');
+		var re = new RegExp(";", 'g')
 		s = s.replace(re, ', ');
-		s = s.substring(0, s.length -2);
+		s = s.substring(0, s.length -2)
 		return "Current players: " + s
 	} else {
 		return "No players..."
@@ -1938,164 +1950,160 @@ function getTagCount(string) {
 
 
 var serverStyleArray = [
-    "^0",
-    "^1",
-    "^2",
-    "^3",
-    "^4",
-    "^5",
-    "^6",
-    "^7",
-    "^8",
-    "^9",
-    "^a",
-    "^b",
-    "^c",
-    "^d",
-    "^e",
-    "^f",
-    "^l",
-    "^m",
-    "^n",
-    "^o",
-    "^r",
-    "^p",
+	"^0",
+	"^1",
+	"^2",
+	"^3",
+	"^4",
+	"^5",
+	"^6",
+	"^7",
+	"^8",
+	"^9",
+	"^a",
+	"^b",
+	"^c",
+	"^d",
+	"^e",
+	"^f",
+	"^l",
+	"^m",
+	"^n",
+	"^o",
+	"^r",
+	"^p",
 	"^*"
-];
+]
 
 function stripCustomFormatting(name){
 	for (var i = 0; i < serverStyleArray.length; i++){
 		while (name.includes(serverStyleArray[i])){
-			name = name.replace(serverStyleArray[i], "");
+			name = name.replace(serverStyleArray[i], "")
 		}
 	}
-	return name;
+	return name
 }
 
 
 async function getFavorites() {
 	return new Promise(function(resolve, reject) {
 		bngApi.engineLua("MPConfig.getFavorites()", (data) => {
-			if (!data) { resolve([]); return; }
-			if (typeof data === "object") if (Object.keys(data).length == 0) data = [];
-			favorites = data; // Added this here so that we remove the await where this function was called.
-			resolve(data || []);
-		});
-	});
+			if (!data) { resolve([]); return }
+			if (typeof data === "object") if (Object.keys(data).length == 0) data = []
+			favorites = data // Added this here so that we remove the await where this function was called.
+			resolve(data || [])
+		})
+	})
 }
 
 function addFav(server, isUpdate) {
 	const exists = favorites.some(fav => 
-        fav.ip === server.ip && fav.port === server.port
-    );
+		fav.ip === server.ip && fav.port === server.port
+	)
 	if (!exists) {
-		server["addTime"] = Date.now();
-		favorites.push(server);
-		saveFav();
-		if (!isUpdate) bngApi.engineLua('MPCoreNetwork.requestServerList()');
+		server["addTime"] = Date.now()
+		favorites.push(server)
+		saveFav()
+		if (!isUpdate) bngApi.engineLua('MPCoreNetwork.requestServerList()')
 	}
 }
 
 function removeFav(server) {
 	for (let i = 0; i < favorites.length; i++) {
-		let tmpServer = favorites[i];
+		let tmpServer = favorites[i]
 		if (tmpServer.ip == server.ip && tmpServer.port == server.port) {
-			favorites.splice(i, 1);
+			favorites.splice(i, 1)
 		}
 	}
-	saveFav();
-	bngApi.engineLua('MPCoreNetwork.requestServerList()');
+	saveFav()
+	bngApi.engineLua('MPCoreNetwork.requestServerList()')
 }
 
 function saveFav() {
-	var entry = Base64.encode(JSON.stringify(favorites));
-	bngApi.engineLua('MPConfig.setFavorites(\'' + entry + '\')');
+	var entry = Base64.encode(JSON.stringify(favorites))
+	bngApi.engineLua('MPConfig.setFavorites(\'' + entry + '\')')
 	
 	// backup
-	// bngApi.engineLua(`MPConfig.setFavorites(\'${JSON.stringify(favorites).replace(/'/g, "\\'")}\')`);
+	// bngApi.engineLua(`MPConfig.setFavorites(\'${JSON.stringify(favorites).replace(/'/g, "\\'")}\')`)
 }
 
 
 function getRecents() {
-    return new Promise(function(resolve, reject) {
-        var encoded = localStorage.getItem("recents");
-        var tmpRecents = [];
-        if (encoded) {
-            try {
-                //decode
-                tmpRecents = JSON.parse(Base64.decode(encoded));
-            } catch (e) {
-                try {
-                    //fallback if decode fail
-                    tmpRecents = JSON.parse(encoded);
-                } catch (e2) {
-                    tmpRecents = [];
-                }
-            }
-        }
-        recents = tmpRecents;
-        resolve(tmpRecents);
-    });
+	return new Promise(function(resolve, reject) {
+		var encoded = localStorage.getItem("recents")
+		var tmpRecents = []
+		if (encoded) {
+			try {
+				//decode
+				tmpRecents = JSON.parse(Base64.decode(encoded))
+			} catch (e) {
+				try {
+					//fallback if decode fail
+					tmpRecents = JSON.parse(encoded)
+				} catch (e2) {
+					tmpRecents = []
+				}
+			}
+		}
+		recents = tmpRecents
+		resolve(tmpRecents)
+	})
 }
 
 function addRecent(server) { // has to have name, ip, port
-	server["addTime"] = Date.now();
+	server["addTime"] = Date.now()
 	recents = recents.filter(rec => 
-        !(rec.ip === server.ip && rec.port === server.port)
-    );	// Remove server and add it back
-	recents.push(server);
-	recents = recents.slice(-1 * 50); //keep the last 50 entries
-	localStorage.setItem("recents", Base64.encode(JSON.stringify(recents)));
+		!(rec.ip === server.ip && rec.port === server.port)
+	)	// Remove server and add it back
+	recents.push(server)
+	recents = recents.slice(-1 * 50) //keep the last 50 entries
+	localStorage.setItem("recents", Base64.encode(JSON.stringify(recents)))
 }
 
 globalThis.openExternalLink = function(url){
-	bngApi.engineLua(`MPCoreNetwork.openURL("`+url+`")`);
+	bngApi.engineLua(`MPCoreNetwork.openURL("`+url+`")`)
 }
 
 // /!\ IMPORTANT /!\ //// TYPE 0 = Normal / 1 = Favorites / 2 = Recents
 async function populateTable($filter, $scope, servers, tab, searchText = '', playerCountMin, playerCountMax, sliderMaxModSize, selectMap = [], SelectedServerVersions = [], tags = [], SelectedServerLocations = [], matchAll) {
-	console.log(tags)
-	$scope.serversTable = {}; 
-	var type = 0;
-	if (tab == "favorites") type = 1;
-	else if (tab == "recents") type = 2;
-	let i = 0;
+	$scope.serversTable = {}
+	var type = 0
+	if (tab == "favorites") type = 1
+	else if (tab == "recents") type = 2
+	let i = 0
 	for (const server of servers) {
-		i += 1;
+		i += 1
 		if (!server) {
-			console.log('server not found. Continuing anyways')
-			continue;
+			console.log('server not found')
+			continue
 		}
 
-		if (tab == "official" && !server.official) continue;
-		if (tab == "featured" && !server.featured) continue;
-		if (tab == "partner" && !server.partner) continue;
+		if (tab == "official" && !server.official) continue
+		if (tab == "featured" && !server.featured) continue
+		if (tab == "partner" && !server.partner) continue
 
-		var shown = true;
-		var smoothMapName = SmoothMapName(server.map);
-		var isFavorite = false;
-		var isRecent = false;
+		var shown = true
+		var smoothMapName = SmoothMapName(server.map)
+		var isFavorite = false
+		var isRecent = false
 
 		// Filter by search
-		if (!server.strippedName.toLowerCase().includes(searchText.toLowerCase())) continue;
+		if (!server.strippedName.toLowerCase().includes(searchText.toLowerCase())) continue
 
-		var activeFilters = 0;
-		var filterMatches = 0;
+		var activeFilters = 0
+		var filterMatches = 0
 
 		//server.tags = "tag1,tag2"
-		var serverTags = server.tags.toLowerCase().split(",").map(tag => tag.trim());
-		//console.log(serverTags);
+		var serverTags = server.tags.toLowerCase().split(",").map(tag => tag.trim())
 
 		if(tags.length > 0) {
-			activeFilters = activeFilters + 1;
-			var missingTags = 0;
-			//console.log(serverTags)
+			activeFilters = activeFilters + 1
+			var missingTags = 0
 			for (let tag of tags) {
-				//console.log(tag.raw.toLowerCase(), serverTags.includes(tag.raw.toLowerCase()))
-				if (!serverTags.includes(tag.raw.toLowerCase())) missingTags+=1;
-			};
-			//console.log(missingTags, tags.length)
-			if (matchAll) {
+				if (!serverTags.includes(tag.raw.trim().toLowerCase())) missingTags+=1
+			}
+			if(missingTags===0) filterMatches+=1
+			/*if (matchAll) {
 				if(missingTags==0) {
 					//console.log('Matching all tags. Pass.')
 					filterMatches+=1
@@ -2109,36 +2117,36 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', pla
 				} else {
 					//console.log('Matching some tags. Fail.')
 				}
-			}
+			}*/
 		}
 		
 		// Filter by empty or full
-		activeFilters = activeFilters + 1;
+		activeFilters = activeFilters + 1
 		if(server.players >= playerCountMin) {
 			filterMatches+=1
-		};
-		activeFilters = activeFilters + 1;
+		}
+		activeFilters = activeFilters + 1
 		if(server.players <= playerCountMax) {
 			filterMatches+=1
-		};
-		
+		}
+
 		// Filter by mod size
-		activeFilters = activeFilters + 1;
+		activeFilters = activeFilters + 1
 		if(sliderMaxModSize * 1048576 >= server.modstotalsize) filterMatches+=1
 	
 		// Filter by map
 		if (selectMap.length > 0) {
-			activeFilters = activeFilters + 1;
+			activeFilters = activeFilters + 1
 			if(selectMap.includes(smoothMapName)) filterMatches+=1
-		};
+		}
 
 		if (SelectedServerVersions.length > 0) {
-			activeFilters = activeFilters + 1;
+			activeFilters = activeFilters + 1
 			if(SelectedServerVersions.includes("v" + server.version)) filterMatches+=1
-		};
+		}
 
 		if (SelectedServerLocations.length > 0) {
-			activeFilters = activeFilters + 1;
+			activeFilters = activeFilters + 1
 			if(SelectedServerLocations.includes(server.location)) filterMatches+=1
 		}
 
@@ -2150,13 +2158,13 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', pla
 		}
 
 		// Favorite
-		for (let tmpServer of favorites) if (tmpServer.ip == server.ip && tmpServer.port == server.port) isFavorite = true;
+		for (let tmpServer of favorites) if (tmpServer.ip == server.ip && tmpServer.port == server.port) isFavorite = true
 		if (type == 1 && !isFavorite) continue; // If it's favorite tab, we only show favorites
 
 		// Recents
 		for (let tmpServer of recents) if (tmpServer.ip == server.ip && tmpServer.port == server.port) {
 			isRecent = true; 
-			server.addTime = tmpServer.addTime;
+			server.addTime = tmpServer.addTime
 		}
 		if (type == 2 && !isRecent) continue; // Everything happens underneath for recents
 
@@ -2164,13 +2172,13 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', pla
 
 		if (`${server.ip}:${server.port}` === $scope.selectedServerId) {
 			console.log('Filling out formattedTags for the selected server')
-			server.formattedTags = formatServerTags(server.tags);
+			server.formattedTags = formatServerTags(server.tags)
 		}
 
-		$scope.serversTable[server.ip + ":" + server.port] = {server: server, isFavorite: isFavorite, isRecent: isRecent, name: server.sname, offline: false, custom: false};
+		$scope.serversTable[server.ip + ":" + server.port] = {server: server, isFavorite: isFavorite, isRecent: isRecent, name: server.sname, offline: false, custom: false}
 		$scope.serversArray = Object.keys($scope.serversTable).map(function(key) {
-			return $scope.serversTable[key];
-		});
+			return $scope.serversTable[key]
+		})
 
 	}
 	
@@ -2178,31 +2186,32 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', pla
 	if (type == 1 || type == 2) {
 		var toCheck = type == 1 ? favorites : recents
 		for (let tmpServer1 of toCheck) {
-			let stillOk = true;
+			let stillOk = true
 			for (let i = 0; i < servers.length; i++) {
-				var tmpServer2 = servers[i];
-				if (tmpServer1.ip == tmpServer2.ip && tmpServer1.port == tmpServer2.port) { stillOk = true; break; }
-				else stillOk = false;
+				var tmpServer2 = servers[i]
+				if (tmpServer1.ip == tmpServer2.ip && tmpServer1.port == tmpServer2.port) { stillOk = true; break }
+				else stillOk = false
 			}
 			if (!stillOk) {
 
 				// Filter by search
-				if (!tmpServer1.strippedName.toLowerCase().includes(searchText.toLowerCase())) continue;
+				if (!tmpServer1.strippedName.toLowerCase().includes(searchText.toLowerCase())) continue
 
-				var smoothMapName = SmoothMapName(tmpServer1.map);
+				var smoothMapName = SmoothMapName(tmpServer1.map)
 
-				var activeFilters = 0;
-				var filterMatches = 0;
+				var activeFilters = 0
+				var filterMatches = 0
 
 				//server.tags = "tag1,tag2"
-				var serverTags = (tmpServer1.tags || "").toLowerCase().split(",").map(tag => tag.trim());
+				var serverTags = (tmpServer1.tags || "").toLowerCase().split(",").map(tag => tag.trim())
 				if(tags.length > 0) {
-					activeFilters = activeFilters + 1;
-					var missingTags = 0;
+					activeFilters = activeFilters + 1
+					var missingTags = 0
 					for (let tag of tags) {
-						if (!serverTags.includes(tag.raw.toLowerCase())) missingTags+=1;
-					};
-					if (matchAll) {
+						if (!serverTags.includes(tag.raw.trim().toLowerCase())) missingTags+=1
+					}
+					if(missingTags < tags.length) filterMatches+=1
+					/*if (matchAll) {
 						if(missingTags==0) {
 							//console.log('Matching all tags. Pass.')
 							filterMatches+=1
@@ -2216,73 +2225,73 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', pla
 						} else {
 							//console.log('Matching some tags. Fail.')
 						}
-					}
+					}*/
 				}
 				
 				// Filter by empty or full
-				activeFilters = activeFilters + 1;
+				activeFilters = activeFilters + 1
 				if(tmpServer1.players >= playerCountMin) {
 					if(tmpServer1.players == 0) filterMatches+=1
-				};
-				activeFilters = activeFilters + 1;
+				}
+				activeFilters = activeFilters + 1
 				if(tmpServer1.players <= playerCountMax) {
 					if(tmpServer1.players > 0) filterMatches+=1
-				};
+				}
 						
 
 				// Filter by mod size
-				activeFilters = activeFilters + 1;
+				activeFilters = activeFilters + 1
 				if(sliderMaxModSize * 1048576 >= tmpServer1.modstotalsize) filterMatches+=1
 			
 				// Filter by map
 				if (selectMap.length > 0) {
-					activeFilters = activeFilters + 1;
+					activeFilters = activeFilters + 1
 					if(selectMap.includes(smoothMapName)) filterMatches+=1
-				};
+				}
 
 				if (SelectedServerVersions.length > 0) {
-					activeFilters = activeFilters + 1;
+					activeFilters = activeFilters + 1
 					if(SelectedServerVersions.includes("v" + tmpServer1.version)) filterMatches+=1
-				};
+				}
 
 				if (SelectedServerLocations.length > 0) {
-					activeFilters = activeFilters + 1;
+					activeFilters = activeFilters + 1
 					if(SelectedServerLocations.includes(tmpServer1.location)) filterMatches+=1
 				}
 
 				if (matchAll && filterMatches < activeFilters) {
-					//console.log('Active filters: '+activeFilters+'. Matched filters: '+filterMatches);
+					//console.log('Active filters: '+activeFilters+'. Matched filters: '+filterMatches)
 					continue
 				}
 				if (!matchAll && activeFilters > 0 && filterMatches < 1) {
-					//console.log('Active filters: '+activeFilters+'. Matched filters: '+filterMatches);
+					//console.log('Active filters: '+activeFilters+'. Matched filters: '+filterMatches)
 					continue
 				}
 
-				var offline = false;
-				var custom = false;
-				var name = tmpServer1.sname;
-				if (!tmpServer1.custom) { name = '^c[^*globeSimpleNotSign^r^c Offline]^r ' + name; offline = true; }
+				var offline = false
+				var custom = false
+				var name = tmpServer1.sname
+				if (!tmpServer1.custom) { name = '^c[^*globeSimpleNotSign^r^c Offline]^r ' + name; offline = true }
 				else { name += " [CUSTOM]"; custom = true }
-				$scope.serversTable[tmpServer1.ip + ":" + tmpServer1.port] = {server: tmpServer1, isFavorite: type == 1, isRecent: type == 2, name: name, offline: offline, custom: custom};
+				$scope.serversTable[tmpServer1.ip + ":" + tmpServer1.port] = {server: tmpServer1, isFavorite: type == 1, isRecent: type == 2, name: name, offline: offline, custom: custom}
 				$scope.serversArray = Object.keys($scope.serversTable).map(function(key) {
-					return $scope.serversTable[key];
-				});
+					return $scope.serversTable[key]
+				})
 			}
 		}
 	}
 	if (Object.keys($scope.serversTable).length === 0) {
-    	$scope.serversArray = [];
+		$scope.serversArray = []
 	}	
 	$scope.serversArray.forEach(server => {
-		server.id = server.server.ip + ':' + server.server.port;
-	});
+		server.id = server.server.ip + ':' + server.server.port
+	})
 	if (type == 2) {
 		$scope.sortTable("addTime", true, -1)
-	};
+	}
 
 	console.log('Completed repopulating')
-	$scope.onScroll();
+	$scope.onScroll()
 
 	$scope.$emit("reloadSearchFilters", await getSearchFilterData(servers))
 }
@@ -2291,130 +2300,96 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', pla
 function connect(ip, port, name, skipModWarning = false) {
 	console.log("Attempting to call connect to server...")
 	// Add server to recents
-	addRecent(highlightedServer);
+	addRecent(highlightedServer)
 	// Make sure the right content is displayed
-	document.getElementById('OriginalLoadingStatus').removeAttribute("hidden");
-	document.getElementById('LoadingStatus').setAttribute("hidden", "hidden");
+	document.getElementById('OriginalLoadingStatus').removeAttribute("hidden")
+	document.getElementById('LoadingStatus').setAttribute("hidden", "hidden")
 	// Show the connecting screen
 	document.getElementById('LoadingServer').style.display = 'flex'
 
-	let modlist = document.getElementById('mod-download-list');
+	let modlist = document.getElementById('mod-download-list')
 	if (modlist) {
-		modlist.style.display = 'none';
+		modlist.style.display = 'none'
 	}
 
-	const injector = angular.element(document.body).injector();
-	const $controller = injector.get('$controller');
-	const $rootScope = injector.get('$rootScope');
-	const multiplayerCtrl = $controller('MultiplayerController', { $scope: $rootScope });
+	const injector = angular.element(document.body).injector()
+	const $controller = injector.get('$controller')
+	const $rootScope = injector.get('$rootScope')
+	const multiplayerCtrl = $controller('MultiplayerController', { $scope: $rootScope })
 
 	multiplayerCtrl.loadingStatus = ""
-	multiplayerCtrl.downloadingMods = [];
-	$rootScope.$applyAsync();
+	multiplayerCtrl.downloadingMods = []
+	$rootScope.$applyAsync()
 
 	// Connect with ids
-	bngApi.engineLua('MPCoreNetwork.connectToServer("' + ip + '", ' + port + ',"' + name + '", ' + skipModWarning + ')');
+	bngApi.engineLua('MPCoreNetwork.connectToServer("' + ip + '", ' + port + ',"' + name + '", ' + skipModWarning + ')')
 }
 
 async function receiveServers(data) {
-	var serversArray = new Array();
-	var launcherVersion = await getLauncherVersion();
+	var serversArray = new Array()
+	var launcherVersion = await getLauncherVersion()
 	// Parse the data to a nice looking Array
 	for (var i = 0; i < data.length; i++) {
 		var v = data[i]
-		const [vMajor, vMinor] = v.cversion.split('.').map(Number);
-		const [launcherMajor, launcherMinor] = launcherVersion.split('.').map(Number);
+		const [vMajor, vMinor] = v.cversion.split('.').map(Number)
+		const [launcherMajor, launcherMinor] = launcherVersion.split('.').map(Number)
 
 		// Compare the versions
 		if (vMajor === launcherMajor && launcherMinor >= vMinor) {
-			v.strippedName = stripCustomFormatting(v.sname);
-			serversArray.push(v);
+			v.strippedName = stripCustomFormatting(v.sname)
+			serversArray.push(v)
 		}
 	}
 	// Sort the servers to display official servers first
 	serversArray.sort(function(a, b) {
 		if (a.official && b.official) return a.strippedName.localeCompare(b.strippedName)
-		else if (a.official) return -1;
-		else if (b.official) return 1;
-		return 0;
-	});
-	return serversArray;
-};
+		else if (a.official) return -1
+		else if (b.official) return 1
+		return 0
+	})
+	return serversArray
+}
 
 async function getLauncherVersion() {
 	return new Promise(function(resolve, reject) {
 		bngApi.engineLua("MPCoreNetwork.getLauncherVersion()", (data) => {
-			resolve(data);
-		});
-	});
+			resolve(data)
+		})
+	})
 }
 
 async function isLoggedIn() {
 	return new Promise(function(resolve, reject) {
 		bngApi.engineLua("MPCoreNetwork.isLoggedIn()", (data) => {
-			resolve(data);
-		});
-	});
+			resolve(data)
+		})
+	})
 }
 
 async function isLauncherConnected() {
 	return new Promise(function(resolve, reject) {
 		bngApi.engineLua("MPCoreNetwork.isLauncherConnected()", (data) => {
-			resolve(data);
-		});
-	});
+			resolve(data)
+		})
+	})
 }
 
 function getVueIconPath(iconName) {
 	return "/ui/ui-vue/src/assets/fonts/bngIcons/svg/" + iconName + ".svg"
-};
+}
 
 function formatServerTags(commaList) {
 	if (typeof commaList !== "string") {return []}
 
 	var tagList = []
-	var tags = commaList.split(",");
-	//console.log('Server item tag input: "'+tags+'"')
+	var tags = commaList.split(",")
 	for (const tag of tags) {
-		//console.log('    Tag list item input: '+JSON.stringify(tag))
-		if (tag==="") continue;
+		if (tag==="") continue
 
-		var tagTexts = tag.split(":");
-		var tagItem = {
-			icon: '',
-			text: tagTexts[1] || tag,
-			raw: tag
-		};
-		tagTexts[0] = tagTexts[0].split(" ").join("")
-		//console.log('        Tag prefix input: "'+tagTexts[0]+'"')
-		if (tagTexts.length > 1) {
-			if (tagTexts[0] == "Racing") {
-				tagItem.icon = '<img src='+getVueIconPath('helmets')+' class="button-icon button-icon-filter tag-icon" />';
-				//console.log('        Found "Racing"');
+		const tagItem = formatRawTag(tag)
 
-			} else if (tagTexts[0] == "Gamemode") {
-				tagItem.icon = '<img src='+getVueIconPath('gamepad')+' class="button-icon button-icon-filter tag-icon" />';
-				//console.log('        Found "Gamemode"');
-
-			} else if (tagTexts[0] == "Mod") {
-				tagItem.icon = '<img src='+getVueIconPath('puzzleModule')+' class="button-icon button-icon-filter tag-icon" />';
-				//console.log('        Found "Mod"');
-
-			} else if (tagTexts[0] == "Lang") {
-				tagItem.icon = '<img src='+getVueIconPath('language')+' class="button-icon button-icon-filter tag-icon" />';
-				//console.log('        Found "Lang"');
-			}
-		} else {
-			//console.log('        No icon found');
-		}
-
-		//console.log('    Tag list item output: '+JSON.stringify(tag))
-
-		//console.log('Tag item: '+JSON.stringify(tagItem));
-		//console.log('---');
-		tagList.push(tagItem);
-	};
-	//console.log('Server item tag output: '+JSON.stringify(tagList))
+		tagList.push(tagItem)
+	}
 	return tagList
 }
 
@@ -2436,17 +2411,17 @@ async function getSearchFilterData(serverList) {
 	var selectedServerVersions = []
 
 	for (const server of servers) {
-		if (!availableServerVersions.includes("v" + server.version)) availableServerVersions.push("v" + server.version);
+		if (!availableServerVersions.includes("v" + server.version)) availableServerVersions.push("v" + server.version)
 
-		if (!availableServerLocations.includes(server.location)) availableServerLocations.push(server.location);
+		if (!availableServerLocations.includes(server.location)) availableServerLocations.push(server.location)
 
-		var smoothMapName = SmoothMapName(server.map);
+		var smoothMapName = SmoothMapName(server.map)
 
-		if(!availableMaps.includes(smoothMapName) && (typeof smoothMapName==='string' && smoothMapName.length > 0)) availableMaps.push(smoothMapName);
+		if(!availableMaps.includes(smoothMapName) && (typeof smoothMapName==='string' && smoothMapName.length > 0)) availableMaps.push(smoothMapName)
 
-		var serverTags = server.tags.split(",");
+		var serverTags = server.tags.split(",")
 		for (const tag of serverTags) {
-			if (!availableTags.includes(tag.trim()) && tag.trim().length > 0) availableTags.push(tag.trim());	
+			if (!availableTags.includes(tag.trim()) && tag.trim().length > 0) availableTags.push(tag.trim())
 		}
 	}
 
@@ -2457,39 +2432,7 @@ async function getSearchFilterData(serverList) {
 
 	const activeFilters = JSON.parse(localStorage.getItem("serverListOptions"))
 	for (const tag of availableTags) {
-		var tagTexts = tag.split(":")
-		var tagItem = {
-			icon: '',
-			text: tagTexts[1] || tag,
-			raw: tag,
-			active: false
-		}
-
-		//console.log('Tag texts: '+tagTexts)
-		if (tagTexts[0] == "Racing") {
-			tagItem.icon = '<img src='+getVueIconPath('helmets')+' class="button-icon button-icon-filter tag-icon" />'
-
-		} else if (tagTexts[0] == "Gamemode") {
-			tagItem.icon = '<img src='+getVueIconPath('gamepad')+' class="button-icon button-icon-filter tag-icon" />'
-
-		} else if (tagTexts[0] == "Mod") {
-			tagItem.icon = '<img src='+getVueIconPath('puzzleModule')+' class="button-icon button-icon-filter tag-icon" />'
-
-		} else if (tagTexts[0] == "Lang") {
-			tagItem.icon = '<img src='+getVueIconPath('language')+' class="button-icon button-icon-filter tag-icon" />'
-		}
-		tagItem.theme = tagThemes[tagItem.raw.trim()] ?? null
-		//console.log(tagItem)
-
-		if (activeFilters && activeFilters.selectedTags) {
-			for (var i = 0; i < activeFilters.selectedTags.length; i++) {
-				if (tagItem.raw === activeFilters.selectedTags[i].raw) {
-					tagItem.active = true
-					selectedTags.push(tagItem)
-					break
-				}
-			}
-		}
+		var tagItem = formatRawTag(tag, activeFilters)
 
 		//console.log('Tag item: '+JSON.stringify(tagItem))
 		//console.log('-')
@@ -2504,25 +2447,61 @@ async function getSearchFilterData(serverList) {
 		formattedTags,
 		availableServerVersions,
 		
-		activeFilters?.selectedServerLocations ?? [],
-		activeFilters?.selectedMaps ?? [],
+		activeFilters.selectedServerLocations ?? [],
+		activeFilters.selectedMaps ?? [],
 		selectedTags,
-		activeFilters?.selectedServerVersions ?? [],
+		activeFilters.selectedServerVersions ?? [],
 
-		activeFilters?.playerCountMin ?? 0,
-		activeFilters?.playerCountMax ?? 64,
-		activeFilters?.sliderMaxModSize ?? 10240,
+		activeFilters.playerCountMin ?? 0,
+		activeFilters.playerCountMax ?? 64,
+		activeFilters.sliderMaxModSize ?? 10240,
 	]
+}
+
+
+function formatRawTag(rawTag, activeSearchFilters) {
+	var tagTexts = rawTag.trim().split(":")
+	var tagItem = {
+		icon: '',
+		text: tagTexts[1] || rawTag,
+		raw: rawTag,
+		active: false
+	}
+
+	if (tagTexts[0] == "Racing") {
+		tagItem.icon = '<img src='+getVueIconPath('helmets')+' class="button-icon button-icon-filter tag-icon" />'
+
+	} else if (tagTexts[0] == "Gamemode") {
+		tagItem.icon = '<img src='+getVueIconPath('gamepad')+' class="button-icon button-icon-filter tag-icon" />'
+
+	} else if (tagTexts[0] == "Mod") {
+		tagItem.icon = '<img src='+getVueIconPath('puzzleModule')+' class="button-icon button-icon-filter tag-icon" />'
+
+	} else if (tagTexts[0] == "Lang") {
+		tagItem.icon = '<img src='+getVueIconPath('language')+' class="button-icon button-icon-filter tag-icon" />'
+	}
+	tagItem.theme = tagThemes[tagItem.raw.trim()] ?? null
+
+	if (activeSearchFilters) {
+		for (var i = 0; i < activeSearchFilters.selectedTags.length; i++) {
+			if (tagItem.raw.trim() === activeSearchFilters.selectedTags[i].raw) {
+				tagItem.active = true
+				break
+			}
+		}
+	}
+
+	return tagItem
 }
 
 
 
 // Base64 encoding and decoding functions
 var Base64 = {
-    encode: function(input) {
-        return btoa(new TextEncoder().encode(input).reduce((data, byte) => data + String.fromCharCode(byte), ""));
-    },
-    decode: function(input) {
-        return new TextDecoder().decode(Uint8Array.from(atob(input), c => c.charCodeAt(0)));
-    }
-};
+	encode: function(input) {
+		return btoa(new TextEncoder().encode(input).reduce((data, byte) => data + String.fromCharCode(byte), ""))
+	},
+	decode: function(input) {
+		return new TextDecoder().decode(Uint8Array.from(atob(input), c => c.charCodeAt(0)))
+	}
+}

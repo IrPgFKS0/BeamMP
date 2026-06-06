@@ -77,60 +77,6 @@
 	<div bng-blur="true" style="position:absolute;width:100%;height:100%;overflow:hidden;pointer-events:none"></div>
 </div>
 
-<style>
-.card-heading.heading-style-none {
-	padding-left:0.5em;
-}
-.card-heading {
-	font-size: 1.5rem;
-	line-height: 1.5em;
-	font-weight: 800;
-	font-style: italic;
-	text-align: left;
-
-	position: relative;
-	margin: 0.65em 0 0.5em 0;
-	padding-left: 1.6em;
-	padding-right: 0.75em;
-	overflow: hidden;
-
-	flex: 0 0 auto;
-	&.heading-style-line::before, &.heading-style-ribbon::before {
-		content: " ";
-		transform: matrix(0.94, 0, -0.38, 1, 0, 0);
-		width: 0.5em;
-		position: absolute;
-		height: 1em;
-		left: 0.65em;
-		top: 0.25em;
-	}
-	&.heading-style-line {
-		&::before {
-		background: var(--bng-orange-b400);
-		width: 0.5em;
-		left: 0.65em;
-		}
-		&.outline::before {
-		background: transparent;
-		box-sizing: border-box;
-		border: 0.1875rem solid var(--bng-orange-b400);
-		}
-	}
-	&.heading-style-ribbon {
-		&::before {
-		background: var(--bng-orange-b400);
-		width: 1.5em;
-		left: -0.35em;
-		}
-		&.outline::before {
-		background: transparent;
-		box-sizing: border-box;
-		border: 0.1875rem solid var(--bng-orange-b400);
-		}
-	}
-}
-</style>
-
 <div flex style="
 	display: flex;
 	flex-direction: row;
@@ -287,12 +233,12 @@
 		</div>
 		{{:: 'ui.debug.vehicle.visRangeMin' | translate}}
 		<div class="serverListSearch" style="margin: 0;">
-			<input flex="" class="bng-input mp-search" ng-model="multiplayer.playerCountMin" ng-change="updatePlayerCountRange();" type="number" min="0" id="playerCountMin" name="playerCountMin" placeholder="{{:: 'ui.debug.vehicle.visRangeMin' | translate}}" />
+			<input flex="" class="bng-input mp-search" ng-model="multiplayer.playerCountMin" ng-change="updatePlayerCountRange();" type="text" value="0" id="playerCountMin" name="playerCountMin" placeholder="{{:: 'ui.debug.vehicle.visRangeMin' | translate}}" />
 			<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('arrowLargeDown')}} />
 		</div>
 		{{:: 'ui.debug.vehicle.visRangeMax' | translate}}
 		<div class="serverListSearch" style="margin: 0;">
-			<input flex="" class="bng-input mp-search" ng-model="multiplayer.playerCountMax" ng-change="updatePlayerCountRange();" type="number" id="playerCountMax" name="playerCountMax" placeholder="{{:: 'ui.debug.vehicle.visRangeMax' | translate}}" />
+			<input flex="" class="bng-input mp-search" ng-model="multiplayer.playerCountMax" ng-change="updatePlayerCountRange();" type="text" id="playerCountMax" name="playerCountMax" placeholder="{{:: 'ui.debug.vehicle.visRangeMax' | translate}}" />
 			<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('arrowLargeUp')}} />
 		</div>
 
@@ -320,8 +266,7 @@
 					<div ng-bind="tag.text" style="display:inline"></div>
 				</div>
 				<div style="display: inline;">
-					<img ng-show="true" ng-src="{{getVueIconPath('checkmark')}}" class="button-icon button-icon-filter tag-icon" />
-					<!--<img ng-hide="tag.active" ng-src="{{getVueIconPath('xmark')}}" class="button-icon button-icon-filter tag-icon" />-->
+					<img ng-src="{{getVueIconPath('checkmark')}}" class="button-icon button-icon-filter tag-icon" />
 				</div>
 			</button>
 		</div>
@@ -387,19 +332,4 @@
 		</div>
 	</div>
 </div>
-<!--
-<md-content id="back" layout="column" style="width:20%">
-	<div class="bng-title-wrapper">
-		<link type="text/css" rel="stylesheet" href="/ui/modules/atom/title/title.css" />
-		<div class="bng-title" style="
-			font-family: Overpass, var(--fnt-defs);
-			color: #f5f5f5;
-			font-weight: 1000;
-			font-size: 1.642em;
-			letter-spacing: normal;
-		">{{:: 'ui.multiplayer.filterOptions' | translate}}</div>
-	</div>
-</md-content>
-<div class="mp-fancy-blur" bng-blur="true"></div>
--->
 </div>
