@@ -1,5 +1,6 @@
 <!-- Icons can be found here: https://fonts.google.com/icons?selected=Material+Icons -->
 <link type="text/css" rel="stylesheet" href="/ui/modModules/multiplayer/multiplayer.css">
+<link type="text/css" rel="stylesheet" href="/ui/modModules/multiplayer/vueNotoSans.css">
 <link type="text/css" rel="stylesheet" href="/ui/modModules/multiplayer/formatCodes.css">
 
 <div class="theEntireMultiplayerModule" flex>
@@ -66,25 +67,63 @@
   </div>
 </div>
 
-<div class="backBar">
-	<button class="bng-button-link back-button" ng-click="$state.go('menu.mainmenu')" style="padding-left:0.75em">
-		<!--<span class="back-icon"></span> <!-- bngIcons for back -->
-		<!--{{:: 'ui.common.back' | translate}}-->
-		{{:: 'ui.common.menu' | translate}}
-	</button>
-	<span class="back-icon divider-icon"></span>
-	<button tabindex="-1" class="bng-button-link back-button backBarSelected backBarDisabled" style="padding-right:0.75em">{{:: 'ui.playmodes.multiplayer' | translate}}</button>
-	<div bng-blur="true" style="position:absolute;width:100%;height:100%;overflow:hidden;pointer-events:none"></div>
+<div style="display: inline-flex; flex-direction: row; flex-wrap: nowrap; justify-content: space-between;">
+	<div class="backBar">
+		<button class="bng-button-link back-button" ng-click="$state.go('menu.mainmenu')" style="padding-left:0.75em">
+			<!--<span class="back-icon"></span> <!-- bngIcons for back -->
+			<!--{{:: 'ui.common.back' | translate}}-->
+			{{:: 'ui.common.menu' | translate}}
+		</button>
+		<span class="back-icon divider-icon"></span>
+		<button tabindex="-1" class="bng-button-link back-button backBarSelected backBarDisabled" style="padding-right:0.75em">{{:: 'ui.playmodes.multiplayer' | translate}}</button>
+		<div bng-blur="true" style="position:absolute;width:100%;height:100%;overflow:hidden;pointer-events:none"></div>
+	</div>
+	<div class="backBar">
+		<div style="
+			display: inline-flex;
+			padding: 0.5em;
+
+			flex-direction: row;
+			align-items: center;
+			gap: 0.25em;
+			
+			color: white;
+		">
+			<img src="/ui/modModules/multiplayer/beammp_new_cropped.png" style="margin: 0 0.5em; height: 1.5em;">
+			<span style="
+					background-color: #f60;
+					width: .25rem;
+					height: 1.8em;
+					margin-left: calc(.5rem + 0.25em);
+					margin-right: calc(.2rem + 0.25em);
+					display: inline-block;
+					transform: skew(-23deg);">
+			</span>
+			<img style="height: 1.375em;" src="/ui/modModules/multiplayer/icons/account-multiple.svg">
+			<span ng-bind="'Players: ' + beammpMetrics.players"></span>
+			<span style="
+				background-color: #f60;
+				width: .25rem;
+				height: 1.8em;
+				margin-left: calc(.5rem + 0.25em);
+				margin-right: calc(.2rem + 0.25em);
+				display: inline-block;
+				transform: skew(-23deg);">
+			</span>
+			<img style="height: 1.375em;" src="/ui/modModules/multiplayer/icons/dns.svg">
+			<span ng-bind="'Servers: ' + beammpMetrics.servers"></span>
+		</div>
+	</div>
 </div>
 
 <div flex style="
 	display: flex;
 	flex-direction: row;
 	gap: 0.5em;
-  	max-height: calc(100% - 3em);
+  	max-height: calc(100% - 3.05em);
  	box-sizing: border-box;
 ">
-	<md-content id="back" layout="column" flex>
+	<md-content id="back" layout="column">
 		<div id="top-bar" layout="row" class="" style="padding:0;">
 			<div class="bng-title-wrapper" style="font-size: 1.35em; padding-right: 0;">
 				<link type="text/css" rel="stylesheet" href="/ui/modules/atom/title/title.css" />
@@ -95,7 +134,14 @@
 					font-size: 1.642em;
 					letter-spacing: normal;
 					padding-right: 0.125em;
-				">{{:: 'ui.multiplayer.multiplayer' | translate}}</div>
+					display: inline-flex;
+					flex-wrap: nowrap;
+  					align-items: center;
+  					line-height: 1.2em;
+				">
+					<!--<img src="/ui/modModules/multiplayer/beammp_new_cropped.png" style="margin: 0 0.25em; height: 1em;">-->
+					{{:: 'ui.multiplayer.multiplayer' | translate}}
+				</div>
 			</div>
 			<p id="topRightStatus" style="display:none; text-align: center;margin: 0 auto;position: absolute;width: 100%;color: white;">{{:: 'ui.multiplayer.patreon.message.user' | translate}}
 			<button class="" style="
@@ -106,32 +152,6 @@
 			padding: 2px 5px;
 			color: var(--bng-orange);
 			" ng-click="multiplayer.showMessage()"><span>{{:: 'ui.multiplayer.patreon.button.user' | translate}}</span></button></p>
-
-			<div style="
-				display: inline-flex;
-				position: absolute;
-				right: 0;
-				top: 0;
-				padding: 0.5em;
-
-				flex-direction: row;
-				align-items: center;
-				gap: 0.25em;
-			">
-				<img style="height: 1.375em;" src="/ui/modModules/multiplayer/icons/account-multiple.svg">
-				<span ng-bind="'Players: ' + beammpMetrics.players"></span>
-				<span style="
-					background-color: #f60;
-					width: .25rem;
-					height: 1.8em;
-					margin-left: calc(.5rem + 0.25em);
-					margin-right: calc(.2rem + 0.25em);
-					display: inline-block;
-					transform: skew(-23deg);">
-				</span>
-				<img style="height: 1.375em;" src="/ui/modModules/multiplayer/icons/dns.svg">
-				<span ng-bind="'Servers: ' + beammpMetrics.servers"></span>
-			</div>
 			<!--<button id="launcher-connect-button" class="button" ng-click="multiplayer.resetLauncherConnection()">Connect to launcher</button>-->
 		</div>
 
@@ -224,111 +244,117 @@
 		</div>
 		<div class="mp-fancy-blur" bng-blur="true"></div>
 	</md-content>
-	<div id="searchFilters" layout="column" style="display: none;">
+	<div id="searchFiltersSidebar" layout="column" flex style="display: none;">
 		<div class="card-heading heading-style-ribbon" style="font-size: 1.5em; margin-left: calc(-1em / 3);">
 			{{:: 'ui.multiplayer.filterOptions' | translate}}
 		</div>
-		<div class="card-heading heading-style-line" style="font-size: 1.25em;">
-			Player Count
-		</div>
-		{{:: 'ui.debug.vehicle.visRangeMin' | translate}}
-		<div class="serverListSearch" style="margin: 0;">
-			<input flex="" class="bng-input mp-search" ng-model="multiplayer.playerCountMin" ng-change="updatePlayerCountRange();" type="text" value="0" id="playerCountMin" name="playerCountMin" placeholder="{{:: 'ui.debug.vehicle.visRangeMin' | translate}}" />
-			<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('arrowLargeDown')}} />
-		</div>
-		{{:: 'ui.debug.vehicle.visRangeMax' | translate}}
-		<div class="serverListSearch" style="margin: 0;">
-			<input flex="" class="bng-input mp-search" ng-model="multiplayer.playerCountMax" ng-change="updatePlayerCountRange();" type="text" id="playerCountMax" name="playerCountMax" placeholder="{{:: 'ui.debug.vehicle.visRangeMax' | translate}}" />
-			<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('arrowLargeUp')}} />
-		</div>
+		<div id="searchFilters" style="
+		overflow-y: auto;
+		padding-right: 0.5em;
+		">
+			<div class="card-heading heading-style-line" style="font-size: 1.25em;">
+				Player Count
+			</div>
+			{{:: 'ui.debug.vehicle.visRangeMin' | translate}}
+			<div class="serverListSearch" style="margin: 0;">
+				<input flex="" class="bng-input mp-search" ng-model="multiplayer.playerCountMin" ng-change="updatePlayerCountRange();" type="text" value="0" id="playerCountMin" name="playerCountMin" placeholder="{{:: 'ui.debug.vehicle.visRangeMin' | translate}}" />
+				<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('arrowLargeDown')}} />
+			</div>
+			{{:: 'ui.debug.vehicle.visRangeMax' | translate}}
+			<div class="serverListSearch" style="margin: 0;">
+				<input flex="" class="bng-input mp-search" ng-model="multiplayer.playerCountMax" ng-change="updatePlayerCountRange();" type="text" id="playerCountMax" name="playerCountMax" placeholder="{{:: 'ui.debug.vehicle.visRangeMax' | translate}}" />
+				<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('arrowLargeUp')}} />
+			</div>
 
-		<div class="card-heading heading-style-line" style="font-size: 1.25em;">
-			Total Mod Size
-		</div>
-		<div class="md-slider-container" style="width: 100%; display: flex; justify-content: space-between;">
-			<md-slider flex ng-model="multiplayer.sliderMaxModSize" ng-change="updateMaxModSize();" min="0" max="100000" step="10" aria-label="_"></md-slider>
-			<span style="min-width: 5em; margin: 0px 15px; padding-top: 13px; color: white;">
-				{{ formatBytes(multiplayer.sliderMaxModSize * 1e+6) }}
-			</span>
-		</div>
+			<div class="card-heading heading-style-line" style="font-size: 1.25em;">
+				{{:: 'ui.multiplayer.filters.modSize' | translate}}
+			</div>
+			<div class="md-slider-container" style="width: 100%; display: flex; justify-content: space-between;">
+				<md-slider flex ng-model="multiplayer.sliderMaxModSize" ng-change="updateMaxModSize();" min="0" max="100000" step="10" aria-label="_"></md-slider>
+				<span style="min-width: 5em; margin: 0px 15px; padding-top: 13px; color: white;">
+					{{ formatBytes(multiplayer.sliderMaxModSize * 1e+6) }}
+				</span>
+			</div>
 
-		<div class="card-heading heading-style-line" style="font-size: 1.25em;">
-			Tags
-		</div>
-		<div class="searchFilterListContainer">
-			<button class="searchFilterListItem" ng-repeat="tag in formattedTags" ng-click="toggleTag(tag)"
-			ng-class="{
-				'active': tag.active,
-				'inactive': false && selectedTags.length > 0 && !tag.active
-			}">
-				<div>
-					<div ng-bind-html="tag.icon" style="display:inline"></div>
-					<div ng-bind="tag.text" style="display:inline"></div>
-				</div>
-				<div style="display: inline;">
-					<img ng-src="{{getVueIconPath('checkmark')}}" class="button-icon button-icon-filter tag-icon" />
-				</div>
-			</button>
-		</div>
-
-		<div class="card-heading heading-style-line" style="font-size: 1.25em;">
-			Server Versions
-		</div>
-		<div class="searchFilterListContainer">
-			<button class="searchFilterListItem" ng-repeat="string in availableServerVersions" ng-click="toggleSimple('serverVersion', string)"
-			ng-class="{
-				'active': selectedServerVersions.length > 0 && selectedServerVersions.includes(string),
-				'inactive': selectedServerVersions.length > 0 && !selectedServerVersions.includes(string)
-			}">
-				<div>
-					<div ng-bind="string" style="display:inline;"></div>
-				</div>
-				<div style="display: inline;">
-					<img ng-show="selectedServerVersions.length === 0 || selectedServerVersions.includes(string)" ng-src="{{getVueIconPath('checkmark')}}" class="button-icon button-icon-filter tag-icon" />
-					<img ng-hide="selectedServerVersions.length === 0 || selectedServerVersions.includes(string)" ng-src="{{getVueIconPath('xmark')}}" class="button-icon button-icon-filter tag-icon" />
-				</div>
-			</button>
-		</div>
-
-		<div class="card-heading heading-style-line" style="font-size: 1.25em;">
-			Server Locations
-		</div>
-		<div class="searchFilterListContainer">
-			<button class="searchFilterListItem" ng-repeat="string in availableServerLocations" ng-click="toggleSimple('serverLocation', string)"
-			ng-class="{
-				'active': selectedServerLocations.length > 0 && selectedServerLocations.includes(string),
-				'inactive': selectedServerLocations.length > 0 && !selectedServerLocations.includes(string)
-			}">
-				<div>
-					<div style="display: inline-block; height: 1em; min-width: 2em;">
-						<img ng-src="local://local/ui/modModules/multiplayer/flags/{{ string.toLowerCase() }}.png" class="flag" style="height:1em" />
+			<div class="card-heading heading-style-line" style="font-size: 1.25em;">
+				{{:: 'ui.multiplayer.filters.selectTags' | translate}}
+			</div>
+			<div class="searchFilterListContainer">
+				<button class="searchFilterListItem" ng-repeat="tag in formattedTags" ng-click="toggleTag(tag)"
+				ng-class="{
+					'active': tag.active,
+					'inactive': false && selectedTags.length > 0 && !tag.active
+				}">
+					<div>
+						<div ng-bind-html="tag.icon" style="display:inline"></div>
+						<div ng-bind="tag.text" style="display:inline"></div>
 					</div>
-					<div ng-bind="string" style="display:inline;"></div>
-				</div>
-				<div style="display: inline;">
-					<img ng-show="selectedServerLocations.length === 0 || selectedServerLocations.includes(string)" ng-src="{{getVueIconPath('checkmark')}}" class="button-icon button-icon-filter tag-icon" />
-					<img ng-hide="selectedServerLocations.length === 0 || selectedServerLocations.includes(string)" ng-src="{{getVueIconPath('xmark')}}" class="button-icon button-icon-filter tag-icon" />
-				</div>
-			</button>
-		</div>
+					<div style="display: inline;">
+						<img ng-src="{{getVueIconPath('checkmark')}}" class="button-icon button-icon-filter tag-icon" />
+					</div>
+				</button>
+			</div>
 
-		<div class="card-heading heading-style-line" style="font-size: 1.25em;">
-			Maps
-		</div>
-		<div class="searchFilterListContainer">
-			<button class="searchFilterListItem" ng-repeat="string in availableMaps" ng-click="toggleSimple('map', string)"
-			ng-class="{
-				'active': selectedMaps.length > 0 && selectedMaps.includes(string),
-				'inactive': selectedMaps.length > 0 && !selectedMaps.includes(string)
-			}">
-				<div>
-					<div ng-bind="string" style="display:inline;"></div>
-				</div>
-				<div style="display: inline;">
-					<img ng-show="selectedMaps.length === 0 || selectedMaps.includes(string)" ng-src="{{getVueIconPath('checkmark')}}" class="button-icon button-icon-filter tag-icon" />
-					<img ng-hide="selectedMaps.length === 0 || selectedMaps.includes(string)" ng-src="{{getVueIconPath('xmark')}}" class="button-icon button-icon-filter tag-icon" />
-				</div>
-			</button>
+			<div class="card-heading heading-style-line" style="font-size: 1.25em;">
+				{{:: 'ui.multiplayer.filters.selectVersions' | translate}}
+			</div>
+			<div class="searchFilterListContainer">
+				<button class="searchFilterListItem" ng-repeat="string in availableServerVersions" ng-click="toggleSimple('serverVersion', string)"
+				ng-class="{
+					'active': selectedServerVersions.length > 0 && selectedServerVersions.includes(string),
+					'inactive': selectedServerVersions.length > 0 && !selectedServerVersions.includes(string)
+				}">
+					<div>
+						<div ng-bind="string" style="display:inline;"></div>
+					</div>
+					<div style="display: inline;">
+						<img ng-show="selectedServerVersions.length === 0 || selectedServerVersions.includes(string)" ng-src="{{getVueIconPath('checkmark')}}" class="button-icon button-icon-filter tag-icon" />
+						<img ng-hide="selectedServerVersions.length === 0 || selectedServerVersions.includes(string)" ng-src="{{getVueIconPath('xmark')}}" class="button-icon button-icon-filter tag-icon" />
+					</div>
+				</button>
+			</div>
+
+			<div class="card-heading heading-style-line" style="font-size: 1.25em;">
+				{{:: 'ui.multiplayer.filters.selectServerLocations' | translate}}
+			</div>
+			<div class="searchFilterListContainer">
+				<button class="searchFilterListItem" ng-repeat="string in availableServerLocations" ng-click="toggleSimple('serverLocation', string)"
+				ng-class="{
+					'active': selectedServerLocations.length > 0 && selectedServerLocations.includes(string),
+					'inactive': selectedServerLocations.length > 0 && !selectedServerLocations.includes(string)
+				}">
+					<div>
+						<div style="display: inline-block; height: 1em; min-width: 2em;">
+							<img ng-src="local://local/ui/modModules/multiplayer/flags/{{ string.toLowerCase() }}.png" class="flag" style="height:1em" />
+						</div>
+						<div ng-bind="string" style="display:inline;"></div>
+					</div>
+					<div style="display: inline;">
+						<img ng-show="selectedServerLocations.length === 0 || selectedServerLocations.includes(string)" ng-src="{{getVueIconPath('checkmark')}}" class="button-icon button-icon-filter tag-icon" />
+						<img ng-hide="selectedServerLocations.length === 0 || selectedServerLocations.includes(string)" ng-src="{{getVueIconPath('xmark')}}" class="button-icon button-icon-filter tag-icon" />
+					</div>
+				</button>
+			</div>
+
+			<div class="card-heading heading-style-line" style="font-size: 1.25em;">
+				{{:: 'ui.multiplayer.filters.selectMaps' | translate}}
+			</div>
+			<div class="searchFilterListContainer">
+				<button class="searchFilterListItem" ng-repeat="string in availableMaps" ng-click="toggleSimple('map', string)"
+				ng-class="{
+					'active': selectedMaps.length > 0 && selectedMaps.includes(string),
+					'inactive': selectedMaps.length > 0 && !selectedMaps.includes(string)
+				}"
+				ng-init="$last ? setSavedScrollPos() : null">
+					<div>
+						<div ng-bind="string" style="display:inline;"></div>
+					</div>
+					<div style="display: inline;">
+						<img ng-show="selectedMaps.length === 0 || selectedMaps.includes(string)" ng-src="{{getVueIconPath('checkmark')}}" class="button-icon button-icon-filter tag-icon" />
+						<img ng-hide="selectedMaps.length === 0 || selectedMaps.includes(string)" ng-src="{{getVueIconPath('xmark')}}" class="button-icon button-icon-filter tag-icon" />
+					</div>
+				</button>
+			</div>
 		</div>
 	</div>
 </div>

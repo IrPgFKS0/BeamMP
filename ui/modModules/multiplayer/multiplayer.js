@@ -27,6 +27,8 @@ let repopulateServerList = async function() {
 
 }
 
+var searchFiltersScrollAmount = 0
+
 // Per-tag thumbnail filename for all known server tags
 // undefined - don't show in tiles menu
 // string - show in tiles menu with specified file name & extension from /ui/modModules/multiplayer/tiles/
@@ -405,7 +407,7 @@ $rootScope.$on('$stateChangeSuccess', async function (event, toState, toParams, 
 
 		injectVersion()
 	} else if (toState.name.includes("menu.multiplayer.")) {
-		var searchFiltersPanel = document.getElementById('searchFilters')
+		var searchFiltersPanel = document.getElementById('searchFiltersSidebar')
 		if (toState.name === "menu.multiplayer.servers") {
 			console.log('Asking for BeamMP info because menu.multiplayer.servers was opened')
 			bngApi.engineLua('MPCoreNetwork.sendBeamMPInfo()')
@@ -1138,7 +1140,27 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	vm.playerCountMin = 0
 	vm.playerCountMax = 64
 
-	vm.sliderMaxModSize = 10240 // in MB
+	vm.sliderMaxModSize = 80530 // in MB
+
+	searchFiltersScrollAmount = 0
+	
+	const serverFiltersSidebar = document.getElementById('searchFilters')
+	serverFiltersSidebar.addEventListener('scroll', () => {
+		if (serverFiltersSidebar.scrollTop !== 0) {
+			searchFiltersScrollAmount = serverFiltersSidebar.scrollTop
+			//console.log(`Search filters list scrolled to: ${searchFiltersScrollAmount}px`)
+		}
+	}, { passive: true })
+
+	function updateServerFilters(newSearchFilters) {
+		//console.log('About to update server filters. scrollTop is:', searchFiltersScrollAmount)
+
+		searchFilters = newSearchFilters
+		localStorage.setItem("serverListOptions", JSON.stringify(newSearchFilters))
+		setSearchFilters(Object.values(searchFilters))
+		$scope.$emit('searchFiltersUpdated')
+		repopulateServerList()
+	}
 
 	$scope.updatePlayerCountRange = async function() {
 		var activeFilters = JSON.parse(localStorage.getItem("serverListOptions"))
@@ -1146,11 +1168,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		activeFilters.playerCountMin = Number(vm.playerCountMin)
 		activeFilters.playerCountMax = Number(vm.playerCountMax)
 
-		searchFilters = activeFilters
-		localStorage.setItem("serverListOptions", JSON.stringify(activeFilters))
-		setSearchFilters(Object.values(searchFilters))
-		$scope.$emit('searchFiltersUpdated')
-		repopulateServerList()
+		updateServerFilters(activeFilters)
 	}
 
 	$scope.updateMaxModSize = function () {
@@ -1158,11 +1176,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 
 		activeFilters.sliderMaxModSize = vm.sliderMaxModSize
 
-		searchFilters = activeFilters
-		localStorage.setItem("serverListOptions", JSON.stringify(activeFilters))
-		setSearchFilters(Object.values(searchFilters))
-		$scope.$emit('searchFiltersUpdated')
-		repopulateServerList()
+		updateServerFilters(activeFilters)
 	}
 
 	$scope.$on('onServerListReceived', async function (event, data) {
@@ -1196,7 +1210,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		tag.raw = tag.raw.trim()
 		var activeFilters = JSON.parse(localStorage.getItem("serverListOptions"))
 		var isTagActive = -1
-		console.log(`Attempting to toggle tag ${tag.raw}`)
+		//console.log(`Attempting to toggle tag ${tag.raw}`)
 		for (var i = 0; i < activeFilters.selectedTags.length; i++) {
 			//console.log(`Checking tag ${activeFilters.tags[i].raw}`)
 			if (activeFilters.selectedTags[i].raw === tag.raw) {
@@ -1206,19 +1220,15 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 			}
 		}
 		if (isTagActive > -1) {
-			console.log(`Active tags includes ${tag.raw}, removing`)
+			//console.log(`Active tags includes ${tag.raw}, removing`)
 			activeFilters.selectedTags.splice(isTagActive, 1)
 		} else {
-			console.log(`Active tags does not include ${tag.raw}, adding`)
+			//console.log(`Active tags does not include ${tag.raw}, adding`)
 			tag.active = true
 			activeFilters.selectedTags.push(tag)
 		}
 
-		searchFilters = activeFilters
-		localStorage.setItem("serverListOptions", JSON.stringify(activeFilters))
-		setSearchFilters(Object.values(activeFilters))
-		$scope.$emit('searchFiltersUpdated')
-		repopulateServerList()
+		updateServerFilters(activeFilters)
 	}
 	$scope.toggleSimple = function(category, value) {
 		var activeFilters = JSON.parse(localStorage.getItem("serverListOptions"))
@@ -1226,32 +1236,36 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		switch (category) {
 			case 'serverLocation':
 				if (activeFilters.selectedServerLocations.includes(value)) {
-					activeFilters.selectedServerLocations.splice(activeFilters.selectedServerLocations.findIndex((element) => element === value), 1)
+					activeFilters.selectedServerLocations.splice(activeFilters.selectedServerLocations.findIndex(element => element === value), 1)
 				} else {
 					activeFilters.selectedServerLocations.push(value)
 				}
 				break
 			case 'map':
 				if (activeFilters.selectedMaps.includes(value)) {
-					activeFilters.selectedMaps.splice(activeFilters.selectedMaps.findIndex((element) => element === value), 1)
+					activeFilters.selectedMaps.splice(activeFilters.selectedMaps.findIndex(element => element === value), 1)
 				} else {
 					activeFilters.selectedMaps.push(value)
 				}
 				break
 			case 'serverVersion':
 				if (activeFilters.selectedServerVersions.includes(value)) {
-					activeFilters.selectedServerVersions.splice(activeFilters.selectedServerVersions.findIndex((element) => element === value), 1)
+					activeFilters.selectedServerVersions.splice(activeFilters.selectedServerVersions.findIndex(element => element === value), 1)
 				} else {
 					activeFilters.selectedServerVersions.push(value)
 				}
 				break
 		}
 
-		searchFilters = activeFilters
-		localStorage.setItem("serverListOptions", JSON.stringify(activeFilters))
-		setSearchFilters(Object.values(searchFilters))
-		$scope.$emit('searchFiltersUpdated')
-		repopulateServerList()
+		updateServerFilters(activeFilters)
+	}
+	$scope.setSavedScrollPos = async function() {
+		$timeout(function() {
+			const scrollAmt = searchFiltersScrollAmount
+			//console.log('Setting saved scroll position in #searchFilters. Saved scroll position:', scrollAmt)
+			document.getElementById('searchFilters').scrollTop = scrollAmt
+			searchFiltersScrollAmount = scrollAmt
+		})
 	}
 
 	$scope.getVueIconPath = getVueIconPath
@@ -1390,7 +1404,7 @@ function($scope, $state, $timeout, $filter) {
 		searchFilters = JSON.parse(localStorage.getItem("serverListOptions")) ?? {
 			playerCountMin: 0,
 			playerCountMax: 250,
-			sliderMaxModSize: 10240, // in MB
+			sliderMaxModSize: 80530, // in MB
 			selectMap: [],
 			serverVersions: [],
 			tags: [],
@@ -1676,7 +1690,7 @@ function($scope, $state, $timeout, $filter) {
 	$scope.clearFilters = function () {
 		searchFilters.playerCountMin = 0
 		searchFilters.playerCountMax = 64
-		searchFilters.sliderMaxModSize = 10240
+		searchFilters.sliderMaxModSize = 80530
 		searchFilters.selectedMaps = []
 		searchFilters.selectedServerVersions = []
 		searchFilters.selectedTags = []
@@ -2229,13 +2243,18 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', pla
 				}
 				
 				// Filter by empty or full
-				activeFilters = activeFilters + 1
-				if(tmpServer1.players >= playerCountMin) {
-					if(tmpServer1.players == 0) filterMatches+=1
-				}
-				activeFilters = activeFilters + 1
-				if(tmpServer1.players <= playerCountMax) {
-					if(tmpServer1.players > 0) filterMatches+=1
+				if (tmpServer1.players) {
+					// min
+					activeFilters = activeFilters + 1
+					if(tmpServer1.players >= playerCountMin) {
+						if(tmpServer1.players == 0) filterMatches+=1
+					}
+
+					// max
+					activeFilters = activeFilters + 1
+					if(tmpServer1.players <= playerCountMax) {
+						if(tmpServer1.players > 0) filterMatches+=1
+					}
 				}
 						
 
@@ -2454,7 +2473,7 @@ async function getSearchFilterData(serverList) {
 
 		activeFilters.playerCountMin ?? 0,
 		activeFilters.playerCountMax ?? 64,
-		activeFilters.sliderMaxModSize ?? 10240,
+		activeFilters.sliderMaxModSize ?? 80530,
 	]
 }
 

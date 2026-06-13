@@ -91,7 +91,7 @@ ul#chat-list {
     line-height: 0.7em;
     color: rgba(255, 255, 255, 0.6);
     padding-right: 5px;
-	font-family: 'VueNotoSans Mono';
+	font-family: 'VueNotoSans Mono', monospace;
 }
 
 #chat-list::-webkit-scrollbar {

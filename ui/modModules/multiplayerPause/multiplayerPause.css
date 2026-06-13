@@ -1,148 +1,4 @@
 @font-face {
-	font-family: VueNotoSans;
-	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSans-VariableFont_wdth,wght.ttf);
-	font-weight: 100 900;
-	font-style: normal;
-	font-variation-settings: "wdth" 62.5 100
-}
-
-@font-face {
-	font-family: VueNotoSans;
-	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSans-Italic-VariableFont_wdth,wght.ttf);
-	font-weight: 100 900;
-	font-style: italic;
-	font-variation-settings: "wdth" 62.5 100
-}
-
-@font-face {
-	font-family: VueNotoSans JP;
-	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansJP-Light.otf);
-	font-weight: 300;
-	font-style: normal;
-	font-display: swap
-}
-
-@font-face {
-	font-family: VueNotoSans JP;
-	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansJP-Black.otf);
-	font-weight: 900;
-	font-style: normal;
-	font-display: swap
-}
-
-@font-face {
-	font-family: VueNotoSans JP;
-	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansJP-Bold.otf);
-	font-weight: 700;
-	font-style: normal;
-	font-display: swap
-}
-
-@font-face {
-	font-family: VueNotoSans JP;
-	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansJP-Regular.otf);
-	font-weight: 400;
-	font-style: normal;
-	font-display: swap
-}
-
-@font-face {
-	font-family: VueNotoSans JP;
-	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansJP-Medium.otf);
-	font-weight: 500;
-	font-style: normal;
-	font-display: swap
-}
-
-@font-face {
-	font-family: VueNotoSans KR;
-	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansKR-Light.otf);
-	font-weight: 300;
-	font-style: normal;
-	font-display: swap
-}
-
-@font-face {
-	font-family: VueNotoSans KR;
-	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansKR-Black.otf);
-	font-weight: 900;
-	font-style: normal;
-	font-display: swap
-}
-
-@font-face {
-	font-family: VueNotoSans KR;
-	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansKR-Bold.otf);
-	font-weight: 700;
-	font-style: normal;
-	font-display: swap
-}
-
-@font-face {
-	font-family: VueNotoSans KR;
-	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansKR-Regular.otf);
-	font-weight: 400;
-	font-style: normal;
-	font-display: swap
-}
-
-@font-face {
-	font-family: VueNotoSans KR;
-	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansKR-Medium.otf);
-	font-weight: 500;
-	font-style: normal;
-	font-display: swap
-}
-
-@font-face {
-	font-family: VueNotoSans SC;
-	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansSC-Light.otf);
-	font-weight: 300;
-	font-style: normal;
-	font-display: swap
-}
-
-@font-face {
-	font-family: VueNotoSans SC;
-	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansSC-Black.otf);
-	font-weight: 900;
-	font-style: normal;
-	font-display: swap
-}
-
-@font-face {
-	font-family: VueNotoSans SC;
-	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansSC-Bold.otf);
-	font-weight: 700;
-	font-style: normal;
-	font-display: swap
-}
-
-@font-face {
-	font-family: VueNotoSans SC;
-	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansSC-Regular.otf);
-	font-weight: 400;
-	font-style: normal;
-	font-display: swap
-}
-
-@font-face {
-	font-family: VueNotoSans SC;
-	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansSC-Medium.otf);
-	font-weight: 500;
-	font-style: normal;
-	font-display: swap
-}
-
-@font-face {
-	font-family: VueNotoSans Mono;
-	src: url(/ui/ui-vue/src/assets/fonts/NotoSans/NotoSansMono-VariableFont_wdth,wght.ttf);
-	font-weight: 100 950;
-	font-stretch: 75% 125%;
-	font-style: normal
-}
-
-@font-face {
     font-family: bngIcons;
     src: url(/ui/ui-vue/src/assets/fonts/bngIcons/bngIcons.woff2)format("woff2"),url(/ui/ui-vue/src/assets/fonts/bngIcons/bngIcons.woff)format("woff"),url(/ui/ui-vue/src/assets/fonts/bngIcons/bngIcons.otf)format("opentype"),url(/ui/ui-vue/src/assets/fonts/bngIcons/bngIcons.ttf)format("truetype");
     font-display: block;
@@ -160,10 +16,8 @@
 
 */
 .mpPauseWrapper {
-	--mpFntDefs: 'VueNotoSans', 'VueNotoSans JP', 'VueNotoSans KR', 'VueNotoSans SC', sans-serif;
-	--off-white-from-vue:oklch(92.5% 0 0);
 	pointer-events: none;
-	font-family: var(--mpFntDefs);
+	font-family: var(--bmp-fnt-defs);
 	width: 100%;
 	height: 100%;
 
@@ -212,7 +66,7 @@
 		padding: 0.5rem 0 0.5rem 1.5em;
 		left:-1rem;
 
-		font-family: 'VueNotoSans', var(--fnt-defs);
+		font-family: var(--bmp-fnt-defs);
 		font-weight: 700;
 		letter-spacing: normal;
 		font-size: 2.8em;
@@ -375,7 +229,7 @@
 
 */
 .mpPauseServerDetailsContainer {
-	font-family: VueNotoSans var(--fnt-defs);
+	font-family: var(--bmp-fnt-defs);
 	display: flex;
 	position: absolute;
 	width: 100%;
@@ -406,7 +260,7 @@
 	font-style: italic;
 	text-transform: capitalize;
 	
-	color: var(--off-white-from-vue);
+	color: var(--bng-off-white);
 	background-color: rgba(0, 0, 0, 0.33);
 	border: 0.125rem solid transparent;
 	border-radius: var(--bng-corners-1);
@@ -494,7 +348,7 @@
 	background-color: rgba(0, 0, 0, 0.33);
 	color: var(--bng-add-green-400);
 	border-radius: 0 var(--bng-corners-1);
-	font-family: VueNotoSans var(--fnt-defs);
+	font-family: var(--bmp-fnt-defs);
 	font-style: italic;
 	font-size: 0.8rem;
 	line-height: 1em;
