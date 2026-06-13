@@ -2097,7 +2097,6 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', pla
 		if (tab == "partner" && !server.partner) continue
 
 		var shown = true
-		var smoothMapName = SmoothMapName(server.map)
 		var isFavorite = false
 		var isRecent = false
 
@@ -2145,13 +2144,15 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', pla
 		}
 
 		// Filter by mod size
-		activeFilters = activeFilters + 1
-		if(sliderMaxModSize * 1048576 >= server.modstotalsize) filterMatches+=1
+		if (server.modstotalsize) {
+			activeFilters = activeFilters + 1
+			if(sliderMaxModSize * 1048576 >= server.modstotalsize) filterMatches+=1
+		}
 	
 		// Filter by map
 		if (selectMap.length > 0) {
 			activeFilters = activeFilters + 1
-			if(selectMap.includes(smoothMapName)) filterMatches+=1
+			if(selectMap.includes(SmoothMapName(server.map))) filterMatches+=1
 		}
 
 		if (SelectedServerVersions.length > 0) {
@@ -2211,12 +2212,10 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', pla
 				// Filter by search
 				if (!tmpServer1.strippedName.toLowerCase().includes(searchText.toLowerCase())) continue
 
-				var smoothMapName = SmoothMapName(tmpServer1.map)
-
 				var activeFilters = 0
 				var filterMatches = 0
 
-				if(tags.length > 0) {
+				if(tmpServer1.tags && tags.length > 0) {
 					//server.tags = "tag1,tag2"
 					var serverTags = (tmpServer1.tags || "").toLowerCase().split(",").map(tag => tag.trim())
 					
@@ -2247,26 +2246,24 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', pla
 				if (tmpServer1.players) {
 					// min
 					activeFilters = activeFilters + 1
-					if(tmpServer1.players >= playerCountMin) {
-						if(tmpServer1.players == 0) filterMatches+=1
-					}
+					if(tmpServer1.players >= playerCountMin) { filterMatches+=1 }
 
 					// max
 					activeFilters = activeFilters + 1
-					if(tmpServer1.players <= playerCountMax) {
-						if(tmpServer1.players > 0) filterMatches+=1
-					}
+					if(tmpServer1.players <= playerCountMax) { filterMatches+=1 }
 				}
 						
 
 				// Filter by mod size
-				activeFilters = activeFilters + 1
-				if(sliderMaxModSize * 1048576 >= tmpServer1.modstotalsize) filterMatches+=1
+				if (tmpServer1.modstotalsize) {
+					activeFilters = activeFilters + 1
+					if(sliderMaxModSize * 1048576 >= tmpServer1.modstotalsize) filterMatches+=1
+				}
 			
 				// Filter by map
 				if (selectMap.length > 0) {
 					activeFilters = activeFilters + 1
-					if(selectMap.includes(smoothMapName)) filterMatches+=1
+					if(selectMap.includes(SmoothMapName(tmpServer1.map))) filterMatches+=1
 				}
 
 				if (SelectedServerVersions.length > 0) {
@@ -2279,20 +2276,18 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', pla
 					if(SelectedServerLocations.includes(tmpServer1.location)) filterMatches+=1
 				}
 
-				if (matchAll && filterMatches < activeFilters) {
-					//console.log('Active filters: '+activeFilters+'. Matched filters: '+filterMatches)
-					continue
-				}
-				if (!matchAll && activeFilters > 0 && filterMatches < 1) {
-					//console.log('Active filters: '+activeFilters+'. Matched filters: '+filterMatches)
-					continue
+				console.log(`${filterMatches}/${activeFilters} matches`, tmpServer1)
+				if (matchAll) {
+					if (filterMatches < activeFilters) continue
+				} else {
+					if (activeFilters > 0 && filterMatches < 1 ) continue
 				}
 
 				var offline = false
 				var custom = false
 				var name = tmpServer1.sname
 				if (!tmpServer1.custom) { name = '^c[^*globeSimpleNotSign^r^c Offline]^r ' + name; offline = true }
-				else { name += " [CUSTOM]"; custom = true }
+				else { name = '^e[^*bookmark^r^e Custom]^r ' + name; custom = true }
 				$scope.serversTable[tmpServer1.ip + ":" + tmpServer1.port] = {server: tmpServer1, isFavorite: type == 1, isRecent: type == 2, name: name, offline: offline, custom: custom}
 				$scope.serversArray = Object.keys($scope.serversTable).map(function(key) {
 					return $scope.serversTable[key]
