@@ -251,6 +251,7 @@
 		<div id="searchFilters" style="
 		overflow-y: auto;
 		padding-right: 0.5em;
+  		scrollbar-gutter: stable;
 		">
 			<div class="card-heading heading-style-line" style="font-size: 1.25em;">
 				Player Count
@@ -271,7 +272,7 @@
 			</div>
 			<div class="md-slider-container" style="width: 100%; display: flex; justify-content: space-between;">
 				<md-slider flex ng-model="multiplayer.sliderMaxModSize" ng-change="updateMaxModSize();" min="0" max="100000" step="10" aria-label="_"></md-slider>
-				<span style="min-width: 5em; margin: 0px 15px; padding-top: 13px; color: white;">
+				<span style="min-width: 4.25em; margin: 0px 15px; padding-top: 13px; color: white;">
 					{{ formatBytes(multiplayer.sliderMaxModSize * 1e+6) }}
 				</span>
 			</div>
