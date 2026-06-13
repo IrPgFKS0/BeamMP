@@ -2107,10 +2107,10 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', pla
 		var activeFilters = 0
 		var filterMatches = 0
 
-		//server.tags = "tag1,tag2"
-		var serverTags = server.tags.toLowerCase().split(",").map(tag => tag.trim())
-
 		if(tags.length > 0) {
+			//server.tags = "tag1,tag2"
+			var serverTags = server.tags.toLowerCase().split(",").map(tag => tag.trim())
+
 			activeFilters = activeFilters + 1
 			var missingTags = 0
 			for (let tag of tags) {
@@ -2216,9 +2216,10 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', pla
 				var activeFilters = 0
 				var filterMatches = 0
 
-				//server.tags = "tag1,tag2"
-				var serverTags = (tmpServer1.tags || "").toLowerCase().split(",").map(tag => tag.trim())
 				if(tags.length > 0) {
+					//server.tags = "tag1,tag2"
+					var serverTags = (tmpServer1.tags || "").toLowerCase().split(",").map(tag => tag.trim())
+					
 					activeFilters = activeFilters + 1
 					var missingTags = 0
 					for (let tag of tags) {
