@@ -10,11 +10,13 @@
 	-webkit-font-smoothing: antialiased !important;
 	-moz-osx-font-smoothing: grayscale !important;
 
-	padding: 0.25em 1em 0.25em 1em;
+	margin: 0.25em 1em 0.25em 1em;
 	gap: 0.25em;
 	display: flex;
 	flex-direction: column;
 	flex-wrap: nowrap;
+	max-height: calc(100% - 0.5em);
+	box-sizing: border-box;
 
 	.bng-button-main,
 	.bng-button-secondary,
@@ -290,6 +292,7 @@
 	display:flex;
 	color: white;
 	background-color: transparent;
+	overflow-x: hidden;
 	
 	.bng-button-main,
 	.bng-button-secondary,
@@ -698,6 +701,7 @@ div#LoadingBody {
 	color: white;
 
 	position: absolute;
+ 	 min-width: 25vw;
 	max-width: 700px;
 	z-index: 100;
 
@@ -711,6 +715,11 @@ div#LoadingBody {
 		font-family: Overpass var(--bmp-fnt-defs);
 		font-style: italic;
 	};
+
+	.serverListSearch {
+		max-width: 100%;
+		margin: 0;
+	}
 }
 
 .row {

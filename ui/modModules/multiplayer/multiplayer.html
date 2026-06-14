@@ -5,66 +5,67 @@
 
 <div class="theEntireMultiplayerModule" flex>
 <div id="LoadingServer" style="display: none;">
-  <div id="LoadingBody" layout="column">
-	<h2 style="padding-bottom:0">{{:: 'ui.multiplayer.connectingToServer' | translate}}</h2>
-	<div>
-		<span id="OriginalLoadingStatus" hidden style="height: 0px;"></span>
-		<span id="LoadingStatus" hidden>{{multiplayer.loadingStatus}}</span>
-	</div>
+	<div id="LoadingBody" layout="column">
+		<h2 style="padding-bottom:0">{{:: 'ui.multiplayer.connectingToServer' | translate}}</h2>
+		<div>
+			<span id="OriginalLoadingStatus" hidden style="height: 0px;"></span>
+			<span id="LoadingStatus" hidden>{{multiplayer.loadingStatus}}</span>
+		</div>
 
-	<div style="margin-top:0.5em" id="mod-download-list" ng-if="multiplayer.downloadingMods.length > 0">
-		<div ng-repeat="mod in multiplayer.downloadingMods" class="mod-download-row">
-			<div style="width: 1em; height: 1em; font-size: 1em; margin-right: 1em; float: left;">
-				<img ng-show="$index != 0" class="button-icon button-icon-filter" style="filter: invert(66%) sepia(22%) saturate(1014%) hue-rotate(90deg) brightness(89%) contrast(88%);"
-				ng-src={{getVueIconPath('checkmark')}} />
-			</div>
-			<span style="flex: 1;">
-			<code>{{mod.number}} - {{mod.name}}</code>
-			{{ ' - ' }}
-			<span style="color: white;font-size: 0.8em;">{{$index === 0 ? mod.speed : ('ui.multiplayer.download.downloaded' | translate)}}</span>
-			</span>
-			<div style="flex: 2;" ng-if="$index === 0 && mod.progress != 100">
-			<md-progress-linear md-mode="determinate" value="{{mod.progress}}" class="md-accent"></md-progress-linear>
+		<div style="margin-top:0.5em" id="mod-download-list" ng-if="multiplayer.downloadingMods.length > 0">
+			<div ng-repeat="mod in multiplayer.downloadingMods" class="mod-download-row">
+				<div style="width: 1em; height: 1em; font-size: 1em; margin-right: 1em; float: left;">
+					<img ng-show="$index != 0" class="button-icon button-icon-filter" style="filter: invert(66%) sepia(22%) saturate(1014%) hue-rotate(90deg) brightness(89%) contrast(88%);"
+					ng-src={{getVueIconPath('checkmark')}} />
+				</div>
+				<span style="flex: 1;">
+				<code>{{mod.number}} - {{mod.name}}</code>
+				{{ ' - ' }}
+				<span style="color: white;font-size: 0.8em;">{{$index === 0 ? mod.speed : ('ui.multiplayer.download.downloaded' | translate)}}</span>
+				</span>
+				<div style="flex: 2;" ng-if="$index === 0 && mod.progress != 100">
+				<md-progress-linear md-mode="determinate" value="{{mod.progress}}" class="md-accent"></md-progress-linear>
+				</div>
 			</div>
 		</div>
-	</div>
-	<div flex="" style="max-height:none;margin-top:0.5em" ng-if="!(multiplayer.downloadingMods.length > 0)"></div>
+		<div flex="" style="max-height:none;margin-top:0.5em" ng-if="!(multiplayer.downloadingMods.length > 0)"></div>
 
-	<div style="height:fit-content;width:100%;margin-top:0.5em">
-	<button class="bng-button-attention close-button" ng-click="multiplayer.closeLoadingPopup()">
-		<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('xmark')}} />
-		{{:: 'ui.common.cancel' | translate}}
-	</button>
+		<div style="height:fit-content;width:100%;margin-top:0.5em">
+		<button class="bng-button-attention close-button" ng-click="multiplayer.closeLoadingPopup()">
+			<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('xmark')}} />
+			{{:: 'ui.common.cancel' | translate}}
+		</button>
+		</div>
 	</div>
-  </div>
 </div>
 
 <div id="addCustomFav" style="display: none;" class="filter-overlay">
-  <div class="addCustomFav">
-    <md-list-item layout class="md-padding">
-      <h2>{{:: 'ui.multiplayer.addCustomServer' | translate}}</h2>
-    </md-list-item>
-    <center>
-	<div layout="column" style="width:min-content">
-	  <div class="serverListSearch">
-		<input flex="" class="bng-input mp-search" type="text" id="customFavName" name="customFavName" placeholder="Server name" value=""/>
-	  </div>
-	  <div class="serverListSearch">
-		<input flex="" class="bng-input mp-search" type="text" id="customFavIP" name="customFavIP" placeholder="Server IP" value=""/>
-	  </div>
-	  <div class="serverListSearch">
-		<input flex="" class="bng-input mp-search" type="text" id="customFavPort" name="customFavPort" placeholder="Server port" value="30814"/>
-	  </div>
+	<div class="addCustomFav">
+		<h2>{{:: 'ui.multiplayer.addCustomServer' | translate}}</h2>
+		<p>{{:: 'ui.multiplayer.addCustomServer.tip' | translate}}</p>
+		<center>
+			<div layout="column" style="display: flex; gap: 0.5em;">
+				<div class="serverListSearch">
+					<input flex="" class="bng-input mp-search" type="text" id="customFavName" name="customFavName" placeholder="Server name" value=""/>
+				</div>
+				<div class="serverListSearch">
+					<input flex="" class="bng-input mp-search" type="text" id="customFavIP" name="customFavIP" placeholder="Server IP" value=""/>
+				</div>
+				<div class="serverListSearch">
+					<input flex="" class="bng-input mp-search" type="text" id="customFavPort" name="customFavPort" placeholder="Server port" value="30814"/>
+				</div>
+			</div>
+			<div layout="row" style="float:right; width:min-content">
+				<button class="default-case bng-button-link" ng-class="" ng-click="multiplayer.closePopup()">
+					<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('xmark')}} />
+					{{:: 'ui.common.cancel' | translate}}
+				</button>
+				<button class="default-case bng-button-main" ng-click="multiplayer.addCustomServer()" style="margin-right: 0;">
+					{{:: 'ui.multiplayer.save' | translate}}
+				</button>
+			</div>
+		</center>
 	</div>
-	<div layout="row" style="float:right; width:min-content">
-      <button class="default-case bng-button-link" ng-class="" ng-click="multiplayer.closePopup()">
-		<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('xmark')}} />
-		{{:: 'ui.common.cancel' | translate}}
-	  </button>
-      <button class="default-case bng-button-main" ng-click="multiplayer.addCustomServer()">{{:: 'ui.multiplayer.save' | translate}}</button>
-	</div>
-    </center>
-  </div>
 </div>
 
 <div style="display: inline-flex; flex-direction: row; flex-wrap: nowrap; justify-content: space-between;">
@@ -104,8 +105,8 @@
 	display: flex;
 	flex-direction: row;
 	gap: 0.5em;
-  	max-height: calc(100% - 2.8375em); /* Mathematically correct */
  	box-sizing: border-box;
+  	overflow-y: hidden;
 ">
 	<md-content id="back" layout="column">
 		<div id="top-bar" layout="row" class="" style="padding:0;">
