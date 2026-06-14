@@ -10,11 +10,6 @@
 
 		<button id="extra-button" class="default-case bng-button-secondary" style="display: none;"></button>
 
-		<button class="default-case bng-button-attention" style="display: none; padding: 0.5em 0.5em;" id="clearFiltersButton" ng-click="clearFilters()">
-			<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('xmark')}} />
-			<md-tooltip md-direction="top">{{:: 'ui.multiplayer.clearFilters' | translate}}</md-tooltip>
-		</button>
-
 		<span id="FiltersPrefix" style="display: none; font-weight: bold; align-self: center;">{{:: 'ui.multiplayer.activeFilters' | translate}}</span>
 		<span id="activeFilters">
 			<span ng-repeat="content in multiplayermenu.activeFiltersText" style="padding:0">

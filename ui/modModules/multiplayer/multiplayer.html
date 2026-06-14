@@ -248,6 +248,9 @@
 		<div class="card-heading heading-style-ribbon" style="font-size: 1.5em; margin-left: calc(-1em / 3);">
 			{{:: 'ui.multiplayer.filterOptions' | translate}}
 		</div>
+		<button class="default-case bng-button-attention" style="min-height: fit-content;" id="clearFiltersButton" ng-click="resetSearchFilters()">
+			{{:: 'ui.multiplayer.clearFilters' | translate}}
+		</button>
 		<div id="searchFilters" style="
 		overflow-y: auto;
 		padding-right: 0.5em;
@@ -348,6 +351,7 @@
 				}"
 				ng-init="$last ? setSavedScrollPos() : null">
 					<div>
+						<img ng-if="officialMaps.includes(string)" ng-src="{{getVueIconPath('beamNG')}}" class="button-icon button-icon-filter tag-icon bnglogo" />
 						<div ng-bind="string" style="display:inline;"></div>
 					</div>
 					<div style="display: inline;">

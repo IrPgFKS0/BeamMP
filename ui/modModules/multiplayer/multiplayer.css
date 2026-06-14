@@ -22,7 +22,7 @@
 	.bng-button-outline,
 	.bng-button-link,
 	.bng-button-attention {
-		min-width: 2.75em; /* for icon-only buttons */
+		min-width: fit-content; /* for icon-only buttons */
 		margin: 0.375em 0.5em;
 		font-weight: 500;
 		white-space: nowrap;
@@ -192,7 +192,7 @@
 	overflow-y: hidden;
 
 	.serverListSearch {
-		width: 100%;
+		max-width: 100%;
 	};
 }
 .searchFilterListContainer {
@@ -224,7 +224,11 @@
 		.tag-icon {
 			font-size: 1.2em;
 			overflow: visible;
+			margin-right: 0;
 		};
+		.bnglogo {
+			filter: var(--bng-filter-orange);
+		}
 
 		&.active {
 			background: #22c55e33;
@@ -337,8 +341,10 @@
 	Server list search bar
 
 */
-#search {
-	border-radius: var(--bng-corners-1);
+#serverListHeader {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
 }
 
 .serverListSearch {

@@ -27,6 +27,30 @@ let repopulateServerList = async function() {
 
 }
 
+var officialMaps = [
+	"Automation Test Track",
+	"Autotest", 				// aux
+	"Cliff",
+	"Derby",
+	"Driver Training",
+	"East Coast Usa",
+	"Garage V2", 				// garage
+	"Glow City", 				// lightrunner
+	"Gridmap", 					// unavailable
+	"Gridmap V2",
+	"Hirochi Raceway",
+	"Industrial",
+	"Italy",
+	"Johnson Valley",
+	"Jungle Rock Island",
+	"Showroom V2", 				// aux
+	"Small Island",
+	"Smallgrid", 				// aux
+	"Template", 				// aux
+	"Utah",
+	"West Coast Usa"
+]
+
 var searchFiltersScrollAmount = 0
 
 // Per-tag thumbnail filename for all known server tags
@@ -382,7 +406,7 @@ $rootScope.$on('$stateChangeSuccess', async function (event, toState, toParams, 
 
 	if (toState.name == "menu.mainmenu") {
 		bngApi.engineLua('MPCoreNetwork.getLoginState()')
-		console.log('Asking for BeamMP info from main menu or multiplayerPause')
+		//console.log('Asking for BeamMP info from main menu or multiplayerPause')
 		bngApi.engineLua('MPCoreNetwork.sendBeamMPInfo()')
 		beammpUserInfo.style.display = "block"
 		let userinfo =  document.getElementsByTagName("body")[0].appendChild(beammpUserInfo).children[1]
@@ -409,7 +433,7 @@ $rootScope.$on('$stateChangeSuccess', async function (event, toState, toParams, 
 	} else if (toState.name.includes("menu.multiplayer.")) {
 		var searchFiltersPanel = document.getElementById('searchFiltersSidebar')
 		if (toState.name === "menu.multiplayer.servers") {
-			console.log('Asking for BeamMP info because menu.multiplayer.servers was opened')
+			//console.log('Asking for BeamMP info because menu.multiplayer.servers was opened')
 			bngApi.engineLua('MPCoreNetwork.sendBeamMPInfo()')
 			if (searchFiltersPanel) searchFiltersPanel.style.display = ""
 		} else {
@@ -582,6 +606,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	mdDialog = $mdDialog
 
 	$scope.beammpMetrics = beammpMetrics
+	$scope.officialMaps = officialMaps
 
 	$scope.switchToDirectConnect = function() {
 		serverView = "direct"
@@ -1162,21 +1187,38 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		repopulateServerList()
 	}
 
+	var playerCountMin = Number(vm.playerCountMin)
+	var playerCountMax = Number(vm.playerCountMax)
 	$scope.updatePlayerCountRange = async function() {
-		var activeFilters = JSON.parse(localStorage.getItem("serverListOptions"))
+		playerCountMin = Number(vm.playerCountMin)
+		playerCountMax = Number(vm.playerCountMax)
+		$timeout(function() {
+			if (
+				playerCountMin !== searchFilters.playerCountMin ??
+				playerCountMax !== searchFilters.playerCountMax
+			) {
+				var activeFilters = JSON.parse(localStorage.getItem("serverListOptions"))
 
-		activeFilters.playerCountMin = Number(vm.playerCountMin)
-		activeFilters.playerCountMax = Number(vm.playerCountMax)
+				activeFilters.playerCountMin = playerCountMin
+				activeFilters.playerCountMax = playerCountMax
 
-		updateServerFilters(activeFilters)
+				updateServerFilters(activeFilters)
+			}
+		}, 250)
 	}
 
+	var maxModSize = vm.sliderMaxModSize
 	$scope.updateMaxModSize = function () {
-		var activeFilters = JSON.parse(localStorage.getItem("serverListOptions"))
+		maxModSize = vm.sliderMaxModSize
+		$timeout(function() {
+			if (maxModSize !== searchFilters.sliderMaxModSize) {
+				var activeFilters = JSON.parse(localStorage.getItem("serverListOptions"))
 
-		activeFilters.sliderMaxModSize = vm.sliderMaxModSize
+				activeFilters.sliderMaxModSize = maxModSize
 
-		updateServerFilters(activeFilters)
+				updateServerFilters(activeFilters)
+			}
+		}, 500)
 	}
 
 	$scope.$on('onServerListReceived', async function (event, data) {
@@ -1204,6 +1246,21 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 
 			vm.sliderMaxModSize = serverSearchFilters[11]
 		})
+	}
+	$scope.resetSearchFilters = function () {
+		searchFilters.playerCountMin = 0
+		searchFilters.playerCountMax = 64
+		searchFilters.sliderMaxModSize = 80530
+		searchFilters.selectedMaps = []
+		searchFilters.selectedServerVersions = []
+		searchFilters.selectedTags = []
+		searchFilters.selectedServerLocations = []
+		searchFilters.matchAll = true
+
+		localStorage.setItem('serverListOptions', JSON.stringify(searchFilters))
+		//console.log('Cleared filters, repopulating...')
+		$scope.$emit('searchFiltersUpdated')
+		repopulateServerList()
 	}
 
 	$scope.toggleTag = function(tag) {
@@ -1618,7 +1675,7 @@ function($scope, $state, $timeout, $filter) {
 
 		
 
-		console.log('Server list received, repopulating...')
+		//console.log('Server list received, repopulating...')
 		vm.repopulate()
 
 		const serverSearchFilters = await getSearchFilterData(data)
@@ -1686,22 +1743,6 @@ function($scope, $state, $timeout, $filter) {
 	$scope.toggleFilterOverlay = function () {
 		$scope.isFilterOverlayVisible = !$scope.isFilterOverlayVisible
 	}
-
-	$scope.clearFilters = function () {
-		searchFilters.playerCountMin = 0
-		searchFilters.playerCountMax = 64
-		searchFilters.sliderMaxModSize = 80530
-		searchFilters.selectedMaps = []
-		searchFilters.selectedServerVersions = []
-		searchFilters.selectedTags = []
-		searchFilters.selectedServerLocations = []
-		searchFilters.matchAll = true
-
-		localStorage.setItem('serverListOptions', JSON.stringify(searchFilters))
-		console.log('Cleared filters, repopulating...')
-		$scope.$emit('searchFiltersUpdated')
-		repopulateServerList()
-	}
 	$scope.addTagToSearchFilter = function (tag) {
 		tag.raw = tag.raw.trim()
 		console.log('Trying to add "'+tag.raw+'" to search filters')
@@ -1732,7 +1773,7 @@ function($scope, $state, $timeout, $filter) {
 	}
 
 	repopulateServerList = function () {
-		console.log('repopulateServerList fired, repopulating...')
+		//console.log('repopulateServerList fired, repopulating...')
 		vm.repopulate().then(() => { })
 	}
 }])
@@ -2305,7 +2346,7 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', pla
 		$scope.sortTable("addTime", true, -1)
 	}
 
-	console.log('Completed repopulating')
+	//console.log('Completed repopulating')
 	$scope.onScroll()
 
 	$scope.$emit("reloadSearchFilters", await getSearchFilterData(servers))
@@ -2425,14 +2466,29 @@ async function getSearchFilterData(serverList) {
 	var selectedTags = []
 	var selectedServerVersions = []
 
+	var availableOfficialMaps = []
+
 	for (const server of servers) {
 		if (!availableServerVersions.includes("v" + server.version)) availableServerVersions.push("v" + server.version)
 
 		if (!availableServerLocations.includes(server.location)) availableServerLocations.push(server.location)
 
 		var smoothMapName = SmoothMapName(server.map)
+		if (typeof smoothMapName === 'string' && smoothMapName !== '') {
+			let isOfficialMap = officialMaps.includes(smoothMapName)
 
-		if(!availableMaps.includes(smoothMapName) && (typeof smoothMapName==='string' && smoothMapName.length > 0)) availableMaps.push(smoothMapName)
+			if (isOfficialMap) {
+				if (!availableOfficialMaps.includes(smoothMapName)) {
+					//console.log(`Y ${smoothMapName}`)
+					availableOfficialMaps.push(smoothMapName)
+				}
+			} else {
+				if (!availableMaps.includes(smoothMapName)) {
+					//console.log(`N ${smoothMapName}`)
+					availableMaps.push(smoothMapName)
+				}
+			}
+		}
 
 		var serverTags = server.tags.split(",")
 		for (const tag of serverTags) {
@@ -2440,8 +2496,14 @@ async function getSearchFilterData(serverList) {
 		}
 	}
 
-	availableServerVersions.sort()
 	availableMaps.sort()
+
+	availableOfficialMaps.sort().reverse()
+	for (const mapName of availableOfficialMaps) {
+		availableMaps.splice(0, 0, mapName)
+	}
+
+	availableServerVersions.sort()
 	availableTags.sort()
 	availableServerLocations.sort()
 
