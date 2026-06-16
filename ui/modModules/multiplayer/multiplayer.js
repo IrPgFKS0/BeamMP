@@ -1457,8 +1457,8 @@ function($scope, $state, $timeout, $filter) {
 	$scope.$on('searchFiltersUpdated', function(event, data) {
 		updateSearchFilters()
 	})
-	function updateSearchFilters() {
-		searchFilters = JSON.parse(localStorage.getItem("serverListOptions")) ?? {
+
+	const defaultSearchFilters = {
 			playerCountMin: 0,
 			playerCountMax: 250,
 			sliderMaxModSize: 80530, // in MB
@@ -1475,7 +1475,53 @@ function($scope, $state, $timeout, $filter) {
 			selectedMaps: [],
 			selectedTags: [],
 			selectedServerVersions: []
+	}
+
+	function migrateLegacyFilters() {
+		var legacyFilters = JSON.parse(localStorage.getItem("serverListOptions"))
+		if (legacyFilters) {
+			legacyFilters.checkIsEmpty = undefined
+			legacyFilters.checkIsNotEmpty = undefined
+			legacyFilters.checkIsNotFull = undefined
+			legacyFilters.checkModSlider = undefined
+			legacyFilters.sliderMaxModSize = defaultSearchFilters.sliderMaxModSize //prefere to force it to this because the old value was likely not set by the user anyway
+			legacyFilters.selectedMaps = [] //dont save the old selected map
+			legacyFilters.selectMap = undefined
+			
+			if (!legacyFilters.selectedTags){
+				legacyFilters.selectedTags = []
+				legacyFilters.tags.forEach(element => {
+					legacyFilters.selectedTags.push(formatRawTag(element))
+				});
+				legacyFilters.tags = defaultSearchFilters.tags
+			}
+			if (!legacyFilters.selectedServerVersions){
+				legacyFilters.selectedServerVersions = []
+				legacyFilters.serverVersions.forEach(element => {
+					legacyFilters.selectedServerVersions.push(element)
+				});
+				legacyFilters.serverVersions = defaultSearchFilters.serverVersions
+			}
+			if (!legacyFilters.selectedServerLocations){
+				legacyFilters.selectedServerLocations = []
+				legacyFilters.serverLocations.forEach(element => {
+					legacyFilters.selectedServerLocations.push(element)
+				});
+				legacyFilters.serverLocations = defaultSearchFilters.serverLocations
+			}
+			legacyFilters.playerCountMin = defaultSearchFilters.playerCountMin
+			legacyFilters.playerCountMax = defaultSearchFilters.playerCountMax
+			legacyFilters.matchAll = defaultSearchFilters.matchAll
+			legacyFilters.searchText = defaultSearchFilters.searchText
+			legacyFilters.formattedTags = defaultSearchFilters.formattedTags
+
+			localStorage.setItem("serverListOptions", JSON.stringify(legacyFilters))
 		}
+	}
+
+	function updateSearchFilters() {
+		searchFilters = JSON.parse(localStorage.getItem("serverListOptions")) ?? defaultSearchFilters
+		if (searchFilters.checkIsEmpty != undefined) migrateLegacyFilters()
 
 		vm.playerCountMin = searchFilters.playerCountMin
 		vm.playerCountMax = searchFilters.playerCountMax
