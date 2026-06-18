@@ -206,6 +206,15 @@
 		max-width: 100%;
 	};
 }
+#searchFilters {
+	overflow-y: auto;
+	padding-right: 0.5em;
+	scrollbar-gutter: stable;
+
+	.card-heading {
+		font-size: 1.25em;
+	}
+}
 .searchFilterListContainer {
 	display: flex;
 	flex-direction: row;
@@ -660,7 +669,7 @@ div#LoadingBody {
 
 #mod-download-list {
 	margin-top: 20px;
-	height: 25vh; /* Sub-optimal but flex="" doesn't work and this is close enough*/
+	height: 25vh; /* Sub-optimal but flex doesn't work and this is close enough*/
 	overflow-x: hidden;
 	overflow-y: auto;
 
@@ -1104,6 +1113,7 @@ ul.serverItemDetails {
 
 .server-maxplayers,
 .server-flag {
+	min-width: fit-content;
 	width: 90px;
 }
 .server-mapname {

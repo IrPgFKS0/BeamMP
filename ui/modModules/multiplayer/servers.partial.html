@@ -3,7 +3,7 @@
 
 	<div id="serverListHeader" layout="row" layout-padding="">
 		<div class="serverListSearch">
-			<input flex="" class="bng-input mp-search" ng-model="multiplayermenu.searchText" ng-change="multiplayermenu.updateSearchText();" type="text" id="search" name="search" placeholder="{{:: 'ui.multiplayer.searchPlaceholder' | translate}}" />
+			<input flex class="bng-input mp-search" ng-model="multiplayermenu.searchText" ng-change="multiplayermenu.updateSearchText();" type="text" id="search" name="search" placeholder="{{:: 'ui.multiplayer.searchPlaceholder' | translate}}" />
 			<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('search')}} />
 		</div>
 		<button id="refresh-button" class="default-case bng-button-main" ng-class="" ng-click="multiplayer.refreshList()">{{:: 'ui.multiplayer.refresh' | translate}}</button>
@@ -69,7 +69,7 @@
 										<tr><th scope="row">{{:: 'ui.multiplayer.server.description' | translate}}</th><td><span ng-bind-html="formatCodes(server.server.sdesc || '', true)"></span></td></tr>
 										<tr><th scope="row">{{:: 'ui.multiplayer.server.tags' | translate}}</th>
 											<td>
-												<span ng-hide="server.server.formattedTags.length > 0">No tags</span>
+												<span ng-hide="server.server.formattedTags.length > 0">{{:: 'ui.multiplayer.server.noTags' | translate}}</span>
 												<div class="tagListContainer" style="max-width:100%" ng-if="server.server.formattedTags.length > 0">
 													<span ng-repeat="tag in server.server.formattedTags" ng-click="addTagToSearchFilter(tag)">
 														<span class="tagList tagListShort">
@@ -107,7 +107,7 @@
 											<span class="tagList tagListShort" ng-repeat="text in modList(server.server.modlist|| '').split(', ')" ng-bind="text.trim()"></span>
 										</div>
 										<!--<div style="margin-left: 10px; max-width: 75%; max-height: 200px; overflow-y: auto; background: rgba(0, 0, 0, 0.1);">{{modList(server.server.modlist|| "")}}</div></li>-->
-									<div style="margin-top:0.8em;font-size:0.8em;color:var(--off-white-from-vue)" ng-bind="'Total Filesize: '+formatBytes(server.server.modstotalsize)"></div>
+									<div style="margin-top:0.8em;font-size:0.8em;color:var(--off-white-from-vue)" ng-bind="{{:: 'ui.multiplayer.server.modsTotalFilesize' | translate}}+' '+formatBytes(server.server.modstotalsize)"></div>
 								</div>
 							</div>
 						</div>

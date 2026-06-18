@@ -191,9 +191,9 @@ function($scope, $state, $timeout, $UiAppsService, $Settings, $translate, Confir
 	});
 	bngApi.engineLua('UI.sendPauseMenuModButtons()');
 	
-	$scope.modButtonClick = function(eventName) {
-		console.log(`Firing event "${eventName}"`);
-		$scope.$emit(eventName);
+	$scope.modButtonClick = function(lua) {
+		//console.log(`Running the following GE lua from a mod button: "${lua}"`);
+		bngApi.engineLua(lua);
 	};
 
 	$scope.$on('playerPings', function(event, data) {

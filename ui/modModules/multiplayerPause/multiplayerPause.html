@@ -41,7 +41,7 @@
 					</div>
 				</div>
 				<div flex style="display:flex;flex-direction:row;flex-wrap:nowrap;gap:0.5rem;color:white;max-width:100%">
-					<span ng-hide="serverTags.length > 0">No tags</span>
+					<span ng-hide="serverTags.length > 0">{{:: 'ui.multiplayer.server.noTags' | translate}}</span>
 					<div class="tagListContainer" style="max-width:100%" ng-if="serverTags.length > 0">
 						<span ng-repeat="tag in serverTags">
 							<span class="tagList tagListShort">
@@ -75,7 +75,7 @@
 				<div class="tagListContainer" style="max-width:100%">
 					<span class="tagList tagListShort" ng-repeat="text in mods.list">{{ text }}</span>
 				</div>
-				<div style="margin-top:0.8em;font-size:0.8em;color:var(--off-white-from-vue)">Total Filesize: {{mods.size || "Unknown"}}</div>
+				<div style="margin-top:0.8em;font-size:0.8em;color:var(--off-white-from-vue)">{{:: 'ui.multiplayer.server.modsTotalFilesize' | translate}} {{mods.size || "Unknown"}}</div>
 			</div>
 		</div>
 	</div>
@@ -97,7 +97,7 @@
 				<button class="bng-button bng-button-outline mpPauseButton-outline" ng-click="resume()" bng-sound-class="bng_click_hover_generic">{{:: 'ui.common.action.resume' | translate}}</button>
 			</div>
 			<div id="mpPauseMpButtons" class="mpPauseButtonCategory">
-				<button id="mpPauseServerDetailsButton" class="bng-button bng-button-outline mpPauseButton-outline" ng-click="openPopupOfId('mpPauseServerDetails')" bng-sound-class="bng_click_hover_generic">Server Details</button>
+				<button id="mpPauseServerDetailsButton" class="bng-button bng-button-outline mpPauseButton-outline" ng-click="openPopupOfId('mpPauseServerDetails')" bng-sound-class="bng_click_hover_generic">{{:: 'ui.multiplayer.pauseMenu.serverDetails' | translate}}</button>
 				<!--
 				<button disabled class="bng-button bng-button-outline mpPauseButton-outline">Players</button>
 				-->
@@ -133,11 +133,10 @@
 				</div>
 			</div>
 			<div id="mpPausePlayerList">
-				<!-- ng-if="!player.self" -->
 				<div ng-repeat="player in playersList" bng-nav-scroll bng-nav-scroll-force class="mpPausePlayerListRow" id="mpPause-playerList-{{player.id}}">
 					<div flex style="display:inline-flex;flex-wrap:nowrap;gap:0.25rem;min-width:0">
 						<span class="mpPausePlayerRowId" ng-style="{'color': (player.id!=='?' && 'var(--bng-add-green-400)') || 'var(--bng-orange-500)'}">{{ (showPlayerIDs && ''+player.id) || '•' }}</span>
-						<div flex="" class="mpPausePlayerRowName" ng-style="
+						<div flex class="mpPausePlayerRowName" ng-style="
 						{
 							'color': player.color
 						}

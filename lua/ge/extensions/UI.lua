@@ -169,18 +169,18 @@ local function updateQueue( spawnCount, editCount, queuedPlayers)
 
 	if UIqueue.show then
 		--log('D', 'queueNotification', 'Creating queue message')
-		guihooks.trigger('Message', {
-			msg = string.format(
+		ui_message(string.format(
 				MPTranslate('ui.multiplayer.queuedEvents', 'ui.multiplayer.queuedEvents'),
 				(UIqueue.editCount or "?"),
 				(UIqueue.spawnCount or "?")
 			),
-			ttl = 60,
-			category = 'queuedEvents',
-			icon = 'carClock'
-		})
+			60,
+			"queuedEvents",
+			"carClock"
+		)
 	else
 		--log('D', 'queueNotification', 'Deleting queue message')
+		-- ui_message() doesn't support clearing message categories
 		guihooks.trigger('Message', {
 			category = 'queuedEvents',
 			clear = true
@@ -576,33 +576,36 @@ local function getCustomPlayerlistButtons()
     return customPlayerlistButtons
 end
 
+
 local pauseMenuModButtons = {}
--- Return the table of pause menu mod buttons
+
 local function getPauseMenuModButtons()
 	return pauseMenuModButtons
 end
+
 -- Send the list of pause menu mod buttons to UI
 local function sendPauseMenuModButtons()
 	guihooks.trigger('getPauseMenuModButtons', pauseMenuModButtons)
 end
--- Push a pause menu mod button to the table
+
 local function pushPauseMenuModButton(id, data)
 	pauseMenuModButtons[id] = {
 		text = data.text,
-		event = data.event,
+		lua = data.lua,
 		classList = data.classList
 	}
 	sendPauseMenuModButtons()
 end
--- Pop a pause menu mod button from the table
+
 local function popPauseMenuModButton(id)
 	pauseMenuModButtons[id] = nil
 	sendPauseMenuModButtons()
 end
--- Clear the pause menu mod button table
+
 local function clearPauseMenuModButtons()
 	pauseMenuModButtons = {}
 end
+
 
 M.updateLoading = updateLoading
 M.promptAutoJoinConfirmation = promptAutoJoinConfirmation

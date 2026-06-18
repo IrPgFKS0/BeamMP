@@ -28,7 +28,7 @@
 				</div>
 			</div>
 		</div>
-		<div flex="" style="max-height:none;margin-top:0.5em" ng-if="!(multiplayer.downloadingMods.length > 0)"></div>
+		<div flex style="max-height:none;margin-top:0.5em" ng-if="!(multiplayer.downloadingMods.length > 0)"></div>
 
 		<div style="height:fit-content;width:100%;margin-top:0.5em">
 		<button class="bng-button-attention close-button" ng-click="multiplayer.closeLoadingPopup()">
@@ -46,13 +46,13 @@
 		<center>
 			<div layout="column" style="display: flex; gap: 0.5em;">
 				<div class="serverListSearch">
-					<input flex="" class="bng-input mp-search" type="text" id="customFavName" name="customFavName" placeholder="Server name" value=""/>
+					<input flex class="bng-input mp-search" type="text" id="customFavName" name="customFavName" placeholder="Server name" value=""/>
 				</div>
 				<div class="serverListSearch">
-					<input flex="" class="bng-input mp-search" type="text" id="customFavIP" name="customFavIP" placeholder="Server IP" value=""/>
+					<input flex class="bng-input mp-search" type="text" id="customFavIP" name="customFavIP" placeholder="Server IP" value=""/>
 				</div>
 				<div class="serverListSearch">
-					<input flex="" class="bng-input mp-search" type="text" id="customFavPort" name="customFavPort" placeholder="Server port" value="30814"/>
+					<input flex class="bng-input mp-search" type="text" id="customFavPort" name="customFavPort" placeholder="Server port" value="30814"/>
 				</div>
 			</div>
 			<div layout="row" style="float:right; width:min-content">
@@ -108,7 +108,7 @@
  	box-sizing: border-box;
   	overflow-y: hidden;
 ">
-	<md-content id="back" layout="column">
+	<div id="back" layout="column">
 		<div id="top-bar" layout="row" class="" style="padding:0;">
 			<div class="bng-title-wrapper" style="font-size: 1.35em; padding-right: 0;">
 				<link type="text/css" rel="stylesheet" href="/ui/modules/atom/title/title.css" />
@@ -124,24 +124,14 @@
   					align-items: center;
   					line-height: 1.2em;
 				">
-					<!--<img src="/ui/modModules/multiplayer/beammp_new_cropped.png" style="margin: 0 0.25em; height: 1em;">-->
+					<!-- <img src="/ui/modModules/multiplayer/beammp_new_cropped.png" style="margin: 0 0.25em; height: 1em;"> -->
 					{{:: 'ui.multiplayer.multiplayer' | translate}}
 				</div>
 			</div>
-			<p id="topRightStatus" style="display:none; text-align: center;margin: 0 auto;position: absolute;width: 100%;color: white;">{{:: 'ui.multiplayer.patreon.message.user' | translate}}
-			<button class="" style="
-			display:none;
-			margin: 5px;
-			border: 2px solid;
-			border-radius: 5px;
-			padding: 2px 5px;
-			color: var(--bng-orange);
-			" ng-click="multiplayer.showMessage()"><span>{{:: 'ui.multiplayer.patreon.button.user' | translate}}</span></button></p>
-			<!--<button id="launcher-connect-button" class="button" ng-click="multiplayer.resetLauncherConnection()">Connect to launcher</button>-->
 		</div>
 
 		<div flex layout="row" style="overflow:auto;gap:0.5em;margin-left:0.5em;margin-bottom:0.5em;border-radius:var(--bng-corners-1)">
-			<md-content layout="column" id="left-menu">
+			<div layout="column" id="left-menu">
 				<div id="serverlist-categories" class="leftMenuGroups" style="display:none">
 					<button class="sidebar-buttons servers-btn bng-button-link bng-button-outline" id="-servers-btn" ng-click="switchServerView('')">
 					<img class="button-icon button-icon-filter" ng-src="{{getVueIconPath('globeSimplified')}}" />
@@ -179,7 +169,7 @@
 					</button>
 				</div>
 				
-				<div flex="" style="max-height: none;"></div>
+				<div flex style="max-height: none;"></div>
 
 				<md-divider></md-divider>
 
@@ -221,14 +211,14 @@
 							{{:: 'ui.multiplayer.logout' | translate}}
 					</button>
 				</div>
-			</md-content>
+			</div>
 
 			<div flex style="position: relative;margin-right: 0.5em;border-radius: var(--bng-corners-1);overflow: overlay;">
-				<md-content ui-view class="container" style="background: transparent; overflow: auto;"></md-content>
+				<div ui-view class="container" style="background: transparent; overflow: auto;"></div>
 			</div>
 		</div>
 		<div class="mp-fancy-blur" bng-blur="true"></div>
-	</md-content>
+	</div>
 	<div id="searchFiltersSidebar" layout="column" flex style="display: none;">
 		<div class="card-heading heading-style-ribbon" style="font-size: 1.5em; margin-left: calc(-1em / 3);">
 			{{:: 'ui.multiplayer.filterOptions' | translate}}
@@ -236,36 +226,34 @@
 		<button class="default-case bng-button-attention" style="min-height: fit-content;" id="clearFiltersButton" ng-click="resetSearchFilters()">
 			{{:: 'ui.multiplayer.clearFilters' | translate}}
 		</button>
-		<div id="searchFilters" style="
-		overflow-y: auto;
-		padding-right: 0.5em;
-  		scrollbar-gutter: stable;
-		">
-			<div class="card-heading heading-style-line" style="font-size: 1.25em;">
+		<div id="searchFilters">
+			<div class="card-heading heading-style-line">
 				Player Count
 			</div>
 			{{:: 'ui.debug.vehicle.visRangeMin' | translate}}
 			<div class="serverListSearch" style="margin: 0;">
-				<input flex="" class="bng-input mp-search" ng-model="multiplayer.playerCountMin" ng-change="updatePlayerCountRange();" type="text" value="0" id="playerCountMin" name="playerCountMin" placeholder="{{:: 'ui.debug.vehicle.visRangeMin' | translate}}" />
-				<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('arrowLargeDown')}} />
+				<input flex class="bng-input mp-search" ng-model="multiplayer.playerCountMin" ng-change="updatePlayerCountRange();" type="text" value="0" id="playerCountMin" name="playerCountMin"
+					placeholder="{{:: 'ui.debug.vehicle.visRangeMin' | translate}}"
+				/>
 			</div>
 			{{:: 'ui.debug.vehicle.visRangeMax' | translate}}
 			<div class="serverListSearch" style="margin: 0;">
-				<input flex="" class="bng-input mp-search" ng-model="multiplayer.playerCountMax" ng-change="updatePlayerCountRange();" type="text" id="playerCountMax" name="playerCountMax" placeholder="{{:: 'ui.debug.vehicle.visRangeMax' | translate}}" />
-				<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('arrowLargeUp')}} />
+				<input flex class="bng-input mp-search" ng-model="multiplayer.playerCountMax" ng-change="updatePlayerCountRange();" type="text" id="playerCountMax" name="playerCountMax"
+					placeholder="{{:: 'ui.debug.vehicle.visRangeMax' | translate}}"
+				/>
 			</div>
 
-			<div class="card-heading heading-style-line" style="font-size: 1.25em;">
+			<div class="card-heading heading-style-line">
 				{{:: 'ui.multiplayer.filters.modSize' | translate}}
 			</div>
 			<div class="md-slider-container" style="width: 100%; display: flex; justify-content: space-between;">
-				<md-slider flex ng-model="multiplayer.sliderMaxModSize" ng-change="updateMaxModSize();" min="0" max="100000" step="10" aria-label="_"></md-slider>
+				<md-slider flex ng-model="multiplayer.sliderMaxModSize" ng-change="updateMaxModSize();" min="0" max="107370" step="10" aria-label="_"></md-slider>
 				<span style="min-width: 4.25em; margin: 0px 15px; padding-top: 13px; color: white;">
 					{{ formatBytes(multiplayer.sliderMaxModSize * 1e+6) }}
 				</span>
 			</div>
 
-			<div class="card-heading heading-style-line" style="font-size: 1.25em;">
+			<div class="card-heading heading-style-line">
 				{{:: 'ui.multiplayer.filters.selectTags' | translate}}
 			</div>
 			<div class="searchFilterListContainer">
@@ -284,7 +272,7 @@
 				</button>
 			</div>
 
-			<div class="card-heading heading-style-line" style="font-size: 1.25em;">
+			<div class="card-heading heading-style-line">
 				{{:: 'ui.multiplayer.filters.selectVersions' | translate}}
 			</div>
 			<div class="searchFilterListContainer">
@@ -303,7 +291,7 @@
 				</button>
 			</div>
 
-			<div class="card-heading heading-style-line" style="font-size: 1.25em;">
+			<div class="card-heading heading-style-line">
 				{{:: 'ui.multiplayer.filters.selectServerLocations' | translate}}
 			</div>
 			<div class="searchFilterListContainer">
@@ -325,7 +313,7 @@
 				</button>
 			</div>
 
-			<div class="card-heading heading-style-line" style="font-size: 1.25em;">
+			<div class="card-heading heading-style-line">
 				{{:: 'ui.multiplayer.filters.selectMaps' | translate}}
 			</div>
 			<div class="searchFilterListContainer">
@@ -336,7 +324,7 @@
 				}"
 				ng-init="$last ? setSavedScrollPos() : null">
 					<div>
-						<img ng-if="officialMaps.includes(string)" ng-src="{{getVueIconPath('beamNG')}}" class="button-icon button-icon-filter tag-icon bnglogo" />
+						<img ng-if="officialMaps.includes(string)" ng-src="{{getVueIconPath('beamNG')}}" class="button-icon tag-icon bnglogo" />
 						<div ng-bind="string" style="display:inline;"></div>
 					</div>
 					<div style="display: inline;">
