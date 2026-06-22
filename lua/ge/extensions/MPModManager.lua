@@ -148,13 +148,22 @@ end
 --- Load the Servers mods, these are put in by the BeamMP Launcher
 local function loadServerMods()
 	log('W', 'loadServerMods', 'loadServerMods')
-	
+
 	local modsDir = FS:findFiles("/mods/multiplayer", "*.zip", -1, false, false)
-	for _, modPath in pairs(modsDir) do
-		core_modmanager.workOffChangedMod(modPath, 'added')
-	end
-	checkAllMods()
-	MPCoreNetwork.requestMap()
+
+    core_jobsystem.create(function(job)
+		local amount = #modsDir
+        local batchSize = 5
+		local core_modmanager_workOffChangedMod = core_modmanager.workOffChangedMod
+        for i = 1, amount, batchSize do
+            for j = i, math.min(i + batchSize - 1, amount) do
+                core_modmanager_workOffChangedMod(modsDir[j], 'added')
+            end
+            job.sleep(0)
+        end
+        checkAllMods()
+        MPCoreNetwork.requestMap()
+    end)
 end
 
 --- Verify that the servers mods have been loaded by the game.
