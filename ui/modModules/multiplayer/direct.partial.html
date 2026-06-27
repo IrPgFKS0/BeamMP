@@ -1,14 +1,14 @@
-<md-content style="background:none">
+<md-content style="background:none; position: relative;">
 	<div style="display:grid">
 		<div layout="row">
 			<div class="serverListSearch" style="margin:0">
-				<input flex="" class="bng-input mp-search" type="text" id="directip" name="ip" value="" placeholder="{{:: 'ui.multiplayer.direct_connect.server_ip' | translate}}" value=""/>
+				<input flex class="bng-input mp-search" type="text" id="directip" name="ip" value="" placeholder="{{:: 'ui.multiplayer.direct_connect.server_ip' | translate}}" value=""/>
 			</div>
 			<button class="bng-button-secondary" style="margin-top:0" ng-click="multiplayer.pasteClipboardToDirectIP()" bng-sound-class="bng_click_hover_generic">{{:: 'ui.multiplayer.pasteFromClipboard' | translate}}</button>
 		</div>
 		<div layout="row">
 			<div class="serverListSearch" style="margin:0">
-				<input flex="" class="bng-input mp-search" type="text" id="directport" name="port" value="" placeholder="{{:: 'ui.multiplayer.direct_connect.server_port' | translate}}" value=""/>
+				<input flex class="bng-input mp-search" type="text" id="directport" name="port" value="" placeholder="{{:: 'ui.multiplayer.direct_connect.server_port' | translate}}" value=""/>
 			</div>
 		</div>
 		<!--<input type="text" id="nickname" name="nickname" placeholder="Nickname"/>-->

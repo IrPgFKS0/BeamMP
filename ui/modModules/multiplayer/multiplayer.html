@@ -108,7 +108,7 @@
  	box-sizing: border-box;
   	overflow-y: hidden;
 ">
-	<div id="back" layout="column">
+	<div id="back" layout="column" style="position: relative;">
 		<div id="top-bar" layout="row" class="" style="padding:0;">
 			<div class="bng-title-wrapper" style="font-size: 1.35em; padding-right: 0;">
 				<link type="text/css" rel="stylesheet" href="/ui/modules/atom/title/title.css" />
@@ -213,8 +213,8 @@
 				</div>
 			</div>
 
-			<div flex style="position: relative;margin-right: 0.5em;border-radius: var(--bng-corners-1);overflow: overlay;">
-				<div ui-view class="container" style="background: transparent; overflow: auto;"></div>
+			<div flex style="margin-right: 0.5em;border-radius: var(--bng-corners-1);overflow: overlay;">
+				<div ui-view style="background: transparent; overflow: auto; height: 100%;"></div>
 			</div>
 		</div>
 		<div class="mp-fancy-blur" bng-blur="true"></div>

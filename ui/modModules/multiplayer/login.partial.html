@@ -2,23 +2,22 @@
 	display:flex;
 	align-items:center;
 	justify-content: center;
-	position:relative;
 	height:100%
 ">
 	<div id="MultiplayerLoginBody" class="centerPopup">
 		<img src="local://local/ui/modModules/multiplayer/beammp_new_cropped.png" style="height: 4em;" alt="BeamMP Logo">
 		<p class="text-red" style="text-align:center" id="LOGINERRORFIELD"></p>
-<!--
+
 		<form id="LoginContainer">
 			<h2 class="text-white" id="loginHeader">{{:: 'ui.multiplayer.loginDescription1' | translate}}</h2>
 			<div layout="column" class="loginInputs">
 				<p>{{:: 'ui.multiplayer.login.username' | translate}}</p>
 				<div class="serverListSearch">
-					<input flex="" class="bng-input mp-search" (keyup.enter)="multiplayer.login()" type="text" id="loginUsername" placeholder=""/>
+					<input flex class="bng-input mp-search" (keyup.enter)="multiplayer.login()" type="text" id="loginUsername" placeholder=""/>
 				</div>
 				<p>{{:: 'ui.multiplayer.login.password' | translate}}</p>
 				<div class="serverListSearch">
-					<input flex="" class="bng-input mp-search" (keyup.enter)="multiplayer.login()" type="password" id="loginPassword" placeholder=""/>
+					<input flex class="bng-input mp-search" (keyup.enter)="multiplayer.login()" type="password" id="loginPassword" placeholder=""/>
 				</div>
 			</div>
 			<div layout="row" flex class="loginButtons">
@@ -34,13 +33,13 @@
 				<button flex class="default-case bng-button-secondary" ng-click="guestLogin()" bng-sound-class="bng_click_hover_generic">{{:: 'ui.multiplayer.play' | translate}}</button>
 			</div>
 		</form>
--->
+<!--
 		<form id="LoginContainer">
 			<div style="width:100%;display:flex;align-content:center;flex-direction:column">
 				<h2 class="text-white" id="loginHeader">{{:: 'ui.multiplayer.loginDescription2temp' | translate}}</h2>
 				<button class="default-case bng-button-main" ng-click="guestLogin()">{{:: 'ui.multiplayer.playAsGuest' | translate}}</button>
 			</div>
 		</form>
-
+-->
 	</div>
 </div>

@@ -1,5 +1,5 @@
 
-<md-content id="serverListMainContainer" style="display: flex; flex-direction: column; height: 100%;">
+<md-content id="serverListMainContainer" style="display: flex; flex-direction: column; height: 100%; position: relative;">
 
 	<div id="serverListHeader" layout="row" layout-padding="">
 		<div class="serverListSearch">
@@ -32,7 +32,9 @@
 		<table id="serversTable">
 			<thead id="serversTableHead">
 				<tr id="header">
-					<th class="server-flag" ng-click="sortTable('location', false)">{{:: 'ui.multiplayer.location' | translate}}</th>
+					<th class="server-flag" ng-click="sortTable('location', false)">
+						<span>{{:: 'ui.multiplayer.location' | translate}}</span>
+					</th>
 					<th class="server-servername" ng-click="sortTable('strippedName', false)">{{:: 'ui.multiplayer.description' | translate}}</th>
 					<th class="server-mapname" ng-click="sortTable('map', false)" style="min-width: 200px;">{{:: 'ui.multiplayer.map' | translate}}</th>
 					<th class="server-maxplayers" ng-click="sortTable('players', true)">{{:: 'ui.multiplayer.players' | translate}}</th>
