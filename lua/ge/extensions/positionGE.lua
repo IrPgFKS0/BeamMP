@@ -105,7 +105,14 @@ local function refreshFlags()
 	physRateSend = (settings and settings.getValue("physicsRateSend")) and true or false
 	mailboxOn = (settings and settings.getValue("mailboxApplyPos")) and true or false
 	fastPredictOn = (settings and settings.getValue("fastPredict")) and true or false
-	local sendHz = tonumber(settings and settings.getValue("physRateSendHz")) or 100
+	local sendHz = tonumber(settings and settings.getValue("physRateSendHz")) or 30
+	-- The 100Hz UI option was removed (it oversubscribes the relay with 2+ players -> growing
+	-- latency). Clamp + migrate any saved value above the new 60Hz ceiling down to the 30Hz default,
+	-- and write it back so the dropdown doesn't show a blank (orphaned) selection.
+	if sendHz > 60 then
+		sendHz = 30
+		if settings and settings.setValue then settings.setValue("physRateSendHz", 30) end
+	end
 	-- Sync mode -> tracked-vehicle hold. smooth/accurate are fixed; auto leaves syncAggressive to
 	-- the FPS watcher (onPreRender) and just pushes the current value here.
 	syncModeCfg = tostring((settings and settings.getValue("syncMode")) or "smooth")

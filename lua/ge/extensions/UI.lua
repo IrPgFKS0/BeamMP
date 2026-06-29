@@ -516,6 +516,15 @@ local function chatSend(msg)
 		if MPConfig and MPConfig.printMpState then MPConfig.printMpState() end
 		return
 	end
+	if cmd == "/synclog" then
+		local on = not (settings.getValue("logSyncStats") == true)
+		settings.setValue("logSyncStats", on)
+		guihooks.trigger('toastrMsg', { type = "info", title = "BeamMP sync log",
+			msg = on and "Sync-health logging ON -- writes one line to beamng.log every ~15s; grab it with /savelogs"
+			           or "Sync-health logging OFF",
+			config = { timeOut = 4500 } })
+		return
+	end
 	local c = 'C:'..MPConfig.getNickname()..": "..msg
 	MPGameNetwork.send(c)
 	TriggerClientEvent("ChatMessageSent", c)

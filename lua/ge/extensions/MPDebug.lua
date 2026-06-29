@@ -263,13 +263,15 @@ end
 --- packet/byte rates. Toggle via the "showSyncStats" setting (Options >
 --- Multiplayer > "Show sync stats overlay"). Cheap: one tiny imgui window/frame.
 local function drawSyncStatsOverlay(dt)
-	if not settings.getValue("showSyncStats") then return end
+	local showOverlay = settings.getValue("showSyncStats") == true
+	local logStats = settings.getValue("logSyncStats") == true
+	if not showOverlay and not logStats then return end
 	ov.timer = ov.timer + (dt or 0)
 	ov.frames = (ov.frames or 0) + 1
 
 	-- Reset the peak/persistent trackers whenever the send rate is changed, so each tuning step
 	-- (e.g. dropping to 30Hz) gets a fresh "is it still bad?" window instead of carrying old history.
-	local hz = tonumber(settings.getValue("physRateSendHz")) or 100
+	local hz = tonumber(settings.getValue("physRateSendHz")) or 30
 	if hz ~= ov.lastHz then
 		ov.lastHz = hz
 		ov.applyPeak, ov.applyWorst, ov.applyBadTime = 0, nil, 0
@@ -317,15 +319,32 @@ local function drawSyncStatsOverlay(dt)
 			ov.driftBadTime = (ov.driftBadTime or 0) + 1
 			ov.driftWorst = math.max(ov.driftWorst or 0, md or 0)
 		end
+		-- Optional log trail (/synclog -> logSyncStats): mirror this health line to beamng.log every
+		-- ~15s so a /savelogs after an intermittent drift episode captures what the overlay was showing
+		-- over time. Runs even with the overlay hidden; off by default.
+		if logStats then
+			ov.logTimer = (ov.logTimer or 0) + 1
+			if ov.logTimer >= 15 then
+				ov.logTimer = 0
+				log('I', 'mpSyncHealth', string.format(
+					"%d synced | drift %.1fm, %d heals | in %d pkt/s %.1f KB/s, out %d pkt/s %.1f KB/s | applied %d/s | FPS %d",
+					synced, ov.driftM or 0, ov.healTotal or 0,
+					ov.recvRate or 0, ov.recvKB or 0, ov.sentRate or 0, ov.sentKB or 0,
+					ov.applyRate or 0, ov.fps or 0))
+			end
+		end
 		ov.timer = ov.timer - 1.0
 	end
 
+	if not showOverlay then return end -- /synclog can run with the overlay hidden; nothing more to draw
+
 	ov.RED = ov.RED or im.ImVec4(1.0, 0.35, 0.35, 1.0)
-	im.SetNextWindowBgAlpha(0.35)
-	im.SetNextWindowPos(im.ImVec2(14, 90), im.Cond_Always)
+	im.SetNextWindowBgAlpha(0.7) -- darker / more opaque backdrop for readability (was 0.35); tweak 0.0-1.0
+	-- FirstUseEver (not Always) so (14,90) is just the INITIAL spot -- the user can then drag the panel
+	-- (NoMove + NoInputs removed) and imgui remembers where they put it. Drag anywhere on the body.
+	im.SetNextWindowPos(im.ImVec2(14, 90), im.Cond_FirstUseEver)
 	im.Begin("BeamMPSyncStats", nil, bit.bor(im.WindowFlags_NoTitleBar, im.WindowFlags_NoResize,
-		im.WindowFlags_NoMove, im.WindowFlags_AlwaysAutoResize, im.WindowFlags_NoInputs,
-		im.WindowFlags_NoNav, im.WindowFlags_NoFocusOnAppearing))
+		im.WindowFlags_AlwaysAutoResize, im.WindowFlags_NoNav, im.WindowFlags_NoFocusOnAppearing))
 	im.Text(string.format("Synced vehicles: %d   (send %d Hz)", synced, hz))
 	im.Text(string.format("Net in:  %d pkt/s  (%.1f KB/s)", ov.recvRate, ov.recvKB))
 	im.Text(string.format("Net out: %d pkt/s  (%.1f KB/s)", ov.sentRate, ov.sentKB))
@@ -350,7 +369,7 @@ local function drawSyncStatsOverlay(dt)
 
 	if ov.applyBad then im.TextColored(ov.RED, ">> relay starving: lower 'Position send rate'") end
 	if ov.fpsBad then im.TextColored(ov.RED, ">> FPS spike: enable 'Low-GC predictor' (fastPredict)") end
-	if ov.driftBad then im.TextColored(ov.RED, ">> ghost drifting/correcting: cut AI/traffic count or raise 'Position send rate'") end
+	if ov.driftBad then im.TextColored(ov.RED, ">> ghost drifting/correcting: cut AI/traffic count or LOWER 'Position send rate' (overload, not too-low a rate)") end
 	im.End()
 end
 

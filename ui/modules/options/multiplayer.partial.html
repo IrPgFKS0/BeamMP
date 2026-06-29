@@ -93,17 +93,16 @@
 <!-- Recommended LAN defaults (on) ----------------------------------------- -->
 <md-list-item md-no-ink ng-show="options.data.values.showAdvancedMPOptions">
   <p><span class="mp-setting-highlight">EXPERIMENTAL</span> Physics-rate position send (LAN) <span class="mp-setting-default">(default: on)</span></p>
-  <md-tooltip md-direction="right">Sends your own car's position from the physics step (~100Hz) instead of once per render frame, so a low-FPS machine still emits fresh data to others. Helps remote-car accuracy when FPS is below the 100Hz target; slightly more outbound traffic. On by default for LAN -- toggle off here if needed.</md-tooltip>
+  <md-tooltip md-direction="right">Sends your own car's position from the physics step (at the Position send rate below) instead of once per render frame, so a low-FPS machine still emits fresh data to others. Helps remote-car accuracy when your FPS is below that rate; slightly more outbound traffic. On by default for LAN -- toggle off here if needed.</md-tooltip>
   <md-checkbox ng-model="options.data.values.physicsRateSend" ng-change="options.applyState()"></md-checkbox>
 </md-list-item>
 
 <md-list-item md-no-ink ng-show="options.data.values.showAdvancedMPOptions">
-  <p>Position send rate (LAN) <span class="mp-setting-default">(default: 100 Hz)</span></p>
-  <md-tooltip md-direction="right">How often your car broadcasts its position (when Physics-rate send is on). The server relays BOTH players' streams through one path -- if both push 100 Hz and you see cars drift while CPU stays low, that relay is the bottleneck, so dial this DOWN until both streams fit. 10 Hz is stock BeamMP. Applies live; lower = steadier under a loaded relay but choppier per car, so tune back up until drift returns.</md-tooltip>
+  <p>Position send rate (LAN) <span class="mp-setting-default">(default: 30 Hz)</span></p>
+  <md-tooltip md-direction="right">How often your car broadcasts its position (when Physics-rate send is on). The server relays every player's stream through one path that caps near ~150 packets/sec total, so ~60 Hz is the practical ceiling with 2 players (less with more) -- 100 Hz oversubscribes it and was removed. The remote predictor interpolates between updates, so 30 Hz already looks smooth; 10 Hz is stock BeamMP. Applies live; raise it only if cars look choppy AND no drift creeps in.</md-tooltip>
   <md-select aria-label="Position send rate" ng-model="options.data.values.physRateSendHz" ng-change="options.applyState()">
-    <md-option md-no-ink ng-value="100">100 Hz (LAN default)</md-option>
-    <md-option md-no-ink ng-value="60">60 Hz</md-option>
-    <md-option md-no-ink ng-value="30">30 Hz</md-option>
+    <md-option md-no-ink ng-value="60">60 Hz (2-player max)</md-option>
+    <md-option md-no-ink ng-value="30">30 Hz (LAN default)</md-option>
     <md-option md-no-ink ng-value="10">10 Hz (stock BeamMP)</md-option>
   </md-select>
 </md-list-item>

@@ -54,7 +54,10 @@ local function broadcastFire(gameVehicleID, state)
 	local active = 0
 	local ok, pv = pcall(function() return be:getPlayerVehicle(0) end)
 	if ok and pv and pv:getID() == gameVehicleID then active = 1 end
-	MPGameNetwork.send("BF:"..serverVehicleID..":"..(state == 1 and "1" or "0")..":"..active)
+	-- state: 1 = start firing, 0 = stop, 2 = one ACTUAL shot ("s"). Gated/slower guns (turret only
+	-- firing when aimed, etc.) stream a 2 per real round so the remote matches the source's cadence.
+	local code = (state == 1 and "1") or (state == 2 and "s") or "0"
+	MPGameNetwork.send("BF:"..serverVehicleID..":"..code..":"..active)
 end
 
 --- RECEIVER side: set the remote ghost's fire flag (its UniversalWeapons controller runs the fire
@@ -62,10 +65,11 @@ end
 --- forever. Payload is "<serverVehicleID>:<0|1>". No-op on our own car or if not found / no mod.
 local function handleFire(payload)
 	if not MPVehicleGE then return end
-	-- "<sid>:<state>:<active>" (h11). Fall back to the 2-field h9/h10 form (active=0) for safety.
-	local serverVehicleID, state, active = tostring(payload):match("^(%d+%-%d+):([01]):([01])$")
+	-- "<sid>:<state>:<active>"  state = 1 start / 0 stop / s one ACTUAL shot. Fall back to the 2-field
+	-- h9/h10 form (active=0) for safety.
+	local serverVehicleID, state, active = tostring(payload):match("^(%d+%-%d+):([01s]):([01])$")
 	if not serverVehicleID then
-		serverVehicleID, state = tostring(payload):match("^(%d+%-%d+):([01])$"); active = "0"
+		serverVehicleID, state = tostring(payload):match("^(%d+%-%d+):([01s])$"); active = "0"
 	end
 	if not serverVehicleID then return end
 	local vinfo = MPVehicleGE.getVehicles and MPVehicleGE.getVehicles()[serverVehicleID]
@@ -73,10 +77,15 @@ local function handleFire(payload)
 	local gameVehicleID = MPVehicleGE.getGameVehicleID and MPVehicleGE.getGameVehicleID(serverVehicleID)
 	local vobj = gameVehicleID and be:getObjectByID(gameVehicleID)
 	if vobj then
+		-- full physics projectiles if the owner is driving this car, OR we opted into full for all
+		local full = (active == "1" or settings.getValue("remoteFullProjectiles") == true) and 1 or 0
 		if state == "1" then
-			-- full physics projectiles if the owner is driving this car, OR we opted into full for all
-			local full = (active == "1" or settings.getValue("remoteFullProjectiles") == true) and 1 or 0
 			vobj:queueLuaCommand("if electrics then electrics.values.uw_remoteFire = 1; electrics.values.uw_remoteFireExpiry = 1.5; electrics.values.uw_fullProjectiles = "..full.." end")
+		elseif state == "s" then
+			-- one shot the owner just fired: the ghost replays exactly this round (cadence-accurate for
+			-- gated/slower guns). Also refreshes the fire window so the loop/muzzle sound stays on between
+			-- shots without depending on the separate 0.5s keepalive.
+			vobj:queueLuaCommand("if electrics then electrics.values.uw_remoteFireShot = (electrics.values.uw_remoteFireShot or 0) + 1; electrics.values.uw_remoteFire = 1; electrics.values.uw_remoteFireExpiry = 1.5; electrics.values.uw_fullProjectiles = "..full.." end")
 		else
 			vobj:queueLuaCommand("if electrics then electrics.values.uw_remoteFire = 0; electrics.values.uw_remoteFireExpiry = 0 end")
 		end
