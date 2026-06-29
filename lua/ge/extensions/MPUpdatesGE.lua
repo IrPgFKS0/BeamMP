@@ -12,30 +12,54 @@
 local M = {}
 
 
--- Tickrate - how often data is being sent from the client, in seconds
+-- Tickrate - how often data is being sent from the client, in seconds.
+-- LAN-only build: these are cranked up for aggressive, low-latency sync. On a
+-- LAN there is effectively unlimited bandwidth and sub-millisecond latency, so
+-- we send far more often than the stock (internet-tuned) values. The effective
+-- rate is still capped by the game's frame rate, since onUpdate() runs once per
+-- rendered frame -- e.g. position can only truly hit 100 Hz at >=100 FPS.
 local nodesTimer = 0
-local nodesTickrate = 1/15
+local nodesTickrate = 1/30      -- stock 1/15  (break groups: which parts detached)
+
+-- EXPERIMENTAL (LAN-only build): full soft-body deformation sync.
+-- The normal nodes tick above only syncs break groups; fine dents/crumple are
+-- re-simulated locally and drift between clients. This separate, deliberately
+-- LOW rate broadcasts the entire node/beam state so deformation converges on
+-- all clients. It is heavy (CPU to serialize every node/beam, and forcibly
+-- setting node positions on the receiver can cause slight "popping"). 2 Hz is a
+-- conservative start -- raise for closer matching, lower (or comment the call
+-- in onUpdate) to reduce cost / disable entirely.
+local fullNodesTimer = 0
+local fullNodesTickrate = 1/2   -- 2 Hz
 
 local positionTimer = 0
-local positionTickrate = 0.020
+local positionTickrate = 1/100  -- stock 0.020 (50 Hz) -> 100 Hz
+
+-- Non-driven owned vehicles (AI/traffic/parked) are sent at this LOW fixed rate, decoupled
+-- from the driven car's physRateSendHz. Before this they streamed at the full position tick
+-- (~FPS 60-90Hz) because physRateSendHz only throttled the driven car -- N spawned vehicles
+-- then flooded the relay (~370 pos/s with 7 cars) and starved every ghost into drift. The
+-- driven car is unaffected (full rate); only the extras ride this. Raise/lower to taste.
+local trafficTimer = 0
+local trafficTickrate = 1/12    -- 12 Hz for non-driven owned vehicles
 
 local inputsTimer = 0
-local inputsTickrate = 1/30
+local inputsTickrate = 1/60     -- stock 1/30
 
 local electricsTimer = 0
-local electricsTickrate = 1/15
+local electricsTickrate = 1/30  -- stock 1/15
 
 local powertrainTimer = 0
-local powertrainTickrate = 1/10
+local powertrainTickrate = 1/20 -- stock 1/10
 
 local controllerTimer = 0
-local controllerTickrate = 1/15
+local controllerTickrate = 1/30 -- stock 1/15
 
  -- This doesn't do anything because the data isn't queued on the receiving end
 local function onPlayerConnect()
 	MPElectricsGE.tick()
 	nodesGE.tick()
-	positionGE.tick()
+	positionGE.tick(true) -- one-shot: include non-driven owned vehicles
 	MPInputsGE.tick()
 	MPPowertrainGE.tick()
 end
@@ -52,10 +76,28 @@ local function onUpdate(dt)
 			nodesGE.tick() -- Comment this line to disable nodes synchronization
 		end
 
+		-- EXPERIMENTAL: full deformation sync. Toggle in-game under
+		-- Options > Multiplayer > "Full damage/deformation sync" (requires the
+		-- advanced options checkbox enabled). Off by default.
+		if settings.getValue("syncFullDeformation") then
+			fullNodesTimer = fullNodesTimer + dt
+			if fullNodesTimer >= fullNodesTickrate then
+				fullNodesTimer = (fullNodesTimer - fullNodesTickrate) % fullNodesTickrate
+				nodesGE.fullTick()
+			end
+		end
+
 		positionTimer = positionTimer + dt
+		trafficTimer = trafficTimer + dt
 		if positionTimer >= positionTickrate then
 			positionTimer = (positionTimer - positionTickrate) % positionTickrate
-			positionGE.tick() -- Comment this line to disable position synchronization
+			-- Non-driven owned vehicles ride trafficTickrate, not the per-frame position tick.
+			local sendTraffic = false
+			if trafficTimer >= trafficTickrate then
+				trafficTimer = (trafficTimer - trafficTickrate) % trafficTickrate
+				sendTraffic = true
+			end
+			positionGE.tick(sendTraffic) -- Comment this line to disable position synchronization
 		end
 
 		inputsTimer = inputsTimer + dt

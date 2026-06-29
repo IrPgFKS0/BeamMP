@@ -12,6 +12,28 @@
   <md-checkbox ng-model="options.data.values.showAdvancedMPOptions" ng-change="options.applyState()"></md-checkbox>
 </md-list-item>
 
+<md-list-item md-no-ink>
+  <p>Auto-spawn car on join (LAN) <span class="mp-setting-default">(default: Off)</span></p>
+  <md-tooltip md-direction="right">Automatically spawn a car when you join a server, so you don't have to pick one each time. "Last used" remembers the car you spawned last (across sessions). Set your preferred default via the vehicle menu's "Set as default".</md-tooltip>
+  <md-select aria-label="Auto-spawn car on join" ng-model="options.data.values.autoSpawnMode" ng-change="options.applyState()">
+    <md-option md-no-ink ng-value="0">Off</md-option>
+    <md-option md-no-ink ng-value="1">Default car</md-option>
+    <md-option md-no-ink ng-value="2">Last used car</md-option>
+  </md-select>
+</md-list-item>
+
+<md-list-item md-no-ink>
+  <p><span class="mp-setting-debug">DEBUG</span> Show sync stats overlay (LAN) <span class="mp-setting-default">(default: off)</span></p>
+  <md-tooltip md-direction="right">Tiny on-screen overlay showing the number of synced (remote) vehicles and live network packet/byte rates in and out. Handy for spotting sync load while testing.</md-tooltip>
+  <md-checkbox ng-model="options.data.values.showSyncStats" ng-change="options.applyState()"></md-checkbox>
+</md-list-item>
+
+<md-list-item md-no-ink>
+  <p>Allow other players' AI cars to chase me (LAN) <span class="mp-setting-default">(default: off)</span></p>
+  <md-tooltip md-direction="right">Consent toggle. OFF (default): another player's AI/weapon-mod pursuit cars will NOT lock onto you, even when you're their nearest target. ON: you volunteer as a target, so their "Chase" cars can come after you when you're nearest. This does NOT affect your OWN cars -- you can always spawn AI/weapon cars and pick "Chase" in BeamNG's AI radial; they'll hunt yourself plus any remote player who has turned this on (and "Stop"/"Park" disengages + stops their guns).</md-tooltip>
+  <md-checkbox ng-model="options.data.values.allowRemoteAIChase" ng-change="options.applyState()"></md-checkbox>
+</md-list-item>
+
 <!--
 <md-list-item md-no-ink ng-show="options.data.values.showAdvancedMPOptions">
 <p><span class="mp-setting-highlight">{{:: 'ui.options.multiplayer.experimental' | translate }}</span> {{:: 'ui.options.multiplayer.disableLuaReload' |
@@ -63,13 +85,105 @@
   <md-checkbox ng-model="options.data.values.enableNewChatMenu" ng-change="options.applyState()"></md-checkbox>
 </md-list-item>
 
+<md-divider></md-divider>
+<md-list-item layout="column" layout-align="start start" ng-show="options.data.values.showAdvancedMPOptions">
+  <p><h3>LAN &#8212; position sync &amp; performance</h3></p>
+</md-list-item>
+
+<!-- Recommended LAN defaults (on) ----------------------------------------- -->
+<md-list-item md-no-ink ng-show="options.data.values.showAdvancedMPOptions">
+  <p><span class="mp-setting-highlight">EXPERIMENTAL</span> Physics-rate position send (LAN) <span class="mp-setting-default">(default: on)</span></p>
+  <md-tooltip md-direction="right">Sends your own car's position from the physics step (~100Hz) instead of once per render frame, so a low-FPS machine still emits fresh data to others. Helps remote-car accuracy when FPS is below the 100Hz target; slightly more outbound traffic. On by default for LAN -- toggle off here if needed.</md-tooltip>
+  <md-checkbox ng-model="options.data.values.physicsRateSend" ng-change="options.applyState()"></md-checkbox>
+</md-list-item>
+
+<md-list-item md-no-ink ng-show="options.data.values.showAdvancedMPOptions">
+  <p>Position send rate (LAN) <span class="mp-setting-default">(default: 100 Hz)</span></p>
+  <md-tooltip md-direction="right">How often your car broadcasts its position (when Physics-rate send is on). The server relays BOTH players' streams through one path -- if both push 100 Hz and you see cars drift while CPU stays low, that relay is the bottleneck, so dial this DOWN until both streams fit. 10 Hz is stock BeamMP. Applies live; lower = steadier under a loaded relay but choppier per car, so tune back up until drift returns.</md-tooltip>
+  <md-select aria-label="Position send rate" ng-model="options.data.values.physRateSendHz" ng-change="options.applyState()">
+    <md-option md-no-ink ng-value="100">100 Hz (LAN default)</md-option>
+    <md-option md-no-ink ng-value="60">60 Hz</md-option>
+    <md-option md-no-ink ng-value="30">30 Hz</md-option>
+    <md-option md-no-ink ng-value="10">10 Hz (stock BeamMP)</md-option>
+  </md-select>
+</md-list-item>
+
+<md-list-item md-no-ink ng-show="options.data.values.showAdvancedMPOptions">
+  <p>Remote sync mode (LAN) <span class="mp-setting-default">(default: Smooth)</span></p>
+  <md-tooltip md-direction="right">How remote vehicles are corrected toward their synced position. SMOOTH = stock-like: no extra hold on heavy/tracked vehicles, and the self-heal only catches truly-frozen ghosts, so motion is smoothest (slightly laggier) -- closest to stock BeamMP feel. ACCURATE = a firmer hold on tanks/heavy vehicles (tighter, but can micro-jitter on an erratic vehicle). AUTO = adapt to your frame rate: firm when FPS is high, smooth when it drops (e.g. a heavy scene or crash). Applies live.</md-tooltip>
+  <md-select aria-label="Remote sync mode" ng-model="options.data.values.syncMode" ng-change="options.applyState()">
+    <md-option md-no-ink ng-value="'smooth'">Smooth (stock-like)</md-option>
+    <md-option md-no-ink ng-value="'auto'">Auto (adapt to FPS)</md-option>
+    <md-option md-no-ink ng-value="'accurate'">Accurate (firm hold)</md-option>
+  </md-select>
+</md-list-item>
+
+<md-list-item md-no-ink ng-show="options.data.values.showAdvancedMPOptions">
+  <p><span class="mp-setting-highlight">EXPERIMENTAL</span> Mailbox position apply (LAN) <span class="mp-setting-default">(default: on)</span></p>
+  <md-tooltip md-direction="right">Delivers incoming positions from the game engine to each vehicle via the engine mailbox instead of compiling a Lua command per packet -- lower CPU/GC on the receive side. On by default for LAN (A/B verified ~25-40% cheaper apply); toggle off here if needed.</md-tooltip>
+  <md-checkbox ng-model="options.data.values.mailboxApplyPos" ng-change="options.applyState()"></md-checkbox>
+</md-list-item>
+
+<md-list-item md-no-ink ng-show="options.data.values.showAdvancedMPOptions">
+  <p>Optimize map markers (LAN) <span class="mp-setting-default">(default: on)</span></p>
+  <md-tooltip md-direction="right">Disables BeamNG's per-frame mission/POI marker processing while in a multiplayer session -- a known FPS sink that's useless for LAN driving (you can't start singleplayer missions in MP anyway). Restored automatically when you leave. Applied on join, so toggle it then rejoin to compare. Leave on unless you specifically want vanilla freeroam markers.</md-tooltip>
+  <md-checkbox ng-model="options.data.values.optimizeMapMarkers" ng-change="options.applyState()"></md-checkbox>
+</md-list-item>
+
+<!-- Opt-in performance (per machine, off by default) ----------------------- -->
+<md-list-item md-no-ink ng-show="options.data.values.showAdvancedMPOptions">
+  <p><span class="mp-setting-highlight">EXPERIMENTAL</span> Low-GC predictor (LAN) <span class="mp-setting-default">(default: off)</span></p>
+  <md-tooltip md-direction="right">Runs the remote-vehicle motion predictor with reused math buffers instead of allocating ~20 temporary vectors per frame per car, reducing garbage-collection stutter. Mathematically identical to the normal path, which stays as the fallback. UNVERIFIED -- enable it on one machine, drive with another player, and watch remote cars closely for any warping or jitter; toggle off instantly if you see any. Applies live (no rejoin needed).</md-tooltip>
+  <md-checkbox ng-model="options.data.values.fastPredict" ng-change="options.applyState()"></md-checkbox>
+</md-list-item>
+
+<!-- Situational / heavy (off by default) ----------------------------------- -->
+<md-list-item md-no-ink ng-show="options.data.values.showAdvancedMPOptions">
+  <p><span class="mp-setting-highlight">EXPERIMENTAL</span> Full damage/deformation sync (LAN) <span class="mp-setting-default">(default: off)</span></p>
+  <md-tooltip md-direction="right">Continuously broadcasts full soft-body node/beam deformation so crash damage matches closely on all clients, instead of only syncing which parts broke off. Heavy on CPU/bandwidth and may cause slight visual "popping"; intended for LAN. Off by default.</md-tooltip>
+  <md-checkbox ng-model="options.data.values.syncFullDeformation" ng-change="options.applyState()"></md-checkbox>
+</md-list-item>
+
+<md-list-item md-no-ink ng-show="options.data.values.showAdvancedMPOptions">
+  <p>Full weapon projectiles on remote cars (LAN) <span class="mp-setting-default">(default: off)</span></p>
+  <md-tooltip md-direction="right">A weapon car another player is DRIVING already fires full physics projectiles on your screen. This also makes SPAWNED / AI weapon cars fire full physics projectiles instead of just a muzzle flash + sound -- accurate, but CPU-heavy when lots of guns fire at once. Enable only if every machine has CPU headroom.</md-tooltip>
+  <md-checkbox ng-model="options.data.values.remoteFullProjectiles" ng-change="options.applyState()"></md-checkbox>
+</md-list-item>
+
 <md-list-item md-no-ink ng-show="options.data.values.showAdvancedMPOptions">
   <p><span class="mp-setting-highlight">EXPERIMENTAL</span> {{:: 'ui.options.multiplayer.enablePosSmoother' |
-    translate }}</p>
+    translate }} <span class="mp-setting-default">(default: off &#8212; leave off on LAN)</span></p>
   <md-tooltip md-direction="right">{{:: 'ui.options.multiplayer.enablePosSmoother.tooltip' | translate }}
   </md-tooltip>
   <md-checkbox ng-model="options.data.values.enablePosSmoother" ng-change="options.applyState()"></md-checkbox>
 </md-list-item>
+
+<!-- Debug ------------------------------------------------------------------ -->
+<md-list-item md-no-ink ng-show="options.data.values.showAdvancedMPOptions">
+  <p><span class="mp-setting-debug">DEBUG</span> Profile position sync (LAN) <span class="mp-setting-default">(default: off)</span></p>
+  <md-tooltip md-direction="right">Logs avg/max/rate timing of the position hot path (applyPos on GE; setVehiclePosRot/updateGFX on VE) to beamng.log every ~5s. For performance debugging &#8212; grep the log for "posProf". Turning this OFF auto-zips the logs (see below). Off by default.</md-tooltip>
+  <md-checkbox ng-model="options.data.values.profilePosSync" ng-change="options.applyState()"></md-checkbox>
+</md-list-item>
+
+<md-list-item md-no-ink ng-show="options.data.values.showAdvancedMPOptions">
+  <p><span class="mp-setting-debug">DEBUG</span> Auto-collect logs when profiling stops (LAN) <span class="mp-setting-default">(default: on)</span></p>
+  <md-tooltip md-direction="right">When you turn "Profile position sync" OFF, the beamng.log files (current + rotations) are automatically zipped into the log-bundle folder below -- so a profiling capture is never missed and is always bundled correctly. A toast shows the exact path of the zip.</md-tooltip>
+  <md-checkbox ng-model="options.data.values.autoCollectProfLogs" ng-change="options.applyState()"></md-checkbox>
+</md-list-item>
+
+<md-list-item md-no-ink ng-show="options.data.values.showAdvancedMPOptions">
+  <p><span class="mp-setting-debug">DEBUG</span> Log-bundle folder <span class="mp-setting-default">(under the BeamNG user folder)</span></p>
+  <md-tooltip md-direction="right">Folder name (under your BeamNG user folder) where the zipped log bundle is written. The game can only write inside the user folder, so this is a subfolder there; the success toast shows the full real path so you know exactly where to grab it.</md-tooltip>
+  <input type="text" ng-model="options.data.values.profLogFolder" ng-change="options.applyState()" placeholder="BeamMP_logs" aria-label="Log bundle folder" style="width: 220px; height: 34px; margin: 0; padding: 4px 8px; background: rgba(0,0,0,0.25); color: white; border: 1px solid rgba(0,0,0,0.5); border-radius: 4px;" />
+</md-list-item>
+
+<md-list-item md-no-ink ng-show="options.data.values.showAdvancedMPOptions">
+  <p><span class="mp-setting-debug">DEBUG</span> Save all logs (zip)</p>
+  <md-tooltip md-direction="right">Same as the in-game /savelogs command: bundles BeamNG + BeamMP + launcher logs (and the server log/state if the server runs on this PC) into one zip in your BeamMP Launcher folder. Also writes a local beamng.log zip in the folder above as a fallback.</md-tooltip>
+  <md-button class="md-raised" ng-click="options.data.values.saveLogsAction = true; options.applyState()">Save all logs (zip)</md-button>
+</md-list-item>
+
+<md-divider></md-divider>
 
 <md-list-item md-no-ink>
   <p>{{:: 'ui.options.multiplayer.skipModSecurityWarning' | translate }}</p>
@@ -83,7 +197,7 @@
   <md-select aria-label="_" ng-model="options.data.values.playerlistLeftclick" ng-change="options.applyState()">
     <md-option md-no-ink ng-value="0">{{:: 'ui.apps.multiplayer.playerlist.queueEvents' | translate }}</md-option>
     <md-option md-no-ink ng-value="1">{{:: 'ui.apps.multiplayer.playerlist.switchCameraTo' | translate }}</md-option>
-    <md-option md-no-ink ng-value="2">{{:: 'ui.apps.multiplayer.playerlist.openProfile' | translate }}</md-option>
+    <!-- LAN fork: "open profile" (value 2) removed - it opens the online BeamMP forum, which this fork does not use. -->
     <md-option md-no-ink ng-value="3">{{:: 'ui.apps.multiplayer.playerlist.deleteAllVehicles' | translate }}</md-option>
     <md-option md-no-ink ng-value="4">{{:: 'ui.apps.multiplayer.playerlist.restoreVehicles' | translate }}</md-option>
     <md-option md-no-ink ng-value="5">{{:: 'ui.apps.multiplayer.playerlist.copyname' | translate }}</md-option>
@@ -170,11 +284,9 @@
   <md-checkbox ng-model="options.data.values.showPlayerIDs" ng-change="options.applyState()"></md-checkbox>
 </md-list-item>
 
-<md-list-item md-no-ink>
-  <p>{{:: 'ui.options.multiplayer.refreshIngame' | translate }}</p>
-  <md-tooltip md-direction="right">{{:: 'ui.options.multiplayer.refreshIngame.tooltip' | translate }}</md-tooltip>
-  <md-checkbox ng-model="options.data.values.refreshIngame" ng-change="options.applyState()"></md-checkbox>
-</md-list-item>
+<!-- LAN fork: "refresh server list in-game" removed - it polls the online BeamMP
+     server list, which this fork does not use (servers are reached via Direct
+     Connect / Favorites). -->
 
 <md-divider></md-divider>
 <md-list-item layout="column" layout-align="start start"><p><h3>{{:: 'ui.options.multiplayer.unicycleTitle' | translate }}</h3></p></md-list-item>

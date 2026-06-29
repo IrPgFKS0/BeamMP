@@ -50,6 +50,7 @@ local function connectToLauncher()
 		if not TCPLauncherSocket then
 			TCPLauncherSocket = socket.tcp()
 			TCPLauncherSocket:setoption("keepalive", true)
+			TCPLauncherSocket:setoption("tcp-nodelay", true) -- LAN build: no Nagle, flush game data to the launcher immediately
 			TCPLauncherSocket:settimeout(0) -- Set timeout to 0 to avoid freezing
 			TCPLauncherSocket:connect((settings.getValue("launcherIp") or '127.0.0.1'), (settings.getValue("launcherPort") or 4444)+1)
 		end
@@ -80,7 +81,7 @@ end
 local function sendData(data) -- TODO currently the socket keeps retrying indefinitely if timed out, this freezes the game if the launcher is frozen, breaking the loop with offset the header and break the connection, we could maybe buffer data and try again next frame?
 	-- if not connected return
 	if not TCPLauncherSocket then return end
-	local header = ffi.string(ffi.new("uint32_t[?]", 4, #data), 4)
+	local header = ffi.string(ffi.new("uint32_t[?]", 1, #data), 4)
 	local packet = header .. data
 
 	local retries = 1
@@ -96,7 +97,10 @@ local function sendData(data) -- TODO currently the socket keeps retrying indefi
 				packet = string.sub(packet, index + 1)
 
 				bytes, error, index = TCPLauncherSocket:send(packet)
+			else
+				break -- non-timeout error (e.g. closed): stop retrying instead of spinning forever
 			end
+			retries = retries - 1 -- bounded; was never decremented -> infinite loop on a persistent timeout
 		end
 	end
 
@@ -474,6 +478,7 @@ local HandleNetwork = {
 	['R'] = function(params) MPControllerGE.handle(params) end, -- Controller data
 	['n'] = function(params) local category, icon, message = params:match("([^:]+):?(.-):(.+)") UI.showNotification(message, category, icon) end, -- Custom UI notification
 	['D'] = function(params) spawnUiDialog(jsonDecode(params)) end, -- Custom UI Dialog
+	['B'] = function(params) if MPWeaponsGE then MPWeaponsGE.handle(params) end end, -- LAN fork: networked weapon-explosion sync
 }
 
 
@@ -519,7 +524,20 @@ local function onUpdate(dt)
 				-- break it up into code + data
 				local code = string.sub(received, 1, 1)
 				local data = string.sub(received, 2)
-				HandleNetwork[code](data)
+				local handler = HandleNetwork[code]
+				if handler then
+					-- pcall so a bug/edge in ANY GE handler (a broken 3rd-party mod's data, a removed
+					-- BeamNG API, a malformed/partial packet) is logged instead of breaking the entire
+					-- receive loop for this frame. Mirrors the protection the event-queue path already has.
+					local ok, err = pcall(handler, data)
+					if not ok then
+						log('E', 'onUpdate', "network handler for code '"..tostring(code).."' errored: "..tostring(err))
+					end
+				elseif settings.getValue("showDebugOutput") == true then
+					-- Unknown code (e.g. a newer build's packet reaching an older client):
+					-- ignore it rather than crashing the whole receive loop on a nil index.
+					log('W', 'onUpdate', 'Ignoring unknown network code: '..tostring(code))
+				end
 
 				if MPDebug then MPDebug.packetReceived(#received) end
 			end
@@ -598,5 +616,44 @@ M.addKeyEventListener = addKeyEventListener -- takes: string keyName, function l
 M.getKeyState         = getKeyState         -- takes: string keyName
 M.onVehicleReady      = onVehicleReady
 M.onInit = function() setExtensionUnloadMode(M, "manual") end
+
+-- Seamless map switch (LAN): the server pushes a coordinated `onMapChange` event when the
+-- host runs the `map` console command. Registered here (where the event system lives) so
+-- it's wired regardless of extension load order; it just defers to MPCoreNetwork, which
+-- owns the level-load/session state. MPCoreNetwork is resolved at call time, so it being
+-- loaded slightly later is fine.
+AddEventHandler("onMapChange", function(data)
+	-- data = "<level path>:<generation>"; the level path has no ':' so the trailing
+	-- ":<digits>" is the server session generation.
+	local map, gen = string.match(data or "", "^(.*):(%d+)$")
+	if not map then map, gen = data, nil end
+	if MPCoreNetwork and MPCoreNetwork.beginMapTransition then
+		MPCoreNetwork.beginMapTransition(map, tonumber(gen))
+	end
+end, "MPGameNetwork_onMapChange")
+
+-- Seamless map switch: build the locally-available map list -- base game AND synced MODDED maps
+-- (enumerated via core_levels.getList(); modded ones flagged for the picker) -- and open the
+-- interactive picker. Clicking a map sends "/map <name>" to perform the switch. Opened locally by
+-- the "/maps" chat command (UI.chatSend); the UI handles the switch now, so there's no server
+-- round-trip and no chat-text dump. Still fires on the server's legacy mapList reply (old
+-- "/map" / "/map list") for back-compat with older clients.
+local function showMapPicker()
+	if not (core_levels and core_levels.getList) then return end
+	local ok, levels = pcall(core_levels.getList)
+	if not ok or type(levels) ~= "table" then return end
+	local picker = {}
+	for _, lvl in ipairs(levels) do
+		local nm = lvl.levelName
+		if nm and nm ~= "" then
+			picker[#picker + 1] = { name = nm, title = lvl.title or lvl.levelName, modded = lvl.modTitle ~= nil }
+		end
+	end
+	table.sort(picker, function(a, b) return a.name:lower() < b.name:lower() end)
+	if UI and UI.openMapPicker then UI.openMapPicker(picker) end
+end
+M.showMapPicker = showMapPicker
+
+AddEventHandler("mapList", function(data) showMapPicker() end, "MPGameNetwork_mapList")
 
 return M

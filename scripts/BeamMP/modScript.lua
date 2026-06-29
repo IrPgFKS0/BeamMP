@@ -55,6 +55,9 @@ setExtensionUnloadMode("MPInputsGE", "manual")
 load("MPElectricsGE")
 setExtensionUnloadMode("MPElectricsGE", "manual")
 
+load("MPWeaponsGE")
+setExtensionUnloadMode("MPWeaponsGE", "manual")
+
 load("positionGE")
 setExtensionUnloadMode("positionGE", "manual")
 

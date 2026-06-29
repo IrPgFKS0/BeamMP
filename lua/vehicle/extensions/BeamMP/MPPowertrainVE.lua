@@ -20,6 +20,7 @@ local devices = powertrain.getDevices()
 
 local function applyLivePowertrain(data)
 	local decodedData = jsonDecode(data) -- Decode data
+	if not decodedData then return end -- a truncated/corrupt packet decodes to nil; pairs(nil) would FATAL the VE VM
 	for k, v in pairs(decodedData) do -- For each device
 		if v.mode and devices[k] and devices[k].setMode then
 			devices[k].setMode(devices[k],v.mode)
@@ -99,6 +100,7 @@ end
 
 local function applyEngineData(data)
 	data = jsonDecode(data)
+	if not data then return end -- guard a nil decode before indexing data.ignLvl / data.ICE
 	if data.ignLvl then
 		ignitionLevel = data.ignLvl
 	end

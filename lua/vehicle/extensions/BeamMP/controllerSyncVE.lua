@@ -49,6 +49,7 @@ local function applyControllerData(data,isDecoded)
 	if not isDecoded then
 		decodedData = jsonDecode(data)
 	end
+	if not decodedData then return end -- a corrupt packet decodes to nil; indexing decodedData.controllerName would FATAL the VE VM
 	local shouldBeUnpacked = false
 
 	if decodedData.controllerName then
@@ -58,7 +59,13 @@ local function applyControllerData(data,isDecoded)
 		if type(variables) == "table" and unpack(variables) ~= nil then
 			shouldBeUnpacked = true
 		end
-		if decodedData.functionName == "setCameraControlData" then --TODO change this to a universal system, maybe by storing what type of data it was?
+		-- This quat-rebuild runs OUTSIDE the receive pcall below, so an unguarded index here would
+		-- FATAL-kill the whole vehicle's VE VM (permanent one-way desync) on a malformed/version-
+		-- mismatched playerController packet (nil 'variables', missing variables[1], or no
+		-- cameraRotation). Guard every level before indexing -- the broken-mod class this fork tolerates.
+		if decodedData.functionName == "setCameraControlData" --TODO change this to a universal system, maybe by storing what type of data it was?
+			and type(variables) == "table" and type(variables[1]) == "table"
+			and type(variables[1].cameraRotation) == "table" then
 			variables[1].cameraRotation = quat(
 				variables[1].cameraRotation.x,
 				variables[1].cameraRotation.y,
@@ -66,15 +73,22 @@ local function applyControllerData(data,isDecoded)
 				variables[1].cameraRotation.w
 			)
 		end
+		-- pcall the receive dispatch: a registered receive/controller function can still FATAL when a
+		-- peer's controller mod isn't fully present locally (controller removed after a part change/
+		-- reset, or a malformed 'variables' field). An unguarded throw here kills the whole vehicle's
+		-- VE Lua VM (one-way desync) -- the broken-mod class this fork must tolerate. Log + skip instead.
 		if receiveFunctionsTable[decodedData.controllerName] and receiveFunctionsTable[decodedData.controllerName][decodedData.functionName] then
-			receiveFunctionsTable[decodedData.controllerName][decodedData.functionName](decodedData)
+			local ok, err = pcall(receiveFunctionsTable[decodedData.controllerName][decodedData.functionName], decodedData)
+			if not ok then log('E', 'controllerSyncVE', "receive '"..tostring(decodedData.controllerName).."."..tostring(decodedData.functionName).."' errored: "..tostring(err)) end
 
 		elseif OGcontrollerFunctionsTable[decodedData.controllerName] and OGcontrollerFunctionsTable[decodedData.controllerName][decodedData.functionName] then
+			local ok, err
 			if shouldBeUnpacked then
-				OGcontrollerFunctionsTable[decodedData.controllerName][decodedData.functionName](unpack(variables))
+				ok, err = pcall(OGcontrollerFunctionsTable[decodedData.controllerName][decodedData.functionName], unpack(variables))
 			else
-				OGcontrollerFunctionsTable[decodedData.controllerName][decodedData.functionName](variables)
+				ok, err = pcall(OGcontrollerFunctionsTable[decodedData.controllerName][decodedData.functionName], variables)
 			end
+			if not ok then log('E', 'controllerSyncVE', "apply '"..tostring(decodedData.controllerName).."."..tostring(decodedData.functionName).."' errored: "..tostring(err)) end
 		end
 		if includedControllers[decodedData.controllerName] and
 			includedControllers[decodedData.controllerName][decodedData.functionName] and

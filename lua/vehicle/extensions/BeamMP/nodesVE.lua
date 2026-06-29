@@ -22,6 +22,15 @@ end
 
 
 
+-- Round to N decimals. MUST be defined before getNodes (Lua lexical scope): getNodes/applyNodes
+-- called a capital 'Round' which is a nil global -> FATAL Lua error on every full-deformation-sync
+-- tick, killing the vehicle's VE VM (seen spamming on a TriX_Chiron). The real fn was (uselessly)
+-- defined lower down, AFTER its callers, so even the correct case would have been out of scope.
+local function round(num, numDecimalPlaces)
+	local mult = 10^(numDecimalPlaces or 0)
+	return math.floor(num * mult + 0.5) / mult
+end
+
 local function getNodes()
 
   -- TODO: color
@@ -37,9 +46,9 @@ local function getNodes()
   save.nodes = {}
   for _, node in pairs(v.data.nodes) do
 	local Pos = obj:getNodePosition(node.cid)
-	Pos.x = Round(Pos.x,3)
-	Pos.y = Round(Pos.y,3)
-	Pos.z = Round(Pos.z,3)
+	Pos.x = round(Pos.x,3)
+	Pos.y = round(Pos.y,3)
+	Pos.z = round(Pos.z,3)
     local d = {vec3(Pos):toTable()}
 
     if math.abs(obj:getOriginalNodeMass(node.cid) - obj:getNodeMass(node.cid)) > 0.1 then
@@ -51,9 +60,9 @@ local function getNodes()
   save.beams = {}
   for _, beam in pairs(v.data.beams) do
     local d = {
-      Round(obj:getBeamRestLength(beam.cid),3),
+      round(obj:getBeamRestLength(beam.cid),3),
       obj:beamIsBroken(beam.cid),
-      Round(obj:getBeamDeformation(beam.cid),3)
+      round(obj:getBeamDeformation(beam.cid),3)
     }
     save.beams[beam.cid + 1] = d
   end
@@ -104,8 +113,12 @@ local function applyNodes(data)
 
 	--obj:requestReset(RESET_PHYSICS)
 	local save = jsonDecode(data)
+	-- The RECEIVE side applies regardless of the local syncFullDeformation toggle, so a peer with the
+	-- (experimental, default-off) feature on -- or a truncated/crafted 'Xn:' packet -- reaches here.
+	-- A nil/short payload would make pairs(save.nodes) FATAL this vehicle's VE VM. Guard the shape.
+	if type(save) ~= "table" or type(save.nodes) ~= "table" or type(save.beams) ~= "table" then return end
 
-  print("Applied "..string.len(data).." bytes!")
+  -- (debug print removed: this path now runs continuously for deformation sync)
   --importPersistentData(save.luaState)
 
   --[[for k, h in pairs(save.hydros) do
@@ -124,12 +137,19 @@ local function applyNodes(data)
 		cid = tonumber(cid) - 1
 		if beam[2] == true then
 			obj:breakBeam(cid)
-			beamstate.beamBroken(cid,1)
+			-- beamstate.beamBroken is damage-system bookkeeping (the beam already broke above via
+			-- obj:breakBeam). Guard it the same way as beamstate.beamDeformed below: if BeamNG 0.3x
+			-- removed/renamed it, an unguarded nil call would FATAL-loop the receiver's VE VM.
+			if beamstate.beamBroken then beamstate.beamBroken(cid,1) end
 		else
 			obj:setBeamLength(cid, beam[1])
-			if beam[3] > 0 then
+			if (beam[3] or 0) > 0 then
 			--print('deformed: ' .. tostring(cid) .. ' = ' .. tostring(beam[3]))
-			beamstate.beamDeformed(cid, beam[3])
+			-- beamstate.beamDeformed was removed in BeamNG 0.3x (only the onBeamDeformed callback
+			-- remains). Calling a nil field FATAL-killed the receiver's VE VM once p13h21 made
+			-- getNodes actually send data. The deformed SHAPE still applies via setBeamLength above;
+			-- this guard just skips the (now-absent) damage-system bookkeeping instead of crashing.
+			if beamstate.beamDeformed then beamstate.beamDeformed(cid, beam[3]) end
 			end
 		end
   end
@@ -139,7 +159,7 @@ local function applyNodes(data)
     log("E", "nodesVE", "unable to use nodes data.")
     return
   end]]
-  print("Node Data Good, Attempting to apply...")
+  -- (debug print removed)
   --[[for k, h in pairs(decodedData.hydros) do
     hydros.hydros[k].state = h
   end]]
@@ -183,15 +203,10 @@ local function applyNodes(data)
 		end
 
 	end]]
-  print("Node Data Should be applied!")
+  -- (debug print removed)
 end
 
 
-
-local function round(num, numDecimalPlaces)
-  local mult = 10^(numDecimalPlaces or 0)
-  return math.floor(num * mult + 0.5) / mult
-end
 
 local function applyBreakGroups(data)
 	local justBrokenRemote = jsonDecode(data)

@@ -76,6 +76,35 @@ local defaultSettings = {
 	showPcs = true,
 	
 	enablePosSmoother = false, -- experimental
+	profilePosSync = false, -- experimental (LAN): log avg/max timing of applyPos (GE) + setVehiclePosRot/updateGFX (VE) every ~5s to beamng.log
+	profLogFolder = "BeamMP_logs", -- LAN/debug: folder (under the BeamNG user folder) where MPConfig.collectProfilingLogs() writes the zipped beamng*.log bundle
+	autoCollectProfLogs = true, -- LAN/debug: when profilePosSync is turned OFF, auto-zip the beamng*.log bundle into profLogFolder (so a profiling capture is never missed)
+	saveLogsAction = false, -- LAN/debug: transient trigger for the in-game "Save all logs" button. bngApi.engineLua isn't reliably in the options ng-click scope, so the button sets this via the settings path; onSettingsChanged runs MPConfig.saveLogs() and resets it (same pattern as unicycle_pc).
+	physicsRateSend = true, -- LAN default-on (A/B verified): emit own-vehicle position from the VE physics step (~100Hz) instead of once per render frame, so low-FPS machines still send fresh data. Toggle off via the options checkbox if needed.
+	physRateSendHz = 100, -- LAN (default 100): the physics-rate send rate in Hz, pushed to positionVE.setSendHz via refreshFlags (live). Dial DOWN (e.g. 10 = stock BeamMP) to fit a throughput-limited server relay when many cars/players oversubscribe it, then tune back up. UI select 100/60/30/10.
+	syncMode = "smooth", -- LAN (default "smooth", chosen after testing): remote-vehicle correction feel. "smooth" = stock-like (no extra tracked-vehicle hold; the watchdog is frozen-only so it never snaps a moving ghost -> smoothest, slightly laggier) -- consistently preferred over the firm hold, which warbled on tanks. "accurate" = firm hold on heavy/tracked vehicles. "auto" = adapt by local FPS (firm when FPS high, smooth when it drops). Pushed to positionVE.setTrackedHold via positionGE. UI select Smooth/Auto/Accurate.
+	mailboxApplyPos = true, -- LAN default-on (A/B verified): deliver incoming positions GE->VE via the engine mailbox (be:sendToMailbox) instead of queueLuaCommand; VE polls per frame. ~25-40% cheaper applyPos + removes the per-packet VE Lua-command compile. Falls back to the base64 queueLuaCommand path when off. Toggle off via the options checkbox if needed.
+	optimizeMapMarkers = true, -- LAN default-on (perf): disable BeamNG's per-frame mission/POI marker processing (gameplay_markerInteraction.onPreRender) during MP -- a known FPS sink, useless for LAN driving. Restored on leave. Ported from Olrosse/BeamMP minimap_lag_workaround. Toggle off to keep vanilla freeroam markers.
+	fastPredict = false, -- experimental (LAN, perf): run the remote-vehicle predictor (positionVE.updateGFX) in-place with reused scratch vecs instead of allocating ~20 temp vec3s/frame/car -- cuts GC churn/stutter. Mathematically identical to the default path; the original stays the fallback. UNVERIFIED on hardware -- enable on one machine, drive, and watch for any remote-car warping/jitter before trusting. Inspired by KISS-multiplayer / PR #789.
+	syncFullDeformation = false, -- experimental (LAN): broadcast full node/beam deformation so crash damage matches on all clients
+	remoteFullProjectiles = false, -- LAN/weapons (default off, CPU saver): a weapon car another player DRIVES always fires full physics projectiles; this forces SPAWNED/AI remote weapon cars to fire full projectiles too instead of a light muzzle+sound replay. CPU-heavy with many guns -- enable only if all machines have headroom. Read GE-side in MPWeaponsGE.handleFire.
+	autoSpawnMode = 0, -- LAN: auto-spawn on join. 0=off, 1=default car, 2=last used car
+	showSyncStats = false, -- LAN: tiny on-screen overlay with synced vehicle count + net packet rates
+	allowRemoteAIChase = false, -- LAN/consent (default off, opt-in): allow OTHER players' AI/weapon cars to chase ME when I'm their nearest valid target. Your OWN cars chasing is unchanged (AI radial "Chase"); they target yourself + remote players who turned this on. Synced via MPVehicleGE chaseOptIn ('B'/C: relay). UI: "Allow other players' AI cars to chase me".
+	aiChaseIncludeSelf = false, -- DEPRECATED: "include yourself as a target" is now AUTOMATIC in retargetLocalAICars (so BeamNG's "Chase"=chase-the-local-player works). Kept registered only to avoid an "unrecognized setting" warning on old configs; no longer read by code.
+	showVramWarning = true, -- LAN: warn in chat when tracked VRAM use nears the card total (heavy-mod crash guard)
+
+	-- Settings the mod reads/writes (or the options UI binds) but that were never registered
+	-- here, so a settings.json holding them logged "Unrecognized setting name" on load. Defaults
+	-- match each reader's fallback; the loader only fills a key when it's nil, so existing user
+	-- values are preserved -- registering just stops the warning.
+	skipOtherPlayersVehicles = false, -- spectate: skip other players' non-active vehicles when tabbing through
+	queueAutoSkipRemote = false,      -- queue: auto-apply queued events for remote vehicles you tab into
+	skipModSecurityWarning = false,   -- skip the "mods found" download confirmation prompt
+	showAdvancedMPOptions = false,    -- options menu: reveal the advanced/LAN settings section
+	mpLastVehicle = "",               -- JSON {model,config} of the last spawned car (autoSpawn mode 2)
+	cullFarVehicles = false,          -- legacy: view-distance cull was removed; kept registered to silence
+	fastApplyPos = false,             -- legacy/experimental position-apply toggle
 
 	-- unicycle configurations
 	unicycleConfigs = getUnicycleConfigs(), unicycleAutoSave = true,
@@ -90,13 +119,28 @@ local defaultSettings = {
 	launcherPort = 4444
 }
 
---- Called when the mod is loaded by the games modloader. 
+-- Register the settings DEFAULTS at module load (not only in onExtensionLoaded below), so readers
+-- that run before this extension's onExtensionLoaded -- e.g. positionGE reading physRateSendHz ~1s
+-- into startup -- don't trip BeamNG's "Unrecognized setting name" warning. This ONLY seeds the
+-- defaults registry; it never calls setValue, so saved user values are untouched (persistence is
+-- handled in onExtensionLoaded). Guarded against the settings API not being ready yet / API churn.
+if settings and settings.impl then
+	for k, v in pairs(defaultSettings) do
+		if settings.impl.defaults and settings.impl.defaults[k] == nil then settings.impl.defaults[k] = { 'local', v } end
+		if settings.impl.defaultValues and settings.impl.defaultValues[k] == nil then settings.impl.defaultValues[k] = v end
+	end
+end
+
+--- Called when the mod is loaded by the games modloader.
 -- @usage INTERNAL ONLY / GAME SPECIFIC
 local function onExtensionLoaded()
 	for k,v in pairs(defaultSettings) do
 		if settings.getValue(k) == nil or k == 'unicycleConfigs' then settings.setValue(k, v) end
-		--settings.impl.defaults[k] = { 'local', v }
-		--settings.impl.defaultValues[k] = v
+		-- Register each key in the game's settings defaults (settings.impl == lua/common/settings.lua,
+		-- whose M.defaults is what the "Unrecognized setting name" check reads). {'local', v} is the
+		-- game's [scope, value] default format. Guarded against settings-API churn between versions.
+		if settings.impl and settings.impl.defaults then settings.impl.defaults[k] = { 'local', v } end
+		if settings.impl and settings.impl.defaultValues then settings.impl.defaultValues[k] = v end
 	end
 
 	if settings.getValue("queueWithLMB") ~= nil then
@@ -310,7 +354,172 @@ local function onSettingsChanged()
 		settings.setValue("unicycle_pc", nil) -- reset to prevent reapply on every setting change
 		guihooks.trigger('toastrMsg', {type="info", title = "Unicycle", msg = MPTranslate("ui.options.multiplayer.unicycleOnSwitch") .. " " .. unicycle_pc, config = {timeOut = 3000}})
 	end
+	if settings.getValue("saveLogsAction") then
+		settings.setValue("saveLogsAction", false) -- reset to prevent reapply on every setting change
+		if M.saveLogs then M.saveLogs() end
+	end
 	getUnicycleConfigs()
+end
+
+--- Collect the BeamNG log files (beamng.log + its rotations) into a single timestamped
+--- zip, so everything needed for a profiling (profilePosSync) capture is gathered in one
+--- correctly-zipped bundle with nothing missed. The output goes in the folder named by the
+--- `profLogFolder` setting, created under the BeamNG user folder (the game sandboxes file
+--- writes there -- arbitrary external drive paths aren't writable from Lua). Returns the
+--- real on-disk path of the zip so the UI/console can show exactly where it landed.
+-- @usage MPConfig.collectProfilingLogs()
+local function collectProfilingLogs()
+	local result
+	local ok, err = pcall(function()
+		local folder = settings.getValue("profLogFolder")
+		if not folder or folder == "" then folder = "BeamMP_logs" end
+		-- normalize to a relative folder under the user folder (no leading/trailing slash)
+		folder = tostring(folder):gsub("\\", "/"):gsub("^/+", ""):gsub("/+$", "")
+		if folder == "" then folder = "BeamMP_logs" end
+		if not FS:directoryExists(folder) then FS:directoryCreate(folder) end
+
+		local zipPath = folder .. "/beamng_logs_" .. os.date("%Y%m%d-%H%M%S") .. ".zip"
+		local zip = ZipArchive()
+		if not zip:openArchiveName(zipPath, "w") then
+			log('E', 'collectProfilingLogs', 'could not open zip for writing: ' .. zipPath)
+			guihooks.trigger('toastrMsg', {type = "error", title = "Profiling logs",
+				msg = "Couldn't create the zip (folder not writable?): " .. zipPath, config = {timeOut = 6000}})
+			return
+		end
+
+		-- Explicit known log names (beamng.log + rotations) -- robust regardless of how
+		-- many rotations exist. They live at the Lua FS root (the active version folder).
+		local n = 0
+		local names = {"beamng.log"}
+		for i = 1, 9 do names[#names + 1] = "beamng." .. i .. ".log" end
+		for _, name in ipairs(names) do
+			if FS:fileExists("/" .. name) then
+				zip:addFile("/" .. name, name)
+				n = n + 1
+			end
+		end
+		zip:close()
+
+		result = zipPath -- return the FS path; show the real path in the toast/log
+		local realPath = FS:getFileRealPath(zipPath) or zipPath
+		log('I', 'collectProfilingLogs', 'zipped ' .. n .. ' log file(s) -> ' .. tostring(realPath))
+		guihooks.trigger('toastrMsg', {type = (n > 0 and "success" or "warning"), title = "Profiling logs",
+			msg = (n > 0 and (n .. " log file(s) zipped to:\n" .. tostring(realPath))
+			              or "No beamng*.log files found to collect."), config = {timeOut = 9000}})
+	end)
+	if not ok then
+		log('E', 'collectProfilingLogs', 'failed: ' .. tostring(err))
+		guihooks.trigger('toastrMsg', {type = "error", title = "Profiling logs",
+			msg = "Failed to collect logs: " .. tostring(err), config = {timeOut = 6000}})
+	end
+	return result
+end
+
+-- Best-effort machine name from env vars (COMPUTERNAME on Windows, HOSTNAME/HOST on Linux).
+-- Usually "unknown" in BeamNG's sandboxed game env; the launcher patches the real hostname in.
+local function getDeviceName()
+	-- env vars only. BeamNG sandboxes io.popen (it logs a "Lua tried to open a process"
+	-- warning) and the game env usually lacks these vars, so this commonly returns "unknown"
+	-- -- the LAUNCHER patches the real hostname into mp_state.txt during the gather
+	-- (GlobalHandler HandleSaveLogs), which is why we don't try popen here.
+	local n = os.getenv("COMPUTERNAME") or os.getenv("HOSTNAME") or os.getenv("HOST")
+	if not n or n == "" then return "unknown" end
+	return (n:gsub("%s+$", ""))
+end
+
+-- LAN/debug: a one-shot snapshot of MP state (version, session, level, the toggles that
+-- have bitten us before, players + vehicles). Pure read-only; every lookup is pcall-guarded
+-- so a missing field never breaks log collection.
+local function buildMpStateText()
+	local lines = {}
+	local function add(s) lines[#lines + 1] = s end
+	local function tg(fn, d) local ok, v = pcall(fn); if ok and v ~= nil then return v else return d end end
+	add("=== BeamMP MP state ===")
+	add("time: " .. os.date("%Y-%m-%d %H:%M:%S"))
+	add("mod version: " .. tostring(tg(function() return MPCoreNetwork.getModVersion() end, "?")))
+	add("device: " .. getDeviceName())
+	-- role: is the server running on THIS machine? Inferred from a loopback server IP -- the
+	-- host self-hosts via 127.0.0.1, a pure client joins the host's LAN IP.
+	local srv = tg(function() return MPCoreNetwork.getCurrentServer() end, nil)
+	local sip = (type(srv) == "table") and srv.ip or nil
+	local isHost = type(sip) == "string" and (sip == "localhost" or sip == "::1" or sip:match("^127%.") ~= nil)
+	add("role: " .. (isHost and "SERVER HOST (server runs on this machine)" or "CLIENT (server is remote)")
+		.. (sip and ("  [joined " .. tostring(sip) .. ":" .. tostring(type(srv) == "table" and srv.port or "?") .. "]") or ""))
+	add("session: isMPSession=" .. tostring(tg(function() return MPCoreNetwork.isMPSession() end, "?"))
+		.. " launcherConnected=" .. tostring(tg(function() return MPGameNetwork.launcherConnected() end, "?")))
+	add("level: " .. tostring(tg(function() return getCurrentLevelIdentifier() end, "?")))
+	for _, k in ipairs({ "showDebugOutput", "physicsRateSend", "physRateSendHz", "syncMode", "allowRemoteAIChase", "showVramWarning" }) do
+		add("setting " .. k .. " = " .. tostring(tg(function() return settings.getValue(k) end, "?")))
+	end
+	local players = tg(function() return MPVehicleGE.getPlayers() end, {})
+	add("players:")
+	if type(players) == "table" then
+		for id, p in pairs(players) do
+			add(string.format("  - id %s  name '%s'  activeVeh %s",
+				tostring(id), tostring(type(p) == "table" and p.name or p), tostring(type(p) == "table" and p.activeVehicleID)))
+		end
+	end
+	-- getVehicles() is keyed by serverVehicleString and the values are the vehicle objects
+	-- (with .jbeam/.ownerName/.isLocal) -- getVehicleMap() instead maps gameID->string, which
+	-- is why the old dump showed jbeam/own as false.
+	local vehs = tg(function() return MPVehicleGE.getVehicles() end, {})
+	add("vehicles:")
+	if type(vehs) == "table" then
+		for sid, v in pairs(vehs) do
+			if type(v) == "table" then
+				add(string.format("  - serverID %s  jbeam %s  owner '%s'  local %s",
+					tostring(sid), tostring(v.jbeam), tostring(v.ownerName), tostring(v.isLocal == true)))
+			end
+		end
+	end
+	return table.concat(lines, "\n")
+end
+
+-- LAN/debug: toggle verbose network-packet logging (showDebugOutput) from chat.
+-- arg "on"/"off" sets explicitly; anything else toggles. Read live by MPGameNetwork.onUpdate.
+local function setNetDebug(arg)
+	local on
+	if arg == "on" then on = true
+	elseif arg == "off" then on = false
+	else on = not (settings.getValue("showDebugOutput") == true) end
+	settings.setValue("showDebugOutput", on)
+	local m = "Network debug logging " .. (on and "ENABLED" or "disabled") .. " (showDebugOutput)"
+	log('I', 'setNetDebug', m)
+	guihooks.trigger('toastrMsg', { type = "info", title = "BeamMP", msg = m, config = { timeOut = 4000 } })
+end
+
+-- LAN/debug: print the MP-state snapshot to the GE console (~) and beamng.log.
+local function printMpState()
+	log('I', 'mpstate', "\n" .. buildMpStateText())
+	guihooks.trigger('toastrMsg', { type = "info", title = "BeamMP MP state",
+		msg = "MP state written to the GE console (~) and beamng.log.", config = { timeOut = 6000 } })
+end
+
+-- LAN/debug: gather EVERY log into one zip in the BeamMP Launcher folder -- BeamNG + BeamMP
+-- + launcher, and the server log/state if the server runs on this machine. Writes
+-- mp_state.txt for the launcher to include, signals the launcher over the game proxy
+-- ("savelogs:<ts>", intercepted there and never forwarded to the server), and also makes the
+-- local beamng*.log zip as a fallback. Both /savelogs and the in-game button call this.
+local function saveLogs()
+	pcall(function()
+		if not FS:directoryExists("BeamMP_logs") then FS:directoryCreate("BeamMP_logs") end
+		local h = io.open("BeamMP_logs/mp_state.txt", "w")
+		if h then h:write(buildMpStateText()); h:close() end
+	end)
+	local ts = os.date("%Y%m%d-%H%M%S")
+	local triggered = false
+	pcall(function()
+		if MPGameNetwork and MPGameNetwork.send and MPGameNetwork.launcherConnected and MPGameNetwork.launcherConnected() then
+			MPGameNetwork.send("savelogs:" .. ts)
+			triggered = true
+		end
+	end)
+	pcall(collectProfilingLogs) -- local beamng*.log zip fallback (works even against an old launcher)
+	local m = triggered
+		and ("Gathering logs -> BeamMP_logs_" .. ts .. ".zip in your BeamMP Launcher folder (BeamNG + launcher + server-if-local).")
+		or ("Launcher not connected -- wrote only a local beamng.log zip (see the BeamMP_logs folder).")
+	log('I', 'saveLogs', m)
+	guihooks.trigger('toastrMsg', { type = "success", title = "BeamMP savelogs", msg = m, config = { timeOut = 9000 } })
 end
 
 -- Events
@@ -331,6 +540,11 @@ M.getFavorites = getFavorites
 M.setFavorites = setFavorites
 M.getConfig = getConfig
 M.setConfig = setConfig
+M.collectProfilingLogs = collectProfilingLogs
+M.saveLogs = saveLogs
+M.buildMpStateText = buildMpStateText
+M.setNetDebug = setNetDebug
+M.printMpState = printMpState
 
 M.acceptTos = acceptTos
 M.onInit = function() setExtensionUnloadMode(M, "manual") end

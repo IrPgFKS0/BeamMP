@@ -56,7 +56,9 @@ local function applyGear(data) --TODO: add handling for mismatched gearbox types
 	end
 
 	if electrics.values.gearboxMode and electrics.values.gearboxMode == "arcade" then
-		if controller.mainController.setGearboxMode then
+		-- a modded/custom-powertrain vehicle may have no mainController; index-guard it (this runs on
+		-- the per-frame remote apply path, which is NOT pcall-wrapped, so a nil deref FATALs the VE VM)
+		if controller.mainController and controller.mainController.setGearboxMode then
 			controller.mainController.setGearboxMode("realistic")
 		end
 	end
@@ -69,6 +71,10 @@ local function applyGear(data) --TODO: add handling for mismatched gearbox types
 
 	elseif gearBoxHandler[powertrainDevice.type] == 2 then
 		if electrics.values.isShifting then return end
+		-- a custom powertrain can report gearIndex (passing the guard above) while electrics.values.gear
+		-- is nil, or have no mainController -> string.sub(nil)/mainController deref would FATAL this
+		-- (non-pcall'd) remote apply path. Skip rather than kill the VE VM.
+		if type(electrics.values.gear) ~= "string" or controller.mainController == nil then return end
 		local remoteGearMode = string.sub(data, 1, 1)
 		local localGearMode = string.sub(electrics.values.gear, 1, 1)
 		local remoteIndex = tonumber(string.sub(data, 2))

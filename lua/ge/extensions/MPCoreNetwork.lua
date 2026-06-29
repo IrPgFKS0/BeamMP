@@ -25,7 +25,14 @@ local isConnecting = false
 local proxyPort = ""
 local socketPartialData
 local launcherVersion = "" -- used only for the server list
-local modVersion = "4.21.1" -- the mod version
+-- LAN fork display version. BUMP the pN every time BeamMP.zip is rebuilt so the loaded build
+-- is identifiable in-game (bottom info bar) AND in the console (logged at connect). This is
+-- DISPLAY ONLY -- never sent to the server (the join handshake checks the launcher version),
+-- so changing it can't cause a version-mismatch kick. Versioning: pNN is the feature level,
+-- hN is the hotfix number within it -- bump hN on every post-release fix (no date needed).
+local modVersion = "4.21.1-LAN p13h29"
+-- One-line summary of what this build contains; logged at startup next to the version.
+local modPatchNote = "p13h29: FINAL pre-public-release robustness sweep (4-agent audit of the mod + combined exe). MOD-side FATAL-class guards so a broken/version-mismatched 3rd-party mod (or a crafted packet) can't kill a vehicle's VE sync VM (the one-way-desync class): (1) controllerSyncVE 'setCameraControlData' rebuilt a quat from variables[1].cameraRotation BEFORE the receive pcall with no nil checks -> now type-guards variables/[1]/cameraRotation first (the one spot the controllerSync pcall didn't cover); (2) MPInputsVE.applyGear ran on the per-frame remote path (NOT pcall'd) and assumed electrics.values.gear is a string and controller.mainController exists -> a custom-powertrain car (gearIndex set, gear nil/no mainController) FATAL-looped its ghost; now guarded; (3) propsControllers spinner engineInfo[6] string-checked to match the hamster path; (4) couplerVE checks getGroupState exists before calling; (5) nodesVE.applyNodes shape-guards its decode (the full-deformation RECEIVE side applies regardless of the local toggle, so a peer with the experimental feature on reaches it); (6) GE-side nil guards: applyVehEdit decode + playerVehicle.config, onServerVehicleResetted pos/rot shape, onServerVehicleCoupled + onVehicleSpawned nil vehicle, applyPos malformed-pose. Position-sync polish: the self-heal watchdog reuses its per-check table (no GE GC litter) and only tracks _diagPeak while profiling. PAIRS WITH combined EXE p13h23: fixes a DeComp() empty-input INFINITE-LOOP HANG (CPU-spin) on both the server and the launcher, reachable by any peer sending a bare 4-byte 'ABG:' packet (empty body -> 0-size buffer -> zlib Z_BUF_ERROR -> grow stays 0 -> never throws); plus the launcher DeComp grow-cap, throwing-fs::file_size hardening in the mod-download paths, and an Options --user-path arg fix. The combined-host leave/rejoin concurrency rewrite was audited CLEAN (no UAF/deadlock/double-client). p13h28: DEFAULT Remote sync mode changed Auto -> SMOOTH (chosen after testing). The firm tracked-vehicle hold that Auto applies at high FPS consistently felt WORSE than the stock-smooth predictor (the tank warble), and Auto's x1<->x2 flipping as FPS bounced added inconsistency. Smooth = pure stock predictor + the frozen-only watchdog = the best default feel. Auto and Accurate stay as options (Options>Multiplayer>advanced) for anyone who wants the firmer hold. (Reminder: heavy sync drift is usually OVERLOAD, not the mode -- keep the live heavy-vehicle count low; the fullsuv is the worst offender.) p13h27: LONG-VEHICLE self-heal FALSE POSITIVE (the 'capsule' 12m bus snapping every 0.5s). Root cause: the sender broadcasts its COG (doSendPosRot = getPosition()+cogRel) so rxPos is the COG, but the self-heal watchdog compared it to veh:getPosition() = the REFNODE. On a long vehicle the COG<->refNode gap is ~6m, which the watchdog read as a permanent '6m off frozen' and snapped the refNode to the COG every 0.5s -- shoving the bus by cogRel each time = visible jitter (looked like a tank/sync issue but was the bus). FIX: the watchdog now compares + snaps against the OOBB CENTER (be:getObjectOOBBCenterXYZ, BeamNG's geometric/COG-proxy center) so it's COG-vs-COG (~0 when synced) at any vehicle length, and the heal offsets the refNode by the refNode->center vector so it no longer shoves long vehicles. Cars unaffected (cogRel <1m). This also makes the overlay 'Ghost drift' number correct for long vehicles. NOTE from the h25 logs: the TANK is now fine (0 self-heals on the host, held x2 in Auto) -- the frozen-only watchdog fix worked; the 157 self-heals were ALL the bus. p13h26: removed the deprecated setCEFFocus(true) call from the Chat/PlayerList/Session UI apps' select() handlers -- BeamNG deprecated it ('doesn't need to be called'; the engine now manages CEF/UI-app focus automatically), so it was just spamming an E-level deprecation warning. Handlers kept as no-ops so the ng-click bindings stay valid. p13h25: SYNC FEEL (why the high-rate fork felt WORSE than stock's 10Hz for the tank). Two of our additions were FIGHTING the stock predictor: (1) the self-heal watchdog HARD-SNAPPED a ghost to the RAW last-received position whenever it was >5m off -- but the stock predictor already teleports to the PREDICTED position, so on a continuously-drifting tank the two yanked it opposite ways ~2x/sec (the warble). FIX: the watchdog is now FROZEN-ONLY -- it only snaps a ghost that's far AND barely moving (a stalled apply); a moving/drifting ghost is left to the stock predictor's own smooth teleport. (2) the tracked-vehicle hold was a fixed x4 (h24) which over-stiffened the tank. FIX: reverted to x2 base and made it a refactor (BASE*multiplier, recomputable, hot paths untouched). NEW 'Remote sync mode' option (Options>Multiplayer>advanced; default Auto): SMOOTH = stock-like (hold x1, frozen-only watchdog -> smoothest), ACCURATE = firm hold x2, AUTO = adapt by local FPS (firm when FPS high, smooth when it drops, hysteresis 42-55fps) -- positionGE pushes the hold to positionVE.setTrackedHold live. Cars are unaffected (never stiffened). If the tank still feels off, try Smooth. p13h24: TANK GHOST DRIFT -- raised the tracked-vehicle position hold from x2 to x4. Diagnosed from a live log: the T-80UD ghost WAS being detected + stiffened ('tracked vehicle (14 wheels): stiffened ... x2') but still drifted ~6-10m (above the 5m self-heal threshold), so the posWatchdog kept snapping it back every ~0.5s (visible warping) -- the tank's tracks were out-muscling the x2 corrective ceiling. x4 should hold it under threshold; if a tank ghost VIBRATES in place, dial TRACKED_HOLD back toward 3.0 (positionVE.lua:~52). The early severe drift (12-18m) was just the window before the detection fires (it waits for wheels to init, ~12s after spawn). NOTE the 'applyVehEdit ... does not correspond' WARNING is NORMAL vehicle-swap handling (it re-spawns the ghost as the new model), not a bug. p13h23: COMMUNITY-RELEASE robustness sweep (multiagent review of the mod + combined exe). FATAL-class hardening so a broken/3rd-party mod in the wild can't kill a vehicle's VE sync VM or the GE receive loop (the one-way-desync class): (1) the top-level GE network dispatch (MPGameNetwork.onUpdate) is now pcall-wrapped -- any error in ANY handler (a broken mod's data, a removed BeamNG API, a malformed packet) is LOGGED instead of breaking that frame's whole receive loop, matching the event-queue path; (2) couplerVE default coupler-RECEIVE path: a peer's trailer/coupler controller that doesn't exist locally was an unguarded getControllerSafe(name).getGroupState() chain (plus a detachGroup() on an empty table) -> FATAL; now resolves a real controller first and skips the branch if absent; (3) controllerSyncVE RECEIVE dispatch is pcall-wrapped, covering EVERY advancedCouplers/general/weapon-mod receive function at once (a controller removed after registration, or a malformed 'variables', no longer FATALs); (4) jsonDecode results nil-guarded in MPPowertrainVE (x2), couplerVE, controllerSyncVE, nodesGE; (5) nodesVE beamstate.beamBroken guarded the same way as beamDeformed; (6) MPVehicleGE spawn handler guards players[ownerID] (nil on a spawn-before-join race). All edits verified parsing under luac 5.3. In-game options/overlays/version strings were audited clean (no dead toggles, overlays report accurate fields). PAIRS WITH combined exe p13h22 (host leave/rejoin gHostLink/gHostClient race + decompression-buffer min/max fix + broken-mod mount log-and-skip) and the new host/ scripts (start-server.bat + pin-cores.ps1 now pin the real BeamNG.drive.x64 process, not the idle loader). p13h22: SECOND FATAL fix in the same syncFullDeformation path -- once p13h21 let getNodes actually SEND, the RECEIVE side (nodesVE.applyNodes) hit beamstate.beamDeformed, which BeamNG 0.3x REMOVED (only the onBeamDeformed callback remains), so the nil call FATAL-killed the receiver's vehicle VM (spammed on a TriX_Chiron). Guarded it; the deformed SHAPE still syncs via setBeamLength, only the (now-absent) damage-system bookkeeping is skipped. syncFullDeformation remains experimental + heavy -- leave it OFF unless you specifically want crash-damage parity. p13h21: (1) FATAL FIX -- nodesVE called a capital 'Round' that is a nil global (the real fn is lowercase 'round', and it was defined AFTER getNodes so out of lexical scope anyway), so every full-deformation-sync tick threw a FATAL Lua error that killed the vehicle's VE VM -- seen crash-looping on a TriX_Chiron. Moved 'round' above getNodes + fixed the case; syncFullDeformation now actually works instead of crash-looping (still gated by the toggle + heavy, leave it off unless you want crash-damage parity). (2) Tracked-vehicle position hold: a driven tank's skid-steer/tracks pushed its ghost off the synced position faster than the predictor's spring caught up, so ONLY the driven tank self-healed (~6m repeatedly) while cars stayed clean. positionVE now detects tracked vehicles by wheel count (>=10; T-80UD has 16, cars 4) and stiffens the correction force/ceiling x2 for them (force/ceiling only, not the gains, to avoid oscillation), once per vehicle, covering both the default and fastPredict paths; wheeled cars untouched. PAIRS WITH the new launcher/combined exe: (a) server DeComp pre-sizes the decompression buffer (16x estimate, clamp 30MB) so a large vehicle config decompresses in one shot instead of the fail-then-retry that logged 'zlib uncompress() failed, trying a larger buffer'; (b) /savelogs in --combined no longer fails with err 123 -- start-server.bat launches via `start` with a relative argv0 so GetEP() returned no dir -> launcherDir empty -> the tar CreateProcessW got an empty lpCurrentDirectory (ERROR_INVALID_NAME); now anchored to the absolute process cwd. (p13h20: a failed/partial vehicle spawn no longer FATAL-crashes the whole multiplayer mod. MPVehicleGE.sendVehicleEdit (run from onVehicleSpawned) indexed nil vehicleData.config when a vehicle failed to load (e.g. a broken mod whose jbeam files couldn't be read -> 'main slot not found') -> a FATAL GE Lua error that killed sync for the ENTIRE session. Now guards nil veh/vehicleData/config and skips the edit broadcast with a warning. (Triggered by a corrupt Tank_T80UD zip: the earlier PowerShell ZipFile.Update repack made a zip bsdtar could read but BeamNG could NOT -- re-packed with bsdtar, the proven method.) (h19: map-switch self-disconnect fix -- the seamless map-switch watchdog gave up after only 60s and force-LEFT the server, but big modded levels load ~90s (ogc_map measured 90.6s), so the HOST doing an in-place switch disconnected its own launcher mid-load ('LAN1 disconnected from itself') while a fresh-joining client (LAN2) was fine (a fresh join gets the new map via the normal handshake, no transition watchdog). Bumped MAP_TRANSITION_TIMEOUT 60->180s (named constant, tunable). (h18: sync-stats overlay now reports the ACTUAL drift symptom. It was staying GREEN while ghosts drifted/corrected because it only watched apply-rate DROPS + FPS -- both look healthy during a traffic FLOOD (high aggregate apply rate, one ghost still starved). NEW 'Ghost drift: X.Xm [N corrections]' row, driven by the positionGE self-heal watchdog's told-vs-actual gap + correction count; reddens when a self-heal fires OR drift exceeds ~8m (well past the few-metre healthy predictor lead). Spawn/teleport transients (>100m) excluded so the number reflects real drift. (h17: traffic-drift/glitch ROOT CAUSE -- h10 claimed non-driven owned vehicles 'drop to the low tick-rate send' but there was NO actual throttle. positionGE.tick (driven at ~FPS by MPUpdatesGE's positionTickrate 1/100) armed only the DRIVEN car to physRateSendHz; EVERY other owned vehicle was sent via getVehicleRotation() on EVERY tick (~FPS 60-90Hz) -- the rate lever never touched it. So N spawned vehicles flooded the relay: the LAN1 log measured 370 pos/s APPLIED at a '10Hz' setting with 7 cars (= 1 driven x10 + 6 AI x~60), starving every ghost into drift, and dialing physRateSendHz down did nothing. FIX: MPUpdatesGE now gates non-driven owned vehicles at a fixed trafficTickrate (12Hz) decoupled from the driven car (which stays full-rate): positionGE.tick(sendTraffic). The driven car can now run 30-60Hz smoothly even with traffic present. The 10Hz no-traffic 'glitch' was just low-rate prediction coarseness -- the predictor was clean in the log (90fps, 0 stale, 0 teleports) -- so run the driven car higher now that traffic no longer floods. (h16: final 3-agent review sweep -- fixed places where earlier nil-guards were one-sided: MPNetworkHelpers 'ready'-branch #nil crash on a pure-timeout partial receive; MPControllerGE.applyControllerData (receive side) + positionGE.sendVehiclePosRot (send side) jsonDecode guards I'd only added on the opposite side. Plus a real CASE bug: MPVehicleGE passed `ServerVehicleString` (capital) to Vehicle:new which reads `serverVehicleString` (lowercase) -> the vehicle got a nil id and every edit-before-spawn was silently dropped. Plus cheap hardening: loginReceived + unknown-role nil-guards, double profiler :stop(), dropped leftover dump() spam (MPNetworkHelpers/MPVehicleGE), FFI header over-alloc (uint32_t[?] count 4->1). PAIRS WITH new launcher+server exes: server FILE-DOWNLOAD path (TCPSendRaw/sendfile) now held under the per-client TCP send-mutex for the whole transfer (completes the C1 desync fix -- it bypassed the mutex), GetPidVid empty-part guard, 'P'-ping stray-NUL, mMods.clear lock-order; launcher WSACleanup on socket-create failure, 'Zp' drop now checks the packet CODE not find()-anywhere, __linux__ typo, crash-history is_directory guard. (h15: base-code review hardening (3-agent audit of the Lua mod + launcher + server). Lua VE-fatal nil-crash fixes that could kill a vehicle's whole sync: getControllerSafe on cars lacking transbrake/lineLock/compressionBrake, unchecked jsonDecode in positionGE/positionVE/MPVehicleGE/MPControllerGE, getOwner/players_vehicle_configs nil on a fast vehicle-edit, a per-frame spectators nil-deref after a player leaves, decoded.vel/rvel + getObjectByID guards. Also: MPNetworkHelpers partial-receive truncation fix (dropped the tail of a split packet), a velocityVE table.remove-in-forward-loop that skipped half the detached nodes, an infinite send-retry loop (MPGameNetwork+MPCoreNetwork) that could freeze the game on a persistent socket error, and a per-send dump() pulled from the controller hot path. PAIRS WITH new launcher+server exes: UDP recv buffers bumped (socket SO_RCVBUF + 64KB per-recv = the drift fix) and a server per-client TCP send-mutex (fixes interleaved-write framing corruption = the one-way desync), plus launcher crash/guard fixes (abort()-on-packet now a graceful drop, uninitialized RegEnumKeyExW buffer, atomic cross-thread flags). OS side: LAN-TUNING.md (Linux net.core.rmem_max is the key item). (h14: sync-stats overlay now flags problems in RED (relay starving / FPS spiking) and tracks peak+persistent severity -- 'Pos applied' and 'FPS' show '[dipped to X, bad Ns total]' that persists after recovery so you can see how deep and how long an issue ran while tuning, with an auto-reset each time you change the send rate (fresh measurement per step) + a red one-line hint of which lever to pull. (h13 tunable position send rate + diagnostic overlay for the 'both-low-CPU, one-drifts-at-a-time' issue (= the shared server relay's throughput, not CPU). NEW UI select 'Position send rate' 100/60/30/10 Hz (live; 10 = stock BeamMP) -> dial down so both players' streams fit a loaded relay, tune back up. Sync-stats overlay now shows 'Pos applied/s' (falls to ~0 when the relay starves -> lower the rate) and 'FPS' (drops with it = one core pegged e.g. the predictor -> try the existing fastPredict toggle). Both levers apply live, no reload. (h12 AI-chase consent rework -- the old 'AI cars chase nearest player' toggle is now 'Allow other players' AI cars to chase me' (opt-in, default OFF): by default nobody else's AI/weapon cars can lock onto you; flip it on to volunteer as a target. Your OWN cars are unchanged (AI radial 'Chase') -- they now target yourself + any remote player who opted in. Opt-in synced via the reliable 'B'/C: relay (no server change for this part). (h11: adaptive remote weapon projectiles -- a weapon car the owner is DRIVING fires full physics projectiles on other screens (broadcastFire tags the owner's active vehicle); a SPAWNED/AI weapon car gets a light muzzle-flash+sound replay (CPU saver, since h10 throttles non-driven cars anyway). New UI toggle 'Full weapon projectiles on remote cars' (default off) forces full everywhere for strong machines. (h10: send-rate budget fix -- ROOT of the no-weapons drift. The relay tops out ~100-150 position pkts/s TOTAL, but physicsRateSend self-sent EVERY owned vehicle at 100Hz; with several owned vehicles (AI traffic) that oversubscribed the budget and starved every ghost into drift. Now only the actively-driven vehicle gets the 100Hz physics-rate send; other owned vehicles drop to the low tick-rate send. (h9: (1) weapon-fire sync per-shot -> fire-STATE (on/off edges + low-rate keepalive): a full-auto burst now costs ~2 packets/sec instead of ~30, fixing the position-sync DRIFT that heavy firing caused by flooding/starving the position stream (remote runs its own fire loop while 'firing'; single shots stay precise via a 0->1 edge that fires one round). (2) self-heal watchdog corrects sooner: 5m/0.5s (was 10m/1.5s) now that h8's gauge reads true divergence. -- h8 FIX watchdog read nametag-clobbered vehicle.position (now rxPos/rxRot)" -- it was reading vehicle.position, which MPVehicleGE's nametag loop overwrites every frame with the rendered OOBB center, so it compared the rendered position to itself (a constant ~height offset per car) and NEVER saw the real drift or fired. Now uses a dedicated rxPos/rxRot copy taken straight from the received packet -> it actually detects a drifted/frozen ghost, the self-heal force-resyncs it, and the 'told-vs-actual peak' instrumentation finally shows true divergence. Also explains 'two map markers far apart for one car': vehicle.position flickers between received and rendered during a drift. (h7 weapon-FIRE sync; h6 drift instrumentation; h5 self-heal watchdog; h4 velocityVE guard+popen; h3 mp_state; h2 savelogs button; h1 explosion-receive be:; base p13 /savelogs+/netdebug+/mpstate; p12 LAN caps, p11 explosion 'B', p10 weapon-chase, p8 electrics/VE hardening))"
 -- server
 
 local serverList -- server list JSON
@@ -33,6 +40,26 @@ local currentServer = nil -- Table containing the current server IP, port and na
 local isMpSession = false
 local isGoingMpSession = false
 local status = "" -- "", "waitingForResources", "LoadingResources", "LoadingMap", "LoadingMapNow", "Playing"
+
+-- seamless map switch (LAN): set while a server-initiated map change is in progress, so
+-- onClientEndMission treats the level swap as a rejoin (no leaveServer / Lua reload) and
+-- runPostJoin sends the map-ready ack + re-spawns our car. See beginMapTransition.
+local isChangingMap = false
+local mapGeneration = 0       -- server session generation we are transitioning to / acked
+local mapTransitionTimer = 0  -- watchdog: fall back to a full leave if the load stalls
+-- Big modded levels load slowly (ogc_map measured ~90s). The old 60s watchdog fired DURING a
+-- legitimate load and force-LEFT the host's own client mid-switch -- i.e. "LAN1's launcher
+-- disconnected from itself". (A client joining FRESH was unaffected: it gets the new map via the
+-- normal handshake, which has no transition watchdog.) 180s = ~2x the worst observed load while
+-- still backstopping a genuinely hung loadLevel. Bump higher if a map ever loads slower than this.
+local MAP_TRANSITION_TIMEOUT = 180
+
+-- Resource (VRAM) headroom monitor. Heavy modded sessions can exhaust VRAM during a map
+-- load and crash the game (KERNELBASE thrown exception); warn the player while they're
+-- still playing so they can trim before the next switch tips it over. See checkVramHeadroom.
+local vramCheckTimer = 0
+local vramTotalMB = nil   -- card total (queried once); -1 = API unavailable, stop trying
+local vramWarned = false  -- hysteresis: warn once per high-water crossing
 
 -- auth
 
@@ -72,7 +99,7 @@ local reconnectAttempt = 0
 local function send(data) -- TODO currently the socket keeps retrying indefinitely if timed out, this freezes the game if the launcher is frozen, breaking the loop with offset the header and break the connection, we could maybe buffer data and try again next frame?
 	if TCPLauncherSocket == nop then return end
 
-	local header = ffi.string(ffi.new("uint32_t[?]", 4, #data), 4)
+	local header = ffi.string(ffi.new("uint32_t[?]", 1, #data), 4)
 	local packet = header .. data
 
 	local retries = 1
@@ -88,7 +115,10 @@ local function send(data) -- TODO currently the socket keeps retrying indefinite
 				packet = string.sub(packet, index + 1)
 
 				bytes, error, index = TCPLauncherSocket:send(packet)
+			else
+				break -- non-timeout error (e.g. closed): stop retrying instead of spinning forever
 			end
+			retries = retries - 1 -- bounded; was never decremented -> infinite loop on a persistent timeout
 		end
 	end
 
@@ -208,6 +238,14 @@ local function autoLogin()
 	send('Nc')
 end
 
+--- LAN: set the local player's display name (used by the server as the name).
+-- The launcher adopts and persists it. Call before connecting.
+-- @param name string The desired player name.
+local function setPlayerName(name)
+	if not name or name == "" then return end
+	send('N:setname:'..tostring(name))
+end
+
 --- Gets the current login data.
 -- @usage getLoginState() -- Triggers a return of the login data
 local function getLoginState()
@@ -228,14 +266,18 @@ end
 -- @usage MPCoreNetwork.sendBeamMPInfo()
 local function sendBeamMPInfo()
 	local servers = jsonDecode(serverList)
-	if not servers or tableIsEmpty(servers) then return log('M', 'No server list.') end
-	guihooks.trigger('onServerListReceived', servers) -- server list
 	local p, s = 0, 0
-	for _,server in pairs(servers) do
-		p = p + server.players
-		s = s + 1
+	if servers and not tableIsEmpty(servers) then
+		guihooks.trigger('onServerListReceived', servers) -- server list
+		for _,server in pairs(servers) do
+			p = p + server.players
+			s = s + 1
+		end
 	end
-	-- send player and server values to front end.
+	-- LAN fork: ALWAYS send the mod/launcher version (and counts) to the UI, even with
+	-- no public server list. The stock code returned early on an empty list, which on a
+	-- LAN (the server browser is disabled) left the info-bar stuck on the "..." version
+	-- placeholder. Counts are 0 when there's no list -- that's correct for LAN.
 	guihooks.trigger('BeamMPInfo', { -- <players> count on the bottom of the screen
 		players = ''..p,
 		servers = ''..s,
@@ -399,6 +441,90 @@ local function loadLevel(map)
 	status = "LoadingMapNow"
 end
 
+--- Seamless map switch (LAN). Triggered by the server's `onMapChange` event. Loads the
+--- new level in place: the old level is unloaded (its memory freed), but the mounted
+--- car/physics mods, the launcher sockets and the GE Lua VM all stay alive -- so there's
+--- no mod re-download, no reconnect and no Lua reload. The server-ack + car re-spawn run
+--- in runPostJoin once the new level is live.
+--- @param newMap string the target level path (e.g. /levels/italy/info.json)
+--- @param generation number the server session generation to ack
+
+-- Delete the current level's Forest object(s) up-front, BEFORE the level teardown. On unload
+-- the engine runs ForestData::clear AFTER the tree shape instances are already freed, which
+-- logs "Missing shapeinstance" once per item -- ~11k lines for a big forested map, enough to
+-- single-handedly trip BeamNG's 15000-line/file log cap and freeze the log mid-switch (so we
+-- couldn't even tell if the new map finished loading). Deleting the forest now, while its
+-- instances are still valid, makes that later clear a no-op -> no spam. Best-effort: the trees
+-- are about to vanish with the level anyway, and a pcall keeps a failure from blocking the switch.
+local function preClearForest()
+	local ok, err = pcall(function()
+		if not (scenetree and scenetree.findClassObjects) then return end
+		local forests = scenetree.findClassObjects("Forest")
+		if not forests then return end
+		local n = 0
+		for _, name in ipairs(forests) do
+			local f = scenetree.findObject(name)
+			if f then f:delete(); n = n + 1 end
+		end
+		if n > 0 then log('I', 'preClearForest', 'Cleared '..n..' forest object(s) before map unload (avoids ForestData log spam)') end
+	end)
+	if not ok then log('W', 'preClearForest', 'forest pre-clear skipped: '..tostring(err)) end
+end
+
+local function beginMapTransition(newMap, generation)
+	if not isMpSession then return end
+	if not newMap or newMap == "" then return end
+	-- Already mid-transition: ignore the duplicate (the in-flight switch will finish).
+	-- Stops an impatient re-type of /map during the (possibly long) load from stacking.
+	if isChangingMap then
+		log('W', 'beginMapTransition', 'Already changing map; ignoring duplicate request')
+		mapGeneration = tonumber(generation) or mapGeneration
+		return
+	end
+	-- Gate on RELIABLE signals, not status=="Playing": in heavy-mod sessions `status` can
+	-- lag at "LoadingMapNow" even after the join fully completes (isGoingMpSession=false,
+	-- a level is loaded, player driving) -- which silently dropped the switch. Accept the
+	-- switch once the initial join is done (isGoingMpSession false) AND a level is loaded.
+	-- While still joining, the normal handshake delivers the current map, so skip.
+	if isGoingMpSession or getMissionFilename() == "" then
+		log('W', 'beginMapTransition', 'Not ready for map change yet (status="'..tostring(status)..'", joining); ignoring')
+		mapGeneration = tonumber(generation) or mapGeneration
+		return
+	end
+	log('W', 'beginMapTransition', 'Seamless map switch to '..newMap..' (generation '..tostring(generation)..')')
+	mapGeneration = tonumber(generation) or 0
+	isChangingMap = true
+	mapTransitionTimer = 0
+	-- Feedback: a big modded level can take a while to load, so tell the player it's
+	-- working (the engine loading screen also shows once startFreeroam kicks in).
+	local shortName = newMap:match("/levels/([^/]+)/") or newMap
+	if UI and UI.showNotification then UI.showNotification("Switching map to "..shortName.."...", nil, "map") end
+	if UI and UI.updateLoading then UI.updateLoading("lSwitching map to "..shortName.."...") end
+	-- Also drop a persistent chat line: a big map can take a minute+ to load and the toast
+	-- fades, so this gives the player a standing "it's working" record (the prior complaint
+	-- was "no message after switching"). The "now on X" confirmation lands in runPostJoin.
+	if UI and UI.chatMessage then UI.chatMessage(":Server: Switching map to "..shortName.." -- large maps can take a minute to load, please wait...") end
+	-- Drop the networked vehicle tables (the level reload despawns the actual cars) but
+	-- keep the player roster. Marking this a "rejoin" stops onClientEndMission from
+	-- tearing the session down when the old level unloads.
+	if MPVehicleGE and MPVehicleGE.clearVehiclesForMapChange then MPVehicleGE.clearVehiclesForMapChange() end
+	preClearForest() -- delete the old forest now (valid instances) so teardown doesn't spam the log
+	isGoingMpSession = true
+	-- pcall the level load: if a BeamNG API loadLevel relies on (core_levels/freeroam_freeroam/
+	-- core_vehicles) ever changes, a switch must NOT throw out of the event handler and wedge
+	-- the session. On failure, abort the switch cleanly, re-arm spawning, stay on the current
+	-- map, and tell the player -- the 60s watchdog is the backstop if loadLevel hangs instead.
+	local okLoad, loadErr = pcall(loadLevel, newMap)
+	if not okLoad then
+		log('E', 'beginMapTransition', 'loadLevel failed ('..tostring(loadErr)..'); aborting switch, staying on current map')
+		isChangingMap = false
+		isGoingMpSession = false
+		mapTransitionTimer = 0
+		pcall(function() if spawn then spawn.preventPlayerSpawning = false end end)
+		if UI and UI.chatMessage then UI.chatMessage(":Server: Map switch failed (see console) -- staying on the current map.") end
+	end
+end
+
 -- VV============= OTHERS =============VV
 
 --- Handles the storing of the port received from the launcher that is where the http proxy is located on.
@@ -418,6 +544,7 @@ end
 local function loginReceived(params)
 	--log('M', 'loginReceived', 'Logging result received')
 	local result = jsonDecode(params)
+	if not result then return end
 	if (result.success == true or result.Auth == 1) then
 		log('M', 'loginReceived', 'Login successful.')
 		loggedIn = true
@@ -429,20 +556,17 @@ local function loginReceived(params)
 	end
 
 	authResult = result
+	-- LAN-only build: there is no online avatar/forum service. We skip the avatar
+	-- request, which would otherwise block the game thread trying to reach the
+	-- internet through the launcher's HTTP proxy. Roles are always "USER" locally,
+	-- so the role-color lookup below is effectively a no-op but kept for safety.
 	if authResult.username then
-		local res = {}; 
-		local r, code, headers = http.request{
-			url = "http://localhost:".. proxyPort .."/avatar/"..authResult.username, 
-			sink = ltn12.sink.table(res)
-		}; 
-
-		if code == 200 then 
-			authResult.avatar = "data:" .. (headers["content-type"]) .. ";base64," .. MPHelpers.b64encode(table.concat(res))
-		end
-
 		if authResult.role and authResult.role ~= "USER" then
-			local roleColor = MPVehicleGE.getRoleInfoTable()[authResult.role].backcolor
-			authResult.color = "rgba(" .. roleColor.r .. "," .. roleColor.g .. "," .. roleColor.b .. "," .. (roleColor.a or 127)/255 .. ")"
+			local roleInfo = MPVehicleGE.getRoleInfoTable()[authResult.role]
+			local roleColor = roleInfo and roleInfo.backcolor
+			if roleColor then
+				authResult.color = "rgba(" .. roleColor.r .. "," .. roleColor.g .. "," .. roleColor.b .. "," .. (roleColor.a or 127)/255 .. ")"
+			end
 		end
 	end
 
@@ -588,7 +712,13 @@ local HandleNetwork = {
 	['B'] = function(params) serverList = params; sendBeamMPInfo() end, -- Server list received
 	['J'] = function(params) promptAutoJoin(params) end, -- Automatic Server Joining
 	['L'] = function(params) setMods(params) status = "LoadingResources" end, --received after sending 'C' packet
-	['M'] = function(params) log('W', 'HandleNetwork', 'Received Map! '..params) loadLevel(params) end,
+	['M'] = function(params)
+		log('W', 'HandleNetwork', 'Received Map! '..params)
+		-- pcall so a loadLevel failure (e.g. a renamed BeamNG API) logs one clear line instead
+		-- of an opaque stack trace through the network handler; the compat self-check explains why.
+		local ok, err = pcall(loadLevel, params)
+		if not ok then log('E', 'HandleNetwork', 'loadLevel failed on join ('..tostring(err)..'); the BeamNG API compatibility check above lists any missing APIs') end
+	end,
 	['N'] = function(params) loginReceived(params) end,
 	['P'] = function(params) setProxyPort(params) end,
 	['U'] = function(params) handleU(params) end, -- Loading into server UI, handles loading mods, pre-join kick messages and ping
@@ -609,13 +739,70 @@ local recvState = {
 --- onUpdate is a game eventloop function. It is called each frame by the game engine.
 -- This is the main processing thread of BeamMP in the game
 -- @param dt float
+-- Poll the GPU's tracked graphics memory and warn (once per high-water crossing) when it
+-- gets close to the card's total -- the next big map load/switch is what tips a near-full
+-- card into the resource-exhaustion crash. Engine.Render.calculateGfxMemory() sums BeamMP's
+-- per-category gfx allocations (an underestimate of true VRAM pressure, so a conservative
+-- signal); Engine.Platform.getGPUInfo().memoryMB is the card total. Best-effort: if the
+-- engine APIs are missing/changed on a build, it disables itself silently (never spams).
+local function checkVramHeadroom()
+	if vramTotalMB == -1 then return end -- API unavailable on this build; gave up earlier
+	local ok = pcall(function()
+		if not vramTotalMB then
+			local gpu = Engine and Engine.Platform and Engine.Platform.getGPUInfo and Engine.Platform.getGPUInfo()
+			vramTotalMB = (gpu and tonumber(gpu.memoryMB)) or 0
+		end
+		if not vramTotalMB or vramTotalMB <= 0 then vramTotalMB = -1; return end -- can't read total
+		local res = Engine and Engine.Render and Engine.Render.calculateGfxMemory and Engine.Render.calculateGfxMemory()
+		if type(res) ~= 'table' then vramTotalMB = -1; return end
+		local usedMB = 0
+		for _, v in pairs(res) do usedMB = usedMB + (tonumber(v) or 0) end
+		usedMB = usedMB / 1048576
+		if usedMB <= 0 then return end
+		local pct = usedMB / vramTotalMB
+		if pct >= 0.85 and not vramWarned then
+			vramWarned = true
+			local msg = string.format("High VRAM use: %.1f / %.1f GB (%d%%). Switching/loading maps may crash the game -- consider fewer mods or maps.",
+				usedMB / 1024, vramTotalMB / 1024, math.floor(pct * 100))
+			log('W', 'checkVramHeadroom', msg)
+			if UI then
+				if UI.showNotification then UI.showNotification(msg, nil, "warning") end
+				if UI.chatMessage then UI.chatMessage(":Warning: "..msg) end
+			end
+		elseif pct < 0.78 then
+			vramWarned = false -- recovered (e.g. a map unloaded); re-arm the warning
+		end
+	end)
+	if not ok then vramTotalMB = -1 end -- engine API threw; disable to avoid log spam
+end
+
 local function onUpdate(dt)
 	pingTimer = pingTimer + dt
 	reconnectTimer = reconnectTimer + dt
+	-- VRAM headroom warning (opt-out via showVramWarning); poll occasionally, not per-frame
+	-- (calculateGfxMemory walks all gfx resources). Only while in a session.
+	if isMpSession and settings.getValue('showVramWarning') ~= false then
+		vramCheckTimer = vramCheckTimer + dt
+		if vramCheckTimer >= 15 then
+			vramCheckTimer = 0
+			checkVramHeadroom()
+		end
+	end
 	if status == "LoadingResources" then
 		updateUiTimer = updateUiTimer + dt
 	end
 	heartbeatTimer = heartbeatTimer + dt
+	-- Seamless map switch watchdog: if the new level never finishes loading, fall back to
+	-- a clean full leave so the client can't get stuck mid-transition.
+	if isChangingMap then
+		mapTransitionTimer = mapTransitionTimer + dt
+		if mapTransitionTimer > MAP_TRANSITION_TIMEOUT then
+			log('E', 'onUpdate', 'Map transition timed out after '..MAP_TRANSITION_TIMEOUT..'s; leaving server')
+			isChangingMap = false
+			mapTransitionTimer = 0
+			leaveServer(true)
+		end
+	end
 	--====================================================== DATA RECEIVE ======================================================
 	if launcherConnected then
 		if TCPLauncherSocket ~= nop then
@@ -685,12 +872,77 @@ end
 
 -- EVENTS
 
+-- ============================ BeamNG API compatibility self-check ============================
+-- This mod is tightly coupled to BeamNG engine/core APIs (core_levels, core_vehicles,
+-- freeroam_freeroam, Engine.*, scenetree, ...). A future BeamNG upgrade that renames or removes
+-- one of them otherwise surfaces as a cryptic mid-session stack trace. This runs once at session
+-- start, verifies the APIs the critical paths depend on, and logs ONE clear report naming exactly
+-- what's missing -- turning "BeamMP mysteriously broke after the BeamNG update" into an actionable
+-- "BeamNG no longer provides <api> (powers <feature>); this BeamMP build needs an update." It does
+-- NOT change behavior -- pure diagnostics -- so it can't itself regress anything.
+local compatChecked = false
+-- { dotted path, kind ('function'|'table'), feature it powers, optional? }
+-- Optional = a best-effort feature that already self-disables if the API is gone (warn, not error).
+local requiredBeamNGApis = {
+	{ 'getMissionFilename',                'function', 'level load / switch' },
+	{ 'core_levels.getList',               'function', 'map-name matching' },
+	{ 'core_levels.expandMissionFileName', 'function', 'level load' },
+	{ 'core_vehicles.removeAll',           'function', 'join cleanup' },
+	{ 'core_vehicles.spawnDefault',        'function', 'map-switch car respawn' },
+	{ 'freeroam_freeroam.startFreeroam',   'function', 'level load' },
+	{ 'core_gamestate.setGameState',       'function', 'multiplayer session state' },
+	{ 'extensions.hook',                   'function', 'session lifecycle hooks' },
+	{ 'guihooks.trigger',                  'function', 'UI events' },
+	{ 'spawn',                             'table',    'default-spawn gating' },
+	{ 'scenetree.findClassObjects',        'function', 'forest pre-clear (log de-spam)', true },
+	{ 'scenetree.findObject',              'function', 'forest pre-clear (log de-spam)', true },
+	{ 'Engine.Render.calculateGfxMemory',  'function', 'VRAM warning',                   true },
+	{ 'Engine.Platform.getGPUInfo',        'function', 'VRAM warning',                   true },
+}
+
+-- Resolve a dotted path ("a.b.c") against the global env, never erroring on a nil mid-path.
+local function resolveApi(path)
+	local cur = _G
+	for part in string.gmatch(path, '[^.]+') do
+		if type(cur) ~= 'table' then return nil end
+		cur = cur[part]
+		if cur == nil then return nil end
+	end
+	return cur
+end
+
+local function checkBeamNGCompat()
+	if compatChecked then return end
+	compatChecked = true
+	local missingReq, missingOpt = {}, {}
+	for _, a in ipairs(requiredBeamNGApis) do
+		local path, kind, feature, optional = a[1], a[2], a[3], a[4]
+		local v = resolveApi(path)
+		local okType = (kind == 'table' and type(v) == 'table') or (kind == 'function' and type(v) == 'function')
+		if not okType then table.insert(optional and missingOpt or missingReq, path..' ('..feature..')') end
+	end
+	if #missingReq > 0 then
+		log('E', 'checkBeamNGCompat', 'This BeamNG build is missing '..#missingReq..' API(s) BeamMP depends on -- the mod may misbehave and likely needs an update for this BeamNG version:')
+		for _, m in ipairs(missingReq) do log('E', 'checkBeamNGCompat', '  MISSING (required): '..m) end
+	end
+	if #missingOpt > 0 then
+		log('W', 'checkBeamNGCompat', #missingOpt..' optional API(s) unavailable; the related BeamMP feature self-disables (no crash):')
+		for _, m in ipairs(missingOpt) do log('W', 'checkBeamNGCompat', '  unavailable (optional): '..m) end
+	end
+	if #missingReq == 0 and #missingOpt == 0 then
+		log('I', 'checkBeamNGCompat', 'BeamNG API compatibility OK ('..#requiredBeamNGApis..' APIs present).')
+	end
+	return missingReq, missingOpt
+end
+
 --- onLauncherConnected is an event which is called by internal scripts. This one is called when connection to the launcher is established
 --- @usage INTERNAL ONLY / GAME SPECIFIC
 onLauncherConnected = function()
 	loggedIn = false
 	reconnectAttempt = 0
 	log('W', 'onLauncherConnected', 'onLauncherConnected')
+	log('W', 'onLauncherConnected', '==== BeamMP LAN fork '..modVersion..' loaded ===='); log('I', 'onLauncherConnected', modPatchNote)
+	checkBeamNGCompat() -- once-per-session: verify BeamNG APIs still exist, log what's missing
 	send('Z') -- request launcher version
 	send('P') -- request launcher proxy port
 	requestServerList()
@@ -716,8 +968,27 @@ runPostJoin = function() -- gets called once loaded into a map
 		MPGameNetwork.connectToLauncher()
 		log('W', 'runPostJoin', 'isGoingMpSession = false')
 		isGoingMpSession = false
-		core_gamestate.setGameState('multiplayer', 'multiplayer', 'multiplayer')
+		-- pcall: in heavy-mod sessions a mod's gamestate hook can throw here, which
+		-- previously aborted runPostJoin BEFORE status="Playing" and the map-switch ack
+		-- below (so the switch loaded but the client stayed fenced/carless, and status
+		-- got stuck at "LoadingMapNow"). Never let setGameState kill the rest.
+		local okGs, gsErr = pcall(core_gamestate.setGameState, 'multiplayer', 'multiplayer', 'multiplayer')
+		if not okGs then log('E', 'runPostJoin', 'setGameState failed (continuing): '..tostring(gsErr)) end
 		status = "Playing"
+		-- Seamless map switch: we're now live on the new level. Tell the server we're
+		-- ready (clears its stale-packet fence) and arm a deferred re-spawn of our car.
+		-- The sockets, mounted mods and Lua VM were never torn down, so this resumes the
+		-- existing session in place -- no reconnect, no mod re-sync, no Lua reload.
+		if isChangingMap then
+			isChangingMap = false
+			mapTransitionTimer = 0
+			MPGameNetwork.send("Mr"..tostring(mapGeneration)) -- map-ready ack
+			if MPVehicleGE and MPVehicleGE.beginMapRespawn then MPVehicleGE.beginMapRespawn() end
+			-- Completion feedback (pairs with the "Switching map..." line from beginMapTransition)
+			local nowName = (getMissionFilename() or ""):match("/levels/([^/]+)/") or "the new map"
+			if UI and UI.showNotification then UI.showNotification("Map switched to "..nowName, nil, "map") end
+			if UI and UI.chatMessage then UI.chatMessage(":Server: Map switched to "..nowName..".") end
+		end
 		guihooks.trigger('onServerJoined')
 	end
 end
@@ -778,6 +1049,7 @@ M.approveModDownload   = approveModDownload
 -- auth
 M.login                = login
 M.autoLogin            = autoLogin
+M.setPlayerName        = setPlayerName
 M.getLoginState        = getLoginState
 M.logout               = logout
 M.isLoggedIn           = isLoggedIn
@@ -796,9 +1068,11 @@ M.requestServerList    = requestServerList
 -- server
 M.connectToServer      = connectToServer
 M.leaveServer          = leaveServer
+M.beginMapTransition   = beginMapTransition -- seamless map switch (server onMapChange handler)
 M.getCurrentServer     = getCurrentServer
 M.isMPSession          = isMPSession
 M.isGoingMPSession     = isGoingMPSession
+M.getModVersion        = function() return modVersion end
 
 M.onSerialize          = onSerialize
 M.onDeserialized       = onDeserialized

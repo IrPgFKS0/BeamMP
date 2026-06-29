@@ -391,13 +391,22 @@ local function check()
 		:: skip_electric ::
 	end
 	if electricsChanged then
-		obj:queueGameEngineLua("MPElectricsGE.sendElectrics(\'"..jsonEncode(electricsToSend).."\', "..obj:getID()..")")
+		-- Escape backslashes/single-quotes so an electrics STRING value (e.g. a CarPlay song
+		-- title containing ' or \) can't terminate the queued Lua string literal early and
+		-- corrupt the packet (-> truncated JSON -> jsonDecode fails on the receiver).
+		local encElectrics = jsonEncode(electricsToSend):gsub("\\", "\\\\"):gsub("'", "\\'")
+		obj:queueGameEngineLua("MPElectricsGE.sendElectrics(\'"..encElectrics.."\', "..obj:getID()..")")
 	end
 end
 
 local lastLeftSignal = 0
 local lastRightSignal = 0
 local function applyElectrics(data)
+	-- Skip a malformed/truncated payload cleanly instead of spamming jsonDecode tracebacks.
+	-- Some mods emit huge electrics blobs (the sdd_g82 BMW sends ~3.5KB of CarPlay/screen
+	-- state) that can exceed the transport and arrive truncated -> not valid JSON. A complete
+	-- electrics object always starts '{' (123) and ends '}' (125); anything else, drop it.
+	if type(data) ~= "string" or data:byte(1) ~= 123 or data:byte(#data) ~= 125 then return end
 	local decodedData = jsonDecode(data) -- Decode received data
 	if (decodedData) then -- If received data is correct
 		if decodedData.signal_left_input or decodedData.signal_right_input then
@@ -437,12 +446,14 @@ local function applyElectrics(data)
 
 		-- Transbrake syncing
 		if decodedData.transbrake and electrics.values.transbrake ~= decodedData.transbrake then
-			controller.getControllerSafe("transbrake").setTransbrake(decodedData.transbrake)
+			local tb = controller.getControllerSafe("transbrake")
+			if tb then tb.setTransbrake(decodedData.transbrake) end
 		end
 
 		-- LineLock syncing
 		if decodedData.linelock and electrics.values.linelock ~= decodedData.linelock then
-			controller.getControllerSafe("lineLock").setLineLock(decodedData.linelock)
+			local ll = controller.getControllerSafe("lineLock")
+			if ll then ll.setLineLock(decodedData.linelock) end
 		end
 
 		-- ABS Behavior syncing
@@ -451,7 +462,8 @@ local function applyElectrics(data)
 		end
 
 		if decodedData.mainEngine_compressionBrake_setting then
-			controller.getControllerSafe('compressionBrake').setCompressionBrakeCoef(decodedData.mainEngine_compressionBrake_setting)
+			local cb = controller.getControllerSafe('compressionBrake')
+			if cb then cb.setCompressionBrakeCoef(decodedData.mainEngine_compressionBrake_setting) end
 		end
 
 		-- DH Super bolide

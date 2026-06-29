@@ -69,7 +69,8 @@ app.controller("PlayerList", ['$scope', '$filter', 'Settings', function ($scope,
 	};
 
 	$scope.select = function() {
-		bngApi.engineLua('setCEFFocus(true)');
+		// setCEFFocus(true) removed: BeamNG deprecated it ("doesn't need to be called" -- the engine
+		// now manages UI-app/CEF focus automatically). Kept as a no-op so the ng-click binding stays valid.
 	};
 
 	$scope.disconnect = function() {

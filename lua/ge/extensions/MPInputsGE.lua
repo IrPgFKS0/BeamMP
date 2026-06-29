@@ -18,7 +18,7 @@ local function tick() -- Update inputs values of all vehicles - The server check
 	for i,v in pairs(ownMap) do -- For each own vehicle
 		local veh = be:getObjectByID(i) -- Get vehicle
 		if veh then
-			veh:queueLuaCommand("MPInputsVE.getInputs()") -- Send inputs values
+			veh:queueLuaCommand("if MPInputsVE then MPInputsVE.getInputs() end") -- Send inputs values
 		end
 	end
 end
@@ -46,7 +46,7 @@ local function applyInputs(data, serverVehicleID)
 	local gameVehicleID = MPVehicleGE.getGameVehicleID(serverVehicleID) or -1 -- get gameID
 	local veh = be:getObjectByID(gameVehicleID)
 	if veh then
-		veh:queueLuaCommand("MPInputsVE.applyInputs(mime.unb64(\'".. MPHelpers.b64encode(data) .."\'))")
+		veh:queueLuaCommand("if MPInputsVE then MPInputsVE.applyInputs(mime.unb64(\'".. MPHelpers.b64encode(data) .."\')) end")
 	end
 end
 

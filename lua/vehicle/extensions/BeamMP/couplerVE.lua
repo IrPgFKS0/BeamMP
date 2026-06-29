@@ -22,6 +22,7 @@ beamstate.activateAutoCoupling = activateAutoCoupling
 
 local function toggleCouplerState(data)
 	local decodedData = jsonDecode(data)
+	if not decodedData then return end -- a truncated/corrupt packet decodes to nil; pairs(nil) would FATAL the VE VM
 	for k,v in pairs(decodedData) do
 		if v.state == false or v.state == true then
 			if v._nodetag then
@@ -38,18 +39,24 @@ local function toggleCouplerState(data)
 					log("D", "couplerVE", "no cached coupler found with tag"..v._nodetag)
 				end
 			end
-		elseif controller.getControllerSafe(v.name).getGroupState() ~= v.state then
-			local couplerController = {}
-			if controllerSyncVE.OGcontrollerFunctionsTable and controllerSyncVE.OGcontrollerFunctionsTable[v.name] then -- for controller sync compatibility,
-				couplerController = controllerSyncVE.OGcontrollerFunctionsTable[v.name]	-- the controller sync disables the functions for remote vehicles to prevent ghost controlling, so we need to call the original function instead
-			elseif controller.getControllerSafe(v.name) then
-				couplerController = controller.getControllerSafe(v.name)
-			end
+		else
+			-- Advanced (controller-group) coupler. getControllerSafe() returns nil when the named
+			-- controller doesn't exist locally (a peer running a different/broken/absent mod). The
+			-- original code chained .getGroupState() on that nil AND could call detachGroup() on an
+			-- empty table -- either FATAL-kills this vehicle's VE VM (the broken-mod desync class).
+			-- Resolve a real controller first and skip the whole branch if there is none.
+			local realController = controller.getControllerSafe(v.name)
+			if realController and realController.getGroupState and realController.getGroupState() ~= v.state then
+				local couplerController = realController
+				if controllerSyncVE.OGcontrollerFunctionsTable and controllerSyncVE.OGcontrollerFunctionsTable[v.name] then -- controller-sync compat: it disables the funcs on remote vehicles, so use the saved originals
+					couplerController = controllerSyncVE.OGcontrollerFunctionsTable[v.name]
+				end
 
-			if v.state == "detached" or v.state == "autoCoupling" or v.state == "broken" then
-				couplerController.detachGroup()
-			elseif v.state == "attached" then
-				couplerController.tryAttachGroupImpulse()
+				if v.state == "detached" or v.state == "autoCoupling" or v.state == "broken" then
+					couplerController.detachGroup()
+				elseif v.state == "attached" then
+					couplerController.tryAttachGroupImpulse()
+				end
 			end
 		end
 	end
@@ -64,7 +71,8 @@ local function onCouplerAttached(nodeId, obj2id, obj2nodeId, attachSpeed, attach
 		local MPcouplerdata = {}
 		if ID == obj2id then
 			for k,v in pairs(MPcouplercache) do
-				local state = controller.getControllerSafe(v.name).getGroupState()
+				local sc = controller.getControllerSafe(v.name) -- nil if the controller was removed (part change/reset) or never existed; calling on nil would FATAL the VE VM
+				local state = sc and sc.getGroupState()
 				if v.state ~= state then
 					Advanced = true
 					local couplerstates = {}
@@ -106,7 +114,8 @@ local function onCouplerDetached(nodeId, obj2id, obj2nodeId)
 		local MPcouplerdata = {}
 		if ID == obj2id then
 			for k,v in pairs(MPcouplercache) do
-				local state = controller.getControllerSafe(v.name).getGroupState()
+				local sc = controller.getControllerSafe(v.name) -- nil if the controller was removed (part change/reset) or never existed; calling on nil would FATAL the VE VM
+				local state = sc and sc.getGroupState()
 				if v.state ~= state then
 					Advanced = true
 					local couplerstates = {}

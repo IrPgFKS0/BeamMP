@@ -180,6 +180,10 @@ local receivedPacketCount = 0
 local sentPacketSize = 0
 local receivedPacketSize = 0
 
+-- Lightweight always-on sync overlay (separate accumulators so it doesn't fight
+-- the draggable "Network Performance" window above, which resets the counters too).
+local ov = { sent = 0, recv = 0, sentB = 0, recvB = 0, timer = 0, sentRate = 0, recvRate = 0, sentKB = 0, recvKB = 0 }
+
 local function avgData(data)
 	local sum, max = 0, 0
 	
@@ -255,13 +259,109 @@ function MP_Console(show)
 	end
 end
 
+--- Lightweight always-on overlay: synced (remote) vehicle count + live network
+--- packet/byte rates. Toggle via the "showSyncStats" setting (Options >
+--- Multiplayer > "Show sync stats overlay"). Cheap: one tiny imgui window/frame.
+local function drawSyncStatsOverlay(dt)
+	if not settings.getValue("showSyncStats") then return end
+	ov.timer = ov.timer + (dt or 0)
+	ov.frames = (ov.frames or 0) + 1
+
+	-- Reset the peak/persistent trackers whenever the send rate is changed, so each tuning step
+	-- (e.g. dropping to 30Hz) gets a fresh "is it still bad?" window instead of carrying old history.
+	local hz = tonumber(settings.getValue("physRateSendHz")) or 100
+	if hz ~= ov.lastHz then
+		ov.lastHz = hz
+		ov.applyPeak, ov.applyWorst, ov.applyBadTime = 0, nil, 0
+		ov.fpsPeak, ov.fpsWorst, ov.fpsBadTime = 0, nil, 0
+		ov.driftBadTime, ov.driftWorst, ov.healTotal = 0, nil, 0
+	end
+
+	local synced = 0
+	if MPVehicleGE and MPVehicleGE.getVehicles then
+		for _, v in pairs(MPVehicleGE.getVehicles()) do
+			if v and not v.isLocal and v.isSpawned then synced = synced + 1 end
+		end
+	end
+
+	if ov.timer >= 1.0 then
+		ov.sentRate, ov.recvRate = ov.sent, ov.recv
+		ov.sentKB, ov.recvKB = ov.sentB/1000, ov.recvB/1000
+		ov.sent, ov.recv, ov.sentB, ov.recvB = 0, 0, 0, 0
+		ov.fps = ov.frames; ov.frames = 0
+		ov.applyRate = (positionGE and positionGE.getApplyPosRate and positionGE.getApplyPosRate()) or 0
+		-- Per-second bad-state eval + peak/persistent tracking (badTime in whole seconds).
+		-- "Bad" = a sharp drop below a slowly-decaying baseline of the best recent value, so it
+		-- adapts to the chosen send rate / car count / a genuinely slow machine instead of a fixed line.
+		ov.applyPeak = math.max((ov.applyPeak or 0) * 0.95, ov.applyRate)
+		ov.applyBad = synced > 0 and (ov.applyPeak or 0) > 5 and ov.applyRate < ov.applyPeak * 0.4 -- received <40% of baseline = relay starving
+		if ov.applyBad then
+			ov.applyBadTime = (ov.applyBadTime or 0) + 1
+			ov.applyWorst = math.min(ov.applyWorst or ov.applyRate, ov.applyRate)
+		end
+		ov.fpsPeak = math.max((ov.fpsPeak or 0) * 0.95, ov.fps)
+		ov.fpsBad = (ov.fpsPeak or 0) > 10 and ov.fps < ov.fpsPeak * 0.6 -- FPS dropped >40% from baseline = one core spiking
+		if ov.fpsBad then
+			ov.fpsBadTime = (ov.fpsBadTime or 0) + 1
+			ov.fpsWorst = math.min(ov.fpsWorst or ov.fps, ov.fps)
+		end
+		-- Drift = the DIRECT symptom (told-vs-actual gap of remote ghosts) from the positionGE watchdog,
+		-- which the indirect apply-rate/FPS metrics miss during a traffic flood. Bad = a self-heal
+		-- correction actually fired, OR drift well past the few-metre healthy predictor lead.
+		local md, hc = 0, 0
+		if positionGE and positionGE.getDriftStats then md, hc = positionGE.getDriftStats() end
+		ov.driftM = md
+		ov.healTotal = (ov.healTotal or 0) + (hc or 0)
+		ov.driftBad = synced > 0 and ((hc or 0) > 0 or (md or 0) > 8)
+		if ov.driftBad then
+			ov.driftBadTime = (ov.driftBadTime or 0) + 1
+			ov.driftWorst = math.max(ov.driftWorst or 0, md or 0)
+		end
+		ov.timer = ov.timer - 1.0
+	end
+
+	ov.RED = ov.RED or im.ImVec4(1.0, 0.35, 0.35, 1.0)
+	im.SetNextWindowBgAlpha(0.35)
+	im.SetNextWindowPos(im.ImVec2(14, 90), im.Cond_Always)
+	im.Begin("BeamMPSyncStats", nil, bit.bor(im.WindowFlags_NoTitleBar, im.WindowFlags_NoResize,
+		im.WindowFlags_NoMove, im.WindowFlags_AlwaysAutoResize, im.WindowFlags_NoInputs,
+		im.WindowFlags_NoNav, im.WindowFlags_NoFocusOnAppearing))
+	im.Text(string.format("Synced vehicles: %d   (send %d Hz)", synced, hz))
+	im.Text(string.format("Net in:  %d pkt/s  (%.1f KB/s)", ov.recvRate, ov.recvKB))
+	im.Text(string.format("Net out: %d pkt/s  (%.1f KB/s)", ov.sentRate, ov.sentKB))
+
+	-- Pos applied = receive rate (relay health). Red while starving; the [dip/bad] tail persists so
+	-- you can see how deep + how long it went even after it recovers -- that's the tuning signal.
+	local aTxt = string.format("Pos applied: %d/s", ov.applyRate or 0)
+	if (ov.applyBadTime or 0) > 0 then aTxt = aTxt .. string.format("   [dipped to %d/s, bad %ds total]", ov.applyWorst or 0, ov.applyBadTime) end
+	if ov.applyBad then im.TextColored(ov.RED, aTxt) else im.Text(aTxt) end
+
+	-- FPS = main-thread health (one core). Red while spiking down; tail persists like above.
+	local fTxt = string.format("FPS: %d", ov.fps or 0)
+	if (ov.fpsBadTime or 0) > 0 then fTxt = fTxt .. string.format("   [dropped to %d, bad %ds total]", ov.fpsWorst or 0, ov.fpsBadTime) end
+	if ov.fpsBad then im.TextColored(ov.RED, fTxt) else im.Text(fTxt) end
+
+	-- Ghost drift = the actual sync symptom (told-vs-actual). A few metres is the normal predictor
+	-- lead (healthy); red = a correction fired or drift went well past that. [N corrections] = the
+	-- self-heal resyncs since the last rate change. This is what stays green-while-broken if omitted.
+	local dTxt = string.format("Ghost drift: %.1fm", ov.driftM or 0)
+	if (ov.healTotal or 0) > 0 then dTxt = dTxt .. string.format("   [%d corrections]", ov.healTotal) end
+	if ov.driftBad then im.TextColored(ov.RED, dTxt) else im.Text(dTxt) end
+
+	if ov.applyBad then im.TextColored(ov.RED, ">> relay starving: lower 'Position send rate'") end
+	if ov.fpsBad then im.TextColored(ov.RED, ">> FPS spike: enable 'Low-GC predictor' (fastPredict)") end
+	if ov.driftBad then im.TextColored(ov.RED, ">> ghost drifting/correcting: cut AI/traffic count or raise 'Position send rate'") end
+	im.End()
+end
+
 --- Draws Imgui playerlist, spawnTeleport and NetworkPerf.
 --- This is the main processing thread of BeamMP in the game
 --- @param dt float
-local function onUpdate()
+local function onUpdate(dt)
 	drawPlayerList()
 	drawSpawnTeleport()
 	drawNetworkPerf()
+	drawSyncStatsOverlay(dt)
 end
 
 
@@ -270,12 +370,14 @@ end
 local function packetSent(bytes)
 	sentPacketCount = sentPacketCount+1
 	sentPacketSize = sentPacketSize + (bytes or 0)
+	ov.sent = ov.sent + 1; ov.sentB = ov.sentB + (bytes or 0)
 end
 --- Updates the count and size of received packets.
 --- @param[opt] bytes number The size of the packet in bytes.
 local function packetReceived(bytes)
 	receivedPacketCount = receivedPacketCount+1
 	receivedPacketSize = receivedPacketSize + (bytes or 0)
+	ov.recv = ov.recv + 1; ov.recvB = ov.recvB + (bytes or 0)
 end
 
 

@@ -39,7 +39,11 @@ local targetRPMRatioDecrease = 0
 local updateTargetRPMRatio = nop
 
 local function updateTargetRPMRatioFunc(dt)
-    local currentTargetRPMRatio = tonumber(spinnerController.engineInfo[6]:match("-?[%d%.]+")) / 100
+    -- spinnerController / engineInfo[6] may be absent or non-string on a version-mismatched prop mod;
+    -- :match on nil would FATAL this (non-pcall'd updateGFX) path. Mirror the hamster guard at line 17.
+    local info = spinnerController and spinnerController.engineInfo
+    if type(info) ~= "table" or type(info[6]) ~= "string" then return end
+    local currentTargetRPMRatio = (tonumber(info[6]:match("-?[%d%.]+")) or 0) / 100
     local RPMRatioError = targetRPMRatio - currentTargetRPMRatio
     if targetRPMRatioIncrease ~= 0 or targetRPMRatioDecrease ~= 0 then
         controllerSyncVE.OGcontrollerFunctionsTable["spinner"]["setTargetRPMRatioIncrease"](targetRPMRatioIncrease)
@@ -69,8 +73,9 @@ end
 
 local function sendTargetRPMRatio(controllerName, funcName, tempTable, ...)
     controllerSyncVE.OGcontrollerFunctionsTable[controllerName][funcName](...)
-    if spinnerController then
-        tempTable.TargetRPMRatio = tonumber(spinnerController.engineInfo[6]:match("-?[%d%.]+")) / 100
+    if spinnerController and type(spinnerController.engineInfo) == "table"
+        and type(spinnerController.engineInfo[6]) == "string" then
+        tempTable.TargetRPMRatio = (tonumber(spinnerController.engineInfo[6]:match("-?[%d%.]+")) or 0) / 100
         controllerSyncVE.sendControllerData(tempTable)
     end
 end

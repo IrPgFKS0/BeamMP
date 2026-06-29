@@ -50,7 +50,7 @@ local function calcCOG()
 end
 
 -- Find all nodes that are connected to the parent node
-local function findConnectedNodes()
+local function findConnectedNodesImpl()
 	if not parentNode then return end
 	
 	--print("Find connected nodes "..obj:getId())
@@ -114,6 +114,18 @@ local function findConnectedNodes()
 	
 	local rot = quatFromDir(-obj:getDirectionVector(), obj:getDirectionVectorUp())
 	M.cogRel = cog:rotated(rot:inversed())
+end
+
+-- Guard: on a transiently-invalid vehicle (e.g. just after BeamNG's AI chasePlan or an
+-- instability error disabled it, then it's recovered/reset) the COG-rotation math above can
+-- hit nil node/direction data and FATAL the whole vehicle VM (seen via mathlib push3 ->
+-- "index local 's' (a nil value)"), which then cascades on every respawn. Wrap it so
+-- velocityVE just skips a pass instead of killing the vehicle.
+local function findConnectedNodes()
+	local ok, err = pcall(findConnectedNodesImpl)
+	if not ok then
+		log('W', 'findConnectedNodes', 'skipped -- vehicle data transiently invalid: ' .. tostring(err))
+	end
 end
 
 local function onInit()
@@ -193,7 +205,7 @@ end
 -- NOTE: - very high values can cause instability
 local function addForce(nodes, x, y, z, isCounterVel)
 	local mainClusterID = obj:getNodeCluster(refNode)
-	for i=1, #nodes do
+	for i=#nodes, 1, -1 do -- reverse: table.remove(disconnectedNodes,i) below skips elements in a forward loop
 		local node = nodes[i]
 		if node then
 			if not isCounterVel or obj:getNodeCluster(node[1]) == mainClusterID then
@@ -234,7 +246,7 @@ local function addAngularForce(nodes, x, y, z, pitchAV, rollAV, yawAV, isCounter
 	local cog = M.cogRel:rotated(rot)
 	local mainClusterID = obj:getNodeCluster(refNode)
 	--print("addAngularVelocity: pitchAV: "..pitchAV..", rollAV: "..rollAV..", yawAV: "..yawAV)
-	for i=1, #nodes do
+	for i=#nodes, 1, -1 do -- reverse: table.remove(disconnectedNodes,i) below skips elements in a forward loop
 		local node = nodes[i]
 		if node then
 			local cid = node[1]
@@ -276,7 +288,7 @@ local function addAngularVelocity(x, y, z, pitchAV, rollAV, yawAV, onlyAngularVe
 		addAngularForce(nodes, x, y, z, pitchAV, rollAV, yawAV)
 
 		local mainClusterID = obj:getNodeCluster(refNode)
-		for i=1, disconnectedNodeCount do
+		for i=disconnectedNodeCount, 1, -1 do -- reverse: forward removal skips elements
 			local node = disconnectedNodes[i]
 			if node then
 				if obj:getNodeCluster(node[1]) ~= mainClusterID then

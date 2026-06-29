@@ -1,4 +1,15 @@
 # BeamMP
+
+> ### ⚠️ This is a **LAN-only fork** of BeamMP
+> This build is modified to run entirely on a **local network with no BeamMP backend**:
+> there is **no login, no guest/forum account, and no public server list** — you connect
+> directly to a server on your LAN. It also adds LAN-focused performance/sync options
+> (see **Options → Multiplayer → "show advanced options" → "LAN — position sync &
+> performance"**). For setup, the toggles, profiling, and the Linux client, see
+> **`README-LAN.md`** and **`AGENTS.md`** in the project repository. The general
+> sections below are inherited from upstream BeamMP and describe the public service —
+> the login/website/server-list parts do **not** apply to this fork.
+
 A Lua mod bringing online multiplayer to [BeamNG.drive](https://beamng.com)!
 
 # Important Links

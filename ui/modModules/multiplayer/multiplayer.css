@@ -495,6 +495,29 @@ md-slider.ng-pristine.ng-untouched.ng-valid.md-default-theme.ng-empty {
   background-color: rgba(0, 0, 0, 0.35);
 }
 
+/* LAN fork: inline "rename favorite" field -- overrides the global 400px block
+   input rule so it sits neatly next to the favorite buttons in the expanded row. */
+.fav-rename-input {
+  display: inline-block;
+  width: 200px;
+  height: 36px;
+  margin-top: 0;
+  border-radius: 4px;
+}
+.fav-rename-input:focus {
+  border-color: var(--bng-orange, #ff6a00);
+  outline: none;
+}
+
+/* sleeker, more inviting server rows: subtle hover + pointer */
+.server-item {
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+.server-item:hover td {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
 .color-0 { color: #000000; }
 .color-1 { color: #0000AA; }
 .color-2 { color: #00AA00; }

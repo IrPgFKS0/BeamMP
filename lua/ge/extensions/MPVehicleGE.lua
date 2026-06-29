@@ -31,6 +31,10 @@ local original_removeAllExceptCurrent
 local original_spawnNewVehicle
 local original_replaceVehicle
 local original_spawnDefault
+local original_removeAll
+local pendingAutoSpawn = false       -- LAN: auto-spawn default/last car shortly after join
+local pendingAutoSpawnTimer = 0
+local weaponChaseTimer = 0           -- LAN: AI cars re-target the nearest player
 
 local ffiFound = false
 if ffi and ffi.C then
@@ -951,6 +955,12 @@ end
 function Player:addVehicle(v)
 	local id = type(v) == 'table' and v.serverVehicleString or v
 	self.vehicles.IDs[id] = id
+	-- LAN/MP nametag fix: default the active vehicle to the player's FIRST spawned car so
+	-- their NAME follows only that one and later spawns (e.g. AI traffic) show as guest_<veh>.
+	-- Without this, activeVehicleID stays nil until their camera-switch ('Om:') arrives, and
+	-- the nametag loop falls back to showing the owner name on EVERY car they own. The real
+	-- 'Om:' (onServerCameraSwitched) and the local-player update still override this later.
+	if not self.activeVehicleID and id then self.activeVehicleID = id end
 	log('W', 'Player:addVehicle', 'Assigned vehicle ID '..tostring(id)..' to player '..self.name)
 end
 function Player:setNickPrefix(tagSource, text)
@@ -1181,6 +1191,14 @@ local function sendVehicleEdit(gameVehicleID)
 	local vehicleTable = {} -- Vehicle table
 	local vehicleData  = extensions.core_vehicle_manager.getVehicleData(gameVehicleID)
 	local veh          = be:getObjectByID(gameVehicleID)
+	-- A failed/partial spawn (e.g. a broken mod whose jbeam files couldn't be read -> "main slot
+	-- not found") leaves no object and/or no vehicleData.config. Without this guard, onVehicleSpawned
+	-- -> sendVehicleEdit indexes nil vehicleData and throws a FATAL that kills the ENTIRE GE Lua VM,
+	-- taking down sync for the whole session. One bad vehicle must not do that.
+	if not veh or not vehicleData or not vehicleData.config then
+		log('W', 'sendVehicleEdit', 'no vehicle data for '..tostring(gameVehicleID)..' (failed/partial spawn?); skipping edit broadcast')
+		return
+	end
 	local c            = veh.color
 	local p0           = veh.colorPalette0
 	local p1           = veh.colorPalette1
@@ -1351,7 +1369,8 @@ local function applyVehSpawn(event)
 		vehicle.absMode = absMode
 		vehiclesMap[spawnedVehID] = event.serverVehicleID
 
-		players[vehicle.ownerID]:addVehicle(vehicle)
+		local owner = players[vehicle.ownerID]
+		if owner then owner:addVehicle(vehicle) end -- players[ownerID] can be nil on a join-order race (spawn packet before the player-join); nil:addVehicle would error out of the (un-pcall'd) spawn handler
 	end
 
 	if settings.getValue("licensePlateUsesPlayerName") then
@@ -1359,7 +1378,7 @@ local function applyVehSpawn(event)
 	end
 
 	spawnedVeh:queueLuaCommand("hydros.onFFBConfigChanged(nil)")
-	spawnedVeh:queueLuaCommand("MPPowertrainVE.setIgnitionState("..ignitionLevel..")")
+	spawnedVeh:queueLuaCommand("if MPPowertrainVE then MPPowertrainVE.setIgnitionState("..ignitionLevel..") end")
 end
 
 local function applyVehEdit(serverID, data)
@@ -1370,6 +1389,7 @@ local function applyVehEdit(serverID, data)
 	if not veh then log('E','applyVehEdit',"Vehicle "..gameVehicleID.." not found") return end
 
 	local decodedData   = jsonDecode(data) -- Decode the data
+	if not decodedData then log('E','applyVehEdit',"could not decode edit payload for "..serverID) return end -- corrupt packet: don't nil-deser .jbm
 	local vehicleName   = decodedData.jbm -- Vehicle name
 	local vehicleConfig = decodedData.vcf -- Vehicle config
 	local protected       = decodedData.pro
@@ -1386,6 +1406,9 @@ local function applyVehEdit(serverID, data)
 	if vehicleName == veh:getJBeamFilename() then
 		log('I','applyVehEdit',"Updating vehicle "..gameVehicleID.." config")
 		local playerVehicle = extensions.core_vehicle_manager.getVehicleData(gameVehicleID)
+		if not (playerVehicle and playerVehicle.config) then -- vehicle data not ready (e.g. mid mod-unmount / configs-nil state); skip rather than nil-deref
+			log('W','applyVehEdit',"vehicle data/config not ready for "..gameVehicleID.."; skipping edit") return
+		end
 
 		local partsDiff = MPHelpers.tableDiff(playerVehicle.config.partsTree, vehicleConfig.partsTree)
 		local tuningDiff = MPHelpers.tableDiff(playerVehicle.config.vars, vehicleConfig.vars)
@@ -1443,6 +1466,7 @@ local function onVehicleSpawned(gameVehicleID)
 	if not MPCoreNetwork.isMPSession() then return end -- do nothing if singleplayer
 
 	local veh = be:getObjectByID(gameVehicleID)
+	if not veh then return end -- spawn/despawn race: the object can be gone by the time this engine hook fires
 	local newJbeamName = veh:getJBeamFilename()
 
 	local vehicle = getVehicleByGameID(gameVehicleID)
@@ -1611,6 +1635,12 @@ local function sendActiveVehicleID(newVehObj)
 		local playerID = MPConfig.getPlayerServerID()
 		local s = tostring(playerID) .. ':' .. newServerVehicleID
 
+		-- LAN/MP: also update OUR OWN player's activeVehicleID locally. Remote players
+		-- learn it from the 'Om:' broadcast (onServerCameraSwitched), but the local player
+		-- never receives that back, so players[self].activeVehicleID stayed nil and the
+		-- nametag loop showed our name on EVERY car we own instead of only the one we drive.
+		if players[playerID] then players[playerID].activeVehicleID = newServerVehicleID end
+
 		MPGameNetwork.send('Om:'.. s)
 	end
 end
@@ -1621,7 +1651,7 @@ local function onVehicleSwitched(oldGameVehicleID, newGameVehicleID)
 	extensions.core_vehicle_partmgmt.savedefault = core_vehicle_partmgmnt_savedefault_overwrite
 	extensions.gameplay_garageMode.start = gameplay_garageMode_start_overwrite
 	if MPCoreNetwork.isMPSession() then
-		log('I', "onVehicleSwitched", "Vehicle switched from "..oldGameVehicleID or "unknown".." to "..newGameVehicleID or "unknown")
+		log('I', "onVehicleSwitched", "Vehicle switched from "..tostring(oldGameVehicleID or "unknown").." to "..tostring(newGameVehicleID or "unknown"))
 
 		if newGameVehicleID and newGameVehicleID > -1 then
 			local skipOthers = settings.getValue("skipOtherPlayersVehicles", false)
@@ -1825,14 +1855,17 @@ end
 --============================ ON VEHICLE EDITED (SERVER) ============================
 local function onServerVehicleEdited(serverID, data)
 	local decodedData = jsonDecode(data)
+	if not decodedData then return end -- malformed edit packet
 	log('I', 'onServerVehicleEdited', "Edit received for "..serverID)
 
 	if not vehicles[serverID] then
-		vehicles[serverID] = Vehicle:new({ ServerVehicleString = serverID, isSpawned = false })
+		vehicles[serverID] = Vehicle:new({ serverVehicleString = serverID, isSpawned = false })
 	end
 	local owner = vehicles[serverID]:getOwner()
+	if not owner then return end -- edit arrived before the owner/player was registered
 	if not owner.vehicles.IDs[serverID] then owner:addVehicle(vehicles[serverID]) end
 
+	if not players_vehicle_configs[serverID] then players_vehicle_configs[serverID] = {} end
 	local saveVehicleRot = players_vehicle_configs[serverID].rot
 	local saveVehiclePos = players_vehicle_configs[serverID].pos
 
@@ -1904,7 +1937,7 @@ local function onServerVehicleResetted(serverVehicleID, data)
 			if veh then
 				local pr = jsonDecode(data) -- Decoded data
 				veh:queueLuaCommand("extensions.hook(\"onBeamMPVehicleReset\")")
-				if pr then
+				if pr and pr.pos and pr.rot then
 					veh:setPositionRotation(pr.pos.x, pr.pos.y, pr.pos.z, pr.rot.x, pr.rot.y, pr.rot.z, pr.rot.w) -- Apply position
 					veh:resetBrokenFlexMesh() -- setPositionRotation resets the vehicle but not the FlexMesh so we need to do that manually
 				else
@@ -1921,10 +1954,11 @@ end
 
 local function onServerVehicleCoupled(serverVehicleID, data)
 	local vehicle = getVehicleByServerID(serverVehicleID) -- Get game ID
+	if not vehicle then return end -- vehicle may be removed while a coupler packet is in flight
 	if not vehicle.isLocal then
 		local veh = be:getObjectByID(vehicle.gameVehicleID)
 		if veh then
-			veh:queueLuaCommand("couplerVE.toggleCouplerState(mime.unb64(\'".. MPHelpers.b64encode(data) .."\'))")
+			veh:queueLuaCommand("if couplerVE then couplerVE.toggleCouplerState(mime.unb64(\'".. MPHelpers.b64encode(data) .."\')) end")
 		end
 	end
 end
@@ -2067,6 +2101,132 @@ local function saveDefaultRequest()
 	end
 end
 
+-- LAN/MP: remember the last vehicle the local player spawned (model + config),
+-- persisted via BeamNG settings so "auto-spawn last car" works across sessions.
+local function recordLastVehicle(model, config)
+	if not model or model == "" then return end
+	local ok, enc = pcall(jsonEncode, { model = model, config = config or {} })
+	if ok and enc then settings.setValue("mpLastVehicle", enc) end
+end
+
+-- LAN/MP: spawn the player's chosen car on join. autoSpawnMode: 0=off, 1=default
+-- car (settings/default.pc), 2=last used car. Falls back to default if no last
+-- vehicle is stored yet.
+local function doAutoSpawn()
+	local mode = tonumber(settings.getValue("autoSpawnMode")) or 0
+	if mode <= 0 then return end
+	if mode == 2 then
+		local enc = settings.getValue("mpLastVehicle")
+		if enc and enc ~= "" then
+			local ok, t = pcall(jsonDecode, enc)
+			if ok and type(t) == "table" and t.model and original_spawnNewVehicle then
+				original_spawnNewVehicle(t.model, t.config or {})
+				return
+			end
+		end
+		-- no stored last vehicle yet: fall through to the default car
+	end
+	if core_vehicles and core_vehicles.spawnDefault then
+		core_vehicles.spawnDefault() -- overridden to spawn settings/default.pc in MP
+	end
+end
+
+-- ============ Seamless map switch (LAN) ============
+-- A server-initiated map change keeps the session, sockets and mounted mods alive; only
+-- the BeamNG *level* is swapped (see MPCoreNetwork.beginMapTransition). These helpers
+-- reset the networked vehicle tables (the level reload despawns the actual cars) and
+-- re-spawn the player's own car on the new map -- no reconnect, no Lua reload.
+local pendingMapRespawn = false
+local pendingMapRespawnTimer = 0
+
+-- Clear all networked vehicle entries (own + remote) while KEEPING the player roster --
+-- players stay connected across a map switch. Mirrors the vehicle half of onDisconnect.
+-- Safe to call before the level's removeAll: onVehicleDestroyed early-returns once an
+-- entry is gone, so it won't double-handle or emit stray delete packets.
+local function clearVehiclesForMapChange()
+	for serverVehicleID, vehicle in pairs(vehicles) do
+		vehicle:delete()
+	end
+	vehicles = {}
+end
+
+-- Re-spawn the player's last car (the proven autoSpawn mode-2 path) once the new level
+-- is live. The engine onVehicleSpawned hook syncs the fresh spawn to the server normally.
+local function respawnAfterMapChange()
+	-- Always spawn the clean DEFAULT car after a map switch (settings/default.pc, via the MP
+	-- spawnDefault override), NOT the last-used modded car -- that re-imported all its
+	-- material/jbeam baggage on every switch. Synced to the server via the onVehicleSpawned hook.
+	if core_vehicles and core_vehicles.spawnDefault then
+		log('I', 'respawnAfterMapChange', 'Spawning the default car on the new map')
+		core_vehicles.spawnDefault()
+	end
+end
+
+-- Arm a deferred re-spawn (~1.5s after the level finishes loading, mirroring
+-- pendingAutoSpawn) so the world is ready before we spawn our car.
+local function beginMapRespawn()
+	-- The map switch owns the re-spawn: DISARM the join auto-spawn so we don't ALSO spawn a
+	-- second car. Both timers fire ~1.5s and the spawn is async, so they race the
+	-- tableIsEmpty(getOwnMap()) guard and both pass -> duplicate vehicles.
+	pendingAutoSpawn = false
+	pendingMapRespawn = true
+	pendingMapRespawnTimer = 0
+end
+
+-- LAN/MP: AI / weapon-mod cars chase the nearest VALID player. "Valid" = yourself (ALWAYS, so the
+-- AI-radial "Chase" still chases YOU) + remote players who OPTED IN via "Allow other players' AI
+-- cars to chase me" (allowRemoteAIChase). Consent model: by default nobody else's AI can lock onto
+-- you; you opt in to volunteer as a target. Your own cars chasing is unchanged (the radial) -- this
+-- just feeds them targets. A car only AIMS/FIRES in chase mode (aiTargetVE checks ai.isDriving()),
+-- so "Park"/"Stop" stops it. Each player's opt-in is synced (chaseOptIn, broadcast on the 'B' relay).
+local chaseOptIn = {}                 -- [playerServerID (string)] = true if that player allows being chased
+local chaseOptInRebroadcast = 0
+
+-- OWNER side: advertise my opt-in so others' AI know whether they may target me. Reuses the reliable
+-- 'B' relay with a "C:" sub-tag (no server change). Sent ~every 6s from the retarget timer, so a
+-- joiner (or a just-changed setting) is picked up within ~6s without a dedicated join/change hook.
+local function broadcastChaseOptIn()
+	if not (MPCoreNetwork and MPCoreNetwork.isMPSession and MPCoreNetwork.isMPSession()) then return end
+	if not (MPGameNetwork and MPGameNetwork.send) then return end
+	local pid = MPConfig and MPConfig.getPlayerServerID and MPConfig.getPlayerServerID()
+	if pid == nil then return end
+	MPGameNetwork.send("BC:"..tostring(pid)..":"..(settings.getValue("allowRemoteAIChase") == true and "1" or "0"))
+end
+
+-- RECEIVER side: store a player's opt-in. Payload "<playerServerID>:<0|1>".
+local function handleChaseOptIn(payload)
+	local pid, state = tostring(payload):match("^(%d+):([01])$")
+	if pid then chaseOptIn[pid] = (state == "1") end
+end
+
+local function retargetLocalAICars()
+	local myActive = be:getPlayerVehicle(0)
+	local myActiveId = myActive and myActive:getID() or -1
+	local ids = {}
+	for sid, v in pairs(vehicles) do
+		if not v.isLocal and v.isSpawned and v.gameVehicleID and v.gameVehicleID > 0 then
+			local owner = v:getOwner()
+			if owner and owner.activeVehicleID == sid then
+				local pid = sid:match("^(%d+)")
+				if pid and chaseOptIn[pid] then -- only target a remote player who opted in to being chased
+					ids[#ids + 1] = v.gameVehicleID
+				end
+			end
+		end
+	end
+	if myActiveId > 0 then ids[#ids + 1] = myActiveId end -- auto include-self => "Chase" chases YOU
+	if #ids == 0 then return end
+	local listStr = "{" .. table.concat(ids, ",") .. "}"
+	for gameId in pairs(getOwnMap()) do
+		if gameId ~= myActiveId then
+			local car = be:getObjectByID(gameId)
+			if car then
+				car:queueLuaCommand("if aiTargetVE then aiTargetVE.retargetIfNotFiring(" .. listStr .. ") end")
+			end
+		end
+	end
+end
+
 local function spawnDefaultRequest()
 	if not MPCoreNetwork.isMPSession() then original_spawnDefault(); extensions.hook("trackNewVeh"); return end
 
@@ -2088,11 +2248,13 @@ local function spawnDefaultRequest()
 end
 
 local function spawnRequest(model, config, colors)
+	recordLastVehicle(model, config)
 	return original_spawnNewVehicle(model, config or {})
 	--extensions.hook("trackNewVeh")
 end
 
 local function replaceRequest(model, config, colors)
+	recordLastVehicle(model, config)
 	local currentVehicle = be:getPlayerVehicle(0)
 	local gameVehicleID = currentVehicle and currentVehicle:getID() or -1
 	local vehicle = getVehicleByGameID(gameVehicleID)
@@ -2106,15 +2268,39 @@ local function replaceRequest(model, config, colors)
 	--extensions.hook("trackNewVeh")
 end
 
+-- LAN/MP: the vehicles-menu "Remove All" calls core_vehicles.removeAll(), which
+-- the stock game uses to delete EVERY vehicle in the scene. In multiplayer that
+-- also deletes other players' (networked) vehicles locally, which then render as
+-- deleted "blobs" until that player respawns. Restrict it to our OWN vehicles;
+-- their removal syncs to the server normally via onVehicleDestroyed.
+local function removeAllOwnRequest()
+	if not MPCoreNetwork.isMPSession() then return original_removeAll and original_removeAll() end
+	for gameVehicleID in pairs(getOwnMap()) do
+		local veh = be:getObjectByID(gameVehicleID)
+		if veh then veh:delete() end
+	end
+end
+
 M.runPostJoin = function()
-	original_removeAllExceptCurrent = core_vehicles.removeAllExceptCurrent
-	original_spawnNewVehicle = core_vehicles.spawnNewVehicle
-	original_replaceVehicle = core_vehicles.replaceVehicle
-	original_spawnDefault = core_vehicles.spawnDefault
-	core_vehicles.removeAllExceptCurrent = function() log('W', 'removeAllExceptCurrentVehicle', 'You cannot remove other vehicles in a Multiplayer session!') end
-	core_vehicles.spawnNewVehicle = MPVehicleGE.spawnRequest
-	core_vehicles.replaceVehicle = MPVehicleGE.replaceRequest
-	core_vehicles.spawnDefault = MPVehicleGE.spawnDefaultRequest
+	-- Re-entrant safe: a seamless map switch calls runPostJoin again with NO Lua reload.
+	-- Only capture+install the core_vehicles overrides once -- otherwise original_* would
+	-- capture our OWN overrides and spawnRequest would recurse into itself forever.
+	if core_vehicles.spawnNewVehicle ~= MPVehicleGE.spawnRequest then
+		original_removeAllExceptCurrent = core_vehicles.removeAllExceptCurrent
+		original_spawnNewVehicle = core_vehicles.spawnNewVehicle
+		original_replaceVehicle = core_vehicles.replaceVehicle
+		original_spawnDefault = core_vehicles.spawnDefault
+		original_removeAll = core_vehicles.removeAll
+		core_vehicles.removeAllExceptCurrent = function() log('W', 'removeAllExceptCurrentVehicle', 'You cannot remove other vehicles in a Multiplayer session!') end
+		core_vehicles.spawnNewVehicle = MPVehicleGE.spawnRequest
+		core_vehicles.replaceVehicle = MPVehicleGE.replaceRequest
+		core_vehicles.spawnDefault = MPVehicleGE.spawnDefaultRequest
+		core_vehicles.removeAll = removeAllOwnRequest
+	end
+	-- LAN: arm the deferred auto-spawn (handled in onPreRender once the world is ready).
+	-- On a map switch beginMapRespawn() disarms this so the map re-spawn is authoritative.
+	pendingAutoSpawn = (tonumber(settings.getValue("autoSpawnMode")) or 0) > 0
+	pendingAutoSpawnTimer = 0
 end
 
 M.onServerLeave = function() --NOTE: the nil checks are so the function doesn't get set to a nil after a lua reload
@@ -2122,6 +2308,7 @@ M.onServerLeave = function() --NOTE: the nil checks are so the function doesn't 
 	if original_spawnNewVehicle then core_vehicles.spawnNewVehicle = original_spawnNewVehicle end
 	if original_replaceVehicle then core_vehicles.replaceVehicle = original_replaceVehicle end
 	if original_spawnDefault then core_vehicles.spawnDefault = original_spawnDefault end
+	if original_removeAll then core_vehicles.removeAll = original_removeAll end
 end
 
 local function sendPendingVehicleEdits()
@@ -2226,6 +2413,32 @@ local function teleportVehToPlayer(targetName)
 	end
 end
 
+-- LAN/MP: friendly "guest_<vehicle>" label for a player's non-active vehicles
+-- (e.g. spawned traffic). Cached per jbeam so we don't hit core_vehicles every
+-- frame; pcall-guarded so a future BeamNG API change just falls back to the jbeam.
+local guestNameCache = {}
+local function guestNameForJbeam(jbeam)
+	if not jbeam or jbeam == "" then return "guest_vehicle" end
+	local cached = guestNameCache[jbeam]
+	if cached then return cached end
+	-- Simplified (traffic) vehicles use the "simple_traffic" model; give them a
+	-- short label instead of the long friendly name.
+	if jbeam == "simple_traffic" or jbeam:find("^simple_traffic") then
+		guestNameCache[jbeam] = "guest_simp"
+		return "guest_simp"
+	end
+	local nice = jbeam
+	if core_vehicles and core_vehicles.getModel then
+		local ok, m = pcall(core_vehicles.getModel, jbeam)
+		if ok and m and m.model and type(m.model.Name) == "string" and m.model.Name ~= "" then
+			nice = m.model.Name
+		end
+	end
+	local result = "guest_" .. nice
+	guestNameCache[jbeam] = result
+	return result
+end
+
 local function focusCameraOnPlayer(targetName)
 	local activeVehicle = be:getPlayerVehicle(0)
 	local activeVehicleID = activeVehicle and activeVehicle:getID() or nil
@@ -2285,6 +2498,41 @@ end
 
 local function onPreRender(dt)
 	if MPGameNetwork and MPGameNetwork.launcherConnected() then
+		-- LAN: deferred auto-spawn of the default/last car after joining, unless the
+		-- player already spawned one in the meantime.
+		if pendingAutoSpawn then
+			pendingAutoSpawnTimer = pendingAutoSpawnTimer + dt
+			if pendingAutoSpawnTimer > 1.5 then
+				pendingAutoSpawn = false
+				if getMissionFilename() ~= "" and tableIsEmpty(getOwnMap()) then
+					doAutoSpawn()
+				end
+			end
+		end
+
+		-- Seamless map switch: deferred re-spawn of our own car once the new level is
+		-- ready (only if we don't already have one), mirroring the auto-spawn timing.
+		if pendingMapRespawn then
+			pendingMapRespawnTimer = pendingMapRespawnTimer + dt
+			if pendingMapRespawnTimer > 1.5 then
+				pendingMapRespawn = false
+				if getMissionFilename() ~= "" and tableIsEmpty(getOwnMap()) then
+					respawnAfterMapChange()
+				end
+			end
+		end
+
+		-- LAN: re-target the player's own AI/weapon cars onto the nearest VALID player (incl.
+		-- yourself, so "Chase" chases you; remotes only if they opted in -- see retargetLocalAICars).
+		-- Runs always now (cars only act in Chase mode); also re-advertises my opt-in ~every 6s. ~1.6Hz.
+		weaponChaseTimer = weaponChaseTimer + dt
+		if weaponChaseTimer > 0.6 then
+			weaponChaseTimer = 0
+			retargetLocalAICars()
+			chaseOptInRebroadcast = chaseOptInRebroadcast + 1
+			if chaseOptInRebroadcast >= 10 then chaseOptInRebroadcast = 0; broadcastChaseOptIn() end
+		end
+
 		local blobColorQueued = MPHelpers.hex2rgb(settings.getValue("blobColorQueued"))
 		local blobColorIllegal = MPHelpers.hex2rgb(settings.getValue("blobColorIllegal"))
 		local blobColorDeleted = MPHelpers.hex2rgb(settings.getValue("blobColorDeleted"))
@@ -2370,6 +2618,25 @@ local function onPreRender(dt)
 			editSyncTimer = 0
 		end
 
+		-- PERF (LAN fork): these settings + the camera mode are constant for the whole
+		-- frame, so read them ONCE here instead of calling settings.getValue ~16x PER
+		-- VEHICLE PER FRAME inside the loop below (that cost scales with vehicle count --
+		-- exactly the many-car case). Defaults match the original inline calls.
+		local sEnableBlobs            = settings.getValue("enableBlobs")
+		local sHideNameTags           = settings.getValue("hideNameTags")
+		local sNameTagShowDistance    = settings.getValue("nameTagShowDistance")
+		local sImperial               = settings.getValue("uiUnitLength") == "imperial"
+		local sFadeVehicles           = settings.getValue("fadeVehicles")
+		local sNameTagFadeEnabled     = settings.getValue("nameTagFadeEnabled")
+		local sNameTagFadeInvert      = settings.getValue("nameTagFadeInvert")
+		local sNameTagDontFullyHide   = settings.getValue("nameTagDontFullyHide")
+		local sShortenNametags        = settings.getValue("shortenNametags")
+		local sShowSpectators         = settings.getValue("showSpectators")
+		local sSpectatorUnified       = settings.getValue("spectatorUnifiedColors")
+		local sHideBehindObjects      = settings.getValue("nameTagsHideBehindObjects")
+		local sNameTagFadeDistance    = settings.getValue("nameTagFadeDistance", 40)
+		local sIsFreeCam              = commands.isFreeCamera()
+
 		for serverVehicleID, v in pairs(vehicles) do
 			local owner = v:getOwner()
 			if v.isLocal or not owner then goto skip_vehicle end
@@ -2390,7 +2657,7 @@ local function onPreRender(dt)
 			if not v.position then goto skip_vehicle end -- return if no position has been received yet
 			local pos = Point3F(v.position.x, v.position.y, v.position.z)
 
-			if settings.getValue("enableBlobs") and not v.isSpawned then
+			if sEnableBlobs and not v.isSpawned then
 				local colors = nil
 
 				if v.spawnQueue then -- in queue
@@ -2416,19 +2683,19 @@ local function onPreRender(dt)
 			end
 
 			local nametagAlpha = 1
-			local nametagFadeoutDistance = settings.getValue("nameTagFadeDistance", 40)
+			local nametagFadeoutDistance = sNameTagFadeDistance
 
 			local distfloat = (cameraPos or vec3()):distance(pos)
 			distanceMap[gameVehicleID] = distfloat
 			nametagAlpha = clamp(linearScale(distfloat, nametagFadeoutDistance, 0, 0, 1), 0, 1)
 
-			if not settings.getValue("hideNameTags") and nicknamesAllowed and not hideNicknamesToggle then
+			if not sHideNameTags and nicknamesAllowed and not hideNicknamesToggle then
 
 				local dist = ""
-				if distfloat > 10 and settings.getValue("nameTagShowDistance") then
+				if distfloat > 10 and sNameTagShowDistance then
 					local unit
 					local mapEntry = distfloat
-					if settings.getValue("uiUnitLength") == "imperial" then
+					if sImperial then
 						mapEntry = mapEntry * 3.28084
 						if mapEntry > 5280 then
 							mapEntry = math.floor((mapEntry / 5280 * 100) + 0.5) / 100
@@ -2450,29 +2717,35 @@ local function onPreRender(dt)
 					dist = string.format(" %s %s", tostring(mapEntry), unit)
 				end
 
-				if settings.getValue("fadeVehicles") and veh then
+				if sFadeVehicles and veh then
 					if activeVehID == gameVehicleID then veh:setMeshAlpha(1, "", false)
 					else veh:setMeshAlpha(1 - clamp(linearScale(distfloat, 20, 0, 0, 1), 0, 1), "", false) end
 				end
 
 				if v.hideNametag or owner.hideNametag then goto skip_vehicle end
 
-				if settings.getValue("nameTagFadeEnabled") and not commands.isFreeCamera() then
-					if settings.getValue("nameTagFadeInvert") then
+				if sNameTagFadeEnabled and not sIsFreeCam then
+					if sNameTagFadeInvert then
 						nametagAlpha = 1 - nametagAlpha
 					end
 				end
 
-				if not settings.getValue("nameTagFadeEnabled") then nametagAlpha = 1 end
-				if settings.getValue("nameTagDontFullyHide") then nametagAlpha = math.max(0.3, nametagAlpha) end
+				if not sNameTagFadeEnabled then nametagAlpha = 1 end
+				if sNameTagDontFullyHide then nametagAlpha = math.max(0.3, nametagAlpha) end
 
 
 				local roleInfo = v.customRole or owner.customRole or owner.role
 
-				local ownerName = settings.getValue("shortenNametags") and owner.shortname or owner.name
+				local ownerName = sShortenNametags and owner.shortname or owner.name
 				local name = v.customName or ownerName
+				-- LAN/MP: a player's name only follows their CURRENTLY ACTIVE vehicle.
+				-- Their other vehicles (e.g. spawned traffic) show as "guest_<vehicle>".
+				-- Until the owner's active vehicle is known, default to the owner name.
+				if not v.customName and owner.activeVehicleID ~= nil and owner.activeVehicleID ~= serverVehicleID then
+					name = guestNameForJbeam(v.jbeam)
+				end
 
-				local tag = settings.getValue("shortenNametags") and roleInfo.shorttag or roleInfo.tag
+				local tag = sShortenNametags and roleInfo.shorttag or roleInfo.tag
 				local backColor = color(roleInfo.backcolor.r, roleInfo.backcolor.g, roleInfo.backcolor.b, math.floor(nametagAlpha*127))
 
 				local prefix = ""
@@ -2485,12 +2758,14 @@ local function onPreRender(dt)
 
 
 				-- draw spectators
-				if settings.getValue("showSpectators") then
+				if sShowSpectators then
 					local spectators = ""
 
 					for spectatorID, _ in pairs(v.spectators) do
 						local spectator = players[spectatorID]
-						if not (spectator == owner or spectator.isLocal) then
+						if not spectator then
+							v.spectators[spectatorID] = nil -- stale: player left but wasn't cleaned from this set
+						elseif not (spectator == owner or spectator.isLocal) then
 							spectators = spectators .. spectator.name .. ', '
 						end
 					end
@@ -2499,7 +2774,7 @@ local function onPreRender(dt)
 
 					if spectators ~= "" then
 						local spectatorBackColor = backColor
-						if settings.getValue("spectatorUnifiedColors") then
+						if sSpectatorUnified then
 							spectatorBackColor = color(roleToInfo.USER.backcolor.r, roleToInfo.USER.backcolor.g, roleToInfo.USER.backcolor.b, math.floor(nametagAlpha*127))
 						end
 						drawTextAdvanced(
@@ -2510,7 +2785,7 @@ local function onPreRender(dt)
 							false, -- Wtf
 							spectatorBackColor, -- Background Color
 							false, -- shadow
-							settings.getValue("nameTagsHideBehindObjects") -- useZ, makes it render behind objects if true
+							sHideBehindObjects -- useZ, makes it render behind objects if true
 						)
 
 						pos.z = pos.z + 0.01 -- has to be positive
@@ -2525,7 +2800,7 @@ local function onPreRender(dt)
 					false, -- Wtf
 					backColor, -- Background Color
 					false, -- shadow
-					settings.getValue("nameTagsHideBehindObjects") -- useZ, makes it render behind objects if true
+					sHideBehindObjects -- useZ, makes it render behind objects if true
 				)
 			end
 			:: skip_vehicle ::
@@ -2561,8 +2836,6 @@ local function sendPastVehicles()
 	local thisID = MPConfig.getPlayerServerID()
 
 	if thisID > -1 then
-		dump(players[thisID].vehicles)
-
 		local gameIDs = {}
 
 		for k,v in pairs(players[thisID].vehicles) do
@@ -2613,7 +2886,7 @@ local function onVehicleReady(gameVehicleID)
 	end
 
 	if veh.mpVehicleType then
-		veh:queueLuaCommand("MPVehicleVE.setVehicleType(mime.unb64(\'".. MPHelpers.b64encode(veh.mpVehicleType) .."\'))")
+		veh:queueLuaCommand("if MPVehicleVE then MPVehicleVE.setVehicleType(mime.unb64(\'".. MPHelpers.b64encode(veh.mpVehicleType) .."\')) end")
 	end
 	MPGameNetwork.onVehicleReady(gameVehicleID)
 end
@@ -2650,6 +2923,31 @@ local function onSettingsChanged()
 	--end
 end
 
+-- LAN/MP: draw an edge-of-minimap arrow pointing toward each real (human) remote
+-- player's ACTIVE vehicle when it is off the visible minimap area. Uses BeamNG's
+-- onDrawOnMinimap hook + the minimap utils' drawEdgePointer, which only draws when
+-- the target is off-screen (so it won't duplicate the normal in-view vehicle dots).
+-- Only each player's CURRENT vehicle is pointed at; their traffic/guest vehicles
+-- are ignored. pcall-guarded so a future minimap API change can't break the mod.
+local minimapPlayerColor, minimapPlayerStroke
+function M.onDrawOnMinimap(td)
+	if not (MPCoreNetwork and MPCoreNetwork.isMPSession and MPCoreNetwork.isMPSession()) then return end
+	local utils = ui_apps_minimap_utils
+	if not utils or not utils.drawEdgePointer then return end
+	if not minimapPlayerColor then
+		minimapPlayerColor = color(80, 190, 255, 255)
+		minimapPlayerStroke = color(255, 255, 255, 255)
+	end
+	for _, player in pairs(players) do
+		if player and not player.isLocal and player.activeVehicleID then
+			local v = vehicles[player.activeVehicleID]
+			if v and v.isSpawned and v.position then
+				pcall(utils.drawEdgePointer, v.position, minimapPlayerColor, minimapPlayerStroke, 7)
+			end
+		end
+	end
+end
+
 detectGlobalWrites() -- reenable global write notifications
 
 -- Functions
@@ -2662,6 +2960,8 @@ M.sendPastVehicles = sendPastVehicles
 M.onUpdate                 = onUpdate
 M.onPreRender              = onPreRender
 M.onDisconnect             = onDisconnect
+M.clearVehiclesForMapChange = clearVehiclesForMapChange -- seamless map switch: drop networked vehicle tables, keep players
+M.beginMapRespawn          = beginMapRespawn           -- seamless map switch: arm deferred re-spawn of our car
 M.handle                   = handle
 M.onVehicleSpawned         = onVehicleSpawned
 M.onVehicleDestroyed       = onVehicleDestroyed
@@ -2709,6 +3009,7 @@ M.queryRoadNodeToPosition  = queryRoadNodeToPosition  -- takes: vec3 target posi
 M.sendVehicleEdit          = sendVehicleEdit          -- UI 'Sync' button
 M.onVehicleReady           = onVehicleReady           -- Called when our VE files load and the vehicle is ready
 M.onSettingsChanged        = onSettingsChanged        -- takes: -
+M.handleChaseOptIn         = handleChaseOptIn          -- takes: "<playerServerID>:<0|1>" -- AI-chase opt-in, routed from MPWeaponsGE 'B'/C:
 M.getRoleInfoTable         = getRoleInfoTable
 M.sendPendingVehicleEdits  = sendPendingVehicleEdits  -- takes: -
 M.onInit = function() setExtensionUnloadMode(M, "manual") end
@@ -2727,9 +3028,10 @@ local function teleportCameraToPlayer(playername)
 	focusCameraOnPlayer(playername)
 end
 
-function createRole() depricationWarning('createRole', 'MPVehicleGE.setVehicleRole/setPlayerRole') end
-function removeRole() depricationWarning('removeRole', 'MPVehicleGE.clearVehicleRole/clearPlayerRole') end
-function removeVehicleRole() depricationWarning('removeVehicleRole', 'MPVehicleGE.clearVehicleRole/clearPlayerRole') end
+-- Deprecation shims kept global for old callers; rawset avoids the "set new global variable" warning.
+rawset(_G, 'createRole', function() depricationWarning('createRole', 'MPVehicleGE.setVehicleRole/setPlayerRole') end)
+rawset(_G, 'removeRole', function() depricationWarning('removeRole', 'MPVehicleGE.clearVehicleRole/clearPlayerRole') end)
+rawset(_G, 'removeVehicleRole', function() depricationWarning('removeVehicleRole', 'MPVehicleGE.clearVehicleRole/clearPlayerRole') end)
 
 M.createRole = createRole
 M.removeRole = removeRole

@@ -9,7 +9,7 @@ local function tick()
 	for i,v in pairs(ownMap) do -- For each own vehicle
 		local veh = be:getObjectByID(i) -- Get vehicle
 		if veh then
-			veh:queueLuaCommand("controllerSyncVE.getControllerData()") -- Send all devices values
+			veh:queueLuaCommand("if controllerSyncVE then controllerSyncVE.getControllerData() end") -- Send all devices values
 		end
 	end
 end
@@ -19,11 +19,11 @@ local function sendControllerData(data, gameVehicleID)
 		local serverVehicleID = MPVehicleGE.getServerVehicleID(gameVehicleID)
 		if serverVehicleID and MPVehicleGE.isOwn(gameVehicleID) then
 			local decodedData = jsonDecode(data)
+			if not decodedData then return end
 			if decodedData.vehID then
 				decodedData.vehID = MPVehicleGE.getServerVehicleID(decodedData.vehID) -- used for controllers that call to another vehicle, like the me262 missile targeting system
 			end
 			data = jsonEncode(decodedData)
-			dump(data, gameVehicleID)
 			MPGameNetwork.send('Rc:'..serverVehicleID..":"..data)
 		end
 	end
@@ -34,11 +34,12 @@ local function applyControllerData(data, serverVehicleID)
 	local veh = be:getObjectByID(gameVehicleID)
 	if veh then
 		local decodedData = jsonDecode(data)
+		if not decodedData then return end
 		if decodedData.vehID then
 			decodedData.vehID = MPVehicleGE.getGameVehicleID(decodedData.vehID)
 		end
 		data = jsonEncode(decodedData)
-		veh:queueLuaCommand("controllerSyncVE.applyControllerData(mime.unb64(\'".. MPHelpers.b64encode(data) .."\'))")
+		veh:queueLuaCommand("if controllerSyncVE then controllerSyncVE.applyControllerData(mime.unb64(\'".. MPHelpers.b64encode(data) .."\')) end")
 	end
 end
 

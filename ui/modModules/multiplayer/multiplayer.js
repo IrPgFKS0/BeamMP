@@ -24,7 +24,7 @@ var beammpMetrics = {
 	beammpGameVer: "...",
 	beammpLauncherVer: "..."
 }
-var serverView = "";
+var serverView = "favorites"; // LAN fork: public server browser removed; default to Favorites
 let repopulateServerList = async function() {
 
 };
@@ -188,11 +188,16 @@ export default angular.module('multiplayer', ['ui.router'])
 	var beammpModInfo = document.createElement("div");
 	beammpModInfo.innerHTML = `
 		<span class="divider"></span>
-		<span style="margin-right: 5px;">
-			<span>BeamMP v<span id="beammpModVersion">${beammpMetrics.beammpGameVer}</span></span>
+		<span style="margin-right: 5px; white-space: nowrap; flex: 0 0 auto;">
+			BeamMP&nbsp;v<span id="beammpModVersion" style="font-weight: 600;">${beammpMetrics.beammpGameVer}</span>
 		</span>
 	`
 	beammpModInfo.id = 'BeamMPVersionInject'
+	// LAN fork: the version string is longer than stock ("4.21.1-LAN"), and the
+	// engine info-bar is a flex row -- without this it gets squeezed/clipped to
+	// "BeamMP v...". Force it to keep its full width on one line. Inline styles
+	// (not the mod CSS file, which isn't loaded in the main-menu info-bar context).
+	beammpModInfo.style.cssText = 'display: inline-flex; align-items: center; white-space: nowrap; flex: 0 0 auto;'
 
 	$rootScope.$on('authReceived', function (event, data) {	
 		//console.log(event, data)
@@ -214,7 +219,14 @@ export default angular.module('multiplayer', ['ui.router'])
 
 		
 		nameElement.textContent = data.username;
-		avatarElement.src = data.avatar;
+		// LAN fork: avatars are omitted, so data.avatar is undefined. Setting
+		// img.src = undefined makes the browser fetch ".../main/undefined" (a 404 every
+		// profile refresh -- the cef_local NOT_FOUND spam). Only set a real URL.
+		if (data.avatar) {
+			avatarElement.src = data.avatar;
+		} else {
+			avatarElement.removeAttribute("src");
+		}
 
 		if (data.avatar == undefined) {
 			divider.style.display = 'none'
@@ -272,7 +284,6 @@ export default angular.module('multiplayer', ['ui.router'])
 
 			if (nameElement) {
 				nameElement.style.display = "block";
-				console.log('name shown', nameElement)
 			}
 			if (avatarElement) {
 				avatarElement.style.display = "block";
@@ -460,13 +471,16 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 			buttons[i].classList.remove("md-primary");
 			buttons[i].classList.remove("md-raised");
 		}
-		document.getElementById(view+"-servers-btn").classList.add("md-primary");
-		document.getElementById(view+"-servers-btn").classList.add("md-raised");
+		var activeBtn = document.getElementById(view+"-servers-btn");
+		if (activeBtn) { // tab may not exist (LAN fork removed online-only tabs)
+			activeBtn.classList.add("md-primary");
+			activeBtn.classList.add("md-raised");
+		}
 
 		if (view == "recents") {
 			$translate('ui.multiplayer.clearRecent').then(function (translation) {
 				var extra = document.getElementById("extra-button");
-
+				if (!extra) return; // element absent in this build; don't crash the view
 				extra.style.display = "";
 				extra.innerText = translation;
 
@@ -477,7 +491,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		} else if (view == "favorites") {
 			$translate('ui.multiplayer.addCustomServer').then(function (translation) {
 				var extra = document.getElementById("extra-button");
-
+				if (!extra) return; // element absent in this build; don't crash the view
 				extra.style.display = "";
 				extra.innerText = translation;
 
@@ -486,7 +500,8 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 				};
 			});
 		} else {
-			document.getElementById("extra-button").style.display = "none";
+			var extra = document.getElementById("extra-button");
+			if (extra) extra.style.display = "none";
 		}
 	}
 
@@ -518,8 +533,10 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	$scope.$on('$stateChangeSuccess', async function (event, toState, toParams, fromState, fromParams) {
 		bngApi.engineLua('MPCoreNetwork.getLoginState()');
 		if (toState.url == "/multiplayer") {
-			// local://local/ui/#/menu/multiplayer/mpservers
-			document.getElementById('servers-btn').click();
+			// LAN fork: public "Servers" tab removed; open Favorites by default.
+			// (old getElementById('servers-btn') matched no element and threw a null .click())
+			var favBtn = document.getElementById('favorites-servers-btn');
+			if (favBtn) favBtn.click();
 			
 		}
 
@@ -640,6 +657,16 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		//console.log('Clicked')
 		var ip = document.getElementById('directip').value.trim();
 		var port = document.getElementById('directport').value.trim();
+
+		// LAN: if a name was entered, set it before connecting (the launcher
+		// persists it; leaving it blank keeps the current/last name).
+		var nickEl = document.getElementById('nickname');
+		var nick = nickEl ? nickEl.value.trim() : '';
+		if (nick.length > 0) {
+			localStorage.setItem('lanPlayerName', nick);
+			bngApi.engineLua('MPCoreNetwork.setPlayerName(' + bngApi.serializeToLua(nick) + ')');
+		}
+
 		document.getElementById('LoadingServer').style.display = 'flex';
 		bngApi.engineLua(`MPCoreNetwork.connectToServer("${ip}","${port}")`);
 	};
@@ -856,7 +883,12 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 					nameElement.style.backgroundColor = "rgba(0, 0, 0, 0)"
 
 				nameElement.textContent = data.username;
-				avatarElement.src = data.avatar;
+				// Avoid img.src = undefined -> 404 on ".../main/undefined" (LAN: no avatar).
+				if (data.avatar) {
+					avatarElement.src = data.avatar;
+				} else {
+					avatarElement.removeAttribute("src");
+				}
 
 				if (data.id != null) {
 					nameElement.style.cursor = "pointer";
@@ -881,12 +913,45 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 				}
 			}
 		} else {
-			nameElement.textContent = "";
+			// LAN fork: no BeamMP account/auth -- show the local player name instead of
+			// leaving the profile blank, so the menu always shows "who am I".
+			nameElement.textContent = localStorage.getItem("lanPlayerName") || "Player";
 			nameElement.style.backgroundColor = "rgba(0, 0, 0, 0)";
+			nameElement.onclick = null;
+			nameElement.style.cursor = "default";
 			idElement.textContent = "";
 			avatarElement.removeAttribute("src");
 		}
 	});
+
+	// LAN fork: show + edit the local player name from the menu (no account needed).
+	// The launcher persists it; leaving it set means you don't retype it per connect.
+	function refreshLanName() {
+		var el = document.getElementById("serverlist-profile-name");
+		if (el && !el.textContent) el.textContent = localStorage.getItem("lanPlayerName") || "Player";
+	}
+	vm.changeLanName = function (ev) {
+		var current = localStorage.getItem("lanPlayerName") || "";
+		var dialog = $mdDialog.prompt()
+			.title("Set your name")
+			.textContent("This is the name other players see you as on the server.")
+			.placeholder("Your name")
+			.initialValue(current)
+			.ariaLabel("Player name")
+			.targetEvent(ev)
+			.ok("Save")
+			.cancel("Cancel");
+		$mdDialog.show(dialog).then(function (result) {
+			var name = (result || "").trim();
+			if (!name) return;
+			localStorage.setItem("lanPlayerName", name);
+			bngApi.engineLua('MPCoreNetwork.setPlayerName(' + bngApi.serializeToLua(name) + ')');
+			var el = document.getElementById("serverlist-profile-name");
+			if (el) el.textContent = name;
+			toastr.info('Now playing as "' + name + '"');
+		}, function () { /* cancelled */ });
+	};
+	$timeout(refreshLanName, 0);
 
 	vm.exit = function ($event) {
 		if ($event)
@@ -1032,16 +1097,44 @@ function($scope, $state, $timeout, $filter) {
 	};
 	$scope.removeFav = function(server) {
 		removeFav(server);
-		const index = $scope.serversArray.findIndex(s => 
+		const index = $scope.serversArray.findIndex(s =>
 			s.server.ip === server.ip && s.server.port === server.port
 		);
 
 		if (index !== -1) {
 			$scope.serversArray[index].isFavorite = false;
-			
-			$scope.$applyAsync(); 
+
+			$scope.$applyAsync();
 
 		}
+	};
+
+	// LAN fork: give a saved favorite a custom display name. Favorites are matched by
+	// ip:port, so this is safe. We store it in a dedicated `customName` field on the
+	// favorite (NOT the server's real `sname`), and the list builder + detail header
+	// prefer customName when present -- so it survives a reload (the builder used to
+	// rebuild the row name from `sname` only, which is why renames weren't sticking).
+	$scope.renameFav = function(rowServer, newName) {
+		newName = (newName || "").trim();
+		if (!newName || !rowServer || !rowServer.server) return;
+		const raw = rowServer.server;
+		for (let i = 0; i < favorites.length; i++) {
+			if (favorites[i].ip === raw.ip && favorites[i].port === raw.port) {
+				favorites[i].customName = newName;
+			}
+		}
+		saveFav();
+		// reflect immediately in the open row + the cached list
+		raw.customName = newName;
+		rowServer.name = newName;
+		const index = $scope.serversArray.findIndex(s =>
+			s.server.ip === raw.ip && s.server.port === raw.port
+		);
+		if (index !== -1) {
+			$scope.serversArray[index].name = newName;
+			if ($scope.serversArray[index].server) $scope.serversArray[index].server.customName = newName;
+		}
+		$scope.$applyAsync();
 	};
 
 	$scope.sortTable = function(sortType, isNumber, dir) {
@@ -1077,7 +1170,7 @@ function($scope, $state, $timeout, $filter) {
 
 	// Called when the page is left
 	$scope.$on('$destroy', function () {
-		serverView = "";
+		serverView = "favorites"; // LAN fork: default back to Favorites on re-entry
 		$timeout.cancel(timeOut);
 		//console.log('[MultiplayerServersController] destroyed.');
 		var buttons = document.getElementsByClassName("servers-btn");
@@ -1209,7 +1302,16 @@ function($scope, $state, $timeout, $filter) {
 		vm.repopulate();
 	}
 
-	repopulateServerList = function () { vm.repopulate().then(() => { }); }
+	// LAN fork: favorites/recents live in local files, not the (disabled) public
+	// server list. Reload them on every (re)populate so the menu shows them right
+	// away instead of waiting on the slow/optional onServerListReceived event.
+	repopulateServerList = async function () {
+		favorites = await getFavorites();
+		recents = await getRecents();
+		await vm.repopulate();
+	};
+	// Default view is Favorites; populate it now so it appears fast on entry.
+	repopulateServerList();
 }])
 
 /* //////////////////////////////////////////////////////////////////////////////////////////////
@@ -1595,7 +1697,10 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 	if (type == 1 || type == 2) {
 		var toCheck = type == 1 ? favorites : recents
 		for (let tmpServer1 of toCheck) {
-			let stillOk = true;
+			// Start false so an EMPTY online list (LAN: backend disabled, no public
+			// servers) still treats the favorite as offline/custom and shows it. The old
+			// `= true` left empty-list favorites flagged "online" -> skipped -> blank menu.
+			let stillOk = false;
 			for (let i = 0; i < servers.length; i++) {
 				var tmpServer2 = servers[i];
 				if (tmpServer1.ip == tmpServer2.ip && tmpServer1.port == tmpServer2.port) { stillOk = true; break; }
@@ -1624,7 +1729,9 @@ async function populateTable($filter, $scope, servers, tab, searchText = '', che
 
 				var offline = false;
 				var custom = false;
-				var name = tmpServer1.sname;
+				// LAN fork: a renamed favorite carries customName -- prefer it over the
+				// server's real name so the rename persists across reloads.
+				var name = tmpServer1.customName || tmpServer1.sname;
 				if (!tmpServer1.custom) { name += " [OFFLINE]"; offline = true; }
 				else { name += " [CUSTOM]"; custom = true }
 				$scope.serversTable[tmpServer1.ip + ":" + tmpServer1.port] = {server: tmpServer1, isFavorite: type == 1, isRecent: type == 2, name: name, offline: offline, custom: custom};

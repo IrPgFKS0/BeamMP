@@ -19,7 +19,24 @@ local function tick()
 		local veh = be:getObjectByID(i)
 		if veh then
 			--veh:queueLuaCommand("nodesVE.getNodes()")
-			veh:queueLuaCommand("nodesVE.getBreakGroups()")
+			veh:queueLuaCommand("if nodesVE then nodesVE.getBreakGroups() end")
+		end
+	end
+end
+
+
+--- EXPERIMENTAL (LAN-only build): full soft-body deformation sync.
+--- Sends the entire node/beam state (positions + per-beam deformation) for our
+--- own vehicles so remote clients match our deformation, not just which parts
+--- broke off. This is HEAVY (serializes every node + beam), so it is driven by
+--- a separate low-rate timer in MPUpdatesGE (fullNodesTickrate). Tune the rate
+--- there, or comment the call to disable.
+local function fullTick()
+	local ownMap = MPVehicleGE.getOwnMap()
+	for i,v in pairs(ownMap) do
+		local veh = be:getObjectByID(i)
+		if veh then
+			veh:queueLuaCommand("if nodesVE then nodesVE.getNodes() end")
 		end
 	end
 end
@@ -58,6 +75,7 @@ local function sendControllerData(data, gameVehicleID)
 		local serverVehicleID = MPVehicleGE.getServerVehicleID(gameVehicleID)
 		if serverVehicleID and MPVehicleGE.isOwn(gameVehicleID) then
 			local decodedData = jsonDecode(data)
+			if not decodedData then return end -- guard a nil decode before indexing/re-encoding
 			if decodedData.vehID then
 				decodedData.vehID = MPVehicleGE.getServerVehicleID(decodedData.vehID)
 			end
@@ -75,7 +93,7 @@ local function applyNodes(data, serverVehicleID)
 	local gameVehicleID = MPVehicleGE.getGameVehicleID(serverVehicleID) or -1
 	local veh = be:getObjectByID(gameVehicleID)
 	if veh then
-		veh:queueLuaCommand("nodesVE.applyNodes(mime.unb64(\'".. MPHelpers.b64encode(data) .."\'))")
+		veh:queueLuaCommand("if nodesVE then nodesVE.applyNodes(mime.unb64(\'".. MPHelpers.b64encode(data) .."\')) end")
 	end
 end
 
@@ -87,7 +105,7 @@ local function applyBreakGroups(data, serverVehicleID)
 	local gameVehicleID = MPVehicleGE.getGameVehicleID(serverVehicleID) or -1
 	local veh = be:getObjectByID(gameVehicleID)
 	if veh then
-		veh:queueLuaCommand("nodesVE.applyBreakGroups(mime.unb64(\'".. MPHelpers.b64encode(data) .."\'))")
+		veh:queueLuaCommand("if nodesVE then nodesVE.applyBreakGroups(mime.unb64(\'".. MPHelpers.b64encode(data) .."\')) end")
 	end
 end
 
@@ -117,6 +135,7 @@ end
 
 
 M.tick       = tick
+M.fullTick   = fullTick
 M.handle     = handle
 M.sendNodes  = sendNodes
 M.applyNodes = applyNodes

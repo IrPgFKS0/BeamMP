@@ -35,15 +35,139 @@ local actualSimSpeed = 1
 local POSSMOOTHER = {}
 local TIMER = (HighPerfTimer or hptimer) -- game own timer that is much more accurate then os.clock()
 
+-- ============================================================================
+-- LAN perf toggles (cached here, pushed to each vehicle's positionVE via refreshFlags).
+-- See MPConfig defaultSettings + README-LAN.md for the full intent of each.
+-- ============================================================================
+local profOn = false  -- cached settings.getValue("profilePosSync") -- log timing of the hot apply path every ~5s to beamng.log
+local physRateSend = false  -- cached settings.getValue("physicsRateSend")
+local mailboxOn = false  -- cached settings.getValue("mailboxApplyPos") -- GE->VE apply via engine mailbox (the apply transport; falls back to base64 queueLuaCommand when off)
+local fastPredictOn = false  -- cached settings.getValue("fastPredict") -- VE-side low-GC predictor path (experimental, opt-in); pushed to each vehicle's positionVE
+
+-- Sync mode (setting "syncMode": "smooth" / "auto" / "accurate"): controls the tracked-vehicle
+-- HOLD that positionGE pushes to each VE's setTrackedHold. smooth = 1.0 (stock, relies on the
+-- predictor's own teleport -> smoothest), accurate = 2.0 (firm hold), auto = adapt by local FPS
+-- (firm when FPS is high, stock-smooth when it drops so a heavy scene/crash doesn't get jittery).
+-- This is the lever for "felt worse than stock": the old fixed-x4 hold + the snapping watchdog
+-- fought the stock predictor; now the watchdog is frozen-only and the hold is mode/FPS-driven.
+local syncModeCfg    = "smooth"  -- default (testing-chosen); see MPConfig syncMode
+local syncFps        = 60
+local syncAggressive = false     -- smooth default = no firm hold
+local syncHoldPushed = nil      -- last hold pushed to VEs (re-push only on change)
+local AGG_FPS_ON, AGG_FPS_OFF = 55, 42   -- hysteresis band for "auto" (rise above 55 -> firm; drop below 42 -> smooth)
+local HOLD_ACCURATE, HOLD_SMOOTH = 2.0, 1.0
+
+local profT          = TIMER and TIMER() or nil  -- per-call timer (ms)
+local profLastReport = TIMER and TIMER() or nil  -- summary cadence timer (ms)
+local profStats      = {}                         -- key -> { n, sum(ms), max(ms) }
+local PROF_INTERVAL  = 5000                        -- ms between summary lines
+
+local function profBegin()
+	if profOn and profT then profT:stopAndReset() end
+end
+
+local function profEnd(key)
+	if not (profOn and profT) then return end
+	local dur = profT:stop()
+	local s = profStats[key]
+	if not s then s = {n = 0, sum = 0, max = 0}; profStats[key] = s end
+	s.n = s.n + 1
+	s.sum = s.sum + dur
+	if dur > s.max then s.max = dur end
+	local win = profLastReport:stop()
+	if win >= PROF_INTERVAL then
+		for k, v in pairs(profStats) do
+			if v.n > 0 then
+				log('I', 'posProf', string.format('GE %-18s n=%d rate=%.0f/s avg=%.4fms max=%.4fms',
+					k, v.n, v.n * 1000 / win, v.sum / v.n, v.max))
+			end
+			v.n = 0; v.sum = 0; v.max = 0
+		end
+		profLastReport:stopAndReset()
+	end
+end
+
+-- Re-read the experiment toggles and push the profiling flag down into every
+-- spawned vehicle's VE state. Called on init and whenever settings change.
+local function refreshFlags()
+	local newProf = (settings and settings.getValue("profilePosSync")) and true or false
+	if newProf and not profOn then -- starting a fresh profiling window
+		for k in pairs(profStats) do profStats[k] = nil end
+		if profLastReport then profLastReport:stopAndReset() end
+	elseif profOn and not newProf then
+		-- profiling just turned OFF: auto-collect the log bundle so a capture is never
+		-- missed (gated by autoCollectProfLogs; the logs hold the just-finished window).
+		if (settings and settings.getValue("autoCollectProfLogs")) and MPConfig and MPConfig.collectProfilingLogs then
+			MPConfig.collectProfilingLogs()
+		end
+	end
+	profOn = newProf
+	physRateSend = (settings and settings.getValue("physicsRateSend")) and true or false
+	mailboxOn = (settings and settings.getValue("mailboxApplyPos")) and true or false
+	fastPredictOn = (settings and settings.getValue("fastPredict")) and true or false
+	local sendHz = tonumber(settings and settings.getValue("physRateSendHz")) or 100
+	-- Sync mode -> tracked-vehicle hold. smooth/accurate are fixed; auto leaves syncAggressive to
+	-- the FPS watcher (onPreRender) and just pushes the current value here.
+	syncModeCfg = tostring((settings and settings.getValue("syncMode")) or "smooth")
+	if syncModeCfg == "smooth" then syncAggressive = false
+	elseif syncModeCfg == "accurate" then syncAggressive = true end
+	local hold = syncAggressive and HOLD_ACCURATE or HOLD_SMOOTH
+	syncHoldPushed = hold
+	for i = 0, be:getObjectCount() - 1 do
+		local veh = be:getObject(i)
+		if veh then
+			veh:queueLuaCommand("if positionVE and positionVE.setProfiling then positionVE.setProfiling("..tostring(profOn)..") end")
+			veh:queueLuaCommand("if positionVE and positionVE.setMailboxApply then positionVE.setMailboxApply("..tostring(mailboxOn)..") end")
+			veh:queueLuaCommand("if positionVE and positionVE.setFastPredict then positionVE.setFastPredict("..tostring(fastPredictOn)..") end")
+			veh:queueLuaCommand("if positionVE and positionVE.setSendHz then positionVE.setSendHz("..sendHz..") end")
+			veh:queueLuaCommand("if positionVE and positionVE.setTrackedHold then positionVE.setTrackedHold("..hold..") end")
+		end
+	end
+end
+
+-- Push the current tracked-vehicle hold to every spawned VE (used by the FPS watcher when "auto"
+-- flips between firm/smooth). Cars ignore it (their positionVE keeps isTracked=false -> multiplier 1).
+local function pushTrackedHold(hold)
+	for i = 0, be:getObjectCount() - 1 do
+		local veh = be:getObject(i)
+		if veh then
+			veh:queueLuaCommand("if positionVE and positionVE.setTrackedHold then positionVE.setTrackedHold("..hold..") end")
+		end
+	end
+end
 
 
 --- Called on specified interval by positionGE to simulate our own tick event to collect data.
-local function tick()
+-- sendTraffic (passed by MPUpdatesGE) gates the LOW-rate send for NON-driven owned vehicles
+-- (AI/traffic/parked). It is true only at trafficTickrate (~12Hz), NOT every position tick.
+-- WHY: physRateSendHz only ever throttled the DRIVEN car (the physics-rate armSelfSend path);
+-- every other owned vehicle fell through to getVehicleRotation() on EVERY GE tick (~FPS =
+-- 60-90Hz), which the rate lever never touched. With N spawned vehicles that floods the relay
+-- (measured 370 pos/s applied at a "10Hz" setting with 7 cars) and starves every ghost into
+-- drift -- and dialing physRateSendHz down did nothing to it. The driven car still streams at
+-- its full per-tick rate; only the extra vehicles are rate-limited here.
+local function tick(sendTraffic)
 	local ownMap = MPVehicleGE.getOwnMap() -- Get map of own vehicles
+	local activeID = -1
+	local ok, av = pcall(function() return be:getPlayerVehicle(0) end)
+	if ok and av then activeID = av:getID() end
 	for i,v in pairs(ownMap) do -- For each own vehicle
 		local veh = be:getObjectByID(i) -- Get vehicle
 		if veh then
-			veh:queueLuaCommand("positionVE.getVehicleRotation()")
+			if i == activeID then
+				-- The vehicle the player is driving: full rate, every tick.
+				if physRateSend then
+					-- Keep the VE physics-rate self-send armed; it emits at physRateSendHz
+					-- from onPhysicsStep regardless of FPS. Arm decays in SELF_SEND_ARM s.
+					veh:queueLuaCommand("if positionVE then positionVE.armSelfSend() end")
+				else
+					-- Legacy per-frame send.
+					veh:queueLuaCommand("if positionVE then positionVE.getVehicleRotation() end")
+				end
+			elseif sendTraffic then
+				-- Non-driven owned vehicle (AI/traffic/parked): throttled to trafficTickrate.
+				veh:queueLuaCommand("if positionVE then positionVE.getVehicleRotation() end")
+			end
 		end
 	end
 end
@@ -57,6 +181,7 @@ local function sendVehiclePosRot(data, gameVehicleID)
 		local serverVehicleID = MPVehicleGE.getServerVehicleID(gameVehicleID) -- Get serverVehicleID
 		if serverVehicleID and MPVehicleGE.isOwn(gameVehicleID) then -- If serverVehicleID not null and player own vehicle
 			local decoded = jsonDecode(data)
+			if not decoded then return end
 			local simspeedReal = simTimeAuthority.getReal()
 
 			decoded.isTransitioning = (simTimeAuthority.get() ~= simspeedReal) or nil
@@ -75,17 +200,21 @@ end
 --- This function serves to send the position data received for another players vehicle from GE to VE, where it is handled.
 -- @param decoded table The data to be applied to a vehicle, needs to contain "pos", "rot", "vel", "rvel", "ping" and "tim"
 -- @param serverVehicleID string The VehicleID according to the server.
+local applyPosCount = 0  -- LAN sync-stats overlay: positions applied since last sample (receive rate; falls toward 0 when the relay starves -> the visible drift)
 local function applyPos(decoded, serverVehicleID)
+	applyPosCount = applyPosCount + 1
 	local vehicle = MPVehicleGE.getVehicleByServerID(serverVehicleID)
 	if not vehicle then log('E', 'applyPos', 'Could not find vehicle by ID '..serverVehicleID) return end
+	if not (decoded.pos and decoded.rot) then log('E', 'applyPos', 'malformed pose for '..serverVehicleID) return end -- crafted/short packet: don't nil-index pos[1]/rot[1] below
 
+	profBegin()
 
 	local simspeedFraction = 1
 	local gameSpeed = simTimeAuthority.getReal()
 	if gameSpeed > 0 then
 		simspeedFraction = 1/gameSpeed
-		for k,v in pairs(decoded.vel) do decoded.vel[k] = v*simspeedFraction end
-		for k,v in pairs(decoded.rvel) do decoded.rvel[k] = v*simspeedFraction end
+		if decoded.vel then for k,v in pairs(decoded.vel) do decoded.vel[k] = v*simspeedFraction end end
+		if decoded.rvel then for k,v in pairs(decoded.rvel) do decoded.rvel[k] = v*simspeedFraction end end
 	end
 
 	decoded.localSimspeed = simspeedFraction
@@ -93,10 +222,23 @@ local function applyPos(decoded, serverVehicleID)
 	local veh = be:getObjectByID(vehicle.gameVehicleID)
 	if veh then -- vehicle already spawned, send data
 		if veh.mpVehicleType == nil then
-			veh:queueLuaCommand("MPVehicleVE.setVehicleType('R')")
+			veh:queueLuaCommand("if MPVehicleVE then MPVehicleVE.setVehicleType('R') end")
 			veh.mpVehicleType = 'R'
+			veh:queueLuaCommand("if positionVE and positionVE.setProfiling then positionVE.setProfiling("..tostring(profOn)..") end")
+			veh:queueLuaCommand("if positionVE and positionVE.setMailboxApply then positionVE.setMailboxApply("..tostring(mailboxOn)..") end")
+			veh:queueLuaCommand("if positionVE and positionVE.setFastPredict then positionVE.setFastPredict("..tostring(fastPredictOn)..") end")
+			veh:queueLuaCommand("if positionVE and positionVE.setTrackedHold then positionVE.setTrackedHold("..(syncHoldPushed or HOLD_ACCURATE)..") end") -- give a fresh ghost the current sync-mode hold
 		end
-		veh:queueLuaCommand("positionVE.setVehiclePosRot(mime.unb64(\'".. MPHelpers.b64encode(jsonEncode(decoded)) .."\'))")
+		if mailboxOn then
+			-- Engine mailbox transport: deliver the JSON via be:sendToMailbox instead of
+			-- compiling a queueLuaCommand string per packet. The VE polls
+			-- "mpPos"..obj:getID() each frame (latest-wins -- exactly right for position).
+			-- No Lua compile, no base64.
+			be:sendToMailbox("mpPos"..vehicle.gameVehicleID, jsonEncode(decoded))
+		else
+			-- Fallback (mailbox off): legacy base64 queueLuaCommand path.
+			veh:queueLuaCommand("if positionVE then positionVE.setVehiclePosRot(mime.unb64(\'".. MPHelpers.b64encode(jsonEncode(decoded)) .."\')) end")
+		end
 	end
 	local deltaDt = math.max((decoded.tim or 0) - (vehicle.lastDt or 0), 0.001)
 	vehicle.lastDt = decoded.tim
@@ -106,9 +248,18 @@ local function applyPos(decoded, serverVehicleID)
 	vehicle.fps = 1/deltaDt
 	vehicle.position = Point3F(decoded.pos[1],decoded.pos[2],decoded.pos[3])
 	vehicle.rotation = quat(decoded.rot[1],decoded.rot[2],decoded.rot[3],decoded.rot[4])
+	-- Dedicated copy of the RECEIVED pose for the self-heal watchdog. vehicle.position above is
+	-- overwritten every frame by MPVehicleGE's nametag loop (it sets it to the rendered OOBB
+	-- center + height), so the watchdog can't use it to detect a drifted/frozen ghost -- it would
+	-- be comparing the rendered position against itself. rxPos/rxRot are written ONLY here, straight
+	-- from the network packet, so received-vs-rendered actually means something.
+	vehicle.rxPos = {decoded.pos[1], decoded.pos[2], decoded.pos[3]}
+	vehicle.rxRot = {decoded.rot[1], decoded.rot[2], decoded.rot[3], decoded.rot[4]}
 
 	local owner = vehicle:getOwner()
 	if owner then UI.setPlayerPing(owner.name, ping) end-- Send ping to UI
+
+	profEnd('applyPos')
 end
 
 --- Tries to delay the positional update execution to match the average update interval from this vehicle
@@ -153,8 +304,11 @@ local function smoothPosExec(serverVehicleID, decoded)
 		-- Todo: When this happens, try to calc a median packet between the two for all relevant data. eg. (decoded.pos + POSSMOOTHER[serverVehicleID].data.pos) / 2POSSMOOTHER[serverVehicleID].data.pos) / 2
 		-- This likely proposes an issue if the tim values are to far away from each other.
 		
-		-- ensure that there is a min age distance between the remote packages of 15ms.
-		if (decoded.tim - POSSMOOTHER[serverVehicleID].last_executed_tim) < 0.015 then return nil end
+		-- ensure that there is a min age distance between the remote packages.
+		-- LAN-only build: lowered from 15ms to 8ms (~125 Hz) so the receiver
+		-- actually applies the higher-rate position updates we now send instead
+		-- of discarding ~1/3 of them.
+		if (decoded.tim - POSSMOOTHER[serverVehicleID].last_executed_tim) < 0.008 then return nil end
 		
 		local median_time = POSSMOOTHER[serverVehicleID].median_timer:stopAndReset()
 		POSSMOOTHER[serverVehicleID].data = decoded -- also outdates unexecuted packets
@@ -193,6 +347,7 @@ local function handle(rawData)
 
 	if code == 'p' then
 		local decoded = jsonDecode(data)
+		if not decoded then return end -- malformed/truncated packet: don't nil-crash applyPos/smoothPosExec
 		if settings.getValue("enablePosSmoother") then
 			smoothPosExec(serverVehicleID, decoded)
 		else
@@ -210,7 +365,7 @@ local function setPing(ping)
 	for i = 0, be:getObjectCount() - 1 do
 		local veh = be:getObject(i)
 		if veh then
-			veh:queueLuaCommand("positionVE.setPing("..p..")")
+			veh:queueLuaCommand("if positionVE then positionVE.setPing("..p..") end")
 		end
 	end
 end
@@ -231,6 +386,7 @@ local function setPositionRotationVelocity(gameVehicleID, positionData) -- this 
 	local vel = positionData.vel
 	local rvel = positionData.rvel
 	local veh = be:getObjectByID(gameVehicleID)
+	if not veh then return end -- vehicle despawned while a position packet was in flight
 
 	local localVel = veh:getVelocity()
 	local vehVel = positionData.vehVel
@@ -252,7 +408,7 @@ local function setPositionRotationVelocity(gameVehicleID, positionData) -- this 
 
 	-- but since it doesn't do rotational velocity we still need to use VE
 	-- apparently GE to VE queues are really fast, so we don't need any extra prediction with this queue
-	veh:queueLuaCommand("velocityVE.setAngularVelocity("..vel.x..", "..vel.y..", "..vel.z..", "..rvel.x..", "..rvel.y..", "..rvel.z..","..onlyAngularVelocity..","..noCounterVelocity..")")
+	veh:queueLuaCommand("if velocityVE then velocityVE.setAngularVelocity("..vel.x..", "..vel.y..", "..vel.z..", "..rvel.x..", "..rvel.y..", "..rvel.z..","..onlyAngularVelocity..","..noCounterVelocity..") end")
 end
 
 --- This function is used for setting the simulation speed 
@@ -267,6 +423,33 @@ local function getActualSimSpeed()
 	return actualSimSpeed
 end
 
+-- Self-heal watchdog (LAN robustness). A remote car whose VE apply stalls -- e.g. a broken
+-- third-party vehicle (the fullsuv police config, whose setVehiclePosRot fails on its discarded
+-- prop structure) -- freezes in place while position data keeps arriving, until someone resets
+-- it. We detect a persistent gap between where we're TOLD the ghost is (vehicle.position, set
+-- by applyPos) and where it ACTUALLY is, and force a GE-direct resync (setClusterPosRelRot
+-- bypasses the stuck VE) so it self-heals without a manual reset. Thresholds are deliberately
+-- large -> a healthy / parked / teleporting ghost never trips this.
+local selfHealClock = 0
+local SELFHEAL_INTERVAL = 0.25 -- run the check ~4x/sec
+local SELFHEAL_DIST_SQ  = 25   -- 5m: told-vs-actual gap that counts as "diverged" (now the metric is real, healthy lead is ~1m)
+local SELFHEAL_STALL_S  = 0.5  -- diverged continuously this long => frozen => force a resync (was 1.5; corrects sooner)
+local FROZEN_MOVE       = 0.25 -- m the ghost's OWN body moved since the last check, BELOW which it counts as
+                               -- "frozen" (stalled apply). Above it the ghost is live/drifting and we DON'T snap
+                               -- it -- the stock predictor's own (smooth) teleport handles it. This is the fix for
+                               -- the watchdog hard-snapping a moving tank to the stale raw position every 0.5s
+                               -- (the warble that made it feel worse than stock). 0.25m over ~0.25s ~= <1 m/s.
+local diagTick = 0
+local DIAG_TICKS = 20          -- when profiling, log each ghost's peak divergence every DIAG_TICKS*SELFHEAL_INTERVAL (~5s)
+
+-- Sync-stats overlay (MPDebug) live drift signal. wdMaxDrift = worst told-vs-actual gap (m) across
+-- ALL ghosts since the overlay last sampled; wdHealCount = self-heal corrections since then. This is
+-- the FIX for "the overlay stayed green while ghosts drifted/corrected": the old overlay only watched
+-- apply-rate drops + FPS, both of which look healthy during a traffic FLOOD (high aggregate apply rate,
+-- one ghost still starved). These measure the actual symptom, regardless of cause.
+local wdMaxDrift = 0
+local wdHealCount = 0
+
 --- This function is used to execute smoothed positional updates if enabled
 local function onPreRender(dt)
 	-- tick pos updates per vehicle based on their median pos update interval
@@ -277,10 +460,95 @@ local function onPreRender(dt)
 			POSSMOOTHER[serverVehicleID].executed = true
 			POSSMOOTHER[serverVehicleID].last_executed_tim = data.data.tim
 			applyPos(data.data, serverVehicleID)
-			
+
 		elseif timedif > 60000 then -- seconds. vehicle potentially removed. rem entry
 			POSSMOOTHER[serverVehicleID] = nil
 		end
+	end
+
+	-- Sync mode "auto": adapt the tracked-vehicle hold to local FPS. Smoothed FPS + a hysteresis band
+	-- (rise above 55 -> firm hold, drop below 42 -> stock-smooth) so a heavy scene/crash that tanks
+	-- the frame rate eases the correction instead of yanking the ghost around. Re-pushes only on a flip.
+	if dt and dt > 0 then syncFps = syncFps * 0.9 + (1 / dt) * 0.1 end
+	if syncModeCfg == "auto" then
+		local agg = (syncAggressive and (syncFps > AGG_FPS_OFF)) or ((not syncAggressive) and (syncFps > AGG_FPS_ON))
+		if agg ~= syncAggressive then
+			syncAggressive = agg
+			local hold = agg and HOLD_ACCURATE or HOLD_SMOOTH
+			if hold ~= syncHoldPushed then syncHoldPushed = hold; pushTrackedHold(hold) end
+		end
+	end
+
+	-- Self-heal: force-resync any ghost whose VE apply has frozen (see notes above).
+	-- When position profiling is on, also log each ghost's PEAK told-vs-actual divergence every
+	-- ~5s -- this exposes drift BELOW the 10m heal trigger (the steady-state predictor lag the
+	-- host sees as "losing" a remote car) so we can measure and tune it. Gated on profPosSync so
+	-- normal play stays quiet; the heal path itself runs unconditionally.
+	selfHealClock = selfHealClock + dt
+	if selfHealClock >= SELFHEAL_INTERVAL then
+		local elapsed = selfHealClock
+		selfHealClock = 0
+		diagTick = diagTick + 1
+		local doDiag = profOn and diagTick >= DIAG_TICKS
+		for sid, v in pairs(MPVehicleGE.getVehicles()) do
+			if type(v) == "table" and not v.isLocal and v.rxPos and v.rxRot and v.gameVehicleID then
+				local veh = be:getObjectByID(v.gameVehicleID)
+				if veh then
+					-- COMPARE LIKE-FOR-LIKE: the sender broadcasts its COG (positionVE.doSendPosRot =
+					-- getPosition()+cogRel), so rxPos is the COG. veh:getPosition() is the REFNODE -- on a
+					-- long vehicle (e.g. a 12m bus) the COG<->refNode gap is ~6m, which the old code read as
+					-- a permanent "6m off" and false-snapped every 0.5s (shoving the bus by cogRel each time
+					-- = visible jitter). Use the OOBB CENTER (BeamNG's geometric/COG-proxy center) so the
+					-- comparison is COG-vs-COG (~0 when synced) regardless of vehicle length. Cars are
+					-- unaffected (their cogRel is <1m). Falls back to the refNode if the OOBB API returns nil.
+					local refPos = veh:getPosition()
+					local ocx, ocy, ocz = be:getObjectOOBBCenterXYZ(v.gameVehicleID)
+					local a = (ocx and { x = ocx, y = ocy, z = ocz }) or refPos
+					-- moved = how far the ghost's OWN body moved since the last check -- distinguishes a
+					-- FROZEN ghost (stalled apply: barely moves) from one that's just DRIFTING (predictor
+					-- live, actively moving). Only a frozen ghost gets the hard snap; a moving one is the
+					-- stock predictor's job (the fix for the watchdog warble-snapping a moving tank).
+					local la = v._wdLastA
+					local moved = la and math.sqrt((a.x-la[1])*(a.x-la[1]) + (a.y-la[2])*(a.y-la[2]) + (a.z-la[3])*(a.z-la[3])) or 0
+					if la then la[1], la[2], la[3] = a.x, a.y, a.z else v._wdLastA = {a.x, a.y, a.z} end -- reuse the table (moved read above first); no per-check GC litter on the GE heap
+					local dx, dy, dz = v.rxPos[1] - a.x, v.rxPos[2] - a.y, v.rxPos[3] - a.z
+					local distSq = dx * dx + dy * dy + dz * dz
+					local dist = math.sqrt(distSq)
+					if profOn and dist > (v._diagPeak or 0) then v._diagPeak = dist end -- only track peak while profiling (consumed in the doDiag block); avoids a stale unbounded climb otherwise
+					if dist > wdMaxDrift and dist < 100 then wdMaxDrift = dist end -- overlay: live max told-vs-actual (cap excludes spawn/teleport transients)
+					if distSq > SELFHEAL_DIST_SQ and moved < FROZEN_MOVE then -- far AND frozen (not moving); a moving ghost is the predictor's job
+						v._stallT = (v._stallT or 0) + elapsed
+						if v._stallT >= SELFHEAL_STALL_S then
+							local ok = pcall(function()
+								local refNodeID = veh:getRefNodeId()
+								local vehRot = quatFromDir(-veh:getDirectionVector(), veh:getDirectionVectorUp())
+								local r = vehRot:inversed() * quat(v.rxRot[1], v.rxRot[2], v.rxRot[3], v.rxRot[4])
+								-- Snap so the OOBB CENTER lands on rxPos (the COG), not the refNode: offset the
+								-- refNode target by the current refNode->center vector so a long vehicle isn't
+								-- shoved by cogRel on the heal.
+								local ox, oy, oz = a.x - refPos.x, a.y - refPos.y, a.z - refPos.z
+								veh:setClusterPosRelRot(refNodeID, v.rxPos[1]-ox, v.rxPos[2]-oy, v.rxPos[3]-oz, r.x, r.y, r.z, r.w)
+							end)
+							log('W', 'posWatchdog', string.format(
+								"self-heal: ghost %s was %.0fm off its synced position for ~%.1fs -- forced a GE-direct resync%s",
+								tostring(sid), dist, v._stallT, ok and "" or " (FAILED)"))
+							v._stallT = 0
+							wdHealCount = wdHealCount + 1 -- overlay: count corrections
+						end
+					else
+						v._stallT = 0
+					end
+					if doDiag then
+						log('I', 'posWatchdog', string.format(
+							"ghost %s told-vs-actual peak %.1fm over ~%.0fs (heal trigger: >%.0fm for %.1fs)",
+							tostring(sid), v._diagPeak or 0, DIAG_TICKS * SELFHEAL_INTERVAL,
+							math.sqrt(SELFHEAL_DIST_SQ), SELFHEAL_STALL_S))
+						v._diagPeak = 0
+					end
+				end
+			end
+		end
+		if doDiag then diagTick = 0 end
 	end
 end
 
@@ -291,9 +559,12 @@ local function onSettingsChanged()
 			POSSMOOTHER[serverVehicleID] = nil
 		end
 	end
+	refreshFlags()
 end
 
 M.applyPos                    = applyPos
+M.getApplyPosRate             = function() local c = applyPosCount; applyPosCount = 0; return c end -- sync-stats overlay: positions applied since last call
+M.getDriftStats               = function() local d, h = wdMaxDrift, wdHealCount; wdMaxDrift, wdHealCount = 0, 0; return d, h end -- overlay: max told-vs-actual (m) + self-heal corrections since last call
 M.tick                        = tick
 M.handle                      = handle
 M.sendVehiclePosRot           = sendVehiclePosRot
@@ -305,6 +576,6 @@ M.getActualSimSpeed           = getActualSimSpeed
 M.onPreRender                 = onPreRender
 M.onSettingsChanged           = onSettingsChanged
 M.posSmoother                 = POSSMOOTHER -- debug entry
-M.onInit = function() setExtensionUnloadMode(M, "manual") end
+M.onInit = function() setExtensionUnloadMode(M, "manual"); refreshFlags() end
 
 return M

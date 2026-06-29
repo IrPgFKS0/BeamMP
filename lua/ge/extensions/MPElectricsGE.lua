@@ -22,7 +22,7 @@ local function tick() -- Update electrics values of all vehicles
 	for i,v in pairs(ownMap) do -- For each own vehicle
 		local veh = be:getObjectByID(i) -- Get vehicle
 		if veh then
-			veh:queueLuaCommand("MPElectricsVE.check()") -- Check if any value changed
+			veh:queueLuaCommand("if MPElectricsVE then MPElectricsVE.check() end") -- Check if any value changed (guard: VE may not be loaded yet on spawn/recover -> else FATAL kills the vehicle VM + its sync)
 		end
 	end
 end
@@ -52,7 +52,7 @@ local function applyElectrics(data, serverVehicleID)
 	local veh = be:getObjectByID(gameVehicleID)
 	if veh then
 		if not MPVehicleGE.isOwn(gameVehicleID) then
-			veh:queueLuaCommand("MPElectricsVE.applyElectrics(mime.unb64(\'".. MPHelpers.b64encode(data) .."\'))")
+			veh:queueLuaCommand("if MPElectricsVE then MPElectricsVE.applyElectrics(mime.unb64(\'".. MPHelpers.b64encode(data) .."\')) end")
 		end
 	end
 end

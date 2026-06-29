@@ -173,20 +173,24 @@ end
 
 --- Cleanup the mods from the ended session ready for another.
 local function cleanUpSessionMods()
-	log('M', "cleanUpSessionMods", "Deleting all multiplayer mods")
+	-- LAN-only build: PERSIST synced mods between sessions. The original here
+	-- called core_modmanager.deleteMod() on every multiplayer mod on each
+	-- leave/startup, which wiped /mods/multiplayer and forced the launcher to
+	-- re-copy (and a fresh client to re-download) the entire set every session.
+	-- We keep them on disk instead. We still tally them so hasMods / the
+	-- leave-reload flow below behaves exactly as before; we just don't delete.
+	-- (Trade-off: the mods stay mounted, so they are also active in single
+	-- player. Clear /mods/multiplayer manually if you want them gone, or restore
+	-- the core_modmanager.deleteMod(modname) call to get the original behaviour.)
 	local count = 0
 	for modname, mod in pairs(getModList()) do
 		if mod.dirname == "/mods/multiplayer/" and modname ~= "multiplayerbeammp" then
 			hasMods = true
 			count = count + 1
-			core_modmanager.deleteMod(modname)
+			-- core_modmanager.deleteMod(modname) -- disabled: persist mods between sessions
 		end
 	end
-	log('M', "cleanUpSessionMods", count.." Mods cleaned up")
-	log('M', "cleanUpSessionMods", "Unloading extensions...")
-	--dump(getModList())
-	-- TODO: Need to find an alternative for this...
-	--unloadGameModules()
+	log('M', "cleanUpSessionMods", "LAN build: keeping "..count.." multiplayer mod(s) (persistent)")
 end
 
 --- Set the servers mods as a string in Lua for loading and checking

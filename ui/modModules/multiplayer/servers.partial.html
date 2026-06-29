@@ -85,7 +85,7 @@
 								{{:: 'ui.multiplayer.serverLocationFilterTooltip' | translate}}
 							</md-tooltip>
 							<md-option ng-repeat="location in multiplayermenu.availableServerLocations" ng-value="multiplayermenu.availableServerLocations[$index]" style="height: 40px;">
-								<img src="local://local/ui/modModules/multiplayer/flags/{{ location.toLowerCase() }}.png" class="flag" style="margin-right: 5px;" /> {{ location }}
+								<img ng-src="local://local/ui/modModules/multiplayer/flags/{{ location.toLowerCase() }}.png" class="flag" style="margin-right: 5px;" /> {{ location }}
 							</md-option>
 						</md-select>
 					</div>
@@ -161,10 +161,12 @@
 								</ul>
 							</div>
 						</div>
-						<div class="row" style="padding-left: 10px;" ng-switch="server.isFavorite">
+						<div class="row" style="padding-left: 10px; align-items: center;" ng-switch="server.isFavorite">
 							<md-button id="serverconnect-button" class="button servers-button md-button md-default-theme" ng-class="" ng-click="connect(server.server.ip, server.server.port, server.name, server.server.official)" style="margin-left: 10px;">Connect</md-button>
-							<div ng-switch-when="true">
+							<div ng-switch-when="true" style="display: flex; align-items: center; flex-wrap: wrap;">
 								<md-button id="removeFav-button" class="button servers-button md-button md-default-theme" ng-class="" ng-click="removeFav(server.server)" style="margin-left: 10px; background-color: #FF6961;">Remove Favorite</md-button>
+								<input type="text" class="fav-rename-input" ng-model="server.renameInput" ng-init="server.renameInput = (server.server.customName || server.server.sname)" placeholder="Favorite name" maxlength="40" aria-label="Rename favorite" style="margin-left: 10px;" />
+								<md-button id="renameFav-button" class="button servers-button md-button md-default-theme" ng-class="" ng-click="renameFav(server, server.renameInput)" ng-disabled="!server.renameInput || server.renameInput === (server.server.customName || server.server.sname)" style="margin-left: 10px; background-color: #6FB1FC;">Rename</md-button>
 							</div>
 							<div ng-switch-when="false">
 								<md-button id="addFav-button" class="button servers-button md-button md-default-theme" ng-class="" ng-click="addFav(server.server, true)" style="margin-left: 10px; background-color: #FFB646">Add Favorite</md-button>

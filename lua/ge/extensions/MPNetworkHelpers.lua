@@ -41,12 +41,11 @@ M.receive = function(launcherSocket, recvState)
 		local fullBody, recvStatus, partialBody = launcherSocket:receive(len)
 		if not fullBody then
 			if recvStatus == 'timeout' then
-				-- combine the previously received partial (if any) with this partial
-				recvState.data = partialBody
+				-- store this partial (partialBody is nil on a pure 0-byte timeout)
+				recvState.data = partialBody or ""
 				recvState.state = 'partial'
-				recvState.missing = len - #partialBody
+				recvState.missing = len - #(partialBody or "")
 				log('W', 'receive', 'Partial receive, missing '..tostring(recvState.missing)..' bytes')
-				dump(recvState)
 				return recvState
 			end
 
@@ -71,9 +70,8 @@ M.receive = function(launcherSocket, recvState)
 				recvState.data = recvState.data..(partialBody or "")
 				recvState.state = 'partial'
 				-- subtract what we've received now
-				recvState.missing = recvState.missing - #partialBody
+				recvState.missing = recvState.missing - #(partialBody or "")
 				log('W', 'receive', 'Partial receive AGAIN, missing '..tostring(recvState.missing)..' bytes')
-				dump(recvState)
 				return recvState
 			end
 
@@ -83,8 +81,9 @@ M.receive = function(launcherSocket, recvState)
 			recvState.state = 'error'
 			return recvState
 		end
-		-- finally received everything
-		recvState.data = recvState.data..(partialBody or "")
+		-- finally received everything (the remaining bytes are in fullBody, NOT partialBody --
+		-- appending (partialBody or "") here silently dropped the tail and truncated the packet)
+		recvState.data = recvState.data..fullBody
 		recvState.missing = 0
 		recvState.state = 'ready'
 	end
