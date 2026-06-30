@@ -411,14 +411,14 @@ local selfHealClock = 0
 local SELFHEAL_ENABLED  = true
 local SELFHEAL_INTERVAL = 0.25 -- run the check ~4x/sec
 local SELFHEAL_DIST_SQ  = 25   -- 5m: told-vs-actual gap that counts as "diverged" (now the metric is real, healthy lead is ~1m)
-local SELFHEAL_STALL_S  = 1.0  -- stuck-while-fresh-positions-arrive continuously this long => force a resync (raised 0.5->1.0: the rxMoved guard already excludes the tank, so favour fewer false heals)
-local SELFHEAL_FAST_DIST = 20  -- m: SPEED-AWARE fast path. A frozen ghost already THIS far diverged is healed on
-                               -- first detection, skipping the full SELFHEAL_STALL_S wait. A fast sender (an
-                               -- aircraft at ~100 m/s) crosses 20m within one ~0.25s check, so its visible drift
-                               -- is capped ~20-30m instead of ~100m (= speed x the 1s wait); a slow vehicle never
-                               -- reaches 20m in a single check, so it still uses the conservative 1s path. Safe
-                               -- to heal on first detect because moved/rxMoved are 0.25s deltas (already confirmed
-                               -- frozen-while-sender-moving), not a 1-frame blip.
+local SELFHEAL_STALL_S  = 1.0  -- stuck-while-fresh-positions-arrive continuously this long => force a resync. The
+                               -- rxMoved guard already excludes the tank; the 1.0s wait excludes BRIEF between-apply
+                               -- freezes (under multi-vehicle load the per-vehicle apply rate dips below the 0.1s
+                               -- packetTimeout, so a HIGH-SPEED car hits >20m on a 0.3s freeze the predictor would
+                               -- recover smoothly on the next packet -- DON'T snap those). A p13h42 'speed-aware fast
+                               -- path' (heal at >=20m after 0.3s) was REMOVED p13h47: it warbled a fast Chiron 107x in
+                               -- one session by snapping exactly those brief freezes. The tradeoff was a marginal win
+                               -- on the broken B25 aircraft (heal ~50m vs ~100m) for a bad warble on a normal car.
 local FROZEN_MOVE       = 0.25 -- m the ghost's OWN body moved since the last check, BELOW which it counts as
                                -- "frozen" (stalled apply). Above it the ghost is live/drifting and we DON'T snap
                                -- it -- the stock predictor's own (smooth) teleport handles it. This is the fix for
@@ -502,7 +502,7 @@ local function onPreRender(dt)
 					-- positions keep arriving does.
 					if SELFHEAL_ENABLED and distSq > SELFHEAL_DIST_SQ and moved < FROZEN_MOVE and rxMoved > FROZEN_MOVE then
 						v._stallT = (v._stallT or 0) + elapsed
-						if v._stallT >= SELFHEAL_STALL_S or dist >= SELFHEAL_FAST_DIST then -- normal wait OR speed-aware fast path: a grossly-diverged (fast-mover) ghost heals on first detect
+						if v._stallT >= SELFHEAL_STALL_S then -- healed only after a SUSTAINED stall (brief between-apply freezes are the predictor's job, not a snap)
 							local ok = pcall(function()
 								local refNodeID = veh:getRefNodeId()
 								local vehRot = quatFromDir(-veh:getDirectionVector(), veh:getDirectionVectorUp())
