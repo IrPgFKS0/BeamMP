@@ -108,16 +108,6 @@
 </md-list-item>
 
 <md-list-item md-no-ink ng-show="options.data.values.showAdvancedMPOptions">
-  <p>Remote sync mode (LAN) <span class="mp-setting-default">(default: Smooth)</span></p>
-  <md-tooltip md-direction="right">How remote vehicles are corrected toward their synced position. SMOOTH = stock-like: no extra hold on heavy/tracked vehicles, and the self-heal only catches truly-frozen ghosts, so motion is smoothest (slightly laggier) -- closest to stock BeamMP feel. ACCURATE = a firmer hold on tanks/heavy vehicles (tighter, but can micro-jitter on an erratic vehicle). AUTO = adapt to your frame rate: firm when FPS is high, smooth when it drops (e.g. a heavy scene or crash). Applies live.</md-tooltip>
-  <md-select aria-label="Remote sync mode" ng-model="options.data.values.syncMode" ng-change="options.applyState()">
-    <md-option md-no-ink ng-value="'smooth'">Smooth (stock-like)</md-option>
-    <md-option md-no-ink ng-value="'auto'">Auto (adapt to FPS)</md-option>
-    <md-option md-no-ink ng-value="'accurate'">Accurate (firm hold)</md-option>
-  </md-select>
-</md-list-item>
-
-<md-list-item md-no-ink ng-show="options.data.values.showAdvancedMPOptions">
   <p><span class="mp-setting-highlight">EXPERIMENTAL</span> Mailbox position apply (LAN) <span class="mp-setting-default">(default: on)</span></p>
   <md-tooltip md-direction="right">Delivers incoming positions from the game engine to each vehicle via the engine mailbox instead of compiling a Lua command per packet -- lower CPU/GC on the receive side. On by default for LAN (A/B verified ~25-40% cheaper apply); toggle off here if needed.</md-tooltip>
   <md-checkbox ng-model="options.data.values.mailboxApplyPos" ng-change="options.applyState()"></md-checkbox>
@@ -129,11 +119,11 @@
   <md-checkbox ng-model="options.data.values.optimizeMapMarkers" ng-change="options.applyState()"></md-checkbox>
 </md-list-item>
 
-<!-- Opt-in performance (per machine, off by default) ----------------------- -->
+<!-- Diagnostics (off by default) ------------------------------------------- -->
 <md-list-item md-no-ink ng-show="options.data.values.showAdvancedMPOptions">
-  <p><span class="mp-setting-highlight">EXPERIMENTAL</span> Low-GC predictor (LAN) <span class="mp-setting-default">(default: off)</span></p>
-  <md-tooltip md-direction="right">Runs the remote-vehicle motion predictor with reused math buffers instead of allocating ~20 temporary vectors per frame per car, reducing garbage-collection stutter. Mathematically identical to the normal path, which stays as the fallback. UNVERIFIED -- enable it on one machine, drive with another player, and watch remote cars closely for any warping or jitter; toggle off instantly if you see any. Applies live (no rejoin needed).</md-tooltip>
-  <md-checkbox ng-model="options.data.values.fastPredict" ng-change="options.applyState()"></md-checkbox>
+  <p><span class="mp-setting-highlight">DIAGNOSTIC</span> Log position apply-stalls (LAN) <span class="mp-setting-default">(default: off)</span></p>
+  <md-tooltip md-direction="right">When a remote vehicle's ghost freezes (stops applying received positions), write one line to the log naming the cause -- packets not reaching the vehicle, rejected as out-of-order (a sender clock reset), the sim-speed-scaled timer racing past the timeout, or packets genuinely stopped. After a freeze use /savelogs and grep "posApplyStall". Off = zero overhead. Applies live (no rejoin needed).</md-tooltip>
+  <md-checkbox ng-model="options.data.values.applyStallDiag" ng-change="options.applyState()"></md-checkbox>
 </md-list-item>
 
 <!-- Situational / heavy (off by default) ----------------------------------- -->
@@ -162,12 +152,6 @@
   <p><span class="mp-setting-debug">DEBUG</span> Profile position sync (LAN) <span class="mp-setting-default">(default: off)</span></p>
   <md-tooltip md-direction="right">Logs avg/max/rate timing of the position hot path (applyPos on GE; setVehiclePosRot/updateGFX on VE) to beamng.log every ~5s. For performance debugging &#8212; grep the log for "posProf". Turning this OFF auto-zips the logs (see below). Off by default.</md-tooltip>
   <md-checkbox ng-model="options.data.values.profilePosSync" ng-change="options.applyState()"></md-checkbox>
-</md-list-item>
-
-<md-list-item md-no-ink ng-show="options.data.values.showAdvancedMPOptions">
-  <p><span class="mp-setting-debug">DEBUG</span> Auto-collect logs when profiling stops (LAN) <span class="mp-setting-default">(default: on)</span></p>
-  <md-tooltip md-direction="right">When you turn "Profile position sync" OFF, the beamng.log files (current + rotations) are automatically zipped into the log-bundle folder below -- so a profiling capture is never missed and is always bundled correctly. A toast shows the exact path of the zip.</md-tooltip>
-  <md-checkbox ng-model="options.data.values.autoCollectProfLogs" ng-change="options.applyState()"></md-checkbox>
 </md-list-item>
 
 <md-list-item md-no-ink ng-show="options.data.values.showAdvancedMPOptions">

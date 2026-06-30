@@ -14,6 +14,13 @@ applied exactly once per client, from the owner's coordinates. ]]
 
 local M = {}
 
+-- TEMP weapon-sync diagnostic (p13h37). Logs both ends of the 'B' relay so a single test salvo
+-- shows exactly where fire/explosion sync dies: LAN1 logs every SEND, LAN2 logs every RECV. If a
+-- 'SEND' has no matching 'RECV' on the other machine, the relay/route is the break; if RECV shows
+-- fire state but no projectile, it's the VE replay. Set false (or ship without) once diagnosed.
+local DIAG = false
+local function dlog(s) if DIAG then log('I', 'MPWeaponsGE.DIAG', s) end end
+
 local huge = math.huge
 local function finite(n) return type(n) == "number" and n == n and n < huge and n > -huge end
 
@@ -34,6 +41,7 @@ local function broadcastExplosion(px, py, pz, r1, r2, force, invCoef)
 	if not (finite(px) and finite(py) and finite(pz) and finite(r1) and finite(r2) and finite(force) and finite(invCoef)) then return end
 	-- compact CSV; values are plain numbers (incl. world coords) so no escaping is needed
 	MPGameNetwork.send(string.format("B%f,%f,%f,%f,%f,%f,%f", px, py, pz, r1, r2, force, invCoef))
+	dlog(string.format("SEND explosion @ %.1f,%.1f,%.1f r=%.1f", px, py, pz, r2))
 end
 
 --- OWNER side: tell other clients the firing STATE of this vehicle (1=started, 0=stopped) so the
@@ -58,6 +66,7 @@ local function broadcastFire(gameVehicleID, state)
 	-- firing when aimed, etc.) stream a 2 per real round so the remote matches the source's cadence.
 	local code = (state == 1 and "1") or (state == 2 and "s") or "0"
 	MPGameNetwork.send("BF:"..serverVehicleID..":"..code..":"..active)
+	dlog("SEND fire code='"..code.."' sid="..tostring(serverVehicleID).." active="..active)
 end
 
 --- RECEIVER side: set the remote ghost's fire flag (its UniversalWeapons controller runs the fire
@@ -71,11 +80,12 @@ local function handleFire(payload)
 	if not serverVehicleID then
 		serverVehicleID, state = tostring(payload):match("^(%d+%-%d+):([01s])$"); active = "0"
 	end
-	if not serverVehicleID then return end
+	if not serverVehicleID then dlog("RECV fire UNPARSED payload='"..tostring(payload).."'") return end
 	local vinfo = MPVehicleGE.getVehicles and MPVehicleGE.getVehicles()[serverVehicleID]
-	if not vinfo or vinfo.isLocal then return end
+	if not vinfo or vinfo.isLocal then dlog("RECV fire DROPPED sid="..serverVehicleID.." (vinfo="..tostring(vinfo)..", isLocal="..tostring(vinfo and vinfo.isLocal)..")") return end
 	local gameVehicleID = MPVehicleGE.getGameVehicleID and MPVehicleGE.getGameVehicleID(serverVehicleID)
 	local vobj = gameVehicleID and be:getObjectByID(gameVehicleID)
+	dlog("RECV fire state='"..tostring(state).."' sid="..serverVehicleID.." gid="..tostring(gameVehicleID).." vobj="..tostring(vobj ~= nil))
 	if vobj then
 		-- full physics projectiles if the owner is driving this car, OR we opted into full for all
 		local full = (active == "1" or settings.getValue("remoteFullProjectiles") == true) and 1 or 0
@@ -98,6 +108,7 @@ end
 --- weapon mod is loaded, and finite() rejects any malformed/non-finite payload.
 local function handle(data)
 	if type(data) ~= "string" then return end
+	dlog("handle() 'B' recv: '"..tostring(data):sub(1, 32).."'")
 	-- Fire-event sub-message on the same reliable 'B' relay: "F:<serverVehicleID>" -> replay one
 	-- shot on that remote ghost (explosion CSV always starts with a digit or '-', never 'F').
 	if data:sub(1, 2) == "F:" then return handleFire(data:sub(3)) end
@@ -110,7 +121,8 @@ local function handle(data)
 	if not (finite(px) and finite(py) and finite(pz) and finite(r1) and finite(r2) and finite(force) and finite(invCoef)) then return end
 	-- Reject (don't clamp) an implausible blast: a corrupt/malicious packet must not apply a
 	-- map-wide, every-car explosion. Real weapons sit far inside these bounds.
-	if r1 < 0 or r2 < r1 or r2 > MAX_BLAST_RADIUS or math.abs(force) > MAX_BLAST_FORCE then return end
+	if r1 < 0 or r2 < r1 or r2 > MAX_BLAST_RADIUS or math.abs(force) > MAX_BLAST_FORCE then dlog("RECV explosion REJECTED (r2="..tostring(r2)..", force="..tostring(force)..")") return end
+	dlog(string.format("RECV explosion @ %.1f,%.1f,%.1f r=%.1f", px, py, pz, r2))
 	if invCoef < 0 then invCoef = 0 elseif invCoef > 1 then invCoef = 1 end
 	-- GE context: the BeamEngine INSTANCE is the global `be` (capital-B BeamEngine is the
 	-- static class and has no queueAllObjectLua -- that's the VE-side name UniversalWeapons uses).

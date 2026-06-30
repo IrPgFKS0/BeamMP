@@ -296,7 +296,7 @@ local function drawSyncStatsOverlay(dt)
 		-- "Bad" = a sharp drop below a slowly-decaying baseline of the best recent value, so it
 		-- adapts to the chosen send rate / car count / a genuinely slow machine instead of a fixed line.
 		ov.applyPeak = math.max((ov.applyPeak or 0) * 0.95, ov.applyRate)
-		ov.applyBad = synced > 0 and (ov.applyPeak or 0) > 5 and ov.applyRate < ov.applyPeak * 0.4 -- received <40% of baseline = relay starving
+		ov.applyBad = synced > 0 and (ov.applyPeak or 0) > 5 and ov.applyRate < ov.applyPeak * 0.4 -- applies <40% of baseline: relay not delivering OR a local FPS hitch (disambiguated against fpsBad in the hints)
 		if ov.applyBad then
 			ov.applyBadTime = (ov.applyBadTime or 0) + 1
 			ov.applyWorst = math.min(ov.applyWorst or ov.applyRate, ov.applyRate)
@@ -349,8 +349,10 @@ local function drawSyncStatsOverlay(dt)
 	im.Text(string.format("Net in:  %d pkt/s  (%.1f KB/s)", ov.recvRate, ov.recvKB))
 	im.Text(string.format("Net out: %d pkt/s  (%.1f KB/s)", ov.sentRate, ov.sentKB))
 
-	-- Pos applied = receive rate (relay health). Red while starving; the [dip/bad] tail persists so
-	-- you can see how deep + how long it went even after it recovers -- that's the tuning signal.
+	-- Pos applied = positions applied/sec. It reflects BOTH relay delivery AND local apply throughput
+	-- (the apply runs per render frame), so read it WITH the FPS row: a drop while FPS is FINE = the
+	-- relay isn't delivering; a drop alongside an FPS drop = a local hitch, not the relay. The [dip/bad]
+	-- tail persists so you can see how deep + how long it went even after it recovers.
 	local aTxt = string.format("Pos applied: %d/s", ov.applyRate or 0)
 	if (ov.applyBadTime or 0) > 0 then aTxt = aTxt .. string.format("   [dipped to %d/s, bad %ds total]", ov.applyWorst or 0, ov.applyBadTime) end
 	if ov.applyBad then im.TextColored(ov.RED, aTxt) else im.Text(aTxt) end
@@ -367,9 +369,11 @@ local function drawSyncStatsOverlay(dt)
 	if (ov.healTotal or 0) > 0 then dTxt = dTxt .. string.format("   [%d corrections]", ov.healTotal) end
 	if ov.driftBad then im.TextColored(ov.RED, dTxt) else im.Text(dTxt) end
 
-	if ov.applyBad then im.TextColored(ov.RED, ">> relay starving: lower 'Position send rate'") end
-	if ov.fpsBad then im.TextColored(ov.RED, ">> FPS spike: enable 'Low-GC predictor' (fastPredict)") end
-	if ov.driftBad then im.TextColored(ov.RED, ">> ghost drifting/correcting: cut AI/traffic count or LOWER 'Position send rate' (overload, not too-low a rate)") end
+	-- Only call it "relay starving" when FPS is FINE -- otherwise the apply-rate drop is the local
+	-- hitch below, and "lower send rate" would be the wrong fix.
+	if ov.applyBad and not ov.fpsBad then im.TextColored(ov.RED, ">> relay starving (positions not arriving, FPS is fine): LOWER 'Position send rate' or cut AI/traffic cars") end
+	if ov.fpsBad then im.TextColored(ov.RED, ">> FPS hitch: trim the mod set / AI-traffic / heavy vehicles (LOAD, not the netcode -- a >1s hitch freezes the remote ghosts THIS machine draws)") end
+	if ov.driftBad then im.TextColored(ov.RED, ">> ghost drift/heals: usually a LOAD/FPS hitch (trim mods + AI-traffic) or relay overload (LOWER 'Position send rate') -- never RAISE the rate") end
 	im.End()
 end
 

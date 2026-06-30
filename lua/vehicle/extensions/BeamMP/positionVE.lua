@@ -52,8 +52,13 @@ end
 -- never stiffened (isTracked stays false -> multiplier forced to 1).
 -- NOTE: the previous fixed x4 over-stiffened the tank -- combined with the (now frozen-only)
 -- self-heal watchdog it caused the warble that made the tank feel WORSE than stock at 10Hz.
-local TRACKED_WHEEL_MIN = 10
-local TRACKED_HOLD_DEFAULT = 2.0   -- "accurate" hold; GE overrides per-vehicle at runtime
+-- DISABLED p13h39: hardware testing showed STOCK BeamMP syncs the T-80UD tank fine with NO tracked
+-- special-casing, while this fork's x2 stiffening (+ the self-heal watchdog) FOUGHT the stock predictor
+-- and made the tank spike 38-74m on the remote at 30Hz. So no vehicle is treated as "tracked" any more
+-- (999 = unreachable wheel count -> isTracked stays false -> force multiplier forced to 1 = pure stock
+-- predictor for ALL vehicles, tank included). Restore the band-aid by setting this back to 10.
+local TRACKED_WHEEL_MIN = 999
+local TRACKED_HOLD_DEFAULT = 1.0   -- stock (no extra hold); kept so applyTrackedHold/setTrackedHold stay inert
 local trackedHoldChecked = false
 
 -- Position
@@ -74,8 +79,8 @@ local maxRaccError = 3         -- If difference between target and actual angula
 
 -- Base (stock, un-stiffened) correction constants. applyTrackedHold() recomputes the LIVE
 -- posForceMul/maxPosForce/etc from these, so the tracked multiplier never compounds and the GE
--- sync mode can change it at runtime WITHOUT touching the per-frame hot paths (both updateGFX and
--- updateGFXFast read the live module locals).
+-- sync mode can change it at runtime WITHOUT touching the per-frame hot path (updateGFX reads the
+-- live module locals).
 local BASE_posForceMul, BASE_maxPosForce = posForceMul, maxPosForce
 local BASE_rotForceMul, BASE_maxRotForce = rotForceMul, maxRotForce
 local isTracked = false
@@ -151,6 +156,22 @@ local remoteData = {
 
 local smoothVel = vec3(0,0,0)
 local smoothRvel = vec3(0,0,0)
+
+-- APPLY-STALL DIAGNOSTIC (p13h43): instrument the one spot a remote ghost can freeze -- updateGFX's
+-- "no fresh packet" early-return -- so a single /savelogs after a freeze NAMES the cause instead of us
+-- guessing. Purely additive: counters + a one-shot 'W' log, no behavior change. ONE table = ONE upvalue
+-- in the hot updateGFX (LuaJIT caps a function at 60 upvalues; 9 separate locals blew past it).
+local sd = {
+	realTimer = 0,       -- real (NOT simSpeed-scaled) clock; updateGFX advances it by the raw dt
+	recRealT  = 0,       -- realTimer at the last ACCEPTED packet (for the real-time gap)
+	recvCount = 0,       -- setVehiclePosRot calls = packets that actually reached this VE
+	rejectCount = 0,     -- packets rejected out-of-order at the tim guard (sender clock reset?)
+	starveT = 0,         -- s the apply has been continuously starved (early-returning)
+	recv0 = 0, rej0 = 0, -- recv/reject snapshot at the start of the current starve
+	logged = false,      -- one-shot per starve episode
+	logS = 1.0,          -- log once the apply has been starved this long
+	diagOn = false,      -- UI gate (Options>Multiplayer "Log position apply-stalls"); off = no tracking/logs
+}
 
 local physHandlerAdded = false
 
@@ -314,31 +335,12 @@ local function setMailboxApply(state)
 	lastMailboxVer = nil -- re-read on next poll after a toggle
 end
 
--- fastPredict (experimental, opt-in, pushed from positionGE.refreshFlags): when on,
--- updateGFX dispatches to updateGFXFast -- a low-GC variant that does the per-frame
--- predictor/error/force math in place using the scratch vecs below instead of
--- allocating ~20 temporary vec3s per frame per remote car (the GC churn KISS-MP and
--- PR #789 reviewers flag). Mathematically identical to the default path. Default OFF;
--- the original updateGFX stays the fallback so toggling off restores known-good behavior.
-local fastPredictOn = false
-local function setFastPredict(state)
-	fastPredictOn = state and true or false
+-- Apply-stall diagnostic gate (pushed from positionGE.refreshFlags). Off by default = zero per-frame
+-- work and no logs; flip it on from Options>Multiplayer to capture the next freeze's cause.
+local function setApplyStallDiag(state)
+	sd.diagOn = state and true or false
+	if not sd.diagOn then sd.starveT = 0; sd.logged = false end -- clear any in-flight episode when disabling
 end
-local updateGFXFast -- forward decl; defined just after updateGFX
-
--- Reused scratch vecs for the fastPredict path (module scope = allocated once). Only
--- hold within-frame values; never stored across frames (lastAcc/lastRacc are copied,
--- not aliased, at the end of updateGFXFast).
-local fpPos        = vec3(0,0,0)
-local fpVel        = vec3(0,0,0)
-local fpRotAdd     = vec3(0,0,0)
-local fpRvel       = vec3(0,0,0)
-local fpPosError   = vec3(0,0,0)
-local fpVelError   = vec3(0,0,0)
-local fpRvelError  = vec3(0,0,0)
-local fpTargetAcc  = vec3(0,0,0)
-local fpTargetRacc = vec3(0,0,0)
-local fpTmp        = vec3(0,0,0)
 
 local function update(dtSim)
 	if physcounter == 0 then
@@ -382,6 +384,8 @@ end
 
 
 local function updateGFX(dt)
+	local rawDt = dt                        -- real render dt, BEFORE the simSpeed scaling below (stall diag)
+	sd.realTimer = sd.realTimer + rawDt
 	dt = dt * (remoteData.localSimspeed or 1)
 	timer = timer + dt
 	lastDT = dt
@@ -408,15 +412,42 @@ local function updateGFX(dt)
 		if (timer - remoteData.recTime) > packetTimeout then profCount('updateGFX.stale') end
 	end
 
-	-- If there is no received data, or data is older than timeout, do nothing
-	if not remoteData.pos or (timer-remoteData.recTime) > packetTimeout then return end
+	-- If there is no received data, or data is older than timeout, do nothing.
+	-- This early-return is THE spot a remote ghost freezes (it stops queuing the GE apply). The diag
+	-- block tracks how long we've been starved and, once per episode, logs the state that pins the cause:
+	--   recv+0   => packets aren't reaching the VE at all (GE->VE delivery stalled)
+	--   reject+N => packets arrive but are rejected out-of-order (sender clock reset, e.g. on respawn)
+	--   realGap small + simSpeed high => the simSpeed-scaled VE clock raced past packetTimeout (timer-race)
+	--   realGap large => packets genuinely stopped
+	if not remoteData.pos or (timer - remoteData.recTime) > packetTimeout then
+		if sd.diagOn and remoteData.pos then
+			if sd.starveT == 0 then sd.recv0 = sd.recvCount; sd.rej0 = sd.rejectCount end
+			sd.starveT = sd.starveT + rawDt
+			if sd.starveT > sd.logS and not sd.logged then
+				sd.logged = true
+				local realGap = sd.realTimer - sd.recRealT
+				local dRecv, dRej = sd.recvCount - sd.recv0, sd.rejectCount - sd.rej0
+				local why = (dRecv == 0) and "packets NOT reaching the VE (GE->VE delivery stalled)"
+					or (dRej > 0 and dRej >= dRecv) and "packets REJECTED out-of-order at the tim guard (sender clock reset on respawn?)"
+					or (realGap < packetTimeout) and "TIMER-RACE: packets ARE arriving but the simSpeed-scaled VE clock timed out"
+					or "packets genuinely stopped (real gap large)"
+				log('W', 'posApplyStall', string.format(
+					"ghost apply STALLED ~%.1fs -- simGap=%.2f realGap=%.2f simSpeed=%.2f recv+%d reject+%d mailbox=%s(v%s) :: %s",
+					sd.starveT, timer - remoteData.recTime, realGap, remoteData.localSimspeed or 1,
+					dRecv, dRej, tostring(mailboxOn), tostring(lastMailboxVer), why))
+			end
+		end
+		return
+	end
+	sd.starveT = 0
+	sd.logged = false
 	
 	-- Since the line above returns end if there is no remote data we know this vehicle should be remote if this runs
 	if v.mpVehicleType == "L" then v.mpVehicleType = "R" end
 
 	-- One-time tracked-vehicle detection. Runs once wheels are initialised; flips isTracked and
 	-- applies the current GE-pushed hold via applyTrackedHold (which mutates the live force constants
-	-- both predictor paths read, so it covers updateGFX and updateGFXFast).
+	-- the predictor reads).
 	if not trackedHoldChecked and wheels and (wheels.wheelCount or 0) > 0 then
 		trackedHoldChecked = true
 		if wheels.wheelCount >= TRACKED_WHEEL_MIN then
@@ -425,10 +456,6 @@ local function updateGFX(dt)
 			log('I', 'positionVE', 'tracked vehicle ('..tostring(wheels.wheelCount)..' wheels): position hold x'..trackedHoldMul..' (GE sync-mode controlled)')
 		end
 	end
-
-	-- experimental opt-in: low-GC in-place predictor path. The default math below is
-	-- left fully intact, so toggling fastPredict off restores known-good behavior.
-	if fastPredictOn then return updateGFXFast(dt) end
 
 	profBegin()
 
@@ -585,173 +612,6 @@ local function updateGFX(dt)
 end
 
 
--- Low-GC variant of updateGFX, run only when fastPredict is on. The per-frame VEC
--- math (predictor, error, force) is done in place into the module scratch vecs above;
--- the quat math, the vehRot/vehPos block, the smoothers and the (rare) teleport branch
--- are kept identical to updateGFX -- converting those carries quaternion-convention and
--- cross-frame-aliasing risk for little allocation volume. Result is mathematically the
--- same as the default path. EXPERIMENTAL: validate in-game (watch for remote-car
--- warping/jitter) before trusting; toggle fastPredict off to fall back instantly.
-updateGFXFast = function(dt)
-	profBegin()
-
-	-- Local vehicle data (kept as original -- low-volume quat/helper allocs)
-	local vehRot = quatFromDir(-vec3(obj:getDirectionVector()), vec3(obj:getDirectionVectorUp()))
-	local vehRvel = smoothRvel:rotated(vehRot)
-	local vehRacc = vehRvel-(lastVehRvel or vehRvel)
-
-	local cog = velocityVE.cogRel:rotated(vehRot)
-	local vehPos = vec3(obj:getPosition()) + cog
-	local vehVel = smoothVel + cog:cross(vehRvel)
-	local vehAcc = vehVel-(lastVehVel or vehVel)
-
-	lastVehVel = vehVel
-	lastVehRvel = vehRvel
-
-	local timeOffset = timeOffsetSmoother:get(remoteData.timeOffset, dt)
-	if abs(timeOffset - remoteData.timeOffset) > 1 then
-		timeOffsetSmoother:set(remoteData.timeOffset)
-		timeOffset = remoteData.timeOffset
-	end
-
-	local calcLocalTime = remoteData.timer + timeOffset
-	local predictTime = min(max(timer - calcLocalTime, -maxPredict), maxPredict)
-
-	local smootherDT = dt / guardZero(abs(predictTime))
-	local remoteVel = remoteVelSmoother:get(remoteData.vel, smootherDT)
-	local remoteRvel = remoteRvelSmoother:get(remoteData.rvel, smootherDT)
-	local remoteAcc = remoteAccSmoother:get(remoteData.acc, smootherDT)
-	local remoteRacc = remoteRaccSmoother:get(remoteData.racc, smootherDT)
-
-	-- pos = remoteData.pos + remoteVel*predictTime + 0.5*remoteAcc*predictTime^2  (in place)
-	fpPos:setScaled2(remoteAcc, 0.5*predictTime*predictTime)
-	fpTmp:setScaled2(remoteVel, predictTime)
-	fpPos:setAdd(fpTmp)
-	fpPos:setAdd(remoteData.pos)
-	local pos = fpPos
-	-- vel = remoteVel + remoteAcc*predictTime
-	fpVel:setScaled2(remoteAcc, predictTime)
-	fpVel:setAdd(remoteVel)
-	local vel = fpVel
-	-- rotAdd = remoteRvel*predictTime + 0.5*remoteRacc*predictTime^2
-	fpRotAdd:setScaled2(remoteRacc, 0.5*predictTime*predictTime)
-	fpTmp:setScaled2(remoteRvel, predictTime)
-	fpRotAdd:setAdd(fpTmp)
-	local rotAdd = fpRotAdd
-	local rot = remoteData.rot * quatFromEuler(rotAdd.x, rotAdd.y, rotAdd.z)
-	-- rvel = remoteRvel + remoteRacc*predictTime
-	fpRvel:setScaled2(remoteRacc, predictTime)
-	fpRvel:setAdd(remoteRvel)
-	local rvel = fpRvel
-
-	-- Error correction
-	fpPosError:setSub2(pos, vehPos)
-	local posError = fpPosError
-	local rotErrorQuat = vehRot:inversed() * rot
-	local rotError = rotErrorQuat:toEulerYXZ()
-	rotError = vec3(rotError.y, rotError.z, rotError.x)
-
-	local maxVel = tpVelSmoother:get(max(vel:length(), vehVel:length()), dt)
-	local tpDist1 = tpDistAdd + maxVel*tpDistMul1
-	local tpDist2 = tpDistAdd + maxVel*tpDistMul2
-
-	local maxRvel = tpRvelSmoother:get(max(rvel:length(), vehRvel:length()), dt)
-	local tpRot1 = tpRotAdd + maxRvel*tpRotMul1
-	local tpRot2 = tpRotAdd + maxRvel*tpRotMul2
-
-	local posErrorLen = posError:length()
-	local rotErrorLen = rotError:length()
-
-	if posErrorLen > tpDist1 or rotErrorLen > tpRot1 then
-		tpTimer = tpTimer + dt
-	else
-		tpTimer = 0
-	end
-
-	if framesSinceReset > 5 then
-		if framesSinceReset == 6 or tpTimer > (tpDelayAdd + abs(predictTime)) or posErrorLen > tpDist2 or rotErrorLen > tpRot2 then
-			local predictTime = predictTime + dt -- add one frame so postion is correct when arriving in GE
-			local pos = remoteData.pos + remoteVel*predictTime + 0.5*remoteAcc*predictTime*predictTime
-			local vel = remoteVel + remoteAcc*predictTime
-			local rotAdd = remoteRvel*predictTime + 0.5*remoteRacc*predictTime*predictTime
-			local rot = remoteData.rot * quatFromEuler(rotAdd.x, rotAdd.y, rotAdd.z)
-			local tpPos = pos - velocityVE.cogRel:rotated(rot)
-
-			local noCounterVelocity = 0
-			if framesSinceReset == 6 then
-				noCounterVelocity = 1
-			end
-			local posData = {pos = tpPos, vel = vel, vehVel = vehVel, rot = rot,rvel = rvel , noCounter = noCounterVelocity}
-
-			obj:queueGameEngineLua("positionGE.setPositionRotationVelocity("..obj:getID()..","..serialize(posData)..")")
-
-			remoteVelSmoother:set(remoteData.vel)
-			remoteRvelSmoother:set(remoteData.rvel)
-
-			remoteData.acc = vec3(0,0,0)
-			remoteData.racc = vec3(0,0,0)
-			remoteAccSmoother:reset()
-			remoteRaccSmoother:reset()
-
-			lastAcc = nil
-
-			accErrorSmoother:reset()
-			raccErrorSmoother:reset()
-
-			profEnd('updateGFX')
-			return
-		end
-	end
-
-	-- velError = vel - vehVel ; rvelError = rvel - vehRvel  (in place)
-	fpVelError:setSub2(vel, vehVel)
-	local velError = fpVelError
-	local accError = accErrorSmoother:get((lastAcc or vehAcc) - vehAcc, dt)
-
-	fpRvelError:setSub2(rvel, vehRvel)
-	local rvelError = fpRvelError
-	local raccError = raccErrorSmoother:get((lastRacc or vehRacc) - vehRacc, dt)
-
-	-- targetAcc = limitVecLength((velError + posError*posCorrectMul)*min(posForceMul*dt,1), maxPosForce*dt)
-	fpTargetAcc:setScaled2(posError, posCorrectMul)
-	fpTargetAcc:setAdd(velError)
-	fpTargetAcc:setScaled(min(posForceMul*dt,1))
-	local taLen, taMax = fpTargetAcc:length(), maxPosForce*dt
-	if taLen > taMax then fpTargetAcc:setScaled(taMax/taLen) end
-	local targetAcc = fpTargetAcc
-	-- targetRacc = limitVecLength((rvelError + rotError*rotCorrectMul)*min(rotForceMul*dt,1), maxRotForce*dt)
-	fpTargetRacc:setScaled2(rotError, rotCorrectMul)
-	fpTargetRacc:setAdd(rvelError)
-	fpTargetRacc:setScaled(min(rotForceMul*dt,1))
-	local trLen, trMax = fpTargetRacc:length(), maxRotForce*dt
-	if trLen > trMax then fpTargetRacc:setScaled(trMax/trLen) end
-	local targetRacc = fpTargetRacc
-
-	local targetAccMul = 1-min(max(targetAcc:dot(accError)/(targetAcc:squaredLength()+maxAccError*maxAccError*dt),0),1)
-	targetAcc:setScaled(targetAccMul)
-
-	local targetRaccMul = 1-min(max(targetRacc:dot(raccError)/(targetRacc:squaredLength()+maxRaccError*maxRaccError*dt),0),1)
-	targetRacc:setScaled(targetRaccMul)
-
-	if framesSinceReset > 5 then
-		if targetRacc:length() > minRotForce or vehVel:length() > 1 then
-			velocityVE.addAngularVelocity(targetAcc.x, targetAcc.y, targetAcc.z, targetRacc.x, targetRacc.y, targetRacc.z)
-		elseif targetAcc:length() > minPosForce then
-			velocityVE.addVelocity(targetAcc.x, targetAcc.y, targetAcc.z)
-		end
-	end
-
-	-- Retain as PERSISTENT COPIES, not scratch refs: fpTargetAcc/fpTargetRacc are
-	-- overwritten next frame, so aliasing them into lastAcc/lastRacc would corrupt the
-	-- accError/raccError terms above. Copy values instead (allocates once, then reuses).
-	if lastAcc then lastAcc:set(targetAcc.x, targetAcc.y, targetAcc.z) else lastAcc = targetAcc:copy() end
-	if lastRacc then lastRacc:set(targetRacc.x, targetRacc.y, targetRacc.z) else lastRacc = targetRacc:copy() end
-
-	profEnd('updateGFX')
-end
-
-
-
 -- Reused per-send table: avoids allocating a fresh table + 4 subtables on every
 -- send (~100Hz) which adds GC pressure and frame-time spikes. jsonEncode reads
 -- the current values each call, so reuse is safe.
@@ -822,6 +682,7 @@ end
 
 function setVehiclePosRot(data)  -- assigns the forward-declared local (called by the mailbox poll above)
 	profBegin()
+	sd.recvCount = sd.recvCount + 1  -- a packet reached this VE (stall diag: distinguishes GE->VE delivery gaps from rejects)
 
 	local pr   = jsonDecode(data)
 	if not pr then return end -- malformed packet: don't kill this vehicle's VE Lua VM
@@ -840,7 +701,7 @@ function setVehiclePosRot(data)  -- assigns the forward-declared local (called b
 		or rot.x ~= rot.x or rot.y ~= rot.y or rot.z ~= rot.z or rot.w ~= rot.w then
 		return
 	end
-	if remoteData.timer > tim then return end
+	if remoteData.timer > tim then sd.rejectCount = sd.rejectCount + 1; return end -- out-of-order (sender clock went backwards?); count it for the stall diag
 
 	local remoteDT = max(tim - remoteData.timer, 0.001)
 
@@ -853,6 +714,7 @@ function setVehiclePosRot(data)  -- assigns the forward-declared local (called b
 	remoteData.timer = tim
 	remoteData.timeOffset = timer-tim - ownPing/2 - ping/2 - lastDT
 	remoteData.recTime = timer
+	sd.recRealT = sd.realTimer     -- real-time stamp of this accepted packet (stall diag: real vs sim gap)
 	remoteData.localSimspeed = math.min(simspeedfraction or 1, 25)
 
 	profEnd('setVehiclePosRot')
@@ -875,7 +737,7 @@ M.setVehiclePosRot   = setVehiclePosRot
 M.setPing            = setPing
 M.setProfiling       = setProfiling
 M.setMailboxApply    = setMailboxApply
-M.setFastPredict     = setFastPredict
+M.setApplyStallDiag  = setApplyStallDiag
 M.setSendHz          = setSendHz
 M.setTrackedHold     = setTrackedHold
 

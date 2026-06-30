@@ -42,20 +42,10 @@ local TIMER = (HighPerfTimer or hptimer) -- game own timer that is much more acc
 local profOn = false  -- cached settings.getValue("profilePosSync") -- log timing of the hot apply path every ~5s to beamng.log
 local physRateSend = false  -- cached settings.getValue("physicsRateSend")
 local mailboxOn = false  -- cached settings.getValue("mailboxApplyPos") -- GE->VE apply via engine mailbox (the apply transport; falls back to base64 queueLuaCommand when off)
-local fastPredictOn = false  -- cached settings.getValue("fastPredict") -- VE-side low-GC predictor path (experimental, opt-in); pushed to each vehicle's positionVE
+local applyStallDiagOn = false  -- cached settings.getValue("applyStallDiag") -- VE-side apply-stall diagnostic (off by default); pushed to each vehicle's positionVE
 
--- Sync mode (setting "syncMode": "smooth" / "auto" / "accurate"): controls the tracked-vehicle
--- HOLD that positionGE pushes to each VE's setTrackedHold. smooth = 1.0 (stock, relies on the
--- predictor's own teleport -> smoothest), accurate = 2.0 (firm hold), auto = adapt by local FPS
--- (firm when FPS is high, stock-smooth when it drops so a heavy scene/crash doesn't get jittery).
--- This is the lever for "felt worse than stock": the old fixed-x4 hold + the snapping watchdog
--- fought the stock predictor; now the watchdog is frozen-only and the hold is mode/FPS-driven.
-local syncModeCfg    = "smooth"  -- default (testing-chosen); see MPConfig syncMode
-local syncFps        = 60
-local syncAggressive = false     -- smooth default = no firm hold
-local syncHoldPushed = nil      -- last hold pushed to VEs (re-push only on change)
-local AGG_FPS_ON, AGG_FPS_OFF = 55, 42   -- hysteresis band for "auto" (rise above 55 -> firm; drop below 42 -> smooth)
-local HOLD_ACCURATE, HOLD_SMOOTH = 2.0, 1.0
+-- (The "Remote sync mode" / tracked-vehicle HOLD machinery was removed for the public release:
+-- testing showed the stiffening fought the stock predictor, so all vehicles ride it unmodified.)
 
 local profT          = TIMER and TIMER() or nil  -- per-call timer (ms)
 local profLastReport = TIMER and TIMER() or nil  -- summary cadence timer (ms)
@@ -94,17 +84,11 @@ local function refreshFlags()
 	if newProf and not profOn then -- starting a fresh profiling window
 		for k in pairs(profStats) do profStats[k] = nil end
 		if profLastReport then profLastReport:stopAndReset() end
-	elseif profOn and not newProf then
-		-- profiling just turned OFF: auto-collect the log bundle so a capture is never
-		-- missed (gated by autoCollectProfLogs; the logs hold the just-finished window).
-		if (settings and settings.getValue("autoCollectProfLogs")) and MPConfig and MPConfig.collectProfilingLogs then
-			MPConfig.collectProfilingLogs()
-		end
 	end
 	profOn = newProf
 	physRateSend = (settings and settings.getValue("physicsRateSend")) and true or false
 	mailboxOn = (settings and settings.getValue("mailboxApplyPos")) and true or false
-	fastPredictOn = (settings and settings.getValue("fastPredict")) and true or false
+	applyStallDiagOn = (settings and settings.getValue("applyStallDiag")) and true or false
 	local sendHz = tonumber(settings and settings.getValue("physRateSendHz")) or 30
 	-- The 100Hz UI option was removed (it oversubscribes the relay with 2+ players -> growing
 	-- latency). Clamp + migrate any saved value above the new 60Hz ceiling down to the 30Hz default,
@@ -113,35 +97,17 @@ local function refreshFlags()
 		sendHz = 30
 		if settings and settings.setValue then settings.setValue("physRateSendHz", 30) end
 	end
-	-- Sync mode -> tracked-vehicle hold. smooth/accurate are fixed; auto leaves syncAggressive to
-	-- the FPS watcher (onPreRender) and just pushes the current value here.
-	syncModeCfg = tostring((settings and settings.getValue("syncMode")) or "smooth")
-	if syncModeCfg == "smooth" then syncAggressive = false
-	elseif syncModeCfg == "accurate" then syncAggressive = true end
-	local hold = syncAggressive and HOLD_ACCURATE or HOLD_SMOOTH
-	syncHoldPushed = hold
 	for i = 0, be:getObjectCount() - 1 do
 		local veh = be:getObject(i)
 		if veh then
 			veh:queueLuaCommand("if positionVE and positionVE.setProfiling then positionVE.setProfiling("..tostring(profOn)..") end")
 			veh:queueLuaCommand("if positionVE and positionVE.setMailboxApply then positionVE.setMailboxApply("..tostring(mailboxOn)..") end")
-			veh:queueLuaCommand("if positionVE and positionVE.setFastPredict then positionVE.setFastPredict("..tostring(fastPredictOn)..") end")
+			veh:queueLuaCommand("if positionVE and positionVE.setApplyStallDiag then positionVE.setApplyStallDiag("..tostring(applyStallDiagOn)..") end")
 			veh:queueLuaCommand("if positionVE and positionVE.setSendHz then positionVE.setSendHz("..sendHz..") end")
-			veh:queueLuaCommand("if positionVE and positionVE.setTrackedHold then positionVE.setTrackedHold("..hold..") end")
 		end
 	end
 end
 
--- Push the current tracked-vehicle hold to every spawned VE (used by the FPS watcher when "auto"
--- flips between firm/smooth). Cars ignore it (their positionVE keeps isTracked=false -> multiplier 1).
-local function pushTrackedHold(hold)
-	for i = 0, be:getObjectCount() - 1 do
-		local veh = be:getObject(i)
-		if veh then
-			veh:queueLuaCommand("if positionVE and positionVE.setTrackedHold then positionVE.setTrackedHold("..hold..") end")
-		end
-	end
-end
 
 
 --- Called on specified interval by positionGE to simulate our own tick event to collect data.
@@ -233,8 +199,7 @@ local function applyPos(decoded, serverVehicleID)
 			veh.mpVehicleType = 'R'
 			veh:queueLuaCommand("if positionVE and positionVE.setProfiling then positionVE.setProfiling("..tostring(profOn)..") end")
 			veh:queueLuaCommand("if positionVE and positionVE.setMailboxApply then positionVE.setMailboxApply("..tostring(mailboxOn)..") end")
-			veh:queueLuaCommand("if positionVE and positionVE.setFastPredict then positionVE.setFastPredict("..tostring(fastPredictOn)..") end")
-			veh:queueLuaCommand("if positionVE and positionVE.setTrackedHold then positionVE.setTrackedHold("..(syncHoldPushed or HOLD_ACCURATE)..") end") -- give a fresh ghost the current sync-mode hold
+			veh:queueLuaCommand("if positionVE and positionVE.setApplyStallDiag then positionVE.setApplyStallDiag("..tostring(applyStallDiagOn)..") end")
 		end
 		if mailboxOn then
 			-- Engine mailbox transport: deliver the JSON via be:sendToMailbox instead of
@@ -438,9 +403,22 @@ end
 -- bypasses the stuck VE) so it self-heals without a manual reset. Thresholds are deliberately
 -- large -> a healthy / parked / teleporting ghost never trips this.
 local selfHealClock = 0
+-- RE-ENABLED p13h41 with the rxMoved guard (see the heal condition below). p13h39 disabled it because
+-- the snap fought the stock predictor on a drifted TANK (the 38-74m warble); but turning it fully off let
+-- a NaN-stalled fullsuv ghost sit out of sync until a manual reset. The rxMoved guard fixes both: it heals
+-- ONLY a ghost stuck while fresh positions keep arriving (a real VE-apply stall), never the tank's
+-- prediction gaps (no new packets -> rxMoved ~0). The drift GAUGE (wdMaxDrift, overlay) runs regardless.
+local SELFHEAL_ENABLED  = true
 local SELFHEAL_INTERVAL = 0.25 -- run the check ~4x/sec
 local SELFHEAL_DIST_SQ  = 25   -- 5m: told-vs-actual gap that counts as "diverged" (now the metric is real, healthy lead is ~1m)
-local SELFHEAL_STALL_S  = 0.5  -- diverged continuously this long => frozen => force a resync (was 1.5; corrects sooner)
+local SELFHEAL_STALL_S  = 1.0  -- stuck-while-fresh-positions-arrive continuously this long => force a resync (raised 0.5->1.0: the rxMoved guard already excludes the tank, so favour fewer false heals)
+local SELFHEAL_FAST_DIST = 20  -- m: SPEED-AWARE fast path. A frozen ghost already THIS far diverged is healed on
+                               -- first detection, skipping the full SELFHEAL_STALL_S wait. A fast sender (an
+                               -- aircraft at ~100 m/s) crosses 20m within one ~0.25s check, so its visible drift
+                               -- is capped ~20-30m instead of ~100m (= speed x the 1s wait); a slow vehicle never
+                               -- reaches 20m in a single check, so it still uses the conservative 1s path. Safe
+                               -- to heal on first detect because moved/rxMoved are 0.25s deltas (already confirmed
+                               -- frozen-while-sender-moving), not a 1-frame blip.
 local FROZEN_MOVE       = 0.25 -- m the ghost's OWN body moved since the last check, BELOW which it counts as
                                -- "frozen" (stalled apply). Above it the ghost is live/drifting and we DON'T snap
                                -- it -- the stock predictor's own (smooth) teleport handles it. This is the fix for
@@ -473,18 +451,6 @@ local function onPreRender(dt)
 		end
 	end
 
-	-- Sync mode "auto": adapt the tracked-vehicle hold to local FPS. Smoothed FPS + a hysteresis band
-	-- (rise above 55 -> firm hold, drop below 42 -> stock-smooth) so a heavy scene/crash that tanks
-	-- the frame rate eases the correction instead of yanking the ghost around. Re-pushes only on a flip.
-	if dt and dt > 0 then syncFps = syncFps * 0.9 + (1 / dt) * 0.1 end
-	if syncModeCfg == "auto" then
-		local agg = (syncAggressive and (syncFps > AGG_FPS_OFF)) or ((not syncAggressive) and (syncFps > AGG_FPS_ON))
-		if agg ~= syncAggressive then
-			syncAggressive = agg
-			local hold = agg and HOLD_ACCURATE or HOLD_SMOOTH
-			if hold ~= syncHoldPushed then syncHoldPushed = hold; pushTrackedHold(hold) end
-		end
-	end
 
 	-- Self-heal: force-resync any ghost whose VE apply has frozen (see notes above).
 	-- When position profiling is on, also log each ghost's PEAK told-vs-actual divergence every
@@ -518,14 +484,25 @@ local function onPreRender(dt)
 					local la = v._wdLastA
 					local moved = la and math.sqrt((a.x-la[1])*(a.x-la[1]) + (a.y-la[2])*(a.y-la[2]) + (a.z-la[3])*(a.z-la[3])) or 0
 					if la then la[1], la[2], la[3] = a.x, a.y, a.z else v._wdLastA = {a.x, a.y, a.z} end -- reuse the table (moved read above first); no per-check GC litter on the GE heap
+					-- rxMoved = how far the RECEIVED position moved since the last check (is the SENDER moving +
+					-- streaming fresh positions?). This tells a true VE-apply STALL (sender moving, ghost stuck)
+					-- apart from a packet GAP (no new positions -> ghost stalls too, but nothing fresh to snap to).
+					local lr = v._wdLastRx
+					local rxMoved = lr and math.sqrt((v.rxPos[1]-lr[1])^2 + (v.rxPos[2]-lr[2])^2 + (v.rxPos[3]-lr[3])^2) or 0
+					if lr then lr[1], lr[2], lr[3] = v.rxPos[1], v.rxPos[2], v.rxPos[3] else v._wdLastRx = {v.rxPos[1], v.rxPos[2], v.rxPos[3]} end
 					local dx, dy, dz = v.rxPos[1] - a.x, v.rxPos[2] - a.y, v.rxPos[3] - a.z
 					local distSq = dx * dx + dy * dy + dz * dz
 					local dist = math.sqrt(distSq)
 					if profOn and dist > (v._diagPeak or 0) then v._diagPeak = dist end -- only track peak while profiling (consumed in the doDiag block); avoids a stale unbounded climb otherwise
 					if dist > wdMaxDrift and dist < 100 then wdMaxDrift = dist end -- overlay: live max told-vs-actual (cap excludes spawn/teleport transients)
-					if distSq > SELFHEAL_DIST_SQ and moved < FROZEN_MOVE then -- far AND frozen (not moving); a moving ghost is the predictor's job
+					-- p13h41: heal a GENUINE VE-apply stall only -- ghost far + FROZEN (moved tiny) WHILE the sender
+					-- is MOVING (rxMoved live). Re-enabled after p13h39-40 had the watchdog off (which let a NaN-stalled
+					-- fullsuv ghost sit out of sync until a manual reset). The rxMoved guard keeps it OFF the tank: a
+					-- tank prediction gap has rxMoved ~0, so it never qualifies -- only a ghost stuck while fresh
+					-- positions keep arriving does.
+					if SELFHEAL_ENABLED and distSq > SELFHEAL_DIST_SQ and moved < FROZEN_MOVE and rxMoved > FROZEN_MOVE then
 						v._stallT = (v._stallT or 0) + elapsed
-						if v._stallT >= SELFHEAL_STALL_S then
+						if v._stallT >= SELFHEAL_STALL_S or dist >= SELFHEAL_FAST_DIST then -- normal wait OR speed-aware fast path: a grossly-diverged (fast-mover) ghost heals on first detect
 							local ok = pcall(function()
 								local refNodeID = veh:getRefNodeId()
 								local vehRot = quatFromDir(-veh:getDirectionVector(), veh:getDirectionVectorUp())
