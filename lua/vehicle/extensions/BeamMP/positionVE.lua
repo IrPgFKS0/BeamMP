@@ -666,7 +666,13 @@ end
 -- never self-send. The arm decays in SELF_SEND_ARM seconds once GE stops calling it
 -- (e.g. the vehicle is no longer owned), so no diffing of the own-set is needed.
 local function armSelfSend()
-	if selfSendTimer <= 0 then sendClock = timer end -- resync clock on (re)start so tim stays monotonic across a toggle
+	-- Resync the wire clock on (re)start so tim stays continuous across a physicsRateSend toggle --
+	-- but FORWARD-ONLY. During a GE stall the physics thread keeps stepping, so sendClock can run
+	-- AHEAD of the frame-driven timer; if a >0.5s GE hitch decays the arm, the old `sendClock = timer`
+	-- re-arm jumped the wire time BACKWARD, and every receiver then rejected our packets at its
+	-- out-of-order guard (tim <= last) until its copy of our clock caught up = our ghost froze on
+	-- every other machine for exactly the jump duration.
+	if selfSendTimer <= 0 then sendClock = max(sendClock, timer) end
 	selfSendTimer = SELF_SEND_ARM
 end
 
@@ -701,7 +707,25 @@ function setVehiclePosRot(data)  -- assigns the forward-declared local (called b
 		or rot.x ~= rot.x or rot.y ~= rot.y or rot.z ~= rot.z or rot.w ~= rot.w then
 		return
 	end
-	if remoteData.timer > tim then sd.rejectCount = sd.rejectCount + 1; return end -- out-of-order (sender clock went backwards?); count it for the stall diag
+	if remoteData.timer > tim then
+		-- Sender time went backwards. A SMALL step is a genuinely out-of-order/duplicate packet
+		-- (UDP reorder) -> drop it, count it for the stall diag. A LARGE backward jump (>3s --
+		-- the same reset rule the GE smoother uses) means the sender's clock RESTARTED (vehicle
+		-- Lua reload / send-clock re-base): every future packet would be rejected and this ghost
+		-- would freeze until manually reset (the stall the posApplyStall diag names "sender clock
+		-- reset"). Re-base the predictor on this packet instead: zero the deltas so the acc math
+		-- below can't spike, and let the timeOffset jump guard in updateGFX snap the time smoother.
+		if (remoteData.timer - tim) <= 3 then sd.rejectCount = sd.rejectCount + 1; return end
+		remoteData.vel = vel
+		remoteData.rvel = rvel
+		remoteVelSmoother:set(vel)
+		remoteRvelSmoother:set(rvel)
+		remoteAccSmoother:reset()
+		remoteRaccSmoother:reset()
+		lastAcc = nil
+		lastRacc = nil
+		remoteData.timer = tim -- remoteDT below floors at 0.001; with the deltas zeroed acc/racc stay 0
+	end
 
 	local remoteDT = max(tim - remoteData.timer, 0.001)
 
