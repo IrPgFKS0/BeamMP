@@ -157,6 +157,12 @@ local remoteData = {
 local smoothVel = vec3(0,0,0)
 local smoothRvel = vec3(0,0,0)
 
+-- Ghost anti-sleep: set true once this vehicle proves remote (first received packet) and
+-- obj:setSleepingEnabled(false) has been applied; cleared on reset (onReset) so it re-arms.
+-- Declared HERE, above onReset/setVehiclePosRot, so both close over the same local.
+-- See the comment at the top of setVehiclePosRot for why a ghost must never physics-sleep.
+local sleepDisabled = false
+
 -- APPLY-STALL DIAGNOSTIC (p13h43): instrument the one spot a remote ghost can freeze -- updateGFX's
 -- "no fresh packet" early-return -- so a single /savelogs after a freeze NAMES the cause instead of us
 -- guessing. Purely additive: counters + a one-shot 'W' log, no behavior change. ONE table = ONE upvalue
@@ -304,6 +310,7 @@ local function onReset()
 	remoteData.racc = vec3(0,0,0)
 	remoteData.timer = 0
 	framesSinceReset = 0
+	sleepDisabled = false -- re-arm the ghost anti-sleep on the next received packet (reset/reload may clear the engine flag)
 end
 
 local physcounter = 0
@@ -666,7 +673,13 @@ end
 -- never self-send. The arm decays in SELF_SEND_ARM seconds once GE stops calling it
 -- (e.g. the vehicle is no longer owned), so no diffing of the own-set is needed.
 local function armSelfSend()
-	if selfSendTimer <= 0 then sendClock = timer end -- resync clock on (re)start so tim stays monotonic across a toggle
+	-- Resync the wire clock on (re)start so tim stays continuous across a physicsRateSend toggle --
+	-- but FORWARD-ONLY. During a GE stall the physics thread keeps stepping, so sendClock can run
+	-- AHEAD of the frame-driven timer; if a >0.5s GE hitch decays the arm, the old `sendClock = timer`
+	-- re-arm jumped the wire time BACKWARD, and every receiver then rejected our packets at its
+	-- out-of-order guard (tim <= last) until its copy of our clock caught up = our ghost froze on
+	-- every other machine for exactly the jump duration.
+	if selfSendTimer <= 0 then sendClock = max(sendClock, timer) end
 	selfSendTimer = SELF_SEND_ARM
 end
 
@@ -686,6 +699,19 @@ function setVehiclePosRot(data)  -- assigns the forward-declared local (called b
 
 	local pr   = jsonDecode(data)
 	if not pr then return end -- malformed packet: don't kill this vehicle's VE Lua VM
+
+	-- A vehicle receiving position data is a REMOTE ghost: it must never physics-SLEEP. The engine
+	-- stops calling a sleeping vehicle's updateGFX entirely, and the mailbox apply is a PULL from
+	-- updateGFX -- so a ghost that parks long enough to doze off can never apply again and stays
+	-- frozen when its owner drives away (diagnosed live: 110s of GE receiving 10/s while this VM ran
+	-- ZERO frames; the watchdog snapped it 24x without waking it). Disabling sleep here (first packet
+	-- arrives while the fresh-spawned vehicle is guaranteed awake) prevents it ever dozing. Same API
+	-- the game's own playerController uses to keep the walking unicycle responsive. Re-armed after a
+	-- reset by onReset in case the engine clears the flag on reload. Guarded per the fork's API rule.
+	if not sleepDisabled then
+		sleepDisabled = true
+		if obj.setSleepingEnabled then obj:setSleepingEnabled(false) end
+	end
 	local pos  = vec3(pr.pos)
 	local vel  = vec3(pr.vel)
 	local rot  = quat(pr.rot)
@@ -701,7 +727,25 @@ function setVehiclePosRot(data)  -- assigns the forward-declared local (called b
 		or rot.x ~= rot.x or rot.y ~= rot.y or rot.z ~= rot.z or rot.w ~= rot.w then
 		return
 	end
-	if remoteData.timer > tim then sd.rejectCount = sd.rejectCount + 1; return end -- out-of-order (sender clock went backwards?); count it for the stall diag
+	if remoteData.timer > tim then
+		-- Sender time went backwards. A SMALL step is a genuinely out-of-order/duplicate packet
+		-- (UDP reorder) -> drop it, count it for the stall diag. A LARGE backward jump (>3s --
+		-- the same reset rule the GE smoother uses) means the sender's clock RESTARTED (vehicle
+		-- Lua reload / send-clock re-base): every future packet would be rejected and this ghost
+		-- would freeze until manually reset (the stall the posApplyStall diag names "sender clock
+		-- reset"). Re-base the predictor on this packet instead: zero the deltas so the acc math
+		-- below can't spike, and let the timeOffset jump guard in updateGFX snap the time smoother.
+		if (remoteData.timer - tim) <= 3 then sd.rejectCount = sd.rejectCount + 1; return end
+		remoteData.vel = vel
+		remoteData.rvel = rvel
+		remoteVelSmoother:set(vel)
+		remoteRvelSmoother:set(rvel)
+		remoteAccSmoother:reset()
+		remoteRaccSmoother:reset()
+		lastAcc = nil
+		lastRacc = nil
+		remoteData.timer = tim -- remoteDT below floors at 0.001; with the deltas zeroed acc/racc stay 0
+	end
 
 	local remoteDT = max(tim - remoteData.timer, 0.001)
 

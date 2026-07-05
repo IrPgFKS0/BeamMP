@@ -333,7 +333,11 @@ end
 --- This function is for setting a ping value for use in the math of predition of the positions 
 -- @param ping number The Ping value
 local function setPing(ping)
-	local p = ping/1000
+	-- The launcher reports sentinel pings: -1 = no pong yet (session just started), -2 = >800ms.
+	-- Passing those through gave every vehicle a NEGATIVE ownPing, which skews the predictor's
+	-- time-offset estimate the wrong way. Clamp to 0 (LAN: "unknown" ~= "instant").
+	local p = (tonumber(ping) or 0)/1000
+	if p < 0 then p = 0 end
 	for i = 0, be:getObjectCount() - 1 do
 		local veh = be:getObject(i)
 		if veh then
