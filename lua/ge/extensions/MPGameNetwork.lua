@@ -84,23 +84,35 @@ local function sendData(data) -- TODO currently the socket keeps retrying indefi
 	local header = ffi.string(ffi.new("uint32_t[?]", 1, #data), 4)
 	local packet = header .. data
 
-	local retries = 1
-
 	local bytes, error, index = TCPLauncherSocket:send(packet)
 
 	if error == 'timeout' then
-		while (retries > 0 and error) do
-			isConnecting = false
-			log('E', 'sendData', 'Socket error: '..error)
-			if error == "timeout" then
-				log('W', 'sendData', 'Stopped at index: '..index..' while trying to send '..#packet..' bytes of data. retries:' .. retries)
+		-- PARTIAL SEND. This frame MUST either complete or the socket must be CLOSED: the 4-byte
+		-- length header is already on the wire, so abandoning mid-packet (the old bounded 1-retry
+		-- did exactly that) leaves the launcher parsing the NEXT packet's bytes as the remainder of
+		-- this one -- permanent stream-framing corruption. Realistic trigger: a large payload (the
+		-- ~100KB syncFullDeformation snapshot, a big vehicle-config spawn) that needs several send()
+		-- calls. So: retry while the send makes PROGRESS (index advances); allow zero-progress spins
+		-- only within a short window (loopback buffer full while the launcher is mid-hitch), then
+		-- give up and tear down cleanly -- a launcher that can't drain for that long is wedged, and
+		-- a clean close beats both an infinite GE-thread freeze (the pre-fork behavior) and a
+		-- corrupted stream (the bounded-retry behavior).
+		isConnecting = false
+		log('W', 'sendData', 'partial send ('..tostring(index)..' of '..#packet..' bytes), completing...')
+		local deadline = os.clock() + 0.25
+		while error == 'timeout' do
+			if index and index > 0 then
 				packet = string.sub(packet, index + 1)
-
-				bytes, error, index = TCPLauncherSocket:send(packet)
-			else
-				break -- non-timeout error (e.g. closed): stop retrying instead of spinning forever
+				deadline = os.clock() + 0.25 -- progress: reset the stall window
+			elseif os.clock() > deadline then
+				break -- zero progress for the whole window: the launcher is wedged
 			end
-			retries = retries - 1 -- bounded; was never decremented -> infinite loop on a persistent timeout
+			bytes, error, index = TCPLauncherSocket:send(packet)
+		end
+		if error == 'timeout' then
+			log('E', 'sendData', 'send stalled with '..#packet..' bytes unsent; closing the launcher socket (a half-sent frame would corrupt the stream)')
+			disconnectLauncher()
+			return
 		end
 	end
 

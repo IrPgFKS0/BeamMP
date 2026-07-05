@@ -35,8 +35,10 @@ local function getNodes()
 
   -- TODO: color
   local save = {}
-  --save.nodeCount = #v.data.nodes
-  --save.beamCount = #v.data.beams
+  -- Counts let the receiver reject a snapshot taken from a DIFFERENT configuration (the owner
+  -- edited/swapped the vehicle and this 2Hz snapshot raced the ghost's reload) -- see applyNodes.
+  save.nodeCount = #v.data.nodes
+  save.beamCount = #v.data.beams
   --save.luaState = serialize(serializePackages("save"))
   --save.hydros = {}
   --for _, h in pairs(hydros.hydros) do
@@ -117,6 +119,12 @@ local function applyNodes(data)
 	-- (experimental, default-off) feature on -- or a truncated/crafted 'Xn:' packet -- reaches here.
 	-- A nil/short payload would make pairs(save.nodes) FATAL this vehicle's VE VM. Guard the shape.
 	if type(save) ~= "table" or type(save.nodes) ~= "table" or type(save.beams) ~= "table" then return end
+	-- Reject a snapshot from a DIFFERENT configuration: a vehicle EDIT reloads/replaces the ghost,
+	-- and a 2Hz snapshot serialized before the owner's edit can arrive after it -- its cids would
+	-- then go out-of-range straight into engine calls (setNodePosition/breakBeam). Counts are exact
+	-- and cheap; a mismatched snapshot is stale by definition, the next one (<=0.5s) will match.
+	if (save.nodeCount and save.nodeCount ~= #v.data.nodes)
+		or (save.beamCount and save.beamCount ~= #v.data.beams) then return end
 
   -- (debug print removed: this path now runs continuously for deformation sync)
   --importPersistentData(save.luaState)
