@@ -108,6 +108,33 @@ local function refreshFlags()
 	end
 end
 
+-- Called by each vehicle's positionVE the moment its VM (re)loads (queued from VE onInit).
+-- THE FIX for the permanent ghost-freeze-after-edit (p13h50): a vehicle EDIT/config change/model
+-- swap reloads the VE VM IN PLACE (same object id), silently resetting every VE-side flag to its
+-- default -- and the one-time setup in applyPos (gated on veh.mpVehicleType == nil, which lives on
+-- the PERSISTENT GE object wrapper) never re-fires. With mailboxApplyPos on, GE kept writing a
+-- mailbox the fresh VM never polled: the ghost froze PERMANENTLY after its owner swapped
+-- vehicle/config, until any unrelated settings change happened to re-push flags. (Confirmed in the
+-- 2026-07-04 17:21+17:51 log pair: each freeze starts at 'applyVehEdit Updating vehicle ...', each
+-- recovery at a settings change.) Also fixes the OWN-car variant: a reloaded own VM fell back to
+-- the VE-default 100Hz SEND_INTERVAL until the next settings change (relay-overload rate).
+-- Re-pushes ALL per-vehicle flags; for a REMOTE vehicle also re-arms the remote type + anti-sleep.
+local function veReady(gameVehicleID)
+	local veh = be:getObjectByID(gameVehicleID)
+	if not veh then return end
+	local sendHz = tonumber(settings and settings.getValue("physRateSendHz")) or 30
+	if sendHz > 60 then sendHz = 30 end
+	veh:queueLuaCommand("if positionVE and positionVE.setProfiling then positionVE.setProfiling("..tostring(profOn)..") end")
+	veh:queueLuaCommand("if positionVE and positionVE.setMailboxApply then positionVE.setMailboxApply("..tostring(mailboxOn)..") end")
+	veh:queueLuaCommand("if positionVE and positionVE.setApplyStallDiag then positionVE.setApplyStallDiag("..tostring(applyStallDiagOn)..") end")
+	veh:queueLuaCommand("if positionVE and positionVE.setSendHz then positionVE.setSendHz("..sendHz..") end")
+	local v = MPVehicleGE and MPVehicleGE.getVehicleByGameID and MPVehicleGE.getVehicleByGameID(gameVehicleID)
+	if v and not v.isLocal then
+		veh:queueLuaCommand("if MPVehicleVE then MPVehicleVE.setVehicleType('R') end")
+		veh:queueLuaCommand("if positionVE and positionVE.setRemote then positionVE.setRemote() end")
+	end
+end
+
 
 
 --- Called on specified interval by positionGE to simulate our own tick event to collect data.
@@ -471,32 +498,43 @@ local function onPreRender(dt)
 			if type(v) == "table" and not v.isLocal and v.rxPos and v.rxRot and v.gameVehicleID then
 				local veh = be:getObjectByID(v.gameVehicleID)
 				if veh then
-					-- COMPARE LIKE-FOR-LIKE: the sender broadcasts its COG (positionVE.doSendPosRot =
-					-- getPosition()+cogRel), so rxPos is the COG. veh:getPosition() is the REFNODE -- on a
-					-- long vehicle (e.g. a 12m bus) the COG<->refNode gap is ~6m, which the old code read as
-					-- a permanent "6m off" and false-snapped every 0.5s (shoving the bus by cogRel each time
-					-- = visible jitter). Use the OOBB CENTER (BeamNG's geometric/COG-proxy center) so the
-					-- comparison is COG-vs-COG (~0 when synced) regardless of vehicle length. Cars are
-					-- unaffected (their cogRel is <1m). Falls back to the refNode if the OOBB API returns nil.
+					-- Distance of the ghost from its RECEIVED pose (rxPos = the sender's COG), measured
+					-- against TWO candidate anchors, keeping whichever sits CLOSER to rxPos:
+					--  * the OOBB CENTER (p13h27: right for LONG vehicles -- the refNode sits ~cogRel from
+					--    the COG, 6m on a 12m bus, which read as a permanent fake "6m off" + false snaps);
+					--  * the REFNODE (p13h50: right for WEAPON-MOD vehicles that fire NODE-based
+					--    projectiles -- flung/spent bullet nodes stretch the OOBB hundreds of meters, so its
+					--    center stops being a COG proxy. Live log pair: a healthy turret ghost applying at a
+					--    steady 30/s was reported as a constant "170m of drift" on one machine, and on the
+					--    other the watchdog false-healed a healthy ghost by the OOBB error -- THROWING it
+					--    hundreds of meters, the visible warp).
+					-- A genuinely frozen ghost is far from rxPos on BOTH anchors, so detection is intact;
+					-- the overlay's drift number inherits the same correction.
 					local refPos = veh:getPosition()
+					local dxr, dyr, dzr = v.rxPos[1] - refPos.x, v.rxPos[2] - refPos.y, v.rxPos[3] - refPos.z
+					local a, distSq = refPos, dxr*dxr + dyr*dyr + dzr*dzr
 					local ocx, ocy, ocz = be:getObjectOOBBCenterXYZ(v.gameVehicleID)
-					local a = (ocx and { x = ocx, y = ocy, z = ocz }) or refPos
-					-- moved = how far the ghost's OWN body moved since the last check -- distinguishes a
+					if ocx then
+						local dxo, dyo, dzo = v.rxPos[1] - ocx, v.rxPos[2] - ocy, v.rxPos[3] - ocz
+						local dsqo = dxo*dxo + dyo*dyo + dzo*dzo
+						if dsqo < distSq then a = { x = ocx, y = ocy, z = ocz }; distSq = dsqo end
+					end
+					-- moved = how far the ghost's OWN BODY moved since the last check -- distinguishes a
 					-- FROZEN ghost (stalled apply: barely moves) from one that's just DRIFTING (predictor
 					-- live, actively moving). Only a frozen ghost gets the hard snap; a moving one is the
 					-- stock predictor's job (the fix for the watchdog warble-snapping a moving tank).
+					-- Tracked on the REFNODE (not the chosen anchor): the body is what freezes, and the
+					-- refNode can't be dragged around by flung projectile nodes the way the OOBB center can.
 					local la = v._wdLastA
-					local moved = la and math.sqrt((a.x-la[1])*(a.x-la[1]) + (a.y-la[2])*(a.y-la[2]) + (a.z-la[3])*(a.z-la[3])) or 0
-					if la then la[1], la[2], la[3] = a.x, a.y, a.z else v._wdLastA = {a.x, a.y, a.z} end -- reuse the table (moved read above first); no per-check GC litter on the GE heap
+					local moved = la and math.sqrt((refPos.x-la[1])*(refPos.x-la[1]) + (refPos.y-la[2])*(refPos.y-la[2]) + (refPos.z-la[3])*(refPos.z-la[3])) or 0
+					if la then la[1], la[2], la[3] = refPos.x, refPos.y, refPos.z else v._wdLastA = {refPos.x, refPos.y, refPos.z} end -- reuse the table (moved read above first); no per-check GC litter on the GE heap
 					-- rxMoved = how far the RECEIVED position moved since the last check (is the SENDER moving +
 					-- streaming fresh positions?). This tells a true VE-apply STALL (sender moving, ghost stuck)
 					-- apart from a packet GAP (no new positions -> ghost stalls too, but nothing fresh to snap to).
 					local lr = v._wdLastRx
 					local rxMoved = lr and math.sqrt((v.rxPos[1]-lr[1])^2 + (v.rxPos[2]-lr[2])^2 + (v.rxPos[3]-lr[3])^2) or 0
 					if lr then lr[1], lr[2], lr[3] = v.rxPos[1], v.rxPos[2], v.rxPos[3] else v._wdLastRx = {v.rxPos[1], v.rxPos[2], v.rxPos[3]} end
-					local dx, dy, dz = v.rxPos[1] - a.x, v.rxPos[2] - a.y, v.rxPos[3] - a.z
-					local distSq = dx * dx + dy * dy + dz * dz
-					local dist = math.sqrt(distSq)
+					local dist = math.sqrt(distSq) -- distSq = min-anchor distance computed above
 					if profOn and dist > (v._diagPeak or 0) then v._diagPeak = dist end -- only track peak while profiling (consumed in the doDiag block); avoids a stale unbounded climb otherwise
 					if dist > wdMaxDrift and dist < 100 then wdMaxDrift = dist end -- overlay: live max told-vs-actual (cap excludes spawn/teleport transients)
 					-- p13h41: heal a GENUINE VE-apply stall only -- ghost far + FROZEN (moved tiny) WHILE the sender
@@ -559,6 +597,7 @@ M.sendVehiclePosRot           = sendVehiclePosRot
 M.setPosition                 = setPosition
 M.setPositionRotationVelocity = setPositionRotationVelocity
 M.setPing                     = setPing
+M.veReady                     = veReady -- called by positionVE.onInit: re-push per-vehicle flags after a VE VM (re)load
 M.setActualSimSpeed           = setActualSimSpeed
 M.getActualSimSpeed           = getActualSimSpeed
 M.onPreRender                 = onPreRender

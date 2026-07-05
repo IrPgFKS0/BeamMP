@@ -764,8 +764,24 @@ function setVehiclePosRot(data)  -- assigns the forward-declared local (called b
 	profEnd('setVehiclePosRot')
 end
 
+-- Called from GE (positionGE.veReady) when this VM belongs to a REMOTE vehicle. Needed on a VE VM
+-- RELOAD (vehicle edit/config change), where waiting for the first received packet isn't enough:
+-- with the mailbox transport that packet only arrives AFTER setMailboxApply is re-pushed, so the
+-- anti-sleep must be re-armed independently of the data path.
+local function setRemote()
+	if not sleepDisabled then
+		sleepDisabled = true
+		if obj.setSleepingEnabled then obj:setSleepingEnabled(false) end
+	end
+end
+
 local function onInit()
 	enablePhysicsStepHook()
+	-- Announce this VM (re)load to GE so it re-pushes the per-vehicle flags (mailbox/profiling/
+	-- diag/sendHz, + remote type/anti-sleep for ghosts). A vehicle EDIT reloads this VM in place
+	-- and wipes all of those to defaults -- without this callback a ghost froze permanently after
+	-- its owner swapped vehicle/config (see positionGE.veReady for the full story).
+	obj:queueGameEngineLua("if positionGE and positionGE.veReady then positionGE.veReady("..obj:getID()..") end")
 end
 
 
@@ -784,6 +800,7 @@ M.setMailboxApply    = setMailboxApply
 M.setApplyStallDiag  = setApplyStallDiag
 M.setSendHz          = setSendHz
 M.setTrackedHold     = setTrackedHold
+M.setRemote          = setRemote -- GE veReady: (re)arm remote-ghost state after a VE VM (re)load
 
 
 return M
