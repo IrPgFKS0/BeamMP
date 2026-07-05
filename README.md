@@ -6,9 +6,12 @@
 > directly to a server on your LAN. It also adds LAN-focused performance/sync options
 > (see **Options → Multiplayer → "show advanced options" → "LAN — position sync &
 > performance"**). For setup, the toggles, profiling, and the Linux client, see
-> **`README-LAN.md`** and **`AGENTS.md`** in the project repository. The general
-> sections below are inherited from upstream BeamMP and describe the public service —
-> the login/website/server-list parts do **not** apply to this fork.
+> **`README-LAN.md`**, **`LAN-TUNING.md`** and **`RELEASE-NOTES.md`**, shipped alongside
+> this fork's release bundle (`BeamMP-LAN-*.zip` on the releases page). Companion repos:
+> [BeamMP-Launcher](https://github.com/IrPgFKS0/BeamMP-Launcher) (combined host) and
+> [BeamMP-Server](https://github.com/IrPgFKS0/BeamMP-Server), both on their `lan` branches.
+> The general sections below are inherited from upstream BeamMP and describe the public
+> service — the login/website/server-list parts do **not** apply to this fork.
 
 A Lua mod bringing online multiplayer to [BeamNG.drive](https://beamng.com)!
 
