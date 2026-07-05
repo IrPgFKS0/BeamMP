@@ -12,7 +12,6 @@ vehicles/unicycle/unicycle_beamling.jbeam
 vehicles/unicycle/main.materials.json
 .vscodebin-linux/
 build/
-dist/
 .vcpkg-cache/
 .DS_Store
 name

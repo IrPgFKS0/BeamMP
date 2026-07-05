@@ -5,9 +5,11 @@
 > there is **no login, no guest/forum account, and no public server list** — you connect
 > directly to a server on your LAN. It also adds LAN-focused performance/sync options
 > (see **Options → Multiplayer → "show advanced options" → "LAN — position sync &
-> performance"**). For setup, the toggles, profiling, and the Linux client, see
-> **`README-LAN.md`**, **`LAN-TUNING.md`** and **`RELEASE-NOTES.md`**, shipped alongside
-> this fork's release bundle (`BeamMP-LAN-*.zip` on the releases page). Companion repos:
+> performance"**). For setup, the toggles, profiling, and the Linux client, see the
+> docs in **[`docs/lan/`](docs/lan/)** (start with `RELEASE-NOTES.md`, then
+> `README-LAN.md` and `LAN-TUNING.md`); the ready-to-run release bundle
+> (`BeamMP-LAN-*.zip`: mod + Windows/Linux combined-host & server binaries) is in
+> **[`dist/`](dist/)**. Companion source repos:
 > [BeamMP-Launcher](https://github.com/IrPgFKS0/BeamMP-Launcher) (combined host) and
 > [BeamMP-Server](https://github.com/IrPgFKS0/BeamMP-Server), both on their `lan` branches.
 > The general sections below are inherited from upstream BeamMP and describe the public
