@@ -149,21 +149,24 @@ end
 local function loadServerMods()
 	log('W', 'loadServerMods', 'loadServerMods')
 
+	-- SYNCHRONOUS mount (reverted from upstream's async batch loader in p13h53). The batch
+	-- version (core_jobsystem job yielding between batches of 5) returns from loadServerMods
+	-- IMMEDIATELY while mounting continues across frames, so the join sequence proceeds before
+	-- the mod set -- and therefore the MAP's collision terrain -- is actually ready. Result:
+	-- cars (the auto-spawn car AND incoming remote cars) spawned through not-yet-ready terrain,
+	-- i.e. UNDER THE MAP, on every join. The blocking mount below keeps the whole join strictly
+	-- ordered (mount all -> checkAllMods -> requestMap -> map loads -> spawns land on ready
+	-- ground), which is how the fork behaved for its entire history. (The upstream batch loader
+	-- was meant to avoid a mod-overload crash on huge mod sets; this fork's large set mounted
+	-- synchronously without that crash, so restoring the ordering is the right trade. If the
+	-- overload crash ever appears, re-introduce batching in a form that BLOCKS the join until
+	-- the job completes, not one that lets the join race ahead.)
 	local modsDir = FS:findFiles("/mods/multiplayer", "*.zip", -1, false, false)
-
-    core_jobsystem.create(function(job)
-		local amount = #modsDir
-        local batchSize = 5
-		local core_modmanager_workOffChangedMod = core_modmanager.workOffChangedMod
-        for i = 1, amount, batchSize do
-            for j = i, math.min(i + batchSize - 1, amount) do
-                core_modmanager_workOffChangedMod(modsDir[j], 'added')
-            end
-            job.sleep(0)
-        end
-        checkAllMods()
-        MPCoreNetwork.requestMap()
-    end)
+	for _, modPath in pairs(modsDir) do
+		core_modmanager.workOffChangedMod(modPath, 'added')
+	end
+	checkAllMods()
+	MPCoreNetwork.requestMap()
 end
 
 --- Verify that the servers mods have been loaded by the game.

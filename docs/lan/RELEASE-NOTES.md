@@ -1,6 +1,6 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.21.1-LAN p13h52` · combined host exe `p13h32` (Windows + Linux)
+**Build:** mod `4.21.1-LAN p13h53` · combined host exe `p13h32` (Windows + Linux)
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -45,6 +45,12 @@ a little tuning (see `LAN-TUNING.md`).
 
 ## This release
 
+- **Fixed: cars spawning under the map on every join (p13h53).** The h51 upstream
+  "batch based mod loading" merge made the synced-mod mount asynchronous, so the join
+  sequence proceeded before the map's collision terrain was ready — both your own
+  auto-spawned car and incoming remote cars dropped through the not-yet-ready ground.
+  Reverted to synchronous mounting, which strictly orders the join (mount → map load →
+  spawn) the way the fork always behaved. Run 30 Hz send rate on both machines as usual.
 - **Deformation-sync & socket hardening (p13h52).** The experimental full-deformation
   sync now rejects a snapshot taken from a different vehicle configuration (a config
   edit racing the 2 Hz snapshot could feed out-of-range node ids into engine calls),
@@ -151,7 +157,7 @@ Same protocol as the host's build — **everyone in a session should run the mat
 
 A fork of [BeamMP](https://beammp.com) — all credit to the upstream BeamMP team; this fork only
 changes the items above. Under **AGPL-3.0**, the complete corresponding source for these binaries
-is published (branch `lan`, tag `lan-release-p13h52`):
+is published (branch `lan`, tag `lan-release-p13h53`):
 
 - **Mod + client Lua** — https://github.com/IrPgFKS0/BeamMP
 - **Launcher / combined host** — https://github.com/IrPgFKS0/BeamMP-Launcher
