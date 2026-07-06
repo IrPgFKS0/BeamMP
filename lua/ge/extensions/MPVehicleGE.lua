@@ -34,6 +34,7 @@ local original_spawnDefault
 local original_removeAll
 local pendingAutoSpawn = false       -- LAN: auto-spawn default/last car shortly after join
 local pendingAutoSpawnTimer = 0
+local mapReadyRecovered = false      -- LAN: one-shot per level load; lift under-map own cars once collision is ready
 local weaponChaseTimer = 0           -- LAN: AI cars re-target the nearest player
 
 local ffiFound = false
@@ -2301,6 +2302,7 @@ M.runPostJoin = function()
 	-- On a map switch beginMapRespawn() disarms this so the map re-spawn is authoritative.
 	pendingAutoSpawn = (tonumber(settings.getValue("autoSpawnMode")) or 0) > 0
 	pendingAutoSpawnTimer = 0
+	mapReadyRecovered = false -- re-arm the under-map recovery for this (freshly loading) level
 end
 
 M.onServerLeave = function() --NOTE: the nil checks are so the function doesn't get set to a nil after a lua reload
@@ -2496,13 +2498,56 @@ local function onUpdate(dt)
 	end
 end
 
+-- Is the map's collision actually present yet? Async mod loading (MPModManager batch mount) lets
+-- the join reach the spawn step before the level's ground has streamed in, so a car spawned then
+-- falls THROUGH the not-yet-ready terrain = "under the map". Cast a ray straight down from high above
+-- the camera: a hit against any static collision means the ground exists. Works for terrain AND
+-- static-mesh-only maps (unlike core_terrain.getTerrainHeight, which is nil on mesh maps). Guarded
+-- so a missing API just reports "not ready" (the spawn timeout below still fires).
+local function mapCollisionReady()
+	if not (core_camera and core_camera.getPosition and castRayStatic) then return false end
+	local ok, cp = pcall(core_camera.getPosition)
+	if not ok or not cp then return false end
+	local from = vec3(cp.x, cp.y, cp.z + 1000)
+	local dist = castRayStatic(from, vec3(0, 0, -1), 6000)
+	return type(dist) == "number" and dist < 6000
+end
+
+-- Once collision is confirmed ready, lift any OWN car that ended up under the terrain (a manual
+-- spawn during the async-load window, or one that fell through before the ground existed) back onto
+-- the surface. Own cars only: remote ghosts are driven by position sync -- their teleport + the
+-- self-heal watchdog pull them above ground on their own once collision exists, so we never touch
+-- them here. Only lifts a car that is clearly (>1m) below the ground, so a correctly-placed car is
+-- never disturbed.
+local function recoverUnderMapOwnVehicles()
+	for gid in pairs(getOwnMap()) do
+		local veh = be:getObjectByID(gid)
+		if veh then
+			local p = veh:getPosition()
+			local from = vec3(p.x, p.y, p.z + 1000)
+			local dist = castRayStatic(from, vec3(0, 0, -1), 5000)
+			if type(dist) == "number" and dist < 5000 then
+				local groundZ = (p.z + 1000) - dist
+				if groundZ - p.z > 1.0 then
+					veh:setPositionNoPhysicsReset(Point3F(p.x, p.y, groundZ + 0.5))
+					log('W', 'mapReadyRecover', 'lifted own vehicle '..tostring(gid)..' out from under the map')
+				end
+			end
+		end
+	end
+end
+
 local function onPreRender(dt)
 	if MPGameNetwork and MPGameNetwork.launcherConnected() then
 		-- LAN: deferred auto-spawn of the default/last car after joining, unless the
 		-- player already spawned one in the meantime.
 		if pendingAutoSpawn then
 			pendingAutoSpawnTimer = pendingAutoSpawnTimer + dt
-			if pendingAutoSpawnTimer > 1.5 then
+			-- Wait for the map collision to actually exist before spawning (async mod loading can run
+			-- this before the ground streams in -> car spawns under the map). 1.5s floor keeps the
+			-- original feel; the 30s ceiling is a safety net so a map that never probes ready still
+			-- spawns rather than hanging.
+			if (pendingAutoSpawnTimer > 1.5 and mapCollisionReady()) or pendingAutoSpawnTimer > 30 then
 				pendingAutoSpawn = false
 				if getMissionFilename() ~= "" and tableIsEmpty(getOwnMap()) then
 					doAutoSpawn()
@@ -2514,12 +2559,20 @@ local function onPreRender(dt)
 		-- ready (only if we don't already have one), mirroring the auto-spawn timing.
 		if pendingMapRespawn then
 			pendingMapRespawnTimer = pendingMapRespawnTimer + dt
-			if pendingMapRespawnTimer > 1.5 then
+			if (pendingMapRespawnTimer > 1.5 and mapCollisionReady()) or pendingMapRespawnTimer > 30 then
 				pendingMapRespawn = false
 				if getMissionFilename() ~= "" and tableIsEmpty(getOwnMap()) then
 					respawnAfterMapChange()
 				end
 			end
+		end
+
+		-- Once collision is ready, one shot: lift any own car that spawned under the map (manual
+		-- spawn during the async-load window, etc.). The auto-spawn above already waits for ready,
+		-- so this mainly covers manually-spawned cars; remote ghosts self-heal via position sync.
+		if not mapReadyRecovered and getMissionFilename() ~= "" and mapCollisionReady() then
+			mapReadyRecovered = true
+			recoverUnderMapOwnVehicles()
 		end
 
 		-- LAN: re-target the player's own AI/weapon cars onto the nearest VALID player (incl.

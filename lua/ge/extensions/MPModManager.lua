@@ -149,24 +149,28 @@ end
 local function loadServerMods()
 	log('W', 'loadServerMods', 'loadServerMods')
 
-	-- SYNCHRONOUS mount (reverted from upstream's async batch loader in p13h53). The batch
-	-- version (core_jobsystem job yielding between batches of 5) returns from loadServerMods
-	-- IMMEDIATELY while mounting continues across frames, so the join sequence proceeds before
-	-- the mod set -- and therefore the MAP's collision terrain -- is actually ready. Result:
-	-- cars (the auto-spawn car AND incoming remote cars) spawned through not-yet-ready terrain,
-	-- i.e. UNDER THE MAP, on every join. The blocking mount below keeps the whole join strictly
-	-- ordered (mount all -> checkAllMods -> requestMap -> map loads -> spawns land on ready
-	-- ground), which is how the fork behaved for its entire history. (The upstream batch loader
-	-- was meant to avoid a mod-overload crash on huge mod sets; this fork's large set mounted
-	-- synchronously without that crash, so restoring the ordering is the right trade. If the
-	-- overload crash ever appears, re-introduce batching in a form that BLOCKS the join until
-	-- the job completes, not one that lets the join race ahead.)
+	-- ASYNC batch mount (upstream #893): mounts the synced mods in batches, yielding between them,
+	-- so a large mod set doesn't hitch the game (and dodges the mod-overload crash) on join. This
+	-- returns IMMEDIATELY while mounting continues across frames, so the join sequence can reach
+	-- the spawn step before the map's collision terrain is ready -- which used to drop cars UNDER
+	-- THE MAP. That is now handled where it belongs: MPVehicleGE gates the deferred auto/map-respawn
+	-- on an actual ground-collision probe (mapCollisionReady) and recovers any car that fell through
+	-- once the map is ready, so the async mount no longer needs to block the join to be safe (p13h54).
 	local modsDir = FS:findFiles("/mods/multiplayer", "*.zip", -1, false, false)
-	for _, modPath in pairs(modsDir) do
-		core_modmanager.workOffChangedMod(modPath, 'added')
-	end
-	checkAllMods()
-	MPCoreNetwork.requestMap()
+
+	core_jobsystem.create(function(job)
+		local amount = #modsDir
+		local batchSize = 5
+		local core_modmanager_workOffChangedMod = core_modmanager.workOffChangedMod
+		for i = 1, amount, batchSize do
+			for j = i, math.min(i + batchSize - 1, amount) do
+				core_modmanager_workOffChangedMod(modsDir[j], 'added')
+			end
+			job.sleep(0)
+		end
+		checkAllMods()
+		MPCoreNetwork.requestMap()
+	end)
 end
 
 --- Verify that the servers mods have been loaded by the game.
