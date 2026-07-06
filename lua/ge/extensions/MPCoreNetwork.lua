@@ -429,6 +429,7 @@ local function loginReceived(params)
 	end
 
 	authResult = result
+	authResult.role = authResult.role or "USER"
 	if authResult.username then
 		local res = {}; 
 		local r, code, headers = http.request{
