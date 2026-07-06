@@ -149,28 +149,21 @@ end
 local function loadServerMods()
 	log('W', 'loadServerMods', 'loadServerMods')
 
-	-- ASYNC batch mount (upstream #893): mounts the synced mods in batches, yielding between them,
-	-- so a large mod set doesn't hitch the game (and dodges the mod-overload crash) on join. This
-	-- returns IMMEDIATELY while mounting continues across frames, so the join sequence can reach
-	-- the spawn step before the map's collision terrain is ready -- which used to drop cars UNDER
-	-- THE MAP. That is now handled where it belongs: MPVehicleGE gates the deferred auto/map-respawn
-	-- on an actual ground-collision probe (mapCollisionReady) and recovers any car that fell through
-	-- once the map is ready, so the async mount no longer needs to block the join to be safe (p13h54).
 	local modsDir = FS:findFiles("/mods/multiplayer", "*.zip", -1, false, false)
 
-	core_jobsystem.create(function(job)
+    core_jobsystem.create(function(job)
 		local amount = #modsDir
-		local batchSize = 5
+        local batchSize = 5
 		local core_modmanager_workOffChangedMod = core_modmanager.workOffChangedMod
-		for i = 1, amount, batchSize do
-			for j = i, math.min(i + batchSize - 1, amount) do
-				core_modmanager_workOffChangedMod(modsDir[j], 'added')
-			end
-			job.sleep(0)
-		end
-		checkAllMods()
-		MPCoreNetwork.requestMap()
-	end)
+        for i = 1, amount, batchSize do
+            for j = i, math.min(i + batchSize - 1, amount) do
+                core_modmanager_workOffChangedMod(modsDir[j], 'added')
+            end
+            job.sleep(0)
+        end
+        checkAllMods()
+        MPCoreNetwork.requestMap()
+    end)
 end
 
 --- Verify that the servers mods have been loaded by the game.
