@@ -335,12 +335,19 @@ beammpModInfo.innerHTML = `
 beammpModInfo.id = 'BeamMPVersionInject'
 
 $rootScope.$on('authReceived', function (event, data) {
-	//console.log(event, data)
 	let nameElement = document.getElementById("beammp-profile-name")
 	let avatarElement = document.getElementById("beammp-profile-avatar")
 	let divider = document.getElementById("beammp-profile-divider")
 
-	if (Object.keys(data).length > 1) {
+	let isLoggedIn = false
+	if (!data.Auth) { //  If Auth is present, then that means we haven't logged in in this session yet
+		if (data.username) { // We'll only have a username if we've logged in
+			isLoggedIn = true
+		}
+	}
+
+	//console.log(isLoggedIn, data)
+	if (isLoggedIn) {
 		userData = {
 			username: data.username,
 			avatar: data.avatar,
@@ -358,6 +365,7 @@ $rootScope.$on('authReceived', function (event, data) {
 		nameElement.style.display = 'none'
 		avatarElement.style.display = 'none'
 		divider.style.display = 'none'
+
 		return
 	}
 
@@ -1087,7 +1095,14 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		let nameElement = document.getElementById("serverlist-profile-name")
 		let avatarElement = document.getElementById("serverlist-profile-avatar")
 
-		if (Object.keys(data).length > 1) {
+		let isLoggedIn = false
+		if (!data.Auth) { //  If Auth is present, then that means we haven't logged in in this session yet
+			if (data.username) { // We'll only have a username if we've logged in
+				isLoggedIn = true
+			}
+		}
+
+		if (isLoggedIn) {
 			let patreonText = $filter('translate')('ui.multiplayer.patreon.message.user')
 			let patreonButton = document.getElementById("patreonSidebarButton")
 			var patreonButtonText = document.getElementById("patreonSidebarButtonSubtitle")
