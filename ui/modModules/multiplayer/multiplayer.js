@@ -340,7 +340,6 @@ $rootScope.$on('authReceived', function (event, data) {
 	let avatarElement = document.getElementById("beammp-profile-avatar")
 	let divider = document.getElementById("beammp-profile-divider")
 
-	console.log(data)
 	if (Object.keys(data).length > 1) {
 		userData = {
 			username: data.username,
