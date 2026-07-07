@@ -8,13 +8,14 @@ var favorites = []
 var recents = []
 var mdDialog
 var mdDialogVisible = false
-var userData = {
-	username: 'Loading...',
-	avatar: '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg',
-	role: 'USER',
-	color: '',
-	id: -1
-}
+//userData = {
+//	username: 'Username here',
+//	avatar: '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg',
+//	role: 'USER',
+//	color: '',
+//	id: -1
+//}
+var userData = {}
 var searchFilters = {}
 var beammpMetrics = {
 	players: "...", 
@@ -234,10 +235,10 @@ $rootScope.$on('AutoJoinConfirmation', function(evt, data) {
 })
 
 let avatarFallbackClass = ""
-if (userData.avatar === '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg' || userData.avatar.includes("Q291bGQgbm90IGVzdGFibGlzaCBjb25uZWN0aW9u")) {
-	userData.avatar = '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg'
-	avatarFallbackClass = 'style="filter:invert(100%) sepia(0%) saturate(22%) hue-rotate(36deg) brightness(104%) contrast(108%)"'
-}
+//if (userData.avatar && userData.avatar === '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg' || userData.avatar.includes("Q291bGQgbm90IGVzdGFibGlzaCBjb25uZWN0aW9u")) {
+//	userData.avatar = '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg'
+//	avatarFallbackClass = 'style="filter:invert(100%) sepia(0%) saturate(22%) hue-rotate(36deg) brightness(104%) contrast(108%)"'
+//}
 
 var beammpUserInfo = document.createElement("div")
 beammpUserInfo.innerHTML = `
@@ -338,15 +339,9 @@ $rootScope.$on('authReceived', function (event, data) {
 	let nameElement = document.getElementById("beammp-profile-name")
 	let avatarElement = document.getElementById("beammp-profile-avatar")
 	let divider = document.getElementById("beammp-profile-divider")
-	if (data.avatar == undefined || data.avatar.includes("Q291bGQgbm90IGVzdGFibGlzaCBjb25uZWN0aW9u")) {
-		data.avatar = '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg'
-		avatarElement.style.filter = "invert(100%) sepia(0%) saturate(22%) hue-rotate(36deg) brightness(104%) contrast(108%)"
-		avatarElement.src = '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg'
-	} else {
-		avatarElement.style.filter = ""
-	}
 
-	if (nameElement && avatarElement) {
+	console.log(data)
+	if (Object.keys(data).length > 1) {
 		userData = {
 			username: data.username,
 			avatar: data.avatar,
@@ -354,9 +349,28 @@ $rootScope.$on('authReceived', function (event, data) {
 			color: data.color,
 			id: data.id
 		}
+
+		nameElement.style.display = ''
+		avatarElement.style.display = ''
+		divider.style.display = ''
 	} else {
+		userData = {}
+
+		nameElement.style.display = 'none'
+		avatarElement.style.display = 'none'
+		divider.style.display = 'none'
 		return
 	}
+
+	if (!data.avatar || data.avatar.includes("Q291bGQgbm90IGVzdGFibGlzaCBjb25uZWN0aW9u")) {
+		data.avatar = '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg'
+		avatarElement.style.filter = "invert(100%) sepia(0%) saturate(22%) hue-rotate(36deg) brightness(104%) contrast(108%)"
+		avatarElement.src = '\\ui\\ui-vue\\src\\assets\\fonts\\bngIcons\\svg\\personSolid.svg'
+	} else {
+		avatarElement.style.filter = ""
+	}
+
+	if (!nameElement || !avatarElement) return
 
 	
 	nameElement.textContent = data.username
@@ -605,6 +619,8 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	bngApi = bngApi
 	mdDialog = $mdDialog
 
+	$scope.dummy = undefined;
+
 	$scope.beammpMetrics = beammpMetrics
 	$scope.officialMaps = officialMaps
 
@@ -792,15 +808,27 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		$state.go('play')
 	})
 
-	$scope.logout = function() {
+	$scope.openProfile = function() {
+
+	}
+
+	$scope.copyName = function() {
+
+	}
+
+	$scope.logout = async function() {
 		bngApi.engineLua(`MPCoreNetwork.logout()`)
 		$state.go('menu.multiplayer.login')
 
 		var accountSection = document.getElementById("serverlist-account-section")
-		if (accountSection != null) accountSection.style.display = "none"
+		if (accountSection != null) {
+			accountSection.style.display = "none"
+		}
 
 		var serverListCategories = document.getElementById("serverlist-categories")
-		if (serverListCategories != null) serverListCategories.style.display = "none"
+		if (serverListCategories != null) {
+			serverListCategories.style.display = "none"
+		}
 
 		var patreonButton = document.getElementById("patreonSidebarButton")
 		if (patreonButton != null) {
@@ -1026,10 +1054,38 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 	vm.showMessage = function() {
 		openExternalLink("https://beammp.gg/patreonbenefits")
 	}
+	
+	let copyNameElement = document.getElementById("serverbrowser-account-copyname")
+	let openProfileButton = document.getElementById('serverbrowser-account-openprofile')
+	let copyIdElement = document.getElementById("serverbrowser-account-copyid")
+
+	$scope.account = {
+		username: userData.username,
+		id: userData.id
+	}
+
+	$scope.openProfile = function() {
+		openExternalLink("https://forum.beammp.com/u/" + userData.username + "/summary")
+	}
+	$scope.copyName = function() {
+		if (userData.username) {
+			bngApi.engineLua(`setClipboard("` + userData.username + `")`)
+			toastr.info("Copied username to clipboard")
+		} else {
+			toastr.error("Failed to copy username")
+		}
+	}
+	$scope.copyId = function() {
+		if (userData.id) {
+			bngApi.engineLua(`setClipboard("` + userData.id + `")`)
+			toastr.info("Copied account ID to clipboard")
+		} else {
+			toastr.error("Failed to copy account ID")
+		}
+	}
 
 	$scope.$on('authReceived', function (event, data) {
 		let nameElement = document.getElementById("serverlist-profile-name")
-		let idElement = document.getElementById("serverlist-profile-id")
 		let avatarElement = document.getElementById("serverlist-profile-avatar")
 
 		if (Object.keys(data).length > 1) {
@@ -1039,6 +1095,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 
 			var accountSection = document.getElementById("serverlist-account-section")
 			var serverListCategories = document.getElementById("serverlist-categories")
+
 			if (data.role != null) {
 				if (accountSection) accountSection.style.display = ""
 				if (serverListCategories) serverListCategories.style.display = ""
@@ -1090,37 +1147,11 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 					avatarElement.style.filter = "invert(100%) sepia(0%) saturate(22%) hue-rotate(36deg) brightness(104%) contrast(108%)"
 				}
 			}
-
-			if (data.id != null) {
-				if (nameElement)
-					nameElement.style.cursor = "pointer"
-					nameElement.onclick = function () {
-						openExternalLink("https://forum.beammp.com/u/" + data.username + "/summary")
-					}
-				if (idElement)
-					idElement.textContent = "ID: " + data.id
-					idElement.onclick = function () {
-						bngApi.engineLua(`setClipboard("` + data.id + `")`)
-						toastr.info("Copied ID to clipboard")
-					}
-					if (data.role != "USER") {
-						idElement.style.marginTop = "0"
-					} else {
-						idElement.style.marginTop = "6px"
-					}
-			} else {
-				if (idElement) idElement.textContent = ""
-				if (nameElement) {
-					nameElement.onclick = null
-					nameElement.style.cursor = "default"
-				}
-			}
 		} else {
 			if (nameElement != null) {
 				nameElement.textContent = ""
 				nameElement.style.backgroundColor = "rgba(0, 0, 0, 0)"
 			}
-			if (idElement != null) idElement.textContent = ""
 			if (avatarElement != null) avatarElement.removeAttribute("src")
 		}
 
@@ -1128,6 +1159,8 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		for (var i = 0; i < buttons.length; i++) {
 			buttons[i].classList.remove("bng-button-outline")
 		}
+
+		$scope.account = userData
 	})
 
 	vm.exit = function ($event) {

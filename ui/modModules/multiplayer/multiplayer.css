@@ -326,21 +326,42 @@
 	display: flex;
 	flex-direction: column;
 }
+#serverbrowser-info-bar {
+	display: inline-flex;
+	margin-right: 0.5em;
+	
+	color: white;
+
+	img {
+		height: 1.375em;
+	};
+}
+.serverbrowser-info-bar-flex {
+	display: inline-flex;
+
+	flex-direction: row;
+	align-items: center;
+	gap: 0.25em;
+}
+.serverbrowser-account-section {
+	padding: 0.0625em 0.25em;
+
+	background-color: rgba(0, 0, 0, 0.25);
+	border-radius: var(--bng-corners-1);
+	&:hover, &:focus {
+		background-color: rgba(var(--bng-orange-600-rgb), 0.6);
+	};
+}
 #serverlist-profile-avatar {
-	width: 100px;
 	border-radius: 50%;
 	display: block;
-	margin-left: auto;
-	margin-right: auto;
 }
 #serverlist-profile-name {
+	padding: 0 0.25em;
+
 	text-align: center;
 	background-color: rgba(0, 0, 0, 0); /* this gets adjusted by JS based on account role from auth */
-	border-radius: 10px;
-	margin-left: 15px;
-	margin-right: 15px;
-	margin-top: 10px;
-	padding: 2px;
+	border-radius: var(--bng-corners-1);
 }
 #serverlist-profile-id {
 	text-align: center;

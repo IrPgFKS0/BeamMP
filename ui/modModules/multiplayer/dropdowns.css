@@ -1,0 +1,68 @@
+.mpIconDropdown {
+	>img {
+		filter: contrast(0) brightness(2);
+		width: 1rem;
+		height: 1rem;
+		position: absolute;
+		left: 0.25rem;
+		bottom: 0.25rem;
+		z-index: 1;
+		pointer-events: none;
+	};
+
+	/* This is UNHOLY but it WORKS IT WORKS IT WORKS IT WORKS!!!!!!!!!!!!!!!! */
+	md-select {
+		float: right;
+		position: relative;
+
+		display: inline-flex;
+		align-content: center;
+		justify-content: center;
+		align-items: center;
+
+		overflow: visible;
+
+		width: 1.5rem;
+		height: 1.5rem;
+		font-family: bngIcons;
+		background-color: rgba(var(--bng-off-black-rgb), 0.4);
+		border: none !important;
+		border-radius: var(--bng-corners-1);
+
+		md-select-value {
+			position: absolute;
+			left: 0.625em;
+			top: 2.875em;
+			display: block !important;
+			min-width: 1em !important;
+			min-height: 1em !important;
+			/*width: 0 !important;
+			height: 0 !important;*/
+
+			padding: 0 !important;
+			margin: 0 !important;
+
+			border: none !important;
+			border-bottom: none !important;
+
+			content: '';
+		};
+		span {
+			display: none;
+		};
+		.mpDropdownOption {
+			display:inline;
+			padding: 0.25em 0.25em;
+			text-align: left;
+			color: white;
+			background-color: transparent;
+			border-radius: var(--bng-corners-1);
+			&:hover {
+				background-color: var(--bng-ter-blue-gray-600);
+			};
+		};
+		&:hover, &:focus {
+			background-color: rgba(var(--bng-orange-600-rgb), 0.6);
+		};
+	}
+}

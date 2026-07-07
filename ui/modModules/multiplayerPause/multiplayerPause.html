@@ -1,5 +1,6 @@
 <div class="mpPauseWrapper" bng-blur="true">
 <link type="text/css" rel="stylesheet" href="/ui/modModules/multiplayerPause/multiplayerPause.css">
+<link type="text/css" rel="stylesheet" href="/ui/modModules/multiplayer/dropdowns.css">
 <link type="text/css" rel="stylesheet" href="/ui/modModules/multiplayer/vueNotoSans.css">
 <link type="text/css" rel="stylesheet" href="/ui/modModules/multiplayer/formatCodes.css">
 
@@ -145,15 +146,15 @@
 
 					<div style="display:inline-flex;flex-wrap:nowrap;min-width:fit-content;gap:0.25rem">
 						<span style="font-family:'VueNotoSans Mono',monospace;color:#ccc">{{ player.ping || '?' }}ms</span>
-						<md-input-container style="padding:0;margin:0">
-							<img ng-src={{getVueIconPath('adjust')}} class="mpPausePlayerRowActionsIcon"/>
-							<md-select class="md-no-underline dropdown mpPausePlayerRowActions" ng-model="dummy" bng-sound-class="bng_click_hover_generic">
-								<md-option class="mpPausePlayerRowActionsDropdownButton" bng-sound-class="bng_click_generic_small" ng-click="copyPlayerName(player.name)"									>{{:: 'ui.apps.multiplayer.playerlist.copyname' | translate}}</md-option>
-								<md-option class="mpPausePlayerRowActionsDropdownButton" bng-sound-class="bng_click_generic_small" ng-click="deleteAllVehicles(player.name)" 	ng-if="player.id !== '?'"	>{{:: 'ui.apps.multiplayer.playerlist.deleteAllVehicles' | translate}}</md-option>
-								<md-option class="mpPausePlayerRowActionsDropdownButton" bng-sound-class="bng_click_generic_small" ng-click="queueEvents(player.id)" 			ng-if="player.id !== '?'"	>{{:: 'ui.apps.multiplayer.playerlist.queueEvents' | translate}}</md-option>
-								<md-option class="mpPausePlayerRowActionsDropdownButton" bng-sound-class="bng_click_generic_small" ng-click="switchCameraTo(player.name)"		ng-if="player.id !== '?'"	>{{:: 'ui.apps.multiplayer.playerlist.switchCameraTo' | translate}}</md-option>
-								<md-option class="mpPausePlayerRowActionsDropdownButton" bng-sound-class="bng_click_generic_small" ng-click="openProfile(player.name)"										>{{:: 'ui.apps.multiplayer.playerlist.openProfile' | translate}}</md-option>
-								<md-option class="mpPausePlayerRowActionsDropdownButton" bng-sound-class="bng_click_generic_small" ng-click="restoreVehicles(player.name)" 		ng-if="player.id !== '?'"	>{{:: 'ui.apps.multiplayer.playerlist.restoreVehicles' | translate}}</md-option>
+						<md-input-container class="mpIconDropdown" style="padding:0;margin:0">
+							<img ng-src="{{getVueIconPath('adjust')}}"/>
+							<md-select class="md-no-underline" ng-model="dummy" bng-sound-class="bng_click_hover_generic">
+								<md-option bng-sound-class="bng_click_generic_small" ng-click="copyPlayerName(player.name)"									>{{:: 'ui.apps.multiplayer.playerlist.copyname' | translate}}</md-option>
+								<md-option bng-sound-class="bng_click_generic_small" ng-click="deleteAllVehicles(player.name)" 	ng-if="player.id !== '?'"	>{{:: 'ui.apps.multiplayer.playerlist.deleteAllVehicles' | translate}}</md-option>
+								<md-option bng-sound-class="bng_click_generic_small" ng-click="queueEvents(player.id)" 			ng-if="player.id !== '?'"	>{{:: 'ui.apps.multiplayer.playerlist.queueEvents' | translate}}</md-option>
+								<md-option bng-sound-class="bng_click_generic_small" ng-click="switchCameraTo(player.name)"		ng-if="player.id !== '?'"	>{{:: 'ui.apps.multiplayer.playerlist.switchCameraTo' | translate}}</md-option>
+								<md-option bng-sound-class="bng_click_generic_small" ng-click="openProfile(player.name)"										>{{:: 'ui.apps.multiplayer.playerlist.openProfile' | translate}}</md-option>
+								<md-option bng-sound-class="bng_click_generic_small" ng-click="restoreVehicles(player.name)" 		ng-if="player.id !== '?'"	>{{:: 'ui.apps.multiplayer.playerlist.restoreVehicles' | translate}}</md-option>
 							</md-select>
 						</md-input-container>
 					</div>
