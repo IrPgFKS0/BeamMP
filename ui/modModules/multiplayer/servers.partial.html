@@ -6,9 +6,9 @@
 			<input flex class="bng-input mp-search" ng-model="multiplayermenu.searchText" ng-change="multiplayermenu.updateSearchText();" type="text" id="search" name="search" placeholder="{{:: 'ui.multiplayer.searchPlaceholder' | translate}}" />
 			<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('search')}} />
 		</div>
-		<button id="refresh-button" class="default-case bng-button-main" ng-class="" ng-click="multiplayer.refreshList()">{{:: 'ui.multiplayer.refresh' | translate}}</button>
+		<button id="refresh-button" class="default-case bng-button-main" ng-class="" ng-click="multiplayer.refreshList()" bng-sound-class="bng_click_hover_generic">{{:: 'ui.multiplayer.refresh' | translate}}</button>
 
-		<button id="extra-button" class="default-case bng-button-secondary" style="display: none;"></button>
+		<button id="extra-button" class="default-case bng-button-secondary" style="display: none;" bng-sound-class="bng_click_hover_generic"></button>
 
 		<span id="FiltersPrefix" style="display: none; font-weight: bold; align-self: center;">{{:: 'ui.multiplayer.activeFilters' | translate}}</span>
 		<span id="activeFilters">

@@ -114,9 +114,13 @@
 .backBar {
 	display: flex;
 	width: fit-content;
-	font-family: var(--bmp-fnt-defs);
+
 	background-color: var(--background-clr);
 	border-radius: var(--bng-corners-2);
+
+	color: white;
+	font-family: var(--bmp-fnt-defs);
+
 	.back-button {
 		display: inline-flex;
 		align-items: center;
@@ -208,6 +212,7 @@
 }
 #searchFilters {
 	overflow-y: auto;
+	overflow-x: hidden;
 	padding-right: 0.5em;
 	scrollbar-gutter: stable;
 
@@ -328,7 +333,7 @@
 }
 #serverbrowser-info-bar {
 	display: inline-flex;
-	margin-right: 0.5em;
+	margin: 0 0.5em;
 	
 	color: white;
 
@@ -344,17 +349,26 @@
 	gap: 0.25em;
 }
 .serverbrowser-account-section {
-	padding: 0.0625em 0.25em;
+	padding: 0 0.5em;
+	height: 100%;
 
-	background-color: rgba(0, 0, 0, 0.25);
-	border-radius: var(--bng-corners-1);
-	&:hover, &:focus {
+	border-radius: var(--bng-corners-2);
+
+	&:hover {
 		background-color: rgba(var(--bng-orange-600-rgb), 0.6);
 	};
+}
+.serverbrowser-account-section .mpIconDropdown:focus {
+	background-color: rgba(var(--bng-orange-600-rgb), 0.6);
 }
 #serverlist-profile-avatar {
 	border-radius: 50%;
 	display: block;
+	position: unset;
+	width: 2em;
+	height: 2em;
+
+	background-color: var(--bng-cool-gray-400); /* Controlled by the filter on the SVG image. This makes a decent grayscale background for the avatar */
 }
 #serverlist-profile-name {
 	padding: 0 0.25em;

@@ -297,7 +297,7 @@ beammpUserInfo.innerHTML = `
 	</div>
 	<span class="divider" id="beammp-profile-divider"></span>
 	<div class="section">
-		<img src="${userData.avatar}" ${avatarFallbackClass} id="beammp-profile-avatar" style="padding: 5px; border-radius: 50%;" height="22px">
+		<img src="${userData.avatar}" ${avatarFallbackClass} id="beammp-profile-avatar" style="margin: 0 5px; border-radius: 50%; background-color: var(--bng-cool-gray-400);" height="22px">
 		<span id="beammp-profile-name">${userData.username}</span>
 	</div>
 </div>

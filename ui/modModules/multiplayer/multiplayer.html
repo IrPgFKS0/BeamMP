@@ -32,7 +32,7 @@
 		<div flex style="max-height:none;margin-top:0.5em" ng-if="!(multiplayer.downloadingMods.length > 0)"></div>
 
 		<div style="height:fit-content;width:100%;margin-top:0.5em">
-		<button class="bng-button-attention close-button" ng-click="multiplayer.closeLoadingPopup()">
+		<button class="bng-button-attention close-button" ng-click="multiplayer.closeLoadingPopup()" bng-sound-class="bng_cancel_hover_generic">
 			<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('xmark')}} />
 			{{:: 'ui.common.cancel' | translate}}
 		</button>
@@ -57,11 +57,11 @@
 				</div>
 			</div>
 			<div layout="row" style="float:right; width:min-content">
-				<button class="default-case bng-button-link" ng-class="" ng-click="multiplayer.closePopup()">
+				<button class="default-case bng-button-link" ng-class="" ng-click="multiplayer.closePopup()" bng-sound-class="bng_cancel_hover_generic">
 					<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('xmark')}} />
 					{{:: 'ui.common.cancel' | translate}}
 				</button>
-				<button class="default-case bng-button-main" ng-click="multiplayer.addCustomServer()" style="margin-right: 0;">
+				<button class="default-case bng-button-main" ng-click="multiplayer.addCustomServer()" style="margin-right: 0;" bng-sound-class="bng_click_hover_generic">
 					{{:: 'ui.multiplayer.save' | translate}}
 				</button>
 			</div>
@@ -69,9 +69,9 @@
 	</div>
 </div>
 
-<div style="display: inline-flex; flex-direction: row; flex-wrap: nowrap; justify-content: space-between;">
+<div style="display: inline-flex; flex-direction: row; flex-wrap: nowrap; justify-content: space-between; gap: 0.25em;">
 	<div class="backBar">
-		<button class="bng-button-link back-button" ng-click="$state.go('menu.mainmenu')" style="padding-left:0.75em">
+		<button class="bng-button-link back-button" ng-click="$state.go('menu.mainmenu')" style="padding-left:0.75em" bng-sound-class="bng_back_hover_generic">
 			<!--<span class="back-icon"></span> < !-- bngIcons for back -->
 			<!--{{:: 'ui.common.back' | translate}}-->
 			{{:: 'ui.common.menu' | translate}}
@@ -80,37 +80,36 @@
 		<button tabindex="-1" class="bng-button-link back-button backBarSelected backBarDisabled" style="padding-right:0.75em">{{:: 'ui.playmodes.multiplayer' | translate}}</button>
 		<div bng-blur="true" style="position:absolute;width:100%;height:100%;overflow:hidden;pointer-events:none"></div>
 	</div>
+	<div flex></div>
 	<div class="backBar">
 		<div id="serverbrowser-info-bar" class="serverbrowser-info-bar-flex">
-			<img src="/ui/modModules/multiplayer/beammp_new_cropped.png" style="margin: 0 0.5em; height: 1.5em;">
+			<img src="/ui/modModules/multiplayer/beammp_new_cropped.png" style="height: 1.5em;">
 			<span class="divider"></span>
 			<img src="/ui/modModules/multiplayer/icons/account-multiple.svg">
 			<span ng-bind="'Players: ' + beammpMetrics.players"></span>
 			<span class="divider"></span>
 			<img src="/ui/modModules/multiplayer/icons/dns.svg">
 			<span ng-bind="'Servers: ' + beammpMetrics.servers"></span>
+		</div>
+	</div>
+	<div id="serverlist-account-section" class="backBar serverbrowser-info-bar-flex" style="display:none">
+		<div class="serverbrowser-account-section serverbrowser-info-bar-flex">
+			<md-input-container bng-nav-item bng-all-clicks class="mpIconDropdown serverbrowser-info-bar-flex" style="padding:0;margin:0">
+				<img id="serverlist-profile-avatar"/>
+				<span id="serverlist-profile-name"></span>
+				<img ng-src="{{getVueIconPath('adjust')}}" style="height: 1em; position: unset;"/>
 
-			<div id="serverlist-account-section" class="serverbrowser-info-bar-flex" style="display:none">
-				<span class="divider"></span>
-				<div class="serverbrowser-account-section serverbrowser-info-bar-flex">
-					<md-input-container class="mpIconDropdown serverbrowser-info-bar-flex" style="padding:0;margin:0">
-						<img id="serverlist-profile-avatar" style="position: unset;"/>
-						<span id="serverlist-profile-name"></span>
-						<img ng-src="{{getVueIconPath('adjust')}}" style="height: 1em; position: unset;"/>
-
-						<md-select class="serverbrowser-account-button" ng-model="dummy" bng-sound-class="bng_click_hover_generic" style="
-							width: 100%;
-							position: absolute;
-							background: none;
-						">
-							<md-option id="serverbrowser-account-openprofile" bng-sound-class="bng_click_generic_small" ng-click="openProfile()" ng-if="account.id">{{:: 'ui.apps.multiplayer.playerlist.openProfile' | translate}}</md-option>
-							<md-option id="serverbrowser-account-copyname" bng-sound-class="bng_click_generic_small" ng-click="copyName()" ng-if="account.username">{{:: 'ui.apps.multiplayer.playerlist.copyname' | translate}}</md-option>
-							<md-option id="serverbrowser-account-copyid" bng-sound-class="bng_click_generic_small" ng-click="copyId()" ng-if="account.id">{{:: 'ui.multiplayer.account.copyid' | translate}}</md-option>
-							<md-option bng-sound-class="bng_click_generic_small" ng-click="logout()">{{:: 'ui.multiplayer.logout' | translate}}</md-option>
-						</md-select>
-					</md-input-container>
-				</div>
-			</div>
+				<md-select bng-nav-item bng-all-clicks ng-model="dummy" bng-sound-class="bng_click_hover_generic" style="
+					width: 100%;
+					position: absolute;
+					background: none;
+				">
+					<md-option id="serverbrowser-account-openprofile" bng-sound-class="bng_click_generic_small" ng-click="openProfile()" ng-if="account.id">{{:: 'ui.apps.multiplayer.playerlist.openProfile' | translate}}</md-option>
+					<md-option id="serverbrowser-account-copyname" bng-sound-class="bng_click_generic_small" ng-click="copyName()" ng-if="account.username">{{:: 'ui.apps.multiplayer.playerlist.copyname' | translate}}</md-option>
+					<md-option id="serverbrowser-account-copyid" bng-sound-class="bng_click_generic_small" ng-click="copyId()" ng-if="account.id">{{:: 'ui.multiplayer.account.copyid' | translate}}</md-option>
+					<md-option bng-sound-class="bng_click_generic_small" ng-click="logout()">{{:: 'ui.multiplayer.logout' | translate}}</md-option>
+				</md-select>
+			</md-input-container>
 		</div>
 	</div>
 </div>
@@ -147,37 +146,37 @@
 		<div flex layout="row" style="overflow:auto;gap:0.5em;margin-left:0.5em;margin-bottom:0.5em;border-radius:var(--bng-corners-1)">
 			<div layout="column" id="left-menu">
 				<div id="serverlist-categories" class="leftMenuGroups" style="display:none">
-					<button class="sidebar-buttons servers-btn bng-button-link bng-button-outline" id="-servers-btn" ng-click="switchServerView('')">
+					<button class="sidebar-buttons servers-btn bng-button-link bng-button-outline" id="-servers-btn" ng-click="switchServerView('')" bng-sound-class="bng_click_hover_generic">
 					<img class="button-icon button-icon-filter" ng-src="{{getVueIconPath('globeSimplified')}}" />
 						{{:: 'ui.multiplayer.servers' | translate}}
 					</button>
 
-					<button class="sidebar-buttons servers-btn bng-button-link" id="official-servers-btn" ng-click="switchServerView('official')">
+					<button class="sidebar-buttons servers-btn bng-button-link" id="official-servers-btn" ng-click="switchServerView('official')" bng-sound-class="bng_click_hover_generic">
 					<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('shieldCheckmark')}} />
 						{{:: 'ui.multiplayer.official' | translate}}
 					</button>
 
-					<button class="sidebar-buttons servers-btn bng-button-link" id="featured-servers-btn" ng-click="switchServerView('featured')">
+					<button class="sidebar-buttons servers-btn bng-button-link" id="featured-servers-btn" ng-click="switchServerView('featured')" bng-sound-class="bng_click_hover_generic">
 					<img class="button-icon button-icon-filter" ng-src="{{getVueIconPath('cup')}}" />
 						{{:: 'ui.multiplayer.featured' | translate}}
 					</button>
 
-					<button class="sidebar-buttons servers-btn bng-button-link" id="partner-servers-btn" ng-click="switchServerView('partner')">
+					<button class="sidebar-buttons servers-btn bng-button-link" id="partner-servers-btn" ng-click="switchServerView('partner')" bng-sound-class="bng_click_hover_generic">
 					<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('medal')}} />
 						{{:: 'ui.multiplayer.partner' | translate}}
 					</button>
 
-					<button class="sidebar-buttons servers-btn bng-button-link" id="favorites-servers-btn" ng-click="switchServerView('favorites')">
+					<button class="sidebar-buttons servers-btn bng-button-link" id="favorites-servers-btn" ng-click="switchServerView('favorites')" bng-sound-class="bng_click_hover_generic">
 					<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('bookmark')}} />
 							{{:: 'ui.multiplayer.favorites' | translate}}
 					</button>
 
-					<button class="sidebar-buttons servers-btn bng-button-link" id="recents-servers-btn" ng-click="switchServerView('recents')">
+					<button class="sidebar-buttons servers-btn bng-button-link" id="recents-servers-btn" ng-click="switchServerView('recents')" bng-sound-class="bng_click_hover_generic">
 					<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('POITimeL')}} />
 							{{:: 'ui.multiplayer.recent' | translate}}
 					</button>
 
-					<button class="sidebar-buttons servers-btn bng-button-link" id="direct-connect-btn" ng-click="switchToDirectConnect()" style="margin-bottom:0">
+					<button class="sidebar-buttons servers-btn bng-button-link" id="direct-connect-btn" ng-click="switchToDirectConnect()" style="margin-bottom:0" bng-sound-class="bng_click_hover_generic">
 					<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('globeSimpleNotSign')}} />
 							{{:: 'ui.multiplayer.direct_connect' | translate}}
 					</button>
@@ -187,28 +186,28 @@
 
 				<md-divider></md-divider>
 
-				<button class="sidebar-buttons bng-button-link" id="patreonSidebarButton" onclick="openExternalLink(`https://www.patreon.com/BeamMP`)" ng-class="">
+				<button class="sidebar-buttons bng-button-link" id="patreonSidebarButton" onclick="openExternalLink(`https://www.patreon.com/BeamMP`)" bng-sound-class="bng_click_hover_generic">
 				<img src="local://local/ui/modModules/multiplayer/icons/PATREON_SYMBOL_1_WHITE_RGB.svg" class="button-icon"></img>
 				{{:: 'ui.multiplayer.patreon' | translate}}
 				<div id="patreonSidebarButtonSubtitle"></div>
 				</button>
 
-				<button class="sidebar-buttons bng-button-link" id="forum-btn" onclick="openExternalLink(`https://forum.beammp.com`)" ng-class="">
+				<button class="sidebar-buttons bng-button-link" id="forum-btn" onclick="openExternalLink(`https://forum.beammp.com`)" bng-sound-class="bng_click_hover_generic">
 				<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('chatBubble')}} />
 				{{:: 'ui.multiplayer.forum' | translate}}
 				</button>
 
-				<button class="sidebar-buttons bng-button-link" onclick="openExternalLink(`https://discord.gg/BeamMP`)" ng-class="">
+				<button class="sidebar-buttons bng-button-link" onclick="openExternalLink(`https://discord.gg/BeamMP`)" bng-sound-class="bng_click_hover_generic">
 				<md-icon class="button-icon" md-svg-src="local://local/ui/modModules/multiplayer/icons/icon_clyde_white_RGB.svg"></md-icon>
 				{{:: 'ui.multiplayer.discord' | translate}}
 				</button>
 
-				<button class="sidebar-buttons bng-button-link" onclick="openExternalLink(`https://docs.beammp.com`)" ng-class="">
+				<button class="sidebar-buttons bng-button-link" onclick="openExternalLink(`https://docs.beammp.com`)" bng-sound-class="bng_click_hover_generic">
 				<img class="button-icon button-icon-filter" ng-src={{getVueIconPath('info')}}></md-icon>
 				{{:: 'ui.multiplayer.docs' | translate}}
 				</button>
 
-				<button class="sidebar-buttons bng-button-link" onclick="openExternalLink(`https://github.com/BeamMP/`)" style="margin-bottom:0">
+				<button class="sidebar-buttons bng-button-link" onclick="openExternalLink(`https://github.com/BeamMP/`)" style="margin-bottom:0" bng-sound-class="bng_click_hover_generic">
 				<img src="local://local/ui/modModules/multiplayer/icons/github-mark.svg" class="button-icon"></img>
 				{{:: 'ui.multiplayer.github' | translate}}
 				</button>
@@ -224,7 +223,7 @@
 		<div class="card-heading heading-style-ribbon" style="font-size: 1.5em; margin-left: calc(-1em / 3);">
 			{{:: 'ui.multiplayer.filterOptions' | translate}}
 		</div>
-		<button class="default-case bng-button-attention" style="min-height: fit-content;" id="clearFiltersButton" ng-click="resetSearchFilters()">
+		<button class="default-case bng-button-attention" style="min-height: fit-content; margin-left: 0;" id="clearFiltersButton" ng-click="resetSearchFilters()" bng-sound-class="bng_click_hover_generic">
 			{{:: 'ui.multiplayer.clearFilters' | translate}}
 		</button>
 		<div id="searchFilters">
@@ -262,7 +261,7 @@
 				ng-class="{
 					'active': tag.active,
 					'inactive': false && selectedTags.length > 0 && !tag.active
-				}">
+				}" bng-sound-class="bng_checkbox_generic">
 					<div>
 						<div ng-bind-html="tag.icon" style="display:inline"></div>
 						<div ng-bind="tag.text" style="display:inline"></div>
@@ -281,7 +280,7 @@
 				ng-class="{
 					'active': selectedServerVersions.length > 0 && selectedServerVersions.includes(string),
 					'inactive': selectedServerVersions.length > 0 && !selectedServerVersions.includes(string)
-				}">
+				}" bng-sound-class="bng_checkbox_generic">
 					<div>
 						<div ng-bind="string" style="display:inline;"></div>
 					</div>
@@ -300,7 +299,7 @@
 				ng-class="{
 					'active': selectedServerLocations.length > 0 && selectedServerLocations.includes(string),
 					'inactive': selectedServerLocations.length > 0 && !selectedServerLocations.includes(string)
-				}">
+				}" bng-sound-class="bng_checkbox_generic">
 					<div>
 						<div style="display: inline-block; height: 1em; min-width: 2em;">
 							<img ng-src="local://local/ui/modModules/multiplayer/flags/{{ string.toLowerCase() }}.png" class="flag" style="height:1em" />
@@ -322,7 +321,7 @@
 				ng-class="{
 					'active': selectedMaps.length > 0 && selectedMaps.includes(string),
 					'inactive': selectedMaps.length > 0 && !selectedMaps.includes(string)
-				}"
+				}" bng-sound-class="bng_checkbox_generic"
 				ng-init="$last ? setSavedScrollPos() : null">
 					<div>
 						<img ng-if="officialMaps.includes(string)" ng-src="{{getVueIconPath('beamNG')}}" class="button-icon tag-icon bnglogo" />
