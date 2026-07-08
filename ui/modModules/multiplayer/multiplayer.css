@@ -1,5 +1,6 @@
 :root {
-	--bmp-patreon: #fe8cff;
+	--bmp-patreon-backcolor-rgb: 69, 0, 150;
+	--bmp-patreon-forecolor-rgb: 193, 139, 255;
 	--bmp-orange: 243, 109, 36;
 	--bmp-popup-background-color: rgba(33, 33, 33, 0.8);
 }
@@ -348,32 +349,41 @@
 	align-items: center;
 	gap: 0.25em;
 }
-.serverbrowser-account-section {
-	padding: 0 0.5em;
-	height: 100%;
+#serverlist-account-section {
+	width: 100%;
+	height: fit-content;
+	box-sizing: border-box;
+	position: relative;
 
-	border-radius: var(--bng-corners-2);
+	background-color: var(--bng-black-o2);
+
+  	padding: 0.5em 1em;
+	margin: 0;
+	border-radius: var(--bng-corners-1);
+
+	font-weight: 500;
 
 	&:hover {
 		background-color: rgba(var(--bng-orange-600-rgb), 0.6);
 	};
-}
-.serverbrowser-account-section .mpIconDropdown:focus {
-	background-color: rgba(var(--bng-orange-600-rgb), 0.6);
+	.mpIconDropdown:focus {
+		background-color: rgba(var(--bng-orange-600-rgb), 0.6);
+	};
 }
 #serverlist-profile-avatar {
 	border-radius: 50%;
 	display: block;
 	position: unset;
-	width: 2em;
-	height: 2em;
+	width: 1.5em;
+	height: 1.5em;
 
-	background-color: var(--bng-cool-gray-400); /* Controlled by the filter on the SVG image. This makes a decent grayscale background for the avatar */
+	background-color: var(--bng-cool-gray-400); /* Controlled by the filter on the avatar. This makes a decent grayscale background for the fallback avatar */
 }
 #serverlist-profile-name {
+	text-align: left;
+}
+#serverlist-profile-role-title {
 	padding: 0 0.25em;
-
-	text-align: center;
 	background-color: rgba(0, 0, 0, 0); /* this gets adjusted by JS based on account role from auth */
 	border-radius: var(--bng-corners-1);
 }
@@ -588,7 +598,13 @@ table#serversTable {
 	};
 }
 .patreon-button-highlight-two {
-	border-color: #fe8cff; /* might want to make a variable for this */
+	border-color: rgba(var(--bmp-patreon-forecolor-rgb), 0.5);
+	background-color: rgba(var(--bmp-patreon-backcolor-rgb), 0.25);
+
+	&:hover, &:focus-within {
+		border-color: rgba(var(--bmp-patreon-forecolor-rgb), 0.75);
+		background-color: rgba(var(--bmp-patreon-backcolor-rgb), 0.5);
+	};
 }
 
 

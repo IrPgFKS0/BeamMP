@@ -1091,6 +1091,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 
 	$scope.$on('authReceived', function (event, data) {
 		let nameElement = document.getElementById("serverlist-profile-name")
+		let roleTitleElement = document.getElementById("serverlist-profile-role-title")
 		let avatarElement = document.getElementById("serverlist-profile-avatar")
 
 		let isLoggedIn = false
@@ -1107,13 +1108,16 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 
 			var accountSection = document.getElementById("serverlist-account-section")
 			var serverListCategories = document.getElementById("serverlist-categories")
+			var accountDivider = document.getElementById("serverbrowser-account-divider")
 
 			if (data.role != null) {
 				if (accountSection) accountSection.style.display = ""
 				if (serverListCategories) serverListCategories.style.display = ""
+				if (accountDivider) accountDivider.style.display = ""
 			} else {
 				if (accountSection) accountSection.style.display = "none"
 				if (serverListCategories) serverListCategories.style.display = "none"
+				if (accountDivider) accountDivider.style.display = "none"
 			}
 
 
@@ -1133,12 +1137,13 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 			}
 
 			if (nameElement) {
+				nameElement.innerText = data.username
 				if (data.color != null)
-					nameElement.style.backgroundColor = data.color
+					roleTitleElement.style.backgroundColor = data.color
 				else
-					nameElement.style.backgroundColor = "rgba(0, 0, 0, 0)"
+					roleTitleElement.style.backgroundColor = "rgba(0, 0, 0, 0)"
 
-				nameElement.textContent = data.username
+				if (data.roleName) roleTitleElement.innerText = data.roleName.trim()
 			}
 			// Also check if avatar includes "Could not establish connection" in base64
 			if (

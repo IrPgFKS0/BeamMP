@@ -92,26 +92,6 @@
 			<span ng-bind="'Servers: ' + beammpMetrics.servers"></span>
 		</div>
 	</div>
-	<div id="serverlist-account-section" class="backBar serverbrowser-info-bar-flex" style="display:none">
-		<div class="serverbrowser-account-section serverbrowser-info-bar-flex">
-			<md-input-container bng-nav-item bng-all-clicks class="mpIconDropdown serverbrowser-info-bar-flex" style="padding:0;margin:0">
-				<img id="serverlist-profile-avatar"/>
-				<span id="serverlist-profile-name"></span>
-				<img ng-src="{{getVueIconPath('adjust')}}" style="height: 1em; position: unset;"/>
-
-				<md-select bng-nav-item bng-all-clicks ng-model="dummy" bng-sound-class="bng_click_hover_generic" style="
-					width: 100%;
-					position: absolute;
-					background: none;
-				">
-					<md-option id="serverbrowser-account-openprofile" bng-sound-class="bng_click_generic_small" ng-click="openProfile()" ng-if="account.id">{{:: 'ui.apps.multiplayer.playerlist.openProfile' | translate}}</md-option>
-					<md-option id="serverbrowser-account-copyname" bng-sound-class="bng_click_generic_small" ng-click="copyName()" ng-if="account.username">{{:: 'ui.apps.multiplayer.playerlist.copyname' | translate}}</md-option>
-					<md-option id="serverbrowser-account-copyid" bng-sound-class="bng_click_generic_small" ng-click="copyId()" ng-if="account.id">{{:: 'ui.multiplayer.account.copyid' | translate}}</md-option>
-					<md-option bng-sound-class="bng_click_generic_small" ng-click="logout()">{{:: 'ui.multiplayer.logout' | translate}}</md-option>
-				</md-select>
-			</md-input-container>
-		</div>
-	</div>
 </div>
 
 <div flex style="
@@ -207,10 +187,38 @@
 				{{:: 'ui.multiplayer.docs' | translate}}
 				</button>
 
-				<button class="sidebar-buttons bng-button-link" onclick="openExternalLink(`https://github.com/BeamMP/`)" style="margin-bottom:0" bng-sound-class="bng_click_hover_generic">
+				<button class="sidebar-buttons bng-button-link" onclick="openExternalLink(`https://github.com/BeamMP/`)" bng-sound-class="bng_click_hover_generic" style="margin-bottom: 0;">
 				<img src="local://local/ui/modModules/multiplayer/icons/github-mark.svg" class="button-icon"></img>
 				{{:: 'ui.multiplayer.github' | translate}}
 				</button>
+
+				<md-divider id="serverbrowser-account-divider"></md-divider>
+				<md-input-container bng-nav-item bng-all-clicks id="serverlist-account-section" class="mpIconDropdown serverbrowser-info-bar-flex" style="
+					display:none;
+
+					padding: 0.5em 1em 0.5em 1.125em;
+					margin: 0;
+					gap: 0.375em;
+				">
+					<img id="serverlist-profile-avatar"/>
+					<div style="display: inline-flex; gap: 0.25em; flex-direction: column;">
+						<span id="serverlist-profile-name"></span>
+						<span id="serverlist-profile-role-title"></span>
+					</div>
+
+					<md-select bng-nav-item bng-all-clicks ng-model="dummy" bng-sound-class="bng_click_hover_generic" style="
+						width: 100%;
+						height: 100%;
+						position: absolute;
+						left: 0;
+						background: none;
+					">
+						<md-option id="serverbrowser-account-openprofile" bng-sound-class="bng_click_generic_small" ng-click="openProfile()" ng-if="account.id">{{:: 'ui.apps.multiplayer.playerlist.openProfile' | translate}}</md-option>
+						<md-option id="serverbrowser-account-copyname" bng-sound-class="bng_click_generic_small" ng-click="copyName()" ng-if="account.username">{{:: 'ui.apps.multiplayer.playerlist.copyname' | translate}}</md-option>
+						<md-option id="serverbrowser-account-copyid" bng-sound-class="bng_click_generic_small" ng-click="copyId()" ng-if="account.id">{{:: 'ui.multiplayer.account.copyid' | translate}}</md-option>
+						<md-option bng-sound-class="bng_click_generic_small" ng-click="logout()">{{:: 'ui.multiplayer.logout' | translate}}</md-option>
+					</md-select>
+				</md-input-container>
 			</div>
 
 			<div flex style="margin-right: 0.5em;border-radius: var(--bng-corners-1);overflow: overlay;">

@@ -31,8 +31,7 @@
 
 		md-select-value {
 			position: absolute;
-			left: 0.625em;
-			top: 2.875em;
+			left: 0em;
 			display: block !important;
 			min-width: 1em !important;
 			min-height: 1em !important;

@@ -92,6 +92,7 @@
     "ui.options.multiplayer.refreshIngame": "Allow the serverlist to refresh ingame",
     "ui.options.multiplayer.refreshIngame.tooltip": "Whether to allow the server list to refresh whilst in a session. Enabling this can cause lag spikes.",
     "ui.multiplayer.multiplayer": "Multiplayer",
+	"ui.multiplayer.account.copyid": "Copy account ID",
     "ui.multiplayer.connecting": "Connecting",
     "ui.multiplayer.connectingToServer": "Connecting to server...",
     "ui.multiplayer.loading": "Loading...",
