@@ -1095,10 +1095,8 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 		let avatarElement = document.getElementById("serverlist-profile-avatar")
 
 		let isLoggedIn = false
-		if (!data.Auth) { //  If Auth is present, then that means we haven't logged in in this session yet
-			if (data.username) { // We'll only have a username if we've logged in
-				isLoggedIn = true
-			}
+		if (data.username) { // We'll only have a username if we've logged in
+			isLoggedIn = true
 		}
 
 		if (isLoggedIn) {
