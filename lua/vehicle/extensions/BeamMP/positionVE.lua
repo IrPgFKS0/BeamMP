@@ -644,9 +644,10 @@ local dvSocketLib = nil -- nil = not tried, false = unavailable, table = the soc
 -- silent fallback to the GE path is invisible. dvDiag logs each DISTINCT outcome line exactly once
 -- (per VM load) to beamng.log so one test run pinpoints where the direct path engages or fails.
 local dvDiagged = {}
-local function dvDiag(msg)
-	if dvDiagged[msg] then return end
-	dvDiagged[msg] = true
+local function dvDiag(msg, key) -- key defaults to msg; pass a stable key when the msg has a varying part (e.g. byte count) so it still logs ONCE
+	key = key or msg
+	if dvDiagged[key] then return end
+	dvDiagged[key] = true
 	log('I', 'dvSocket', msg)
 end
 local function dvClose()
@@ -686,7 +687,7 @@ local function dvSend(tag, payload)
 	local ok, ret = pcall(function() return dvSock:send(tag..':'..dvSid..':'..payload) end)
 	if not ok then dvDiag(tag..' dvSock:send THREW: '..tostring(ret)); dvClose(); return false end
 	if ret == nil then dvDiag(tag..' dvSock:send soft-failed (nil return) -> GE path'); return false end
-	dvDiag('DIRECT SOCKET SEND OK ['..tag..'] (bytes='..tostring(ret)..'); further '..tag..' sends silent')
+	dvDiag('DIRECT SOCKET SEND OK ['..tag..'] (bytes='..tostring(ret)..'); further '..tag..' sends silent', 'sendok:'..tag)
 	return true
 end
 
