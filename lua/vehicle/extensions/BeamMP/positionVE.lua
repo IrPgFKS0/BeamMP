@@ -639,6 +639,7 @@ local dvEnabled = false
 local dvSid = nil
 local dvPort = nil
 local dvSock = nil
+local dvHadSock = false -- a socket existed earlier in THIS VM: a reopen = a NEW source port -> must re-register (launcher pins one port per sid)
 local dvSocketLib = nil -- nil = not tried, false = unavailable, table = the socket lib
 -- #245 diagnostic (EXPERIMENTAL): dvSend/setDirectVehicle are otherwise silent (all pcall), so a
 -- silent fallback to the GE path is invisible. dvDiag logs each DISTINCT outcome line exactly once
@@ -683,6 +684,16 @@ local function dvSend(tag, payload)
 		local okp, errp = pcall(function() s:setpeername('127.0.0.1', dvPort) end)
 		dvDiag('socket opened; setpeername ok='..tostring(okp)..(okp and '' or (' err='..tostring(errp)))..' -> 127.0.0.1:'..tostring(dvPort))
 		dvSock = s
+		if dvHadSock then
+			-- REOPENED socket (a send threw and dvClose'd the old one) = a NEW source port on the SAME
+			-- VM. The launcher pins one port per sid and silently drops others, so re-run the GE-side
+			-- registration: the fresh 'Va' clears the stale pin (Core.cpp) and the next packet
+			-- re-learns this socket's port. (A full VE VM reload doesn't need this -- veReady re-runs
+			-- dvSetupVehicle anyway; this covers the same-VM error-recovery path.)
+			obj:queueGameEngineLua("if positionGE and positionGE.dvSetupVehicle then positionGE.dvSetupVehicle("..obj:getID()..") end")
+			dvDiag('socket REOPENED -> requested GE re-registration')
+		end
+		dvHadSock = true
 	end
 	local ok, ret = pcall(function() return dvSock:send(tag..':'..dvSid..':'..payload) end)
 	if not ok then dvDiag(tag..' dvSock:send THREW: '..tostring(ret)); dvClose(); return false end
@@ -871,6 +882,7 @@ M.setTrackedHold     = setTrackedHold
 M.setRemote          = setRemote -- GE veReady: (re)arm remote-ghost state after a VE VM (re)load
 M.setDirectVehicle   = setDirectVehicle -- #245: GE enables/disables the direct send socket for this own vehicle
 M.dvSend             = dvSend           -- #245: other VE modules (MPInputsVE) send tagged latest-wins data over this vehicle's ONE shared socket
+M.dvIsActive         = function() return dvEnabled end -- #245: lets other VE modules gate UDP-only behaviors (e.g. the input resync) on the direct path actually being on
 
 
 return M

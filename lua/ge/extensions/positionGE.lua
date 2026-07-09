@@ -630,6 +630,7 @@ M.setPosition                 = setPosition
 M.setPositionRotationVelocity = setPositionRotationVelocity
 M.setPing                     = setPing
 M.veReady                     = veReady -- called by positionVE.onInit: re-push per-vehicle flags after a VE VM (re)load
+M.dvSetupVehicle              = dvSetupVehicle -- #245: called by positionVE when its socket REOPENS mid-VM (new source port) -> re-send 'Va' so the launcher re-learns the port
 M.setActualSimSpeed           = setActualSimSpeed
 M.getActualSimSpeed           = getActualSimSpeed
 M.onPreRender                 = onPreRender

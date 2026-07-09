@@ -116,9 +116,13 @@ local function getInputs()
 	-- #245: periodically forget the last-sent snapshot so EVERY input (incl. held ones the delta path
 	-- would otherwise never resend) is re-emitted once -> a UDP-dropped held input self-heals within
 	-- INPUT_RESYNC_S. Clearing lastInputs (incl. .g) makes the loop + gear block below re-send all.
+	-- Gated on the direct socket actually being ON: the reliable GE path never drops a delta, so with
+	-- the toggle off this stays byte-identical to the stock delta-only behavior.
 	if periodicInputSyncTimer >= INPUT_RESYNC_S then
 		periodicInputSyncTimer = 0
-		lastInputs = {}
+		if positionVE and positionVE.dvIsActive and positionVE.dvIsActive() then
+			lastInputs = {}
+		end
 	end
 	for inputName, _ in pairs(input.state) do
 		local state = electrics.values[inputName] or electrics.values[inputName.."_input"] -- the electric is the most accurate place to get the input value, the state.val is different with different filters and using the smoother states causes wrong inputs in arcade mode
