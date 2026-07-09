@@ -659,9 +659,15 @@ local function setDirectVehicle(enabled, sid, port)
 	if not dvEnabled then dvClose() end
 	dvDiag('setDirectVehicle: enabled='..tostring(dvEnabled)..' sid='..tostring(sid)..' port='..tostring(dvPort))
 end
--- Send the position payload straight to the launcher's DV socket. Returns true on success (caller
--- then skips the GE queue), false to fall back to the GE proxy.
-local function dvSend(payload)
+-- Send a TAGGED payload straight to the launcher's DV socket over this vehicle's ONE shared UDP
+-- socket. `tag` is the wire prefix the GE path would have used ('Zp' position, 'Vi' inputs); the
+-- packet ("<tag>:<sid>:<payload>") is byte-identical to the proxy path so the server + every receiver
+-- are unchanged. The launcher learns this vehicle's source port from the FIRST packet and rejects any
+-- other port, so EVERY subsystem for a vehicle MUST go through this one socket -- hence other VE
+-- modules (MPInputsVE, ...) call positionVE.dvSend rather than opening their own. Returns true on
+-- success (caller skips the GE queue), false to fall back to the GE proxy. ONLY latest-wins data
+-- belongs here (UDP is drop-tolerant only if the next packet self-corrects): position + inputs.
+local function dvSend(tag, payload)
 	if not (dvEnabled and dvSid and dvPort) then return false end
 	if not dvSock then
 		if dvSocketLib == nil then
@@ -677,10 +683,10 @@ local function dvSend(payload)
 		dvDiag('socket opened; setpeername ok='..tostring(okp)..(okp and '' or (' err='..tostring(errp)))..' -> 127.0.0.1:'..tostring(dvPort))
 		dvSock = s
 	end
-	local ok, ret = pcall(function() return dvSock:send('Zp:'..dvSid..':'..payload) end)
-	if not ok then dvDiag('dvSock:send THREW: '..tostring(ret)); dvClose(); return false end
-	if ret == nil then dvDiag('dvSock:send soft-failed (nil return) -> GE path'); return false end
-	dvDiag('DIRECT SOCKET SEND OK (bytes='..tostring(ret)..'); further sends silent')
+	local ok, ret = pcall(function() return dvSock:send(tag..':'..dvSid..':'..payload) end)
+	if not ok then dvDiag(tag..' dvSock:send THREW: '..tostring(ret)); dvClose(); return false end
+	if ret == nil then dvDiag(tag..' dvSock:send soft-failed (nil return) -> GE path'); return false end
+	dvDiag('DIRECT SOCKET SEND OK ['..tag..'] (bytes='..tostring(ret)..'); further '..tag..' sends silent')
 	return true
 end
 
@@ -717,7 +723,7 @@ function doSendPosRot(useSendTime)
 	t.tim = useSendTime and sendClock or timer
 	t.ping = ownPing + lastDT
 	local payload = jsonEncode(t)
-	if not dvSend(payload) then -- direct vehicle socket (#245); false = off/unavailable -> GE proxy path
+	if not dvSend('Zp', payload) then -- direct vehicle socket (#245); false = off/unavailable -> GE proxy path
 		obj:queueGameEngineLua("positionGE.sendVehiclePosRot(\'"..payload.."\', "..obj:getID()..")") -- Send it
 	end
 
@@ -863,6 +869,7 @@ M.setSendHz          = setSendHz
 M.setTrackedHold     = setTrackedHold
 M.setRemote          = setRemote -- GE veReady: (re)arm remote-ghost state after a VE VM (re)load
 M.setDirectVehicle   = setDirectVehicle -- #245: GE enables/disables the direct send socket for this own vehicle
+M.dvSend             = dvSend           -- #245: other VE modules (MPInputsVE) send tagged latest-wins data over this vehicle's ONE shared socket
 
 
 return M

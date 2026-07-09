@@ -18,6 +18,13 @@ local lastInputs = {
 local inputCache = {}
 
 local periodicGearSyncTimer = 0
+-- #245: inputs are delta-synced (only CHANGED inputs are sent). On the reliable GE path a dropped
+-- delta never happens; on the direct UDP socket a dropped HELD-input delta (e.g. parkingbrake set and
+-- left) would leave the ghost stuck until that input next changes. This timer forces a full re-send of
+-- ALL current inputs every INPUT_RESYNC_S so any such loss self-heals (same idea as the 5s gear
+-- resync). Cheap (~5 small numbers at 0.5Hz) and it makes the normal path a touch more robust too.
+local periodicInputSyncTimer = 0
+local INPUT_RESYNC_S = 2
 local remoteGear
 local unsupportedPowertrainDevice = false
 local unsupportedPowertrainGearbox = false
@@ -106,6 +113,13 @@ local shortName = {
 
 local function getInputs()
 	local inputsToSend = {}
+	-- #245: periodically forget the last-sent snapshot so EVERY input (incl. held ones the delta path
+	-- would otherwise never resend) is re-emitted once -> a UDP-dropped held input self-heals within
+	-- INPUT_RESYNC_S. Clearing lastInputs (incl. .g) makes the loop + gear block below re-send all.
+	if periodicInputSyncTimer >= INPUT_RESYNC_S then
+		periodicInputSyncTimer = 0
+		lastInputs = {}
+	end
 	for inputName, _ in pairs(input.state) do
 		local state = electrics.values[inputName] or electrics.values[inputName.."_input"] -- the electric is the most accurate place to get the input value, the state.val is different with different filters and using the smoother states causes wrong inputs in arcade mode
 		if state then
@@ -138,7 +152,12 @@ local function getInputs()
 	lastInputs.g = electrics.values.gear
 
 	if tableIsEmpty(inputsToSend) then return end
-	obj:queueGameEngineLua("MPInputsGE.sendInputs(\'"..jsonEncode(inputsToSend).."\', "..obj:getID()..")") -- Send it to GE lua
+	local payload = jsonEncode(inputsToSend)
+	-- #245: inputs are latest-wins -> route over this vehicle's shared direct socket (owned by
+	-- positionVE) when the toggle is on; dvSend returns false when off/unavailable -> GE proxy path.
+	if not (positionVE and positionVE.dvSend and positionVE.dvSend('Vi', payload)) then
+		obj:queueGameEngineLua("MPInputsGE.sendInputs(\'"..payload.."\', "..obj:getID()..")") -- Send it to GE lua
+	end
 end
 
 local function storeTargetValue(inputName,inputState)
@@ -200,6 +219,7 @@ local function updateGFX(dt)
 		end
 	elseif v.mpVehicleType == 'L' then
 		periodicGearSyncTimer = periodicGearSyncTimer + dt
+		periodicInputSyncTimer = periodicInputSyncTimer + dt -- #245: drives the full-input resync in getInputs
 		if disableGhostInputs then -- if we get vehicle owner change this will enable the inputs again when the vehicle is set to local
 			disableGhostInputs = false
 			for inputName, _ in pairs(input.state) do
