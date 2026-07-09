@@ -14,6 +14,8 @@ local ignitionLevel
 local lastignitionLevel
 local spawnVehicleIgnitionLevel
 local devices = powertrain.getDevices()
+
+local hasHydraulicCylinders = false -- BeamMP#880: set true by MPPowertrainHydrosVE once a hydro-equipped vehicle is detected
 -- ============= VARIABLES =============
 
 
@@ -186,10 +188,21 @@ end
 local function check()
 	getPowerTrainData()
 	getEngineData()
+	-- Tick hydraulicCylinder beams only for vehicles that actually have them (set from the hydros
+	-- module), so we don't waste a GE->VE queue on every normal car. Guarded per the fork's
+	-- cross-module VE-call convention -- if the hydros extension didn't load, this stays a no-op.
+	if hasHydraulicCylinders and MPPowertrainHydrosVE then
+		MPPowertrainHydrosVE.getHydroBeams()
+	end
+end
+
+local function setHasHydraulicCylinders() -- BeamMP#880: called by MPPowertrainHydrosVE on a hydro-equipped vehicle
+	hasHydraulicCylinders = true
 end
 
 M.check				  = check
 M.applyLivePowertrain = applyLivePowertrain
+M.setHasHydraulicCylinders = setHasHydraulicCylinders
 
 M.getEngineData = getEngineData
 M.applyEngineData = applyEngineData

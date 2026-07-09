@@ -307,6 +307,18 @@ function TriggerServerEvent(name, data)
 	M.send('E:'..name..':'..data)
 end
 
+--- Triggers an UNRELIABLE (UDP) server event -- fire-and-forget, no TCP retransmit / head-of-line
+--- blocking. On a LAN loss is ~0, so this is near-reliable but lower-latency. Use ONLY for data that
+--- tolerates an occasional drop and is self-correcting (latest-wins state, cosmetic pings); do NOT use
+--- for incremental/edge-triggered data (per-shot weapon events, damage) where a single loss doesn't
+--- self-heal. Port of upstream BeamMP#892; lowercase 'e' rides UDP in the launcher (ServerSend C!='e').
+-- @tparam string name - The name of the event
+-- @tparam string data - The data to be sent with the event
+-- @usage TriggerServerEventUnreliable(`<name>`, `<data>`)
+function TriggerServerEventUnreliable(name, data)
+	M.send('e:'..name..':'..data)
+end
+
 --- Triggers a local client event with the specified name and data.
 -- @tparam string name - The name of the event
 -- @tparam string data - The data to be sent with the event
@@ -483,7 +495,8 @@ local HandleNetwork = {
 	['J'] = function(params) MPUpdatesGE.onPlayerConnect() UI.showNotification(params,nil,"person_add") end, -- A player joined
 	['L'] = function(params) playerLeft(params) end, -- A player left
 	['S'] = function(params) sessionData(params) end, -- Update Session Data
-	['E'] = function(params) handleEvents(params) end, -- Event For another Resource
+	['E'] = function(params) handleEvents(params) end, -- Event For another Resource (reliable/TCP)
+	['e'] = function(params) handleEvents(params) end, -- Unreliable (UDP) event -- same handler, UDP transport (BeamMP#892)
 	['T'] = function(params) quitMP(params) end, -- Player Kicked Event (old, doesn't contain reason)
 	['K'] = function(params) quitMP(params) end, -- Player Kicked Event (new, contains reason)
 	['C'] = function(params) UI.chatMessage(params) end, -- Chat Message Event

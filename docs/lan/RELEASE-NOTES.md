@@ -1,6 +1,6 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.21.1-LAN p13h52` · combined host exe `p13h32` (Windows + Linux)
+**Build:** mod `4.21.1-LAN p13h55` · combined host exe `p13h33` (Windows + Linux)
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -45,6 +45,19 @@ a little tuning (see `LAN-TUNING.md`).
 
 ## This release
 
+- **Opt-in unreliable (UDP) events (p13h55, from upstream BeamMP#892/#253/#493).** Mods can
+  now send events over UDP instead of TCP: `TriggerServerEventUnreliable(name, data)` on the
+  client, `MP.TriggerClientEventUnreliable(...)` / `...JsonUnreliable(...)` on the server. On a
+  LAN, loss is ~0, so these are near-reliable but avoid TCP retransmit and head-of-line
+  blocking — lower latency for fire-and-forget/latest-wins data. (Weapon fire and damage stay
+  reliable by design — see the note below.) Works over the combined host's in-memory bridge.
+- **More vehicle sync (p13h55, cherry-picked upstream):** transbrake now syncs a released
+  (`false`) state too (BeamMP#894); citybus destination signs sync (BeamMP#884); and
+  hydraulic-cylinder arm/boom beams sync on construction equipment like the WL-40 (BeamMP#880) —
+  inert on vehicles that don't have them.
+- **Robustness (p13h55):** the server ignores an empty `mods.json` instead of erroring every
+  startup (BeamMP-Server#455); the launcher's last direct mod-copy site now uses the same atomic
+  write the fork uses elsewhere, so BeamNG never mounts a half-written zip (BeamMP-Launcher#250).
 - **Deformation-sync & socket hardening (p13h52).** The experimental full-deformation
   sync now rejects a snapshot taken from a different vehicle configuration (a config
   edit racing the 2 Hz snapshot could feed out-of-range node ids into engine calls),
@@ -151,7 +164,7 @@ Same protocol as the host's build — **everyone in a session should run the mat
 
 A fork of [BeamMP](https://beammp.com) — all credit to the upstream BeamMP team; this fork only
 changes the items above. Under **AGPL-3.0**, the complete corresponding source for these binaries
-is published (branch `lan`, tag `lan-release-p13h52`):
+is published (branch `lan`, tag `lan-release-p13h55`):
 
 - **Mod + client Lua** — https://github.com/IrPgFKS0/BeamMP
 - **Launcher / combined host** — https://github.com/IrPgFKS0/BeamMP-Launcher

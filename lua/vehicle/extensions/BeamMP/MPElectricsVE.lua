@@ -445,7 +445,7 @@ local function applyElectrics(data)
 		end
 
 		-- Transbrake syncing
-		if decodedData.transbrake and electrics.values.transbrake ~= decodedData.transbrake then
+		if decodedData.transbrake ~= nil and electrics.values.transbrake ~= decodedData.transbrake then -- ~= nil so a synced `false` also applies (BeamMP#894)
 			local tb = controller.getControllerSafe("transbrake")
 			if tb then tb.setTransbrake(decodedData.transbrake) end
 		end
