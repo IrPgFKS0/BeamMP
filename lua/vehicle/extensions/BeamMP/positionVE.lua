@@ -626,6 +626,50 @@ local posSendTbl = { pos = {0,0,0}, vel = {0,0,0}, rot = {0,0,0,0}, rvel = {0,0,
 -- Shared send body. `useSendTime` selects the physics-rate clock (self-send) vs the
 -- render-frame timer (legacy GE-driven send) for the packet timestamp -- the receiver
 -- rejects tim <= last, so rapid self-sends need the finer, always-advancing clock.
+-- ============= Direct vehicle socket (#245, EXPERIMENTAL, default-off) =============
+-- When positionGE pushes setDirectVehicle(true, sid, port) on an OWN vehicle, this VE sends its
+-- position packet straight to the launcher's direct UDP socket (127.0.0.1: launcherPort+2), bypassing
+-- the VE->GE Lua queue + the GE proxy (the measured send-side funnel). The launcher forwards it to the
+-- server exactly like the proxy path -- the wire format ("Zp:<sid>:<json>") is identical, so the
+-- server and every receiver are unchanged. Position-only first cut (the template for the other 5
+-- subsystems). LIMITATION: the GE-side simspeed scaling (positionGE.sendVehiclePosRot) is skipped on
+-- this path, so slow-motion velocity sync is unscaled in direct mode (identical at normal speed).
+-- Falls back to the GE path if require('socket') is unavailable or direct is off -> zero risk when off.
+local dvEnabled = false
+local dvSid = nil
+local dvPort = nil
+local dvSock = nil
+local dvSocketLib = nil -- nil = not tried, false = unavailable, table = the socket lib
+local function dvClose()
+	if dvSock then pcall(function() dvSock:close() end); dvSock = nil end
+end
+local function setDirectVehicle(enabled, sid, port)
+	dvEnabled = (enabled == true) and (sid ~= nil)
+	dvSid = sid
+	dvPort = tonumber(port)
+	if not dvEnabled then dvClose() end
+end
+-- Send the position payload straight to the launcher's DV socket. Returns true on success (caller
+-- then skips the GE queue), false to fall back to the GE proxy.
+local function dvSend(payload)
+	if not (dvEnabled and dvSid and dvPort) then return false end
+	if not dvSock then
+		if dvSocketLib == nil then
+			local ok, lib = pcall(require, 'socket')
+			dvSocketLib = (ok and lib) or false
+		end
+		if not dvSocketLib then dvEnabled = false; return false end -- VE can't open sockets: stay on the GE path
+		local ok, s = pcall(function() return dvSocketLib.udp() end)
+		if not ok or not s then return false end
+		s:settimeout(0)
+		pcall(function() s:setpeername('127.0.0.1', dvPort) end)
+		dvSock = s
+	end
+	local ok = pcall(function() dvSock:send('Zp:'..dvSid..':'..payload) end)
+	if not ok then dvClose() end
+	return ok
+end
+
 function doSendPosRot(useSendTime)
 	profBegin()
 	-- this attempts to send a full table of nan if there are several rapid instability causing VE lua to break after next vehicle reload, seems to be caused by a game issue
@@ -658,7 +702,10 @@ function doSendPosRot(useSendTime)
 	t.rvel[1], t.rvel[2], t.rvel[3] = rvel.x, rvel.y, rvel.z
 	t.tim = useSendTime and sendClock or timer
 	t.ping = ownPing + lastDT
-	obj:queueGameEngineLua("positionGE.sendVehiclePosRot(\'"..jsonEncode(t).."\', "..obj:getID()..")") -- Send it
+	local payload = jsonEncode(t)
+	if not dvSend(payload) then -- direct vehicle socket (#245); false = off/unavailable -> GE proxy path
+		obj:queueGameEngineLua("positionGE.sendVehiclePosRot(\'"..payload.."\', "..obj:getID()..")") -- Send it
+	end
 
 	profEnd('getVehicleRotation') -- counts only actual sends (NaN-skipped frames return above)
 end
@@ -801,6 +848,7 @@ M.setApplyStallDiag  = setApplyStallDiag
 M.setSendHz          = setSendHz
 M.setTrackedHold     = setTrackedHold
 M.setRemote          = setRemote -- GE veReady: (re)arm remote-ghost state after a VE VM (re)load
+M.setDirectVehicle   = setDirectVehicle -- #245: GE enables/disables the direct send socket for this own vehicle
 
 
 return M

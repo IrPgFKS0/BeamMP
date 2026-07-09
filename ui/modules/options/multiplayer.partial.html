@@ -155,6 +155,12 @@
 </md-list-item>
 
 <md-list-item md-no-ink ng-show="options.data.values.showAdvancedMPOptions">
+  <p><span class="mp-setting-debug">DEBUG</span> Direct vehicle socket <span class="mp-setting-default">(experimental, default: off)</span></p>
+  <md-tooltip md-direction="right">EXPERIMENTAL (#245): your own vehicles send their position straight to the launcher over a dedicated UDP socket, bypassing the per-vehicle Lua queue through the game-engine VM (the send-side bottleneck at high vehicle counts). Position only for now. Needs a matching combined-host/launcher build; falls back to the normal path if unavailable. A/B it against the position profiler ("GE sendVehiclePosRot" should drop toward zero). Off by default.</md-tooltip>
+  <md-checkbox ng-model="options.data.values.directVehicleSocket" ng-change="options.applyState()"></md-checkbox>
+</md-list-item>
+
+<md-list-item md-no-ink ng-show="options.data.values.showAdvancedMPOptions">
   <p><span class="mp-setting-debug">DEBUG</span> Log sync health to file <span class="mp-setting-default">(default: off)</span></p>
   <md-tooltip md-direction="right">Writes one sync-health line (synced vehicles, ghost drift + self-heals, in/out packet &amp; KB rates, applied/s, FPS) to beamng.log every ~15s, even with the on-screen overlay hidden &#8212; so a /savelogs after an intermittent drift episode captures what happened over time. Same toggle as the /synclog chat command. Off by default.</md-tooltip>
   <md-checkbox ng-model="options.data.values.logSyncStats" ng-change="options.applyState()"></md-checkbox>

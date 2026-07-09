@@ -43,6 +43,8 @@ local profOn = false  -- cached settings.getValue("profilePosSync") -- log timin
 local physRateSend = false  -- cached settings.getValue("physicsRateSend")
 local mailboxOn = false  -- cached settings.getValue("mailboxApplyPos") -- GE->VE apply via engine mailbox (the apply transport; falls back to base64 queueLuaCommand when off)
 local applyStallDiagOn = false  -- cached settings.getValue("applyStallDiag") -- VE-side apply-stall diagnostic (off by default); pushed to each vehicle's positionVE
+local directVehSock = false  -- cached settings.getValue("directVehicleSocket") -- #245 EXPERIMENTAL: own vehicles send position straight to the launcher's DV socket (bypassing VE->GE)
+local dvPort = 4446          -- launcher's direct-vehicle UDP port = launcherPort + 2
 
 -- (The "Remote sync mode" / tracked-vehicle HOLD machinery was removed for the public release:
 -- testing showed the stiffening fought the stock predictor, so all vehicles ride it unmodified.)
@@ -79,6 +81,24 @@ end
 
 -- Re-read the experiment toggles and push the profiling flag down into every
 -- spawned vehicle's VE state. Called on init and whenever settings change.
+-- #245 direct vehicle socket: register/unregister ONE own vehicle with the launcher (over the core
+-- channel, where Core.cpp Parse handles 'Va'/'Vd') and enable/disable its VE-side direct send. Own
+-- vehicles with a serverVehicleID + the toggle on send position straight to the DV socket; anything
+-- else is torn down back to the GE path. Safe to call repeatedly (idempotent registration).
+local function dvSetupVehicle(gameVehicleID)
+	local veh = be:getObjectByID(gameVehicleID)
+	if not veh then return end
+	local sid = MPVehicleGE and MPVehicleGE.getServerVehicleID and MPVehicleGE.getServerVehicleID(gameVehicleID)
+	local isOwn = sid and MPVehicleGE.isOwn and MPVehicleGE.isOwn(gameVehicleID)
+	if directVehSock and isOwn then
+		if MPCoreNetwork and MPCoreNetwork.send then MPCoreNetwork.send('Va:'..sid) end -- register with the launcher
+		veh:queueLuaCommand("if positionVE and positionVE.setDirectVehicle then positionVE.setDirectVehicle(true, '"..sid.."', "..dvPort..") end")
+	else
+		if sid and MPCoreNetwork and MPCoreNetwork.send then MPCoreNetwork.send('Vd:'..sid) end -- unregister
+		veh:queueLuaCommand("if positionVE and positionVE.setDirectVehicle then positionVE.setDirectVehicle(false) end")
+	end
+end
+
 local function refreshFlags()
 	local newProf = (settings and settings.getValue("profilePosSync")) and true or false
 	if newProf and not profOn then -- starting a fresh profiling window
@@ -89,6 +109,8 @@ local function refreshFlags()
 	physRateSend = (settings and settings.getValue("physicsRateSend")) and true or false
 	mailboxOn = (settings and settings.getValue("mailboxApplyPos")) and true or false
 	applyStallDiagOn = (settings and settings.getValue("applyStallDiag")) and true or false
+	directVehSock = (settings and settings.getValue("directVehicleSocket")) and true or false -- #245
+	dvPort = (tonumber(settings and settings.getValue("launcherPort")) or 4444) + 2
 	local sendHz = tonumber(settings and settings.getValue("physRateSendHz")) or 30
 	-- The 100Hz UI option was removed (it oversubscribes the relay with 2+ players -> growing
 	-- latency). Clamp + migrate any saved value above the new 60Hz ceiling down to the 30Hz default,
@@ -104,6 +126,7 @@ local function refreshFlags()
 			veh:queueLuaCommand("if positionVE and positionVE.setMailboxApply then positionVE.setMailboxApply("..tostring(mailboxOn)..") end")
 			veh:queueLuaCommand("if positionVE and positionVE.setApplyStallDiag then positionVE.setApplyStallDiag("..tostring(applyStallDiagOn)..") end")
 			veh:queueLuaCommand("if positionVE and positionVE.setSendHz then positionVE.setSendHz("..sendHz..") end")
+			dvSetupVehicle(veh:getID()) -- #245: register/tear down the direct socket for this vehicle
 		end
 	end
 end
@@ -133,6 +156,7 @@ local function veReady(gameVehicleID)
 		veh:queueLuaCommand("if MPVehicleVE then MPVehicleVE.setVehicleType('R') end")
 		veh:queueLuaCommand("if positionVE and positionVE.setRemote then positionVE.setRemote() end")
 	end
+	dvSetupVehicle(gameVehicleID) -- #245: (re)register the direct socket after a VM (re)load / on spawn
 end
 
 
