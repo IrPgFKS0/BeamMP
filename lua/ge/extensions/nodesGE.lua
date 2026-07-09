@@ -110,6 +110,37 @@ local function applyBreakGroups(data, serverVehicleID)
 end
 
 
+-- ==== #245 chunked full-deformation reassembly ('Xd', sent by nodesVE.getNodes/updateGFX) ====
+-- One in-progress snapshot per sending vehicle; a chunk from a NEWER generation (or a different
+-- chunk count) replaces an incomplete older one -- latest-wins at snapshot granularity, so a lost
+-- UDP chunk simply discards that snapshot and the next 2Hz one self-corrects. A snapshot is only
+-- ever delivered COMPLETE (never torn). Memory is bounded (DF_MAX_CHUNKS chunks per sender, freed
+-- on completion/replacement; a sender that vanishes mid-snapshot leaves at most one partial until
+-- the session ends -- acceptable for this experimental feature).
+local dfAsm = {}
+local DF_MAX_CHUNKS = 256 -- must match nodesVE.DF_MAX_CHUNKS
+local dfDiagged = false
+local function handleDeformChunk(data, serverVehicleID)
+	local gen, i, n, part = string.match(data, "^(%d+),(%d+),(%d+)%:(.*)")
+	gen, i, n = tonumber(gen), tonumber(i), tonumber(n)
+	if not (gen and i and n and part) or n < 1 or n > DF_MAX_CHUNKS or i < 1 or i > n then return end
+	local a = dfAsm[serverVehicleID]
+	if not a or a.gen ~= gen or a.total ~= n then
+		a = { gen = gen, total = n, got = 0, parts = {} }
+		dfAsm[serverVehicleID] = a
+	end
+	if a.parts[i] then return end -- duplicate chunk
+	a.parts[i] = part
+	a.got = a.got + 1
+	if a.got == a.total then
+		dfAsm[serverVehicleID] = nil
+		local full = table.concat(a.parts)
+		if not dfDiagged then dfDiagged = true; log('I', 'nodesGE', 'chunked deformation assembled: '..serverVehicleID..' gen='..gen..' ('..n..' chunks, '..#full..' bytes); further assemblies silent') end
+		applyNodes(full, serverVehicleID) -- same delivery + VE-side shape/count guards as the legacy path
+	end
+end
+
+
 --- Handles raw node and break group packets received from other players vehicles. Disassembles and sends it to either applyNodes() or applyBreakGroups()
 -- @param rawData string The raw message data.
 local function handle(rawData)
@@ -123,6 +154,8 @@ local function handle(rawData)
 
 	if code == "n" then
 		applyNodes(data, serverVehicleID)
+	elseif code == "d" then
+		handleDeformChunk(data, serverVehicleID) -- #245: chunked full-deformation snapshot piece
 	elseif code == "g" then
 		applyBreakGroups(data, serverVehicleID)
 	elseif code == "c" then
