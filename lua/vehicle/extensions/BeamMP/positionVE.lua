@@ -640,6 +640,15 @@ local dvSid = nil
 local dvPort = nil
 local dvSock = nil
 local dvSocketLib = nil -- nil = not tried, false = unavailable, table = the socket lib
+-- #245 diagnostic (EXPERIMENTAL): dvSend/setDirectVehicle are otherwise silent (all pcall), so a
+-- silent fallback to the GE path is invisible. dvDiag logs each DISTINCT outcome line exactly once
+-- (per VM load) to beamng.log so one test run pinpoints where the direct path engages or fails.
+local dvDiagged = {}
+local function dvDiag(msg)
+	if dvDiagged[msg] then return end
+	dvDiagged[msg] = true
+	log('I', 'dvSocket', msg)
+end
 local function dvClose()
 	if dvSock then pcall(function() dvSock:close() end); dvSock = nil end
 end
@@ -648,6 +657,7 @@ local function setDirectVehicle(enabled, sid, port)
 	dvSid = sid
 	dvPort = tonumber(port)
 	if not dvEnabled then dvClose() end
+	dvDiag('setDirectVehicle: enabled='..tostring(dvEnabled)..' sid='..tostring(sid)..' port='..tostring(dvPort))
 end
 -- Send the position payload straight to the launcher's DV socket. Returns true on success (caller
 -- then skips the GE queue), false to fall back to the GE proxy.
@@ -657,17 +667,21 @@ local function dvSend(payload)
 		if dvSocketLib == nil then
 			local ok, lib = pcall(require, 'socket')
 			dvSocketLib = (ok and lib) or false
+			dvDiag('require(socket): ok='..tostring(ok)..' type='..type(lib)..(ok and '' or (' err='..tostring(lib))))
 		end
-		if not dvSocketLib then dvEnabled = false; return false end -- VE can't open sockets: stay on the GE path
+		if not dvSocketLib then dvEnabled = false; dvDiag('socket lib UNAVAILABLE in VE VM -> staying on GE path'); return false end -- VE can't open sockets: stay on the GE path
 		local ok, s = pcall(function() return dvSocketLib.udp() end)
-		if not ok or not s then return false end
+		if not ok or not s then dvDiag('socket.udp() FAILED: '..tostring(s)); return false end
 		s:settimeout(0)
-		pcall(function() s:setpeername('127.0.0.1', dvPort) end)
+		local okp, errp = pcall(function() s:setpeername('127.0.0.1', dvPort) end)
+		dvDiag('socket opened; setpeername ok='..tostring(okp)..(okp and '' or (' err='..tostring(errp)))..' -> 127.0.0.1:'..tostring(dvPort))
 		dvSock = s
 	end
-	local ok = pcall(function() dvSock:send('Zp:'..dvSid..':'..payload) end)
-	if not ok then dvClose() end
-	return ok
+	local ok, ret = pcall(function() return dvSock:send('Zp:'..dvSid..':'..payload) end)
+	if not ok then dvDiag('dvSock:send THREW: '..tostring(ret)); dvClose(); return false end
+	if ret == nil then dvDiag('dvSock:send soft-failed (nil return) -> GE path'); return false end
+	dvDiag('DIRECT SOCKET SEND OK (bytes='..tostring(ret)..'); further sends silent')
+	return true
 end
 
 function doSendPosRot(useSendTime)
