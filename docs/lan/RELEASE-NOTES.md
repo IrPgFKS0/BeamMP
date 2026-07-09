@@ -1,6 +1,6 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.21.1-LAN p13h55` · combined host exe `p13h33` (Windows + Linux)
+**Build:** mod `4.21.1-LAN p13h56` · combined host exe `p13h33` (Windows + Linux)
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -44,6 +44,11 @@ a little tuning (see `LAN-TUNING.md`).
   cores so the relay/bridge keep up), and in-game **Save all logs (zip)** for support.
 
 ## This release
+
+- **Profiling + a sync-log checkbox (p13h56).** The position profiler now also times the
+  GE-side send handler (`GE sendVehiclePosRot`) so a 2-player session shows the VE→GE
+  send cost as vehicle count climbs. And `/synclog` is now also a checkbox under
+  Options → Multiplayer → advanced → DEBUG (“Log sync health to file”) — same toggle.
 
 - **Opt-in unreliable (UDP) events (p13h55, from upstream BeamMP#892/#253/#493).** Mods can
   now send events over UDP instead of TCP: `TriggerServerEventUnreliable(name, data)` on the
@@ -164,7 +169,7 @@ Same protocol as the host's build — **everyone in a session should run the mat
 
 A fork of [BeamMP](https://beammp.com) — all credit to the upstream BeamMP team; this fork only
 changes the items above. Under **AGPL-3.0**, the complete corresponding source for these binaries
-is published (branch `lan`, tag `lan-release-p13h55`):
+is published (branch `lan`, tag `lan-release-p13h56`):
 
 - **Mod + client Lua** — https://github.com/IrPgFKS0/BeamMP
 - **Launcher / combined host** — https://github.com/IrPgFKS0/BeamMP-Launcher

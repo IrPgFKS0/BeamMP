@@ -180,8 +180,15 @@ local function sendVehiclePosRot(data, gameVehicleID)
 	if MPGameNetwork.launcherConnected() then
 		local serverVehicleID = MPVehicleGE.getServerVehicleID(gameVehicleID) -- Get serverVehicleID
 		if serverVehicleID and MPVehicleGE.isOwn(gameVehicleID) then -- If serverVehicleID not null and player own vehicle
+			-- Profile the GE-side send handler (the VE->GE funnel's GE half): this is the per-packet,
+			-- per-vehicle work the single main-thread GE VM does for every owned vehicle -- jsonDecode
+			-- the VE payload, scale vel/rvel by simspeed, jsonEncode again, and hand to the launcher.
+			-- (The queueGameEngineLua string COMPILE that precedes this call is engine-internal and not
+			-- visible to Lua profiling; this captures the handler-body cost, incl. the decode+re-encode
+			-- round-trip.) Shows up in beamng.log as 'GE sendVehiclePosRot' under profilePosSync.
+			profBegin()
 			local decoded = jsonDecode(data)
-			if not decoded then return end
+			if not decoded then profEnd('sendVehiclePosRot') return end
 			local simspeedReal = simTimeAuthority.getReal()
 
 			decoded.isTransitioning = (simTimeAuthority.get() ~= simspeedReal) or nil
@@ -192,6 +199,7 @@ local function sendVehiclePosRot(data, gameVehicleID)
 			for k,v in pairs(decoded.rvel) do decoded.rvel[k] = v*simspeedReal end
 
 			MPGameNetwork.send('Zp:'..serverVehicleID..":"..jsonEncode(decoded))
+			profEnd('sendVehiclePosRot')
 		end
 	end
 end
