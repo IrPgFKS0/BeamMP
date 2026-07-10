@@ -641,6 +641,16 @@ local dvPort = nil
 local dvSock = nil
 local dvHadSock = false -- a socket existed earlier in THIS VM: a reopen = a NEW source port -> must re-register (launcher pins one port per sid)
 local dvSocketLib = nil -- nil = not tried, false = unavailable, table = the socket lib
+-- Launcher-ack confirmation (the void-send guard): UDP send() succeeds even when NOTHING listens on
+-- the port -- an OLD launcher without the direct socket made a car's entire output vanish silently
+-- (LAN2 2026-07-09, frozen for every other player). The NEW launcher acks each registration (and
+-- ~1/s as keepalive) straight back to this socket; until ANY datagram arrives here, dvSend keeps
+-- returning false so callers ALSO send via the GE path (brief duplicates are harmless: position
+-- rejects tim<=last, inputs are idempotent). No ack within DV_CONFIRM_TIMEOUT of the first send ->
+-- give up and stay on the GE path until the toggle/vehicle re-arms.
+local dvConfirmed = false
+local dvDeadline = nil -- os.clock() deadline for the ack, armed on the first unconfirmed send
+local DV_CONFIRM_TIMEOUT = 3 -- s
 -- #245 diagnostic (EXPERIMENTAL): dvSend/setDirectVehicle are otherwise silent (all pcall), so a
 -- silent fallback to the GE path is invisible. dvDiag logs each DISTINCT outcome line exactly once
 -- (per VM load) to beamng.log so one test run pinpoints where the direct path engages or fails.
@@ -655,9 +665,17 @@ local function dvClose()
 	if dvSock then pcall(function() dvSock:close() end); dvSock = nil end
 end
 local function setDirectVehicle(enabled, sid, port)
-	dvEnabled = (enabled == true) and (sid ~= nil)
+	local newEnabled = (enabled == true) and (sid ~= nil)
+	local newPort = tonumber(port)
+	-- Idempotent re-push (refreshFlags fires on every settings change): keep the confirm state so a
+	-- confirmed socket isn't pointlessly re-probed. Any actual change re-arms the ack cycle.
+	if not (newEnabled == dvEnabled and sid == dvSid and newPort == dvPort) then
+		dvConfirmed = false
+		dvDeadline = nil
+	end
+	dvEnabled = newEnabled
 	dvSid = sid
-	dvPort = tonumber(port)
+	dvPort = newPort
 	if not dvEnabled then dvClose() end
 	dvDiag('setDirectVehicle: enabled='..tostring(dvEnabled)..' sid='..tostring(sid)..' port='..tostring(dvPort))
 end
@@ -692,12 +710,31 @@ local function dvSend(tag, payload)
 			-- dvSetupVehicle anyway; this covers the same-VM error-recovery path.)
 			obj:queueGameEngineLua("if positionGE and positionGE.dvSetupVehicle then positionGE.dvSetupVehicle("..obj:getID()..") end")
 			dvDiag('socket REOPENED -> requested GE re-registration')
+			dvConfirmed = false -- new source port: the launcher must ack it again (re-registration triggers one)
+			dvDeadline = nil
 		end
 		dvHadSock = true
 	end
 	local ok, ret = pcall(function() return dvSock:send(tag..':'..dvSid..':'..payload) end)
 	if not ok then dvDiag(tag..' dvSock:send THREW: '..tostring(ret)); dvClose(); return false end
 	if ret == nil then dvDiag(tag..' dvSock:send soft-failed (nil return) -> GE path'); return false end
+	if not dvConfirmed then
+		-- Probe phase: the packet went out, but until the launcher acks this socket we must assume
+		-- nobody is listening. Any datagram back (registration ack / keepalive) = confirmed.
+		local okr, ack = pcall(function() return dvSock:receive() end)
+		if okr and ack then
+			dvConfirmed = true
+			dvDiag('direct socket CONFIRMED by launcher ack -> GE fallback stops')
+		else
+			if dvDeadline == nil then dvDeadline = os.clock() + DV_CONFIRM_TIMEOUT end
+			if os.clock() > dvDeadline then
+				dvEnabled = false
+				dvClose()
+				dvDiag('NO launcher ack within '..DV_CONFIRM_TIMEOUT..'s -> reverting to GE path (launcher lacks the direct socket or port '..tostring(dvPort)..' is blocked)')
+			end
+			return false -- caller keeps using the GE path; this send was only a probe
+		end
+	end
 	dvDiag('DIRECT SOCKET SEND OK ['..tag..'] (bytes='..tostring(ret)..'); further '..tag..' sends silent', 'sendok:'..tag)
 	return true
 end
@@ -882,7 +919,7 @@ M.setTrackedHold     = setTrackedHold
 M.setRemote          = setRemote -- GE veReady: (re)arm remote-ghost state after a VE VM (re)load
 M.setDirectVehicle   = setDirectVehicle -- #245: GE enables/disables the direct send socket for this own vehicle
 M.dvSend             = dvSend           -- #245: other VE modules (MPInputsVE) send tagged latest-wins data over this vehicle's ONE shared socket
-M.dvIsActive         = function() return dvEnabled end -- #245: lets other VE modules gate UDP-only behaviors (e.g. the input resync) on the direct path actually being on
+M.dvIsActive         = function() return dvEnabled and dvConfirmed end -- #245: other VE modules gate direct-only behaviors (chunked deformation, input resync) on the socket being CONFIRMED by a launcher ack, not merely enabled
 
 
 return M
