@@ -452,13 +452,12 @@ these identically on all players (console one-liner below the table, or the
 |---|---|---|
 | `profilePosSync` | **on** | emits the `posProf` timing/rate lines |
 | `enablePosSmoother` | **off** (default) | keeps `applyPos` equal to the raw received-packet rate; the smoother re-routes applies through `onPreRender` and changes what the rate means |
-| `syncFullDeformation` | **off** (default) | node-deformation traffic competes with position packets and skews both FPS and the rate picture |
 | *"show advanced options"* (UI only) | on | just to reveal the experimental checkboxes — not a sync setting |
 
 ```lua
 -- paste on each machine's GE console (~):
 settings.setValue("profilePosSync", true)
-settings.setValue("enablePosSmoother", false); settings.setValue("syncFullDeformation", false)
+settings.setValue("enablePosSmoother", false)
 positionGE.onSettingsChanged()
 ```
 
@@ -632,9 +631,9 @@ Both are native C++, so the Lua profilers above don't apply:
   predictor/error-corrector — runs every graphics frame per remote vehicle; prime
   suspect at low player counts), `positionGE.applyPos`/`handle`, and the
   `MPVehicleGE.onPreRender` per-vehicle loop (engine calls like
-  `getObjectOOBBCenterXYZ`/`getDirectionVector` for every vehicle every frame). The
-  full-deformation sync (`getNodes`, the `syncFullDeformation` setting) is the
-  heaviest path but is **off by default** — leave it off for max FPS.
+  `getObjectOOBBCenterXYZ`/`getDirectionVector` for every vehicle every frame). (The
+  experimental full-deformation sync was **removed entirely** in p13h57 — it was
+  intrinsically too CPU-heavy on both the sender and every receiver.)
 - **Safe wins if a profile points at them:** reuse send tables in
   `nodesVE`/`MPInputsVE`/`MPElectricsVE` (same pattern as `positionVE`); string-buffer
   packet construction on the send path (Olrosse #838 — modest at LAN vehicle counts, so

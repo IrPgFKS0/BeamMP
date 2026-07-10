@@ -90,8 +90,8 @@ local function sendData(data) -- TODO currently the socket keeps retrying indefi
 		-- PARTIAL SEND. This frame MUST either complete or the socket must be CLOSED: the 4-byte
 		-- length header is already on the wire, so abandoning mid-packet (the old bounded 1-retry
 		-- did exactly that) leaves the launcher parsing the NEXT packet's bytes as the remainder of
-		-- this one -- permanent stream-framing corruption. Realistic trigger: a large payload (the
-		-- ~100KB syncFullDeformation snapshot, a big vehicle-config spawn) that needs several send()
+		-- this one -- permanent stream-framing corruption. Realistic trigger: a large payload (a
+		-- big vehicle-config spawn; formerly the ~100KB deformation snapshots) that needs several send()
 		-- calls. So: retry while the send makes PROGRESS (index advances); allow zero-progress spins
 		-- only within a short window (loopback buffer full while the launcher is mid-hitch), then
 		-- give up and tear down cleanly -- a launcher that can't drain for that long is wedged, and

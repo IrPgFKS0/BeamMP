@@ -127,12 +127,8 @@
 </md-list-item>
 
 <!-- Situational / heavy (off by default) ----------------------------------- -->
-<md-list-item md-no-ink ng-show="options.data.values.showAdvancedMPOptions">
-  <p><span class="mp-setting-highlight">EXPERIMENTAL</span> Full damage/deformation sync (LAN) <span class="mp-setting-default">(default: off)</span></p>
-  <md-tooltip md-direction="right">Continuously broadcasts full soft-body node/beam deformation so crash damage matches closely on all clients, instead of only syncing which parts broke off. Heavy on CPU/bandwidth and may cause slight visual "popping"; intended for LAN. Off by default.</md-tooltip>
-  <md-checkbox ng-model="options.data.values.syncFullDeformation" ng-change="options.applyState()"></md-checkbox>
-</md-list-item>
-
+<!-- (The "Full damage/deformation sync" checkbox was REMOVED 2026-07-09 with the feature:
+     intrinsically too CPU-heavy -- see nodesVE.lua. The setting stays registered but inert.) -->
 <md-list-item md-no-ink ng-show="options.data.values.showAdvancedMPOptions">
   <p>Full weapon projectiles on remote cars (LAN) <span class="mp-setting-default">(default: off)</span></p>
   <md-tooltip md-direction="right">A weapon car another player is DRIVING already fires full physics projectiles on your screen. This also makes SPAWNED / AI weapon cars fire full physics projectiles instead of just a muzzle flash + sound -- accurate, but CPU-heavy when lots of guns fire at once. Enable only if every machine has CPU headroom.</md-tooltip>

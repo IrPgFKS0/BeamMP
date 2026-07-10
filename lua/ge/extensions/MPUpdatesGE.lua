@@ -21,16 +21,8 @@ local M = {}
 local nodesTimer = 0
 local nodesTickrate = 1/30      -- stock 1/15  (break groups: which parts detached)
 
--- EXPERIMENTAL (LAN-only build): full soft-body deformation sync.
--- The normal nodes tick above only syncs break groups; fine dents/crumple are
--- re-simulated locally and drift between clients. This separate, deliberately
--- LOW rate broadcasts the entire node/beam state so deformation converges on
--- all clients. It is heavy (CPU to serialize every node/beam, and forcibly
--- setting node positions on the receiver can cause slight "popping"). 2 Hz is a
--- conservative start -- raise for closer matching, lower (or comment the call
--- in onUpdate) to reduce cost / disable entirely.
-local fullNodesTimer = 0
-local fullNodesTickrate = 1/2   -- 2 Hz
+-- (The experimental full-deformation sync timer that lived here was REMOVED 2026-07-09 along with
+-- the whole feature -- intrinsically too CPU-heavy; see nodesVE/nodesGE headers.)
 
 local positionTimer = 0
 local positionTickrate = 1/100  -- stock 0.020 (50 Hz) -> 100 Hz
@@ -74,17 +66,6 @@ local function onUpdate(dt)
 		if nodesTimer >= nodesTickrate then
 			nodesTimer = (nodesTimer - nodesTickrate) % nodesTickrate
 			nodesGE.tick() -- Comment this line to disable nodes synchronization
-		end
-
-		-- EXPERIMENTAL: full deformation sync. Toggle in-game under
-		-- Options > Multiplayer > "Full damage/deformation sync" (requires the
-		-- advanced options checkbox enabled). Off by default.
-		if settings.getValue("syncFullDeformation") then
-			fullNodesTimer = fullNodesTimer + dt
-			if fullNodesTimer >= fullNodesTickrate then
-				fullNodesTimer = (fullNodesTimer - fullNodesTickrate) % fullNodesTickrate
-				nodesGE.fullTick()
-			end
 		end
 
 		positionTimer = positionTimer + dt

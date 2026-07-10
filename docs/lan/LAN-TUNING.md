@@ -52,7 +52,6 @@ for a `--combined` host.
 | `physRateSendHz` / Physics-rate position send | **Keep** — still governs the LAN2 leg (matters *more* now) |
 | `trafficTickrate` (AI/traffic throttle) | **Keep** — still throttles relay → LAN2 |
 | `mailboxApplyPos` | **Keep** — receive/intra-game, transport-agnostic |
-| `syncFullDeformation` (experimental) | **Keep, but not free** — still heavy on the LAN2 network leg |
 | Host launcher `SO_RCVBUF` (Tier 1) | **No-op / skipped** — there's no host↔server socket to buffer. The **server's** receive buffer (for LAN2) still matters; leave it. |
 | Sync-stats overlay | **Keep** — as the host, read "relay starving" as the **LAN2 network leg**, not the in-memory hop (which has no buffer to overflow) |
 
@@ -98,7 +97,6 @@ smoothing the route).
 | **Position send rate** | **30 Hz** (max 60) | **30 Hz**, or **10 Hz** on a thin uplink | The single-path relay caps ~150 pkt/s total, so 30 Hz fits 2 players with headroom; the predictor interpolates between updates, so a higher rate doesn't look smoother. **100 Hz was removed (p13h34)** — it oversubscribed the relay and remote tracking *degraded over the session* (hardware-confirmed worse than stock's 10 Hz). Go *lower*, never higher, if the overlay shows "relay starving" or "ghost drifting". |
 | **Enable vehicle position smoothing** (`enablePosSmoother`) | off | **on** | The internet has jitter (LAN has ~none); the smoother hides the uneven packet arrival that would otherwise look like micro-warping. |
 | AI/traffic cars | as you like | **keep low** | Every owned car is its own stream; traffic multiplies the host's upload. The 12 Hz traffic throttle helps, but fewer cars = less to lose. |
-| `syncFullDeformation` | off | **leave off** | Heavy node/beam traffic — the first thing to overwhelm a thin uplink. |
 
 ### 3. OS / network items that matter MORE over the internet
 - **UDP receive buffers (Tier 1 below) are still the #1 item** — on the *Linux* side raise
