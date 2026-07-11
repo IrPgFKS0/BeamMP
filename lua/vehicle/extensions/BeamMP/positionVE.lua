@@ -649,8 +649,8 @@ local dvSocketLib = nil -- nil = not tried, false = unavailable, table = the soc
 -- rejects tim<=last, inputs are idempotent). No ack within DV_CONFIRM_TIMEOUT of the first send ->
 -- give up and stay on the GE path until the toggle/vehicle re-arms.
 local dvConfirmed = false
-local dvDeadline = nil -- os.clock() deadline for the ack, armed on the first unconfirmed send
-local DV_CONFIRM_TIMEOUT = 3 -- s
+local dvProbes = 0 -- unconfirmed sends since (re)arm; count-based so the deadline is clock-semantics-free (os.clock is CPU-time on Linux)
+local DV_CONFIRM_MAX_PROBES = 150 -- ~3-5s at typical send rates (position+inputs ~40-70/s driven, ~12/s parked)
 -- #245 diagnostic (EXPERIMENTAL): dvSend/setDirectVehicle are otherwise silent (all pcall), so a
 -- silent fallback to the GE path is invisible. dvDiag logs each DISTINCT outcome line exactly once
 -- (per VM load) to beamng.log so one test run pinpoints where the direct path engages or fails.
@@ -671,7 +671,7 @@ local function setDirectVehicle(enabled, sid, port)
 	-- confirmed socket isn't pointlessly re-probed. Any actual change re-arms the ack cycle.
 	if not (newEnabled == dvEnabled and sid == dvSid and newPort == dvPort) then
 		dvConfirmed = false
-		dvDeadline = nil
+		dvProbes = 0
 	end
 	dvEnabled = newEnabled
 	dvSid = sid
@@ -711,26 +711,31 @@ local function dvSend(tag, payload)
 			obj:queueGameEngineLua("if positionGE and positionGE.dvSetupVehicle then positionGE.dvSetupVehicle("..obj:getID()..") end")
 			dvDiag('socket REOPENED -> requested GE re-registration')
 			dvConfirmed = false -- new source port: the launcher must ack it again (re-registration triggers one)
-			dvDeadline = nil
+			dvProbes = 0
 		end
 		dvHadSock = true
 	end
 	local ok, ret = pcall(function() return dvSock:send(tag..':'..dvSid..':'..payload) end)
 	if not ok then dvDiag(tag..' dvSock:send THREW: '..tostring(ret)); dvClose(); return false end
 	if ret == nil then dvDiag(tag..' dvSock:send soft-failed (nil return) -> GE path'); return false end
+	-- Drain one pending datagram every send (non-blocking). The launcher keepalive-acks ~1/s
+	-- forever; without this the acks would slowly fill the socket's OS receive buffer after
+	-- confirmation (benign today -- acks are the only inbound -- but a latent trap for any future
+	-- bidirectional use). While unconfirmed, the same read doubles as the ack check.
+	local okr, ack = pcall(function() return dvSock:receive() end)
 	if not dvConfirmed then
 		-- Probe phase: the packet went out, but until the launcher acks this socket we must assume
 		-- nobody is listening. Any datagram back (registration ack / keepalive) = confirmed.
-		local okr, ack = pcall(function() return dvSock:receive() end)
 		if okr and ack then
 			dvConfirmed = true
+			dvProbes = 0
 			dvDiag('direct socket CONFIRMED by launcher ack -> GE fallback stops')
 		else
-			if dvDeadline == nil then dvDeadline = os.clock() + DV_CONFIRM_TIMEOUT end
-			if os.clock() > dvDeadline then
+			dvProbes = dvProbes + 1
+			if dvProbes > DV_CONFIRM_MAX_PROBES then
 				dvEnabled = false
 				dvClose()
-				dvDiag('NO launcher ack within '..DV_CONFIRM_TIMEOUT..'s -> reverting to GE path (launcher lacks the direct socket or port '..tostring(dvPort)..' is blocked)')
+				dvDiag('NO launcher ack after '..DV_CONFIRM_MAX_PROBES..' sends -> reverting to GE path (launcher lacks the direct socket or port '..tostring(dvPort)..' is blocked)')
 			end
 			return false -- caller keeps using the GE path; this send was only a probe
 		end
