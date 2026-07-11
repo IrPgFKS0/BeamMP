@@ -1,11 +1,11 @@
 # BeamMP LAN fork — release downloads
 
-**Current release: `BeamMP-LAN-p13h56.zip`** (mod `4.21.1-LAN p13h56`, combined host exe `p13h33`,
+**Current release: `BeamMP-LAN-p13h57.zip`** (mod `4.21.1-LAN p13h57`, combined host exe `p13h34`,
 Windows + Linux x86-64).
 
 | File | sha256 |
 |---|---|
-| `BeamMP-LAN-p13h56.zip` | `4B1D20636ACA612203F78DD7BC9333D0BADE9220BB1D984F90B1656C7C5BFCC6` |
+| `BeamMP-LAN-p13h57.zip` | `1B1673CEA703FECC5D5CEB1B594812916E15EEB03BFC8F9DE17F9DC7808B851B` |
 
 The zip contains:
 
@@ -28,7 +28,7 @@ Everyone in a session should run the matching `BeamMP.zip` **and** matching exe 
 
 Binaries are built from the `lan` branches of this repo and the companion repos
 ([BeamMP-Launcher](https://github.com/IrPgFKS0/BeamMP-Launcher),
-[BeamMP-Server](https://github.com/IrPgFKS0/BeamMP-Server)) at tag `lan-release-p13h56`
+[BeamMP-Server](https://github.com/IrPgFKS0/BeamMP-Server)) at tag `lan-release-p13h57`
 (AGPL-3.0-or-later — complete corresponding source at those tags).
 
 > Note: each release adds a ~50 MB zip to this repo's history. If that ever gets heavy,

@@ -1,6 +1,6 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.21.1-LAN p13h56` · combined host exe `p13h33` (Windows + Linux)
+**Build:** mod `4.21.1-LAN p13h57` · combined host exe `p13h34`
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -44,6 +44,27 @@ a little tuning (see `LAN-TUNING.md`).
   cores so the relay/bridge keep up), and in-game **Save all logs (zip)** for support.
 
 ## This release
+
+- **Direct vehicle socket (p13h57, from BeamMP-Launcher#245 — experimental, default off).**
+  Options → Multiplayer → advanced → "Direct vehicle socket": your own vehicles send
+  **position + driver inputs** straight to the launcher over a dedicated per-vehicle UDP
+  socket, bypassing the per-packet Lua-string compile through the game's single main-thread
+  VM — the measured send-side bottleneck as vehicle counts climb (profiler-verified: the
+  `GE sendVehiclePosRot` cost drops to zero when active). Only latest-wins data rides it;
+  weapon fire, electrics, powertrain, break groups and controllers stay on the reliable path.
+  **Safe to enable anywhere:** the mod keeps the normal path until the launcher (p13h34+)
+  acknowledges the socket, and reverts with a log line if it never does — an old launcher or
+  a blocked port can never silently eat a car. Vehicle edits/reloads re-register cleanly.
+- **Combined exe p13h34.** Hosts the direct-vehicle socket (UDP, launcher port+2) with
+  per-vehicle registration + source-port pinning, a registration ack/keepalive (what the
+  safety above rides on), and reliable routing for complete-or-nothing packet families.
+  The launcher banner now states its real build number.
+- **Full-deformation sync removed (was experimental, default off).** Even with a fixed
+  transport, serializing every node+beam (~100KB) at 2 Hz per vehicle in Lua — plus a full
+  apply pass on every receiver — costs more CPU than the feature is worth. Break-group
+  (parts falling off) and synced-controller sync are unchanged. Packets from old clients
+  that still have it enabled are discarded silently; the old setting stays recognized so
+  existing settings files don't warn.
 
 - **Profiling + a sync-log checkbox (p13h56).** The position profiler now also times the
   GE-side send handler (`GE sendVehiclePosRot`) so a 2-player session shows the VE→GE
