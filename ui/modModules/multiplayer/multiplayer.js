@@ -1099,24 +1099,20 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 			isLoggedIn = true
 		}
 
+
+		var accountSection = document.getElementById("serverlist-account-section")
+		var serverListCategories = document.getElementById("serverlist-categories")
+		var accountDivider = document.getElementById("serverbrowser-account-divider")
+		var accountAvatar = document.getElementById("serverlist-profile-avatar")
 		if (isLoggedIn) {
 			let patreonText = $filter('translate')('ui.multiplayer.patreon.message.user')
 			let patreonButton = document.getElementById("patreonSidebarButton")
 			var patreonButtonText = document.getElementById("patreonSidebarButtonSubtitle")
 
-			var accountSection = document.getElementById("serverlist-account-section")
-			var serverListCategories = document.getElementById("serverlist-categories")
-			var accountDivider = document.getElementById("serverbrowser-account-divider")
-
-			if (data.role != null) {
-				if (accountSection) accountSection.style.display = ""
-				if (serverListCategories) serverListCategories.style.display = ""
-				if (accountDivider) accountDivider.style.display = ""
-			} else {
-				if (accountSection) accountSection.style.display = "none"
-				if (serverListCategories) serverListCategories.style.display = "none"
-				if (accountDivider) accountDivider.style.display = "none"
-			}
+			if (accountSection) accountSection.style.display = ""
+			if (serverListCategories) serverListCategories.style.display = ""
+			if (accountDivider) accountDivider.style.display = ""
+			if (accountAvatar) accountAvatar.style.display = ""
 
 
 			if (data.role == "EA") {
@@ -1168,6 +1164,11 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 				nameElement.style.backgroundColor = "rgba(0, 0, 0, 0)"
 			}
 			if (avatarElement != null) avatarElement.removeAttribute("src")
+				
+			if (accountSection) accountSection.style.display = "none"
+			if (serverListCategories) serverListCategories.style.display = "none"
+			if (accountDivider) accountDivider.style.display = "none"
+			if (accountAvatar) accountAvatar.style.display = "none"
 		}
 
 		var buttons = document.getElementsByClassName("servers-btn")

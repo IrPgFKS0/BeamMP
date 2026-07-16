@@ -362,6 +362,7 @@
 	border-radius: var(--bng-corners-1);
 
 	font-weight: 500;
+	text-align: center;
 
 	&:hover {
 		background-color: rgba(var(--bng-orange-600-rgb), 0.6);
@@ -374,26 +375,21 @@
 	border-radius: 50%;
 	display: block;
 	position: unset;
-	width: 1.5em;
-	height: 1.5em;
+	margin: auto;
+	margin-bottom: 0.5em;
+	width: 5em;
+	height: 5em;
 
 	background-color: var(--bng-cool-gray-400); /* Controlled by the filter on the avatar. This makes a decent grayscale background for the fallback avatar */
 }
 #serverlist-profile-name {
-	text-align: left;
+	text-align: center;
 }
 #serverlist-profile-role-title {
 	padding: 0 0.25em;
 	background-color: rgba(0, 0, 0, 0); /* this gets adjusted by JS based on account role from auth */
 	border-radius: var(--bng-corners-1);
-}
-#serverlist-profile-id {
 	text-align: center;
-	font-size: 0.9em;
-	line-height: 1.5em;
-	opacity: 0.8;
-	cursor: pointer;
-	margin-top: 6px;
 }
 
 #filter-dropdown {
