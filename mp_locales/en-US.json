@@ -223,6 +223,7 @@
 	"ui.multiplayer.pauseMenu.serverDetails.tags": "Tags",
 	"ui.multiplayer.pauseMenu.areYouSure": "Are you sure?",
 	"ui.multiplayer.pauseMenu.disconnect": "Disconnect",
+	"ui.multiplayer.pauseMenu.quitGame": "Quit Game",
 	"ui.multiplayer.pauseMenu.disconnectConfirmation": "This will disconnect you from the server and return you to the main menu. Proceed?",
 	"ui.multiplayer.pauseMenu.quitToDesktop": "Quit to Desktop",
 	"ui.multiplayer.pauseMenu.quitToDesktopConfirmation": "This will close the game. Proceed?",

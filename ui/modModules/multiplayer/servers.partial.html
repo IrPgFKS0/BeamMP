@@ -88,8 +88,8 @@
 									<h2 class="section-header">{{:: 'ui.multiplayer.server.playerList' | translate}}</h2>
 									<span>
 										<span ng-bind="'{{:: 'ui.multiplayer.players' | translate }}'+' ('+server.server.players+'/'+server.server.maxplayers+'):'"></span>
-										<span ng-hide="server.server.players > 0">{{:: 'ui.multiplayer.server.noPlayers' | translate}}</span>
-										<div class="tagListContainer" style="max-width:100%" ng-show="server.server.players > 0">
+										<span ng-hide="server.server.players > 0 && server.server.playerslist!==''">{{:: 'ui.multiplayer.server.noPlayers' | translate}}</span>
+										<div class="tagListContainer" style="max-width:100%" ng-show="server.server.players > 0 && server.server.playerslist!==''">
 											<span class="tagList tagListShort" ng-repeat="text in listPlayers(server.server.playerslist).substring(17).split(', ')">{{ text }}</span>
 										</div>
 									</span>
@@ -109,7 +109,7 @@
 											<span class="tagList tagListShort" ng-repeat="text in modList(server.server.modlist|| '').split(', ')" ng-bind="text.trim()"></span>
 										</div>
 										<!--<div style="margin-left: 10px; max-width: 75%; max-height: 200px; overflow-y: auto; background: rgba(0, 0, 0, 0.1);">{{modList(server.server.modlist|| "")}}</div></li>-->
-									<div style="margin-top:0.8em;font-size:0.8em;color:var(--off-white-from-vue)" ng-bind="{{:: 'ui.multiplayer.server.modsTotalFilesize' | translate}}+' '+formatBytes(server.server.modstotalsize)"></div>
+									<div style="margin-top:0.8em;font-size:0.8em;color:var(--off-white-from-vue)" ng-bind="'{{:: 'ui.multiplayer.server.modsTotalFilesize' | translate}}'+' '+formatBytes(server.server.modstotalsize || 0)"></div>
 								</div>
 							</div>
 						</div>

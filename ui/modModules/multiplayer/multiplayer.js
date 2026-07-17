@@ -1662,7 +1662,7 @@ function($scope, $state, $timeout, $filter) {
 	$scope.selectServer = function(server) {
 		const serverId = server.id
 		//console.log('Server '+serverId+' was selected')
-		//console.log(JSON.stringify(server.server))
+		//console.log(server.server)
 		highlightedServer = server.server
 		if ($scope.selectedServerId === serverId) {
 			$scope.selectedServerId = null
