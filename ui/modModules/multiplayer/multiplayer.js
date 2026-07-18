@@ -1150,9 +1150,10 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 			) {
 				//console.log('data.avatar properly exists. Using avatar data')
 				//console.log(data.avatar)
-				if (avatarElement)
+				if (avatarElement) {
 					avatarElement.src = data.avatar
 					avatarElement.style.filter = ""
+				}
 			} else {
 				//console.log('data.avatar does not exist or is using a fallback. Using fallback')
 				//console.log(data.avatar)
