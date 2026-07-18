@@ -1038,7 +1038,10 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 			})
 		} else {
 			if (data.message == "done") {
-				vm.loadingStatus = $filter('translate')('ui.multiplayer.download.done')
+				vm.loadingStatus = $filter('translate')('ui.multiplayer.loading')
+				$timeout(function() {
+					vm.loadingStatus = $filter('translate')('ui.multiplayer.download.done')
+				}, 5000)
 				lastModInfo = ''
 			} else {
 				vm.loadingStatus = data.message
