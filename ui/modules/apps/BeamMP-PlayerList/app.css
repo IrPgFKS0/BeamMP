@@ -4,6 +4,7 @@
     justify-content: flex-end;
     align-content: flex-end;
     height: 100%;
+	font-family: var(--bmp-fnt-defs);
 }
 #plist-container {
     display: none;

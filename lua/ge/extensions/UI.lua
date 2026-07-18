@@ -166,6 +166,27 @@ local function updateQueue( spawnCount, editCount, queuedPlayers)
 
 	UIqueue = {spawnCount = spawnCount, editCount = editCount, queuedPlayers = queuedPlayersJS}
 	UIqueue.show = spawnCount+editCount > 0
+
+	if UIqueue.show then
+		--log('D', 'queueNotification', 'Creating queue message')
+		ui_message(string.format(
+				MPTranslate('ui.multiplayer.queuedEvents', 'ui.multiplayer.queuedEvents'),
+				(UIqueue.editCount or "?"),
+				(UIqueue.spawnCount or "?")
+			),
+			60,
+			"queuedEvents",
+			"carClock"
+		)
+	else
+		--log('D', 'queueNotification', 'Deleting queue message')
+		-- ui_message() doesn't support clearing message categories
+		guihooks.trigger('Message', {
+			category = 'queuedEvents',
+			clear = true
+		})
+	end
+	
 	sendQueue()
 end
 
@@ -555,6 +576,37 @@ local function getCustomPlayerlistButtons()
     return customPlayerlistButtons
 end
 
+
+local pauseMenuModButtons = {}
+
+local function getPauseMenuModButtons()
+	return pauseMenuModButtons
+end
+
+-- Send the list of pause menu mod buttons to UI
+local function sendPauseMenuModButtons()
+	guihooks.trigger('getPauseMenuModButtons', pauseMenuModButtons)
+end
+
+local function pushPauseMenuModButton(id, data)
+	pauseMenuModButtons[id] = {
+		text = data.text,
+		lua = data.lua,
+		classList = data.classList
+	}
+	sendPauseMenuModButtons()
+end
+
+local function popPauseMenuModButton(id)
+	pauseMenuModButtons[id] = nil
+	sendPauseMenuModButtons()
+end
+
+local function clearPauseMenuModButtons()
+	pauseMenuModButtons = {}
+end
+
+
 M.updateLoading = updateLoading
 M.promptAutoJoinConfirmation = promptAutoJoinConfirmation
 M.updatePlayersList = updatePlayersList
@@ -571,6 +623,12 @@ M.sendQueue = sendQueue
 M.showMdDialog = showMdDialog
 M.getCustomPlayerlistButtons = getCustomPlayerlistButtons
 M.getCustomButtonNames = getCustomButtonNames
+
+M.getPauseMenuModButtons = getPauseMenuModButtons
+M.sendPauseMenuModButtons = sendPauseMenuModButtons
+M.pushPauseMenuModButton = pushPauseMenuModButton
+M.popPauseMenuModButton = popPauseMenuModButton
+M.clearPauseMenuModButtons = clearPauseMenuModButtons
 
 M.bringToFront = bringToFront
 M.toggleChat = toggleChat
