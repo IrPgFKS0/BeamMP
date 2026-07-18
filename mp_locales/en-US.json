@@ -230,5 +230,4 @@
 	"ui.multiplayer.queuedEvents": "There are %d|%d queued events.\nPress [action=applyQueuedEvents] to apply the queued events.",
 	"ui.multiplayer.mdDialog.disconnectGeneric": "You have been disconnected from the server",
 	"ui.multiplayer.mdDialog.continueOffline": "Continue offline"
-
 }
