@@ -124,11 +124,11 @@ import('/ui/lib/ext/purify.min.js')
 
 angular.module('BeamNG.ui')
 .run(function($rootScope, $templateCache) {
-$rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
-	if (toState.name === 'loading' || fromState.name === 'loading') {
-	$templateCache.remove('/ui/modules/loading/loading.html')
-	}
-})
+	$rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+		if (toState.name === 'loading' || fromState.name === 'loading') {
+		$templateCache.remove('/ui/modules/loading/loading.html')
+		}
+	})
 })
 
 export default angular.module('multiplayer', ['ui.router'])
