@@ -90,9 +90,35 @@ local defaultSettings = {
 	launcherPort = 4444
 }
 
+local function loadMPDefaults()
+	local mpDefaults = jsonReadFile('/settings/mp_defaults.json')
+	if not mpDefaults then
+		log('W', 'loadMPDefaults', 'Unable to read /settings/mp_defaults.json')
+		return
+	end
+
+	for settingName, settingDef in pairs(mpDefaults) do
+		local settingType = settingDef[1]
+		local defaultValue = settingDef[2]
+
+		if settings.impl and settings.impl.defaults and settingType ~= nil then
+			settings.impl.defaults[settingName] = { settingType, defaultValue }
+		end
+		if settings.impl and settings.impl.defaultValues and defaultValue ~= nil then
+			settings.impl.defaultValues[settingName] = defaultValue
+		end
+
+		if defaultValue ~= nil and (settings.getValue(settingName) == nil or settingName == 'unicycleConfigs') then
+			settings.setValue(settingName, defaultValue)
+		end
+	end
+end
+
 --- Called when the mod is loaded by the games modloader. 
 -- @usage INTERNAL ONLY / GAME SPECIFIC
 local function onExtensionLoaded()
+	loadMPDefaults()
+
 	for k,v in pairs(defaultSettings) do
 		if settings.getValue(k) == nil or k == 'unicycleConfigs' then settings.setValue(k, v) end
 		--settings.impl.defaults[k] = { 'local', v }

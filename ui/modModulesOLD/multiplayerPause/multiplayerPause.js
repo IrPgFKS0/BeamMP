@@ -66,7 +66,7 @@ function($scope, $state, $timeout, $UiAppsService, $Settings, $translate, Confir
 	$scope.authResult = {};
 	$scope.roleName = roleName;
 
-	$scope.$on('onServerListReceived', function(event, data) {
+	$scope.$on('onBeamMPServerListReceived', function(event, data) {
 		onServerListReceived(data)
 	});
 	async function onServerListReceived(serverList) {
@@ -175,7 +175,7 @@ function($scope, $state, $timeout, $UiAppsService, $Settings, $translate, Confir
 		};
 	});
 
-	$scope.$on('getPauseMenuModButtons', function(event, data) {
+	$scope.$on('onBeamMPPauseMenuModButtons', function(event, data) {
 		modButtons = {};
 		for (const [id, modButton] of Object.entries(data)) {
 			modButtons[id] = {
@@ -196,7 +196,7 @@ function($scope, $state, $timeout, $UiAppsService, $Settings, $translate, Confir
 		bngApi.engineLua(lua);
 	};
 
-	$scope.$on('playerPings', function(event, data) {
+	$scope.$on('onBeamMPPlayerPings', function(event, data) {
 		const pingList = JSON.parse(data);
 		for (const [username, ping] of Object.entries(pingList)) {
 			if(username !== "") {
@@ -211,7 +211,7 @@ function($scope, $state, $timeout, $UiAppsService, $Settings, $translate, Confir
 	});
 
 
-	$scope.$on('playerList', function(event, data) {
+	$scope.$on('onBeamMPPlayerList', function(event, data) {
 		let parsedList = JSON.parse(data);
 
 		parsedList.sort(function(a, b) {
@@ -233,7 +233,7 @@ function($scope, $state, $timeout, $UiAppsService, $Settings, $translate, Confir
 	});
 
 	var queuedPlayers = {};
-	$scope.$on('setQueue', function(event, data) {
+	$scope.$on('onBeamMPSetQueue', function(event, data) {
 		queuedPlayers = data.queuedPlayers || {};
 		setQueue();
 	});
