@@ -2,15 +2,15 @@
 -- Licensed under AGPL-3.0 (or later), see <https://www.gnu.org/licenses/>.
 -- SPDX-License-Identifier: AGPL-3.0-or-later
 
---- multiplayer_ui_options API.
+--- beammp_ui_options API.
 --- Author of this documentation is Titch
---- @module multiplayer_ui_options
+--- @module beammp_ui_options
 --- @usage saveConfig(settings) -- internal access
---- @usage multiplayer_ui_options.saveConfig(settings) -- external access
+--- @usage beammp_ui_options.saveConfig(settings) -- external access
 
 local M = {}
 
-local utils = require("multiplayer.ui.utils")
+local utils = require("beammp.ui.utils")
 
 local imgui = ui_imgui
 local longestSettingName = 0

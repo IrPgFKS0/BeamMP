@@ -2,11 +2,11 @@
 -- Licensed under AGPL-3.0 (or later), see <https://www.gnu.org/licenses/>.
 -- SPDX-License-Identifier: AGPL-3.0-or-later
 
---- multiplayer_ui_utils API.
+--- beammp_ui_utils API.
 --- Author of this documentation is Titch
---- @module multiplayer_ui_utils
+--- @module beammp_ui_utils
 --- @usage copyTable(t) -- internal access
---- @usage multiplayer_ui_utils.imageButton(texID, size, color, activeColor, hoveredColor) -- external access
+--- @usage beammp_ui_utils.imageButton(texID, size, color, activeColor, hoveredColor) -- external access
 
 local M = {}
 

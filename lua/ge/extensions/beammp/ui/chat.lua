@@ -2,18 +2,18 @@
 -- Licensed under AGPL-3.0 (or later), see <https://www.gnu.org/licenses/>.
 -- SPDX-License-Identifier: AGPL-3.0-or-later
 
---- multiplayer_ui_chat API.
+--- beammp_ui_chat API.
 --- Author of this documentation is Titch
---- @module multiplayer_ui_chat
+--- @module beammp_ui_chat
 --- @usage colorByRGB(r,g,b,a) -- internal access
---- @usage multiplayer_ui_chat.addMessage(username, message, id, color) -- external access
+--- @usage beammp_ui_chat.addMessage(username, message, id, color) -- external access
 
 local M = {
     chatMessages = {},
     newMessageCount = 0
 }
 
-local utils = require("multiplayer.ui.utils")
+local utils = require("beammp.ui.utils")
 local ffi = require('ffi')
 
 local imgui = ui_imgui
