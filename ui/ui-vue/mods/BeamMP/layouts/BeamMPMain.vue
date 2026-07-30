@@ -16,32 +16,9 @@
       </BngButton>
 
       <div class="topbar-tools">
-        <div class="metrics">
-          <span class="metric-item">
-            <img src="../icons/account-multiple.svg" alt="" />
-            <span>{{ $tt("ui.common.beammp.players") }}: {{ state.beammpMetrics.value.players }}</span>
-          </span>
-          <span class="metric-item">
-            <img src="../icons/dns.svg" alt="" />
-            <span>{{ $tt("ui.common.beammp.servers") }}: {{ state.beammpMetrics.value.servers }}</span>
-          </span>
-        </div>
+        <!-- LAN: global player/server count metrics removed (backend-only; the LAN launcher reports zeros) -->
 
-        <section v-if="state.loggedIn.value" class="account-panel" aria-label="BeamMP account">
-          <img
-            class="account-avatar"
-            :src="accountAvatar"
-            alt=""
-            @error="useFallbackAvatar"
-          />
-          <div class="account-details">
-            <strong>{{ accountName }}</strong>
-            <small>{{ accountRole }}</small>
-          </div>
-          <BngButton accent="secondary" class="logout-button" @click="handleLogout">
-            {{ $tt("ui.beammp.accounts.logout") }}
-          </BngButton>
-        </section>
+        <!-- LAN: account panel (avatar/role/logout) removed -- LAN auth is launcher-local, there is no account -->
       </div>
     </header>
 
@@ -53,10 +30,8 @@
           {{ $tt("ui.common.beammp.beammp") }} v{{ state.beammpMetrics.value.beammpGameVer }}
         </div>
 
+        <!-- LAN: Official/Featured/Partner category buttons removed (backend categories; the LAN list has none) -->
         <button class="nav-btn" :class="{ active: isServerView('servers') }" @click="gotoView('servers')">{{ $tt("ui.common.beammp.servers") }}</button>
-        <button class="nav-btn category-official" :class="{ active: isServerView('official') }" @click="gotoView('official')">{{ $tt("ui.common.beammp.official") }}</button>
-        <button class="nav-btn category-featured" :class="{ active: isServerView('featured') }" @click="gotoView('featured')">{{ $tt("ui.common.beammp.featured") }}</button>
-        <button class="nav-btn category-partner" :class="{ active: isServerView('partner') }" @click="gotoView('partner')">{{ $tt("ui.common.beammp.partner") }}</button>
         <button class="nav-btn category-favorite" :class="{ active: isServerView('favorites') }" @click="gotoView('favorites')">{{ $tt("ui.common.beammp.favorites") }}</button>
         <button class="nav-btn" :class="{ active: isServerView('recent') }" @click="gotoView('recent')">{{ $tt("ui.common.beammp.recent") }}</button>
         <button class="nav-btn" :class="{ active: route.name === BEAMMP_DIRECT_ROUTE_NAME }" @click="gotoRoute(BEAMMP_DIRECT_ROUTE_NAME)">{{ $tt("ui.common.beammp.direct_connect") }}</button>
@@ -64,29 +39,7 @@
 
         <div class="spacer" />
 
-        <button class="nav-btn secondary external-link external-link--patreon" @click="openExternal('https://www.patreon.com/BeamMP')">
-          <img src="../icons/PATREON_SYMBOL_1_WHITE_RGB.svg" alt="" class="external-link-icon" />
-          <span class="external-link-copy">
-            <span class="external-link-title">{{ $tt("ui.common.beammp.patreon") }}</span>
-            <small class="external-link-subtitle">{{ $tt("ui.beammp.patreon.message.user") }}</small>
-          </span>
-        </button>
-        <button class="nav-btn secondary external-link" @click="openExternal('https://forum.beammp.com')">
-          <img src="/ui/ui-vue/src/assets/fonts/bngIcons/svg/chatBubble.svg" alt="" class="external-link-icon external-link-icon--invert" />
-          <span>{{ $tt("ui.common.beammp.forum") }}</span>
-        </button>
-        <button class="nav-btn secondary external-link" @click="openExternal('https://discord.gg/BeamMP')">
-          <img src="../icons/icon_clyde_white_RGB.svg" alt="" class="external-link-icon" />
-          <span>{{ $tt("ui.common.beammp.discord") }}</span>
-        </button>
-        <button class="nav-btn secondary external-link" @click="openExternal('https://docs.beammp.com')">
-          <img src="/ui/ui-vue/src/assets/fonts/bngIcons/svg/info.svg" alt="" class="external-link-icon external-link-icon--invert" />
-          <span>{{ $tt("ui.common.beammp.docs") }}</span>
-        </button>
-        <button class="nav-btn secondary external-link" @click="openExternal('https://github.com/BeamMP/')">
-          <img src="../icons/github-mark.svg" alt="" class="external-link-icon" />
-          <span>{{ $tt("ui.common.beammp.github") }}</span>
-        </button>
+        <!-- LAN: Patreon/Discord/GitHub external links removed -->
       </aside>
 
       <section ref="contentPanel" class="content">
