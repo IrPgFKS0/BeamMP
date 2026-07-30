@@ -142,26 +142,26 @@
 
         <section class="filter-group">
           <h3>Player Count</h3>
-        <label class="filter-field">
-          <span>Range Min</span>
-          <input
-            class="number-input"
-            type="number"
-            min="0"
-            :value="uiFilters.playerCountMin"
-            @input="event => updateNumber('playerCountMin', event.target.value)"
-          />
-        </label>
-        <label class="filter-field">
-          <span>Range Max</span>
-          <input
-            class="number-input"
-            type="number"
-            min="0"
-            :value="uiFilters.playerCountMax"
-            @input="event => updateNumber('playerCountMax', event.target.value)"
-          />
-        </label>
+          <label class="filter-field">
+            <span>Range Min</span>
+            <input
+              class="number-input"
+              type="number"
+              min="0"
+              :value="uiFilters.playerCountMin"
+              @input="event => updateNumber('playerCountMin', event.target.value)"
+            />
+          </label>
+          <label class="filter-field">
+            <span>Range Max</span>
+            <input
+              class="number-input"
+              type="number"
+              min="0"
+              :value="uiFilters.playerCountMax"
+              @input="event => updateNumber('playerCountMax', event.target.value)"
+            />
+          </label>
         </section>
 
         <section class="filter-group">
