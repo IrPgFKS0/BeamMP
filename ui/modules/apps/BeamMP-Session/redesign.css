@@ -64,7 +64,7 @@ div#Session {
 		 border-left: 1px solid rgba(255, 255, 255, 0.2);
 	}
 
-	.multiplayersession .buttons {
+	.beammpSession .buttons {
 		color: #DDDDDD;
 		border: none;
 		transition: 0.20s;
@@ -73,7 +73,7 @@ div#Session {
 		cursor: pointer;
 	}
 
-	.multiplayersession .buttons:hover {
+	.beammpSession .buttons:hover {
 		background-color:rgba(0, 0, 0, 0.2);
 		color: #FFFFFF;
 	}
