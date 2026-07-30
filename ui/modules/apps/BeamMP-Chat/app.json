@@ -15,7 +15,7 @@
   "description": "Chat while in multiplayer servers",
   "author": "BeamMP",
   "version": "2.0",
-  "directive": "multiplayerchat",
+  "directive": "beammpchat",
   "category": "Gameplay",
   "isAuxiliary": false,
   "interactive": "required",
