@@ -246,7 +246,7 @@ function applyFilters(items, view) {
     const checks = []
 
     checks.push(Number(server.players || 0) >= Number(f.playerCountMin ?? 0))
-    checks.push(Number(server.players || 0) <= Number(f.playerCountMax ?? 9999))
+    checks.push(Number(server.players || 0) <= Number(f.playerCountMax ?? 100))
 
     if (server.modstotalsize) {
       checks.push((Number(f.sliderMaxModSize) * 1048576) >= Number(server.modstotalsize))
