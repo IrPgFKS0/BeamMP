@@ -39,7 +39,7 @@
             <small>{{ accountRole }}</small>
           </div>
           <BngButton accent="secondary" class="logout-button" @click="handleLogout">
-            {{ $tt("ui.common.beammp.logout") }}
+            {{ $tt("ui.beammp.accounts.logout") }}
           </BngButton>
         </section>
       </div>
@@ -77,8 +77,8 @@
 
     <div v-if="state.loadingOverlayVisible.value" class="loading-overlay">
       <div class="loading-card">
-        <h2>{{ $tt("ui.beammp.connectingToServer") }}</h2>
-        <p>{{ state.loadingStatus.value || $tt("ui.beammp.connecting") }}</p>
+        <h2>{{ $tt("ui.common.beammp.connectingToServer") }}</h2>
+        <p>{{ state.loadingStatus.value || $tt("ui.common.beammp.connecting") }}</p>
 
         <div v-if="state.downloadingMods.value.length" class="mods-list">
           <div

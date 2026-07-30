@@ -1,20 +1,20 @@
 <template>
   <div class="card">
-    <h3>{{ $tt("ui.beammp.direct_connect") }}</h3>
+    <h3>{{ $tt("ui.common.beammp.direct_connect") }}</h3>
 
     <label>
-      {{ $tt("ui.beammp.direct_connect.server_ip") }}
+      {{ $tt("ui.beammp.serverBrowser.serverIp") }}
       <input v-model="ip" class="bng-input" type="text" />
     </label>
 
     <label>
-      {{ $tt("ui.beammp.direct_connect.server_port") }}
+      {{ $tt("ui.beammp.serverBrowser.serverPort") }}
       <input v-model="port" class="bng-input" type="text" />
     </label>
 
     <div class="actions">
-      <BngButton @click="connect">{{ $tt("ui.beammp.connect") }}</BngButton>
-      <BngButton accent="secondary" @click="pasteFromClipboard">{{ $tt("ui.beammp.pasteFromClipboard") }}</BngButton>
+      <BngButton @click="connect">{{ $tt("ui.common.beammp.connect") }}</BngButton>
+      <BngButton accent="secondary" @click="pasteFromClipboard">{{ $tt("ui.common.beammp.pasteFromClipboard") }}</BngButton>
     </div>
   </div>
 </template>

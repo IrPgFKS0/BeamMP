@@ -11,20 +11,23 @@
 
 local M = {}
 
---- Test PlayerTags
-local playerTags = require("ge/extensions/render/playerTags")
-
-local playerCount = 1   -- last settled player count (from getAssignedPlayers)
-local taggedCount = nil -- player count the current tags were built for (nil = none built)
-
-local function rebuildTags()
-  local tags = {}
-  for i = 0, playerCount - 1 do
-    tags[#tags + 1] = {player = i, label = core_locales.contextTranslate("ui.multiseat.playerTag", {number = i + 1}), color = playerTags.color(i + 1, playerCount)}
-  end
-  playerTags.rebuild(tags)
-  taggedCount = playerCount
-end
+---[[ Test PlayerTags
+--local playerTags = require("ge/extensions/render/playerTags")
+--
+--local playerCount = 1   -- last settled player count (from getAssignedPlayers)
+--local taggedCount = nil -- player count the current tags were built for (nil = none built)
+--
+--local function rebuildTags()
+--  local tags = {}
+--  for i = 0, playerCount - 1 do
+--    tags[#tags + 1] = {player = i, label = core_locales.contextTranslate("ui.multiseat.playerTag", {number = i + 1}), color = playerTags.color(i + 1, playerCount)}
+--  end
+--  playerTags.rebuild(tags)
+--  taggedCount = playerCount
+--end
+--
+--M.onExtensionUnloaded = function() playerTags.reset(); taggedCount = nil end
+--M.onSerialize = function() playerTags.reset(); taggedCount = nil end
 ---
 
 setmetatable(_G,{}) -- temporarily disable global notifications
@@ -2297,6 +2300,9 @@ local function onUpdate(dt)
 	if MPGameNetwork and MPGameNetwork.launcherConnected() then
 		localCounter = localCounter + dt
 	end
+
+	--if taggedCount ~= playerCount then rebuildTags() end
+  --playerTags.updatePositions()
 end
 
 local function onPreRender(dt)
@@ -2386,7 +2392,9 @@ local function onPreRender(dt)
 			editSyncTimer = 0
 		end
 
+		--playerCount = 0
 		for serverVehicleID, v in pairs(vehicles) do
+			--playerCount = playerCount + 1
 			local owner = v:getOwner()
 			if v.isLocal or not owner then goto skip_vehicle end
 			local gameVehicleID = v.gameVehicleID

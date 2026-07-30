@@ -1,14 +1,14 @@
 <template>
   <section class="direct-wrap">
     <header class="direct-header">
-      <h2>{{ $tt("ui.beammp.direct_connect") }}</h2>
+      <h2>{{ $tt("ui.common.beammp.direct_connect") }}</h2>
       <p>Connect to a BeamMP server using its address and port.</p>
     </header>
 
     <div class="direct-card">
       <div class="fields">
         <label class="field field-address">
-          <span>{{ $tt("ui.beammp.direct_connect.server_ip") }}</span>
+          <span>{{ $tt("ui.beammp.serverBrowser.serverIp") }}</span>
           <div class="input-shell">
             <span class="field-prefix">IP</span>
             <input
@@ -22,7 +22,7 @@
         </label>
 
         <label class="field field-port">
-          <span>{{ $tt("ui.beammp.direct_connect.server_port") }}</span>
+          <span>{{ $tt("ui.beammp.serverBrowser.serverPort") }}</span>
           <div class="input-shell">
             <span class="field-prefix">:</span>
             <input
@@ -37,9 +37,9 @@
       </div>
 
       <div class="actions">
-        <BngButton accent="secondary" @click="pasteFromClipboard">{{ $tt("ui.beammp.pasteFromClipboard") }}</BngButton>
-        <BngButton @click="connect">{{ $tt("ui.beammp.connect") }}</BngButton>
-        <BngButton accent="secondary" @click="favorite">{{ $tt("ui.beammp.favorite") }}</BngButton>
+        <BngButton accent="secondary" @click="pasteFromClipboard">{{ $tt("ui.common.beammp.pasteFromClipboard") }}</BngButton>
+        <BngButton @click="connect">{{ $tt("ui.common.beammp.connect") }}</BngButton>
+        <BngButton accent="secondary" @click="favorite">{{ $tt("ui.beammp.serverBrowser.saveAsFavorite") }}</BngButton>
       </div>
     </div>
   </section>

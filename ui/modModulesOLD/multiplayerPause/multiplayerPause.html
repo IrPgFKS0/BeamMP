@@ -84,7 +84,7 @@
 				<div class="tagListContainer" style="max-width:100%">
 					<span class="tagList tagListShort" ng-repeat="text in mods.list">{{ text }}</span>
 				</div>
-				<div style="margin-top:0.8em;font-size:0.8em;color:var(--off-white-from-vue)">{{:: 'ui.multiplayer.server.modsTotalFilesize' | translate}} {{mods.size || "Unknown"}}</div>
+				<div style="margin-top:0.8em;font-size:0.8em;color:var(--off-white-from-vue)">{{:: 'ui.beammp.serverBrowser.server.modsTotalFilesize' | translate}} {{mods.size || "Unknown"}}</div>
 			</div>
 		</div>
 	</div>
@@ -157,12 +157,12 @@
 						<md-input-container class="mpIconDropdown" style="padding:0;margin:0">
 							<img ng-src="{{getVueIconPath('adjust')}}"/>
 							<md-select class="md-no-underline" ng-model="dummy" bng-sound-class="bng_click_hover_generic">
-								<md-option bng-sound-class="bng_click_generic_small" ng-click="copyPlayerName(player.name)"									>{{:: 'ui.apps.multiplayer.playerlist.copyname' | translate}}</md-option>
-								<md-option bng-sound-class="bng_click_generic_small" ng-click="deleteAllVehicles(player.name)" 	ng-if="player.id !== '?'"	>{{:: 'ui.apps.multiplayer.playerlist.deleteAllVehicles' | translate}}</md-option>
-								<md-option bng-sound-class="bng_click_generic_small" ng-click="queueEvents(player.id)" 			ng-if="player.id !== '?'"	>{{:: 'ui.apps.multiplayer.playerlist.queueEvents' | translate}}</md-option>
-								<md-option bng-sound-class="bng_click_generic_small" ng-click="switchCameraTo(player.name)"		ng-if="player.id !== '?'"	>{{:: 'ui.apps.multiplayer.playerlist.switchCameraTo' | translate}}</md-option>
-								<md-option bng-sound-class="bng_click_generic_small" ng-click="openProfile(player.name)"										>{{:: 'ui.apps.multiplayer.playerlist.openProfile' | translate}}</md-option>
-								<md-option bng-sound-class="bng_click_generic_small" ng-click="restoreVehicles(player.name)" 		ng-if="player.id !== '?'"	>{{:: 'ui.apps.multiplayer.playerlist.restoreVehicles' | translate}}</md-option>
+								<md-option bng-sound-class="bng_click_generic_small" ng-click="copyPlayerName(player.name)"									>{{:: 'ui.apps.beammp.playerlist.copyname' | translate}}</md-option>
+								<md-option bng-sound-class="bng_click_generic_small" ng-click="deleteAllVehicles(player.name)" 	ng-if="player.id !== '?'"	>{{:: 'ui.apps.beammp.playerlist.deleteAllVehicles' | translate}}</md-option>
+								<md-option bng-sound-class="bng_click_generic_small" ng-click="queueEvents(player.id)" 			ng-if="player.id !== '?'"	>{{:: 'ui.apps.beammp.playerlist.queueEvents' | translate}}</md-option>
+								<md-option bng-sound-class="bng_click_generic_small" ng-click="switchCameraTo(player.name)"		ng-if="player.id !== '?'"	>{{:: 'ui.apps.beammp.playerlist.switchCameraTo' | translate}}</md-option>
+								<md-option bng-sound-class="bng_click_generic_small" ng-click="openProfile(player.name)"										>{{:: 'ui.apps.beammp.playerlist.openProfile' | translate}}</md-option>
+								<md-option bng-sound-class="bng_click_generic_small" ng-click="restoreVehicles(player.name)" 		ng-if="player.id !== '?'"	>{{:: 'ui.apps.beammp.playerlist.restoreVehicles' | translate}}</md-option>
 							</md-select>
 						</md-input-container>
 					</div>

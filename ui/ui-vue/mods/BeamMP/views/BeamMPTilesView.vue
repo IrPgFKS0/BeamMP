@@ -3,7 +3,7 @@
     <button class="tile" @click="openView('official')">{{ $tt("ui.beammp.official") }}</button>
     <button class="tile" @click="openView('featured')">{{ $tt("ui.beammp.featured") }}</button>
     <button class="tile" @click="openView('partner')">{{ $tt("ui.beammp.partner") }}</button>
-    <button class="tile" @click="openView('favorites')">{{ $tt("ui.beammp.favorites") }}</button>
+    <button class="tile" @click="openView('favorites')">{{ $tt("ui.beammp.serverBrowser.saveAsFavorites") }}</button>
     <button class="tile" @click="openView('recent')">{{ $tt("ui.beammp.recent") }}</button>
 
     <button

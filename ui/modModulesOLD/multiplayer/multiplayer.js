@@ -1007,7 +1007,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 				if (lastModInfo != '' && lastModInfo != modName) {
 					const lastMod = vm.downloadingMods.find(mod => mod.name === lastModInfo)
 					lastMod.progress = 100
-					lastMod.speed = $filter('translate')('ui.multiplayer.download.done')
+					lastMod.speed = $filter('translate')('ui.beammp.serverBrowser.download.done')
 					lastModInfo = modName
 				}
 			})
@@ -1040,7 +1040,7 @@ function($scope, $state, $timeout, $mdDialog, $filter, ConfirmationDialog, toast
 			if (data.message == "done") {
 				vm.loadingStatus = $filter('translate')('ui.multiplayer.loading')
 				$timeout(function() {
-					vm.loadingStatus = $filter('translate')('ui.multiplayer.download.done')
+					vm.loadingStatus = $filter('translate')('ui.beammp.serverBrowser.download.done')
 				}, 5000)
 				lastModInfo = ''
 			} else {

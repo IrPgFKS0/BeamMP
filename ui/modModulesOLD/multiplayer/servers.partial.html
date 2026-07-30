@@ -101,7 +101,7 @@
 									<img class="button-icon button-icon-filter" ng-src="{{ getVueIconPath('shieldCheckmark') }}" /> {{:: 'ui.multiplayer.server.isUnmodded' | translate}}
 								</span>
 								<span ng-show="{{!server.server.modstotalsize}}">
-									<img class="button-icon button-icon-filter" ng-src="{{ getVueIconPath('danger') }}" /> {{:: 'ui.multiplayer.server.unknownMods' | translate}}
+									<img class="button-icon button-icon-filter" ng-src="{{ getVueIconPath('danger') }}" /> {{:: 'ui.beammp.serverBrowser.server.unknownMods' | translate}}
 								</span>
 								<div ng-show="{{customToNumber(server.server.modstotal) > 0}}" style="width:95%">
 									<div ng-bind="'{{:: 'ui.multiplayer.server.mods' | translate}}'+' ('+modCount(server.server.modlist || '')+'):'"></div>
@@ -109,7 +109,7 @@
 											<span class="tagList tagListShort" ng-repeat="text in modList(server.server.modlist|| '').split(', ')" ng-bind="text.trim()"></span>
 										</div>
 										<!--<div style="margin-left: 10px; max-width: 75%; max-height: 200px; overflow-y: auto; background: rgba(0, 0, 0, 0.1);">{{modList(server.server.modlist|| "")}}</div></li>-->
-									<div style="margin-top:0.8em;font-size:0.8em;color:var(--off-white-from-vue)" ng-bind="'{{:: 'ui.multiplayer.server.modsTotalFilesize' | translate}}'+' '+formatBytes(server.server.modstotalsize || 0)"></div>
+									<div style="margin-top:0.8em;font-size:0.8em;color:var(--off-white-from-vue)" ng-bind="'{{:: 'ui.beammp.serverBrowser.server.modsTotalFilesize' | translate}}'+' '+formatBytes(server.server.modstotalsize || 0)"></div>
 								</div>
 							</div>
 						</div>

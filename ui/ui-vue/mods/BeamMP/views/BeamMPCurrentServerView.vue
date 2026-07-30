@@ -39,11 +39,11 @@
               </dd>
             </div>
             <div>
-              <dt>{{ $tt("ui.beammp.server.owner") }}</dt>
+              <dt>{{ $tt("ui.beammp.serverBrowser.server.owner") }}</dt>
               <dd>{{ currentServer.owner || "—" }}</dd>
             </div>
             <div>
-              <dt>{{ $tt("ui.beammp.server.map") }}</dt>
+              <dt>{{ $tt("ui.beammp.serverBrowser.server.map") }}</dt>
               <dd>{{ currentServer.mapName || currentServer.map || "—" }}</dd>
             </div>
             <div>
@@ -54,7 +54,7 @@
         </section>
 
         <section class="panel">
-          <h3>{{ $tt("ui.beammp.server.tags") }}</h3>
+          <h3>{{ $tt("ui.beammp.serverBrowser.server.tags") }}</h3>
           <div v-if="!serverTags.length" class="muted">
             {{ $tt("ui.beammp.server.noTags") }}
           </div>
@@ -65,13 +65,13 @@
       </div>
 
       <section class="panel">
-        <h3>{{ $tt("ui.beammp.server.description") }}</h3>
+        <h3>{{ $tt("ui.beammp.serverBrowser.server.description") }}</h3>
         <p class="description">{{ currentServer.sdesc || "No description supplied." }}</p>
       </section>
 
       <section class="panel">
         <div class="panel-heading">
-          <h3>{{ $tt("ui.beammp.server.mods") }}</h3>
+          <h3>{{ $tt("ui.common.beammp.mods") }}</h3>
           <span>{{ displayedMods.length }}</span>
         </div>
         <div v-if="!displayedMods.length" class="muted">
@@ -81,7 +81,7 @@
           <span v-for="modName in displayedMods" :key="modName" class="chip chip--mod">{{ modName }}</span>
         </div>
         <small v-if="currentServer.modstotalsize">
-          {{ $tt("ui.beammp.server.modsTotalFilesize") }} {{ formatBytes(currentServer.modstotalsize) }}
+          {{ $tt("ui.beammp.serverBrowser.server.modsTotalFilesize") }} {{ formatBytes(currentServer.modstotalsize) }}
         </small>
       </section>
 

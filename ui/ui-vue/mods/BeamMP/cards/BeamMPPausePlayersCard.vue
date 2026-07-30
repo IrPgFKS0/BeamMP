@@ -2,7 +2,7 @@
   <div class="card">
     <header class="card-header">
       <div>
-        <h3>{{ $tt("ui.beammp.server.playerList") }}</h3>
+        <h3>{{ $tt("ui.common.beammp.playerList") }}</h3>
         <p>{{ players.length }} {{ players.length === 1 ? "player" : "players" }} connected</p>
       </div>
       <span class="count">{{ players.length }}</span>
@@ -20,16 +20,16 @@
         class="player-action"
         :accent="ACCENTS.menu"
         :icon="icons.copy"
-        :aria-label="$tt('ui.apps.multiplayer.playerlist.copyname')"
-        :title="$tt('ui.apps.multiplayer.playerlist.copyname')"
+        :aria-label="$tt('ui.apps.beammp.playerlist.copyname')"
+        :title="$tt('ui.apps.beammp.playerlist.copyname')"
         @click="copyName(player.name)"
       />
       <BngButton
         class="player-action"
         :accent="ACCENTS.menu"
         :icon="icons.external"
-        :aria-label="$tt('ui.apps.multiplayer.playerlist.openProfile')"
-        :title="$tt('ui.apps.multiplayer.playerlist.openProfile')"
+        :aria-label="$tt('ui.apps.beammp.playerlist.openProfile')"
+        :title="$tt('ui.apps.beammp.playerlist.openProfile')"
         @click="openProfile(player.name)"
       />
     </div>
