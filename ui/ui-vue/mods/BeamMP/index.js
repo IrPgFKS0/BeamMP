@@ -108,28 +108,44 @@ async function showBeamMPDialog(options = {}) {
 }
 
 
-// LAN: bottom info-bar version badge. Upstream 4.22 removed the old bottom-left "BeamMP vX" info-bar
-// injection (the version now only shows inside the BeamMP menu sidebar) -- but at-a-glance build
-// identification from the MAIN menu has repeatedly mattered on this LAN, so re-add a small badge in
-// the game's info-bar (the same wrapper upstream's margin observer reads). Data comes from the
-// onBeamMPInfo hook; we also poke Lua once so it shows without opening the BeamMP menu.
+// LAN: bottom info-bar version badge, styled like 0.38. Upstream 4.22 dropped the injection (their
+// last iteration lived in the deleted Angular modModules file, commit 380eb73d); this recreates it
+// against 0.39's InfoBar: the badge is appended INTO the game's .info-bar-stats row, so it inherits
+// the native font/size/line and sits immediately right of the game's version pill, separated by the
+// same skewed orange divider the bar itself uses. Re-attached on a slow interval because the menu
+// DOM remounts on route transitions. Cosmetic-only: every step is guarded.
 const LAN_BADGE_ID = "beammp-lan-version-badge"
-function upsertLanVersionBadge(data) {
+let lanBadgeInfo = null
+let lanBadgeTimer = null
+function lanBadgeAttach() {
   try {
-    const bar = document.querySelector("#vue-app > div.vue-app-main > div.app-infobar-wrapper")
-    if (!bar) return
+    const stats =
+      document.querySelector("#vue-app .app-infobar-wrapper .info-bar-stats")
+      || document.querySelector("#vue-app .info-bar .info-bar-stats")
+      || document.querySelector(".info-bar-stats")
+    if (!stats) return
     let el = document.getElementById(LAN_BADGE_ID)
     if (!el) {
-      el = document.createElement("div")
+      el = document.createElement("span")
       el.id = LAN_BADGE_ID
-      el.style.cssText = "display:inline-flex;align-items:center;margin-left:0.5em;padding:0.15em 0.6em;" +
-        "background:rgba(0,0,0,0.65);border-radius:0.25em;font-size:0.85em;color:#fff;white-space:nowrap;"
-      bar.appendChild(el)
+      // flex:0 0 auto + nowrap: the "-LAN pNN" string is longer than stock and the bar is a flex
+      // row -- without this it gets squeezed to "BeamMP v..." (same fix the 0.38 fork needed).
+      el.style.cssText = "display:inline-flex;align-items:center;white-space:nowrap;flex:0 0 auto;"
+      el.innerHTML =
+        '<span class="divider" style="display:inline-block;width:.25rem;height:1.8em;margin:0 .2rem 0 .5rem;background-color:#f60;transform:skew(-23deg);"></span>' +
+        '<span style="padding:0 .25em;">BeamMP&nbsp;v.<span id="beammp-lan-version-text" style="font-weight:600;"></span></span>'
+      stats.appendChild(el)
     }
-    el.textContent = "BeamMP v" + (data?.beammpGameVer || "?") + " · launcher " + (data?.beammpLauncherVer || "?")
-  } catch (e) { /* the badge is cosmetic -- never let it break the mod */ }
+    const txt = document.getElementById("beammp-lan-version-text")
+    if (txt) txt.textContent = String(lanBadgeInfo?.beammpGameVer || "?")
+  } catch (e) { /* cosmetic only -- never let the badge break the mod */ }
+}
+function upsertLanVersionBadge(data) {
+  lanBadgeInfo = data || lanBadgeInfo
+  lanBadgeAttach()
 }
 function removeLanVersionBadge() {
+  if (lanBadgeTimer) { clearInterval(lanBadgeTimer); lanBadgeTimer = null }
   const el = document.getElementById(LAN_BADGE_ID)
   if (el && el.parentNode) el.parentNode.removeChild(el)
 }
@@ -137,6 +153,7 @@ function removeLanVersionBadge() {
 export async function onLoad() {
   events.on("onBeamMPShowVueDialog", showBeamMPDialog)
   events.on("onBeamMPInfo", upsertLanVersionBadge) // LAN version badge feed
+  lanBadgeTimer = setInterval(lanBadgeAttach, 2000) // re-attach across menu remounts
   api.engineLua("if MPCoreNetwork and MPCoreNetwork.sendBeamMPInfo then MPCoreNetwork.sendBeamMPInfo() end")
 
   // Register the standalone route before advertising its Main Menu button.
