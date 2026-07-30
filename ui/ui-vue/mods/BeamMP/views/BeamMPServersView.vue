@@ -603,7 +603,7 @@ async function join(server) {
 }
 
 function syncView() {
-  const view = String(route.params.view || "servers")
+  const view = String(route.params.view || "favorites") // LAN: default landing is Favorites (the public-servers category button is removed)
   setView(view)
 }
 
