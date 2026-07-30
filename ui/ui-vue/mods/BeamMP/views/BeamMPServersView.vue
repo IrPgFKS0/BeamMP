@@ -145,21 +145,33 @@
           <label class="filter-field">
             <span>Range Min</span>
             <input
+              v-bng-text-input
               class="number-input"
-              type="number"
-              min="0"
-              :value="uiFilters.playerCountMin"
-              @input="event => updateNumber('playerCountMin', event.target.value)"
+              type="text"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              :aria-label="$tt('ui.beammp.serverBrowser.filters.playerCountMin')"
+              :value="playerCountDrafts.min"
+              @input="event => updatePlayerCountDraft('min', event)"
+              @blur="commitPlayerCount('min')"
+              @keydown.enter.prevent="event => event.currentTarget.blur()"
+              @keydown.esc.prevent="restorePlayerCountDraft('min')"
             />
           </label>
           <label class="filter-field">
             <span>Range Max</span>
             <input
+              v-bng-text-input
               class="number-input"
-              type="number"
-              min="0"
-              :value="uiFilters.playerCountMax"
-              @input="event => updateNumber('playerCountMax', event.target.value)"
+              type="text"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              :aria-label="$tt('ui.beammp.serverBrowser.filters.playerCountMax')"
+              :value="playerCountDrafts.max"
+              @input="event => updatePlayerCountDraft('max', event)"
+              @blur="commitPlayerCount('max')"
+              @keydown.enter.prevent="event => event.currentTarget.blur()"
+              @keydown.esc.prevent="restorePlayerCountDraft('max')"
             />
           </label>
         </section>
@@ -271,6 +283,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useRoute } from "vue-router"
 import { BngButton, BngInput } from "@/common/components/base"
+import { vBngTextInput } from "@/common/directives"
 import { useBeamMPState } from "../shared/beammpState.js"
 import { icons as bngIcons } from "/ui/ui-vue/src/assets/fonts/bngIcons/bngIcons.js"
 
@@ -279,6 +292,10 @@ const filtersRail = ref(null)
 const serversTbody = ref(null)
 const filtersRailMaxHeight = ref("")
 const uiFilters = ref({})
+const playerCountDrafts = ref({
+  min: "0",
+  max: "64",
+})
 let filtersRailResizeObserver = null
 let applyFiltersDebounceTimer = null
 const FILTERS_DEBOUNCE_MS = 400
@@ -349,6 +366,48 @@ function updateNumber(key, value) {
     [key]: Number(value || 0),
   }
   queueFilterUpdate()
+}
+
+function playerCountFilterKey(field) {
+  return field === "min" ? "playerCountMin" : "playerCountMax"
+}
+
+function updatePlayerCountDraft(field, event) {
+  const value = String(event?.target?.value ?? "").replace(/\D/g, "")
+  if (event?.target) event.target.value = value
+  playerCountDrafts.value = {
+    ...playerCountDrafts.value,
+    [field]: value,
+  }
+}
+
+function restorePlayerCountDraft(field) {
+  const key = playerCountFilterKey(field)
+  playerCountDrafts.value = {
+    ...playerCountDrafts.value,
+    [field]: String(uiFilters.value[key] ?? 0),
+  }
+}
+
+function commitPlayerCount(field) {
+  const key = playerCountFilterKey(field)
+  const draft = playerCountDrafts.value[field]
+
+  if (draft === "") {
+    restorePlayerCountDraft(field)
+    return
+  }
+
+  const value = Math.max(0, Math.trunc(Number(draft)))
+  uiFilters.value = {
+    ...uiFilters.value,
+    [key]: value,
+  }
+  playerCountDrafts.value = {
+    ...playerCountDrafts.value,
+    [field]: String(value),
+  }
+  applyFiltersNow()
 }
 
 function onSearch(value) {
@@ -424,6 +483,14 @@ function queueFilterUpdate() {
     applyFiltersDebounceTimer = null
     updateFilter(normalizeFilters(uiFilters.value))
   }, FILTERS_DEBOUNCE_MS)
+}
+
+function applyFiltersNow() {
+  if (applyFiltersDebounceTimer) {
+    clearTimeout(applyFiltersDebounceTimer)
+    applyFiltersDebounceTimer = null
+  }
+  updateFilter(normalizeFilters(uiFilters.value))
 }
 
 function growRenderedServers(batchSize = RENDER_BATCH_COUNT) {
@@ -546,6 +613,10 @@ watch(
   () => state.filters.value,
   filters => {
     uiFilters.value = normalizeFilters(filters)
+    playerCountDrafts.value = {
+      min: String(uiFilters.value.playerCountMin),
+      max: String(uiFilters.value.playerCountMax),
+    }
   },
   { deep: true, immediate: true },
 )

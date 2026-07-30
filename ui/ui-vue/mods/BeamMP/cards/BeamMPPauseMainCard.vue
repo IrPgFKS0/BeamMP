@@ -72,7 +72,7 @@ import { useBeamMPState } from "../shared/beammpState.js"
 
 const bngVue = window.bngVue || { gotoGameState() {} }
 const { api } = useBridge()
-const { state } = useBeamMPState()
+const { extensionCommand, state } = useBeamMPState()
 const showLeaveConfirm = ref(false)
 const showQuitConfirm = ref(false)
 
@@ -90,7 +90,7 @@ function openServerList() {
 
 function confirmLeaveServer() {
   showLeaveConfirm.value = false
-  api.engineLua("MPCoreNetwork.leaveServer(true)")
+  extensionCommand("MPCoreNetwork", "leaveServer", "true")
 }
 
 function confirmQuitGame() {

@@ -1,7 +1,9 @@
 import { computed, ref } from "vue"
 import { useBridge } from "@/bridge"
 
-const { api } = useBridge()
+// useBridge is a Vue composable, so initialise it from useBeamMPState() while
+// component setup is active, then retain its API for this shared state module.
+let bridgeApi
 
 const DEFAULT_FILTERS = {
   searchText: "",
@@ -91,15 +93,88 @@ const state = {
 }
 
 let listenersReady = false
+let lastExtensionErrorNotificationAt = 0
+const EXTENSION_ERROR_NOTIFICATION_COOLDOWN_MS = 10000
+const LUA_IDENTIFIER_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/
 
 function engineLua(command, callback) {
-  api.engineLua(command, callback)
+  bridgeApi.engineLua(command, callback)
 }
 
 function luaCall(command) {
   return new Promise(resolve => {
     engineLua(command, data => resolve(data))
   })
+}
+
+function extensionInvocation(extensionName, methodName, args = "") {
+  if (!LUA_IDENTIFIER_PATTERN.test(extensionName) || !LUA_IDENTIFIER_PATTERN.test(methodName)) {
+    throw new Error(`Invalid BeamMP extension call: ${extensionName}.${methodName}`)
+  }
+
+  const callArgs = String(args || "").trim()
+  const missingExtension = bridgeApi.serializeToLua(`Extension ${extensionName} is not loaded.`)
+  const missingMethod = bridgeApi.serializeToLua(`Method ${extensionName}.${methodName} is not available.`)
+
+  return `(function() `
+    + `local _extension = ${extensionName}; `
+    + `if not _extension then return {ok=false, error=${missingExtension}} end; `
+    + `local _method = _extension.${methodName}; `
+    + `if type(_method) ~= "function" then return {ok=false, error=${missingMethod}} end; `
+    + `local _ok, _value = pcall(_method${callArgs ? `, ${callArgs}` : ""}); `
+    + `if not _ok then return {ok=false, error=tostring(_value)} end; `
+    + `return {ok=true, value=_value} `
+    + `end)()`
+}
+
+function notifyExtensionError(extensionName, methodName, error) {
+  const operation = `${extensionName}.${methodName}`
+  const detail = String(error || "The Lua call did not return a status.")
+  const message = `${operation} failed. ${detail}`
+  const now = Date.now()
+
+  console.error(`[BeamMP] ${message}`)
+  if (now - lastExtensionErrorNotificationAt < EXTENSION_ERROR_NOTIFICATION_COOLDOWN_MS) return
+
+  lastExtensionErrorNotificationAt = now
+  const notification = bridgeApi.serializeToLua({
+    type: "error",
+    title: "BeamMP error",
+    msg: message,
+    config: {
+      closeButton: true,
+      timeOut: 8000,
+      extendedTimeOut: 2000,
+    },
+  })
+  engineLua(`guihooks.trigger("toastrMsg", ${notification})`)
+}
+
+async function invokeExtension(extensionName, methodName, args = "") {
+  let invocation
+  try {
+    invocation = extensionInvocation(extensionName, methodName, args)
+  } catch (error) {
+    notifyExtensionError(extensionName, methodName, error?.message)
+    return { ok: false }
+  }
+
+  const result = await luaCall(invocation)
+  if (!result?.ok) {
+    notifyExtensionError(extensionName, methodName, result?.error)
+    return { ok: false }
+  }
+  return result
+}
+
+async function extensionCommand(extensionName, methodName, args = "") {
+  const result = await invokeExtension(extensionName, methodName, args)
+  return Boolean(result.ok)
+}
+
+async function extensionCall(extensionName, methodName, args = "") {
+  const result = await invokeExtension(extensionName, methodName, args)
+  return result.ok ? result.value : undefined
 }
 
 function encodeBase64(input) {
@@ -231,8 +306,8 @@ function applyFilters(items, view) {
 
     const checks = []
 
-    checks.push(Number(server.players || 0) >= Number(f.playerCountMin || 0))
-    checks.push(Number(server.players || 0) <= Number(f.playerCountMax || 9999))
+    checks.push(Number(server.players || 0) >= Number(f.playerCountMin ?? 0))
+    checks.push(Number(server.players || 0) <= Number(f.playerCountMax ?? 100))
 
     if (server.modstotalsize) {
       checks.push((Number(f.sliderMaxModSize) * 1048576) >= Number(server.modstotalsize))
@@ -301,11 +376,11 @@ function addRecent(server) {
 
 function saveFavorites() {
   const encoded = encodeBase64(JSON.stringify(state.favorites.value))
-  engineLua(`MPConfig.setFavorites('${encoded}')`)
+  extensionCommand("MPConfig", "setFavorites", `'${encoded}'`)
 }
 
 async function loadFavorites() {
-  const data = await luaCall("MPConfig.getFavorites()")
+  const data = await extensionCall("MPConfig", "getFavorites")
   if (!data) {
     state.favorites.value = []
     return
@@ -345,19 +420,19 @@ function selectServer(serverId) {
 }
 
 async function refreshConnectionState() {
-  state.loggedIn.value = Boolean(await luaCall("MPCoreNetwork.isLoggedIn()"))
-  state.launcherConnected.value = Boolean(await luaCall("MPCoreNetwork.isLauncherConnected()"))
+  state.loggedIn.value = Boolean(await extensionCall("MPCoreNetwork", "isLoggedIn"))
+  state.launcherConnected.value = Boolean(await extensionCall("MPCoreNetwork", "isLauncherConnected"))
   state.auth.value = state.loggedIn.value
-    ? (await luaCall("MPCoreNetwork.getAuthResult()")) || {}
+    ? (await extensionCall("MPCoreNetwork", "getAuthResult")) || {}
     : {}
 }
 
 async function requestServerList() {
-  engineLua("MPCoreNetwork.requestServerList()")
+  extensionCommand("MPCoreNetwork", "requestServerList")
 }
 
 async function connectToLauncher() {
-  engineLua("MPCoreNetwork.connectToLauncher()")
+  extensionCommand("MPCoreNetwork", "connectToLauncher")
 }
 
 async function login(username, password) {
@@ -367,16 +442,16 @@ async function login(username, password) {
     return
   }
   const credentials = { username: username.trim(), password: password.trim() }
-  engineLua(`MPCoreNetwork.login(${api.serializeToLua(credentials)})`)
+  extensionCommand("MPCoreNetwork", "login", bridgeApi.serializeToLua(credentials))
 }
 
 async function guestLogin() {
   state.loginError.value = ""
-  engineLua("MPCoreNetwork.login()")
+  extensionCommand("MPCoreNetwork", "login")
 }
 
 async function logout() {
-  engineLua("MPCoreNetwork.logout()")
+  extensionCommand("MPCoreNetwork", "logout")
   state.loggedIn.value = false
   state.auth.value = {}
 }
@@ -395,14 +470,18 @@ async function connectToServer(ip, port, name = "", skipModWarning = false) {
   state.loadingOverlayVisible.value = true
   state.loadingStatus.value = ""
   state.downloadingMods.value = []
-  engineLua(`MPCoreNetwork.connectToServer(\"${useIp}\", ${usePort}, \"${name || ""}\", ${skipModWarning ? "true" : "false"})`)
+  extensionCommand(
+    "MPCoreNetwork",
+    "connectToServer",
+    `\"${useIp}\", ${usePort}, \"${name || ""}\", ${skipModWarning ? "true" : "false"}`,
+  )
 }
 
 function closeLoadingOverlay() {
   state.loadingOverlayVisible.value = false
   state.loadingStatus.value = ""
   state.downloadingMods.value = []
-  engineLua("MPCoreNetwork.leaveServer()")
+  extensionCommand("MPCoreNetwork", "leaveServer")
 }
 
 function showSecurityPrompt(message = "") {
@@ -413,13 +492,13 @@ function showSecurityPrompt(message = "") {
 function approveSecurityPrompt() {
   state.securityPromptVisible.value = false
   state.securityPromptMessage.value = ""
-  engineLua("MPCoreNetwork.approveModDownload()")
+  extensionCommand("MPCoreNetwork", "approveModDownload")
 }
 
 function rejectSecurityPrompt() {
   state.securityPromptVisible.value = false
   state.securityPromptMessage.value = ""
-  engineLua("MPCoreNetwork.rejectModDownload()")
+  extensionCommand("MPCoreNetwork", "rejectModDownload")
   state.loadingOverlayVisible.value = false
 }
 
@@ -429,17 +508,17 @@ async function directConnectFromClipboard() {
 
 function openExternal(url) {
   if (!url) return
-  engineLua(`MPCoreNetwork.openURL(\"${url}\")`)
+  extensionCommand("MPCoreNetwork", "openURL", bridgeApi.serializeToLua(String(url)))
 }
 
 async function getLauncherVersion() {
-  return await luaCall("MPCoreNetwork.getLauncherVersion()")
+  return await extensionCall("MPCoreNetwork", "getLauncherVersion")
 }
 
 function acceptTos() {
   localStorage.setItem("tosAccepted", "true")
   state.tosAccepted.value = true
-  engineLua("MPConfig.acceptTos()")
+  extensionCommand("MPConfig", "acceptTos")
 }
 
 function setView(viewName) {
@@ -625,6 +704,8 @@ const visibleServers = computed(() => {
 })
 
 export function useBeamMPState(events) {
+  const { api } = useBridge()
+  if (!bridgeApi) bridgeApi = api
   if (events) ensureListeners(events)
 
   return {
@@ -642,6 +723,8 @@ export function useBeamMPState(events) {
     connectToLauncher,
     connectToServer,
     directConnectFromClipboard,
+    extensionCall,
+    extensionCommand,
     formatBytes,
     getLauncherVersion,
     guestLogin,

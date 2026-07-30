@@ -97,7 +97,10 @@ async function showBeamMPDialog(options = {}) {
   try {
     const result = await activeBeamMPDialog
     if (result === "returnToMenu") {
-      api.engineLua(options.okLua || "MPCoreNetwork.leaveServer(true)")
+      api.engineLua(
+        options.okLua
+        || "if MPCoreNetwork and MPCoreNetwork.leaveServer then MPCoreNetwork.leaveServer(true) end",
+      )
     }
   } finally {
     activeBeamMPDialog = null

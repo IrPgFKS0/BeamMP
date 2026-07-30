@@ -29,8 +29,10 @@ import { onMounted, onUnmounted, ref } from "vue"
 import { lua, useBridge } from "@/bridge"
 import { BngButton, BngIcon, icons } from "@/common/components/base"
 import { BEAMMP_SERVERS_ROUTE_NAME } from "../shared/constants.js"
+import { useBeamMPState } from "../shared/beammpState.js"
 
-const { api, events } = useBridge()
+const { events } = useBridge()
+const { extensionCall } = useBeamMPState()
 const serverMods = ref([])
 
 function normalizeMods(value) {
@@ -49,8 +51,8 @@ function updateServerMods(value) {
   serverMods.value = normalizeMods(value)
 }
 
-function requestServerMods() {
-  api.engineLua("MPModManager.getServerMods()", updateServerMods)
+async function requestServerMods() {
+  updateServerMods(await extensionCall("MPModManager", "getServerMods"))
 }
 
 function openRoute() {

@@ -9,7 +9,7 @@ let lastSentMessage = "";
 let lastMsgId = 0;
 let newChatMenu = false;
 import('/ui/lib/ext/purify.min.js')
-app.directive('multiplayerchat', [function () {
+app.directive('beammpchat', [function () {
 	return {
 		templateUrl: '/ui/modules/apps/BeamMP-Chat/app.html',
 		replace: true,
@@ -170,6 +170,7 @@ app.controller("BeamMPChatController", ['$scope', 'Settings', function ($scope, 
 
 	$scope.$on('SettingsChanged', function (event, data) {
 		Settings.values = data.values;
+		newChatMenu = Settings.values.enableNewChatMenu;
 
 		applyChatStyle(Settings.values.useUiAppRedesign);
 

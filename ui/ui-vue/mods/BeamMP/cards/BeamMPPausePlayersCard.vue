@@ -39,8 +39,10 @@ import { onMounted, onUnmounted, ref } from "vue"
 import { useBridge } from "@/bridge"
 import { ACCENTS, BngButton, BngIcon, icons } from "@/common/components/base"
 import { BngBinding, BngCardHeading } from "@/common/components/base"
+import { useBeamMPState } from "../shared/beammpState.js"
 
 const { api, events } = useBridge()
+const { extensionCommand } = useBeamMPState()
 const players = ref([])
 
 function onPlayerList(payload) {
@@ -70,13 +72,13 @@ function copyName(name) {
 
 function openProfile(name) {
   const url = `https://forum.beammp.com/u/${name}/summary`
-  api.engineLua(`MPCoreNetwork.openURL(${api.serializeToLua(url)})`)
+  extensionCommand("MPCoreNetwork", "openURL", api.serializeToLua(url))
 }
 
 onMounted(() => {
   events.on("onBeamMPPlayerList", onPlayerList)
   events.on("onBeamMPPlayerPings", onPlayerPings)
-  api.engineLua("UI.updatePlayersList()")
+  extensionCommand("UI", "updatePlayersList")
 })
 
 onUnmounted(() => {
