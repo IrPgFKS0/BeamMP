@@ -1661,7 +1661,7 @@ local function onVehicleSwitched(oldGameVehicleID, newGameVehicleID)
 			local newVehObj = getVehicleByGameID(newGameVehicleID) or {}
 
 			-- enter a remote car as a passenger
-			if not newVehObj.isLocal and oldVehicle and oldVehicle:getJBeamFilename() == "unicycle" then
+			if not newVehObj.isLocal and oldVehicle and oldVehicle:getJBeamFilename() == "unicycle" and newVehicle and newVehicle:getJBeamFilename() ~= "unicycle" then
 				--core_camera.setByName(0,"onboard.rider") -- citybus
 				core_camera.setByName(0,"passenger") -- auto generated
 				core_camera.setByName(0,"onboard.passenger") -- custom

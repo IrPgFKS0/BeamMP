@@ -74,8 +74,8 @@ local function renderTheming()
             end
         end
 
-        imgui.EndChild()
     end
+    imgui.EndChild() -- 0.39 imgui: unconditional
 
     imgui.SetCursorPosY(imgui.GetWindowHeight() - 32)
     if imgui.Button("Reset to default") then
@@ -154,11 +154,11 @@ local function renderGeneral()
         if imgui.Checkbox("##Keep active on Enter", pKeepActive) then
             UI.settings.window.keepActive = pKeepActive[0]
         end
-        
-        -- Bottom Buttons
-        imgui.EndChild()
+    end
+    -- Bottom Buttons
+    imgui.EndChild() -- 0.39 imgui: unconditional
 
-        imgui.SetCursorPosY(imgui.GetWindowHeight() - 32)
+    imgui.SetCursorPosY(imgui.GetWindowHeight() - 32)
         if imgui.Button("Reset to default") then
             UI.settings = utils.copyTable(UI.defaultSettings)
             sortedSettings = {}
@@ -178,7 +178,6 @@ local function renderGeneral()
         if imgui.Button("Save") then
             saveConfig()
         end
-    end
 end
 
 

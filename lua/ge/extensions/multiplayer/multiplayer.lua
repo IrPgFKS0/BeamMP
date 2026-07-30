@@ -14,6 +14,7 @@ local M = {state={}}
 
 local originalGetDriverData
 local originalToggleWalkingMode
+local originalOnVehicleSwitched
 local original_onInstabilityDetected
 local original_markerInteraction_onPreRender
 
@@ -34,7 +35,7 @@ end
 
 --- Custom walking mode function that handles the getting of the unicycle and handles the deletion of it.
 local function modifiedToggleWalkingMode()
-	local unicycle = gameplay_walk.getPlayerUnicycle()
+	local unicycle = (gameplay_walk.getCurrentUnicycle or gameplay_walk.getPlayerUnicycle)() -- renamed getCurrentUnicycle in BeamNG 0.39; fallback keeps 0.38 compat
 	if unicycle ~= nil then
 		local veh = gameplay_walk.getVehicleInFront()
 		if not veh or veh:getJBeamFilename() == "unicycle" then return end
@@ -43,6 +44,19 @@ local function modifiedToggleWalkingMode()
 	
 	-- If we were in a unicycle and entered a vehicle, delete it so it disappears for other players as well
 	if unicycle ~= nil then
+		unicycle:delete()
+	end
+end
+
+--- 0.39: switching vehicles no longer routes through toggleWalkingMode, so hook onVehicleSwitched
+--- too -- if we left a unicycle for a real vehicle, delete the unicycle so it also disappears for
+--- every other player (upstream 0.39-compat #918).
+local function modifiedOnVehicleSwitched(oldId, newId, player)
+	local unicycle = scenetree.findObjectById(oldId)
+	local walkData = gameplay_walk.onSerialize()
+
+	originalOnVehicleSwitched(oldId, newId, player)
+	if unicycle ~= nil and walkData.unicycleId == oldId then
 		unicycle:delete()
 	end
 end
@@ -107,10 +121,17 @@ local function onUpdate(dt)
 			originalGetDriverData = core_camera.getDriverData
 			core_camera.getDriverData = modifiedGetDriverData
 		end
-		if gameplay_walk and gameplay_walk.toggleWalkingMode ~= modifiedToggleWalkingMode then
-			log('W', 'onUpdate', 'Setting modifiedToggleWalkingMode')
-			originalToggleWalkingMode = gameplay_walk.toggleWalkingMode
-			gameplay_walk.toggleWalkingMode = modifiedToggleWalkingMode
+		if gameplay_walk then
+			if gameplay_walk.toggleWalkingMode ~= modifiedToggleWalkingMode then
+				log('W', 'onUpdate', 'Setting modifiedToggleWalkingMode')
+				originalToggleWalkingMode = gameplay_walk.toggleWalkingMode
+				gameplay_walk.toggleWalkingMode = modifiedToggleWalkingMode
+			end
+			if gameplay_walk.onVehicleSwitched ~= modifiedOnVehicleSwitched then
+				log('W', 'onUpdate', 'Setting modifiedOnVehicleSwitched')
+				originalOnVehicleSwitched = gameplay_walk.onVehicleSwitched
+				gameplay_walk.onVehicleSwitched = modifiedOnVehicleSwitched
+			end
 		end
 
 		if worldReadyState == 0 then
@@ -163,6 +184,7 @@ local function onServerLeave()
 	if original_onInstabilityDetected then onInstabilityDetected = original_onInstabilityDetected end
 	if originalGetDriverData then core_camera.getDriverData = originalGetDriverData end
 	if originalToggleWalkingMode and gameplay_walk and gameplay_walk.toggleWalkingMode then gameplay_walk.toggleWalkingMode = originalToggleWalkingMode end
+	if originalOnVehicleSwitched and gameplay_walk and gameplay_walk.onVehicleSwitched then gameplay_walk.onVehicleSwitched = originalOnVehicleSwitched end
 	-- restore BeamNG's per-frame marker processing if we disabled it on join
 	if original_markerInteraction_onPreRender and gameplay_markerInteraction then
 		gameplay_markerInteraction.onPreRender = original_markerInteraction_onPreRender

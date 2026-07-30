@@ -305,8 +305,8 @@ local function render()
             imgui.Columns(1)
         end
 
-        imgui.EndChild()
     end
+    imgui.EndChild() -- 0.39 imgui: unconditional
 
     if scrollToBottom then
         scrollToBottom = false
@@ -345,8 +345,8 @@ local function render()
             end
         end
 
-        imgui.EndChild()
     end
+    imgui.EndChild() -- 0.39 imgui: unconditional
 
     imgui.PopStyleColor(1)
     imgui.PopStyleVar(3)

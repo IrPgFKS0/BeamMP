@@ -48,6 +48,7 @@ local function render()
             imgui.Text(player.ping)
         end
     end
+    imgui.EndChild() -- 0.39 imgui: was missing entirely (upstream #914 added it)
 end
 
 

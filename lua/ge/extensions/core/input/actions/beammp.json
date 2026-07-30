@@ -3,7 +3,7 @@
         "cat": "beammp",
         "order": 0,
         "ctx": "tlua",
-        "onDown": "if UI then UI.bringToFront() end",
+        "onUp": "if UI then UI.bringToFront() end",
         "isBasic": true,
         "title": "Bring to Front",
         "desc": "Bring the chat window to the front"
@@ -28,7 +28,7 @@
         "cat": "beammp",
         "order": 3,
         "ctx": "tlua",
-        "onDown": "if UI then UI.toggleChat() end",
+        "onUp": "if UI then UI.toggleChat() end",
         "isBasic": true,
         "title": "Toggle Chat",
         "desc": "Toggle the chat window"

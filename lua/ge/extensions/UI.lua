@@ -339,15 +339,17 @@ local function renderWindow()
                 currentWindow = windows.options
                 windowTitle = "BeamMP Chat (Options)"
             end
-            imgui.EndChild()
+        end
+        -- 0.39 imgui: EndChild/End must be called UNCONDITIONALLY (regardless of Begin*'s return),
+        -- matching upstream's 0.39-compat restructure. Render moved out of the titlebar child scope.
+        imgui.EndChild()
 
-            if not collapsed then
-                currentWindow.render()
-            end
+        if not collapsed then
+            currentWindow.render()
         end
         imgui.PopStyleVar()
-        imgui.End()
     end
+    imgui.End()
 
     imgui.PopStyleColor(16)
     imgui.PopStyleVar(3)
@@ -386,10 +388,10 @@ local function renderMapPicker()
                     M.mapPickerOpen = false
                 end
             end
-            imgui.EndChild()
         end
-        imgui.End()
+        imgui.EndChild() -- 0.39 imgui: unconditional
     end
+    imgui.End() -- 0.39 imgui: unconditional
     if not pOpen[0] then M.mapPickerOpen = false end
 end
 
