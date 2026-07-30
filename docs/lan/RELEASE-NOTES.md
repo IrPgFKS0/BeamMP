@@ -1,6 +1,6 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.22.0-LAN p13h60` · combined host exe `p13h35` (Windows + Linux) · **for BeamNG 0.39**
+**Build:** mod `4.22.0-LAN p13h61` · combined host exe `p13h35` (Windows + Linux) · **for BeamNG 0.39**
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -45,7 +45,7 @@ a little tuning (see `LAN-TUNING.md`).
 
 ## This release
 
-- **BeamNG 0.39 support (p13h58-p13h60).** Validated against 0.39.1.0 and upstream BeamMP 4.22:
+- **BeamNG 0.39 support (p13h58-p13h61).** Validated against 0.39.1.0 and upstream BeamMP 4.22:
   the mod version base now tracks upstream (`4.22.0-LAN`). The 0.39 blocker was stock BeamMP's own
   version gate silently deactivating the whole mod on any game update — the fork now **warns loudly
   but keeps loading** on unknown future game versions instead of bricking multiplayer. Also ported:
