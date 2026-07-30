@@ -1,6 +1,6 @@
 {
-  "domElement": "<beammp-playerlist></beammp-playerlist>",
-  "name": "BeamMP Player List",
+  "domElement": "<beammp-playerlist-vue></beammp-playerlist-vue>",
+  "name": "BeamMP Player List 2",
   "types": [
     "ui.apps.categories.beammp"
   ],

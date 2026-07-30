@@ -6,7 +6,7 @@ var app = angular.module('beamng.apps');
 var mdDialog;
 var mdDialogVisible = false;
 import('/ui/lib/ext/purify.min.js')
-app.directive('multiplayersession', [function () {
+app.directive('beammpSession', [function () {
 	return {
 		templateUrl: '/ui/modules/apps/BeamMP-Session/app.html',
 		replace: true,

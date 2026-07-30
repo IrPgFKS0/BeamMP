@@ -1,8 +1,8 @@
 {
-  "domElement": "<multiplayerchat></multiplayerchat>",
-  "name": "Multiplayer Chat",
+  "domElement": "<beammp-chat></beammp-chat>",
+  "name": "BeamMP Chat",
   "types": [
-    "ui.apps.categories.multiplayer"
+    "ui.apps.categories.beammp"
   ],
   "css": {
   	"left": "180px",
@@ -12,10 +12,10 @@
     "min-width": "320px",
     "min-height": "120px"
   },
-  "description": "Chat while in multiplayer servers",
+  "description": "Chat while in BeamMP servers",
   "author": "BeamMP",
   "version": "2.0",
-  "directive": "beammpchat",
+  "directive": "beammpChat",
   "category": "Gameplay",
   "isAuxiliary": false,
   "interactive": "required",

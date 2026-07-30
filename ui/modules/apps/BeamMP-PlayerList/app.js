@@ -4,10 +4,11 @@
 
 var connected = false;
 var players = [];
-let pingList = [];
+var pingList = [];
 var nickname = "";
 var app = angular.module('beamng.apps');
-app.directive('multiplayerplayerlist', [function () {
+app.directive('beammpPlayerList', [function () {
+	console.log("BeamMP Player List Directive initialized");
 	return {
 		templateUrl: '/ui/modules/apps/BeamMP-PlayerList/app.html',
 		replace: true,
@@ -43,6 +44,7 @@ app.controller("BeamMPPlayerListController", ['$scope', '$filter', 'Settings', f
 	};
 
 	$scope.init = function() {
+		console.log("BeamMP Player List Controller initialized");
 		// Set players list direction
 		setPLDirection(localStorage.getItem('plHorizontal'));
 		setPLDirection(localStorage.getItem('plVertical'));
@@ -51,12 +53,12 @@ app.controller("BeamMPPlayerListController", ['$scope', '$filter', 'Settings', f
 		
 		// Apply style on init
 		applyPlayerListStyle(Settings.values.useUiAppRedesign);
-      	bngApi.engineLua('settings.getValue("showPlayerIDs")', (data) => {
-      		$scope.showPlayerIDs = data
-    	})
+    bngApi.engineLua('settings.getValue("showPlayerIDs")', (data) => {
+      $scope.showPlayerIDs = data
+    })
 		bngApi.engineLua('settings.getValue("playerlistLeftclick")', (data) => {
 			$scope.playerlistLeftclick = data
-	  	})
+	  })
 	};
 
 	$scope.$on('SettingsChanged', function (event, data) {

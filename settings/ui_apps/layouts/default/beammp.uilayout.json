@@ -1,5 +1,5 @@
 {
-  "version":0.53,
+  "version":0.54,
   "apps":[
     {
       "appName":"forcedInduction",
@@ -74,7 +74,7 @@
       }
     },
 	  {
-      "appName":"multiplayerchat",
+      "appName":"beammpchat",
       "placement":{
         "width":"550px",
         "bottom":"0px",
@@ -83,7 +83,7 @@
       }
     },
     {
-      "appName":"multiplayerplayerlist",
+      "appName":"beammpplayerlist",
       "placement":{
         "bottom":"",
         "height":"560px",
@@ -95,7 +95,7 @@
       }
     },
     {
-      "appName":"multiplayersession",
+      "appName":"beammpsession",
       "placement":{
         "bottom":"",
         "height":"40px",
@@ -108,6 +108,6 @@
       }
     }
   ],
-  "title":"Multiplayer",
+  "title":"BeamMP",
   "type":"multiplayer"
 }

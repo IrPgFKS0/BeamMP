@@ -1,4 +1,4 @@
-.multiplayerPlayerList #main-container {
+.beammpPlayerList #main-container {
   display: flex;
   height: 100%;
   align-content: flex-end;
@@ -8,7 +8,7 @@
   font-weight: 600;
 }
 
-.multiplayerPlayerList #plist-container {
+.beammpPlayerList #plist-container {
   width: 100%;
   margin: 0;
   padding: 0;
@@ -21,8 +21,8 @@
   backdrop-filter: blur(12px);
 }
 
-.multiplayerPlayerList.ui-style-redesigned #plist-container,
-.multiplayerPlayerList.ui-style-redesigned #show-button {
+.beammpPlayerList.ui-style-redesigned #plist-container,
+.beammpPlayerList.ui-style-redesigned #show-button {
   border-color: rgba(var(--bng-cool-gray-100-rgb), 0.24);
   background: rgba(var(--bng-cool-gray-900-rgb), 0.34);
   box-shadow:
@@ -31,7 +31,7 @@
   backdrop-filter: blur(10px) saturate(115%);
 }
 
-.multiplayerPlayerList #players-table {
+.beammpPlayerList #players-table {
   width: 100%;
   padding: 0;
   border: 0;
@@ -41,16 +41,16 @@
   table-layout: fixed;
 }
 
-.multiplayerPlayerList #players-table tr:first-child {
+.beammpPlayerList #players-table tr:first-child {
   height: 34px;
   background: rgba(var(--bng-cool-gray-700-rgb), 0.58);
 }
 
-.multiplayerPlayerList.ui-style-redesigned #players-table tr:first-child {
+.beammpPlayerList.ui-style-redesigned #players-table tr:first-child {
   background: rgba(var(--bng-cool-gray-700-rgb), 0.26);
 }
 
-.multiplayerPlayerList #players-table th {
+.beammpPlayerList #players-table th {
   height: 34px;
   padding: 0 7px;
   border: 0;
@@ -60,7 +60,7 @@
   text-transform: uppercase;
 }
 
-.multiplayerPlayerList #players-table td {
+.beammpPlayerList #players-table td {
   height: 34px;
   max-width: 0;
   padding: 0 7px;
@@ -73,52 +73,52 @@
   white-space: nowrap;
 }
 
-.multiplayerPlayerList.ui-style-redesigned #players-table th,
-.multiplayerPlayerList.ui-style-redesigned #players-table td,
-.multiplayerPlayerList.ui-style-redesigned #show-button {
+.beammpPlayerList.ui-style-redesigned #players-table th,
+.beammpPlayerList.ui-style-redesigned #players-table td,
+.beammpPlayerList.ui-style-redesigned #show-button {
   text-shadow: 0 1px 2px rgba(var(--bng-off-black-rgb), 0.95);
 }
 
-.multiplayerPlayerList #players-table tr:not(:first-child) {
+.beammpPlayerList #players-table tr:not(:first-child) {
   background: transparent;
   transition: background-color 120ms ease;
 }
 
-.multiplayerPlayerList #players-table tr:not(:first-child):hover {
+.beammpPlayerList #players-table tr:not(:first-child):hover {
   background: rgba(var(--bng-orange-500-rgb), 0.16);
   transform: none;
 }
 
-.multiplayerPlayerList #players-table td:first-child {
+.beammpPlayerList #players-table td:first-child {
   color: var(--bng-cool-gray-400);
   font-size: 11px;
 }
 
-.multiplayerPlayerList #players-table td:nth-child(2) {
+.beammpPlayerList #players-table td:nth-child(2) {
   font-weight: 700;
 }
 
-.multiplayerPlayerList #players-table td:nth-child(3) {
+.beammpPlayerList #players-table td:nth-child(3) {
   color: var(--bng-cool-gray-300);
   font-variant-numeric: tabular-nums;
 }
 
-.multiplayerPlayerList .playerslist-col-1 {
+.beammpPlayerList .playerslist-col-1 {
   width: 32px;
 }
 
-.multiplayerPlayerList .playerslist-col-2 {
+.beammpPlayerList .playerslist-col-2 {
   width: auto;
   min-width: 100px;
 }
 
-.multiplayerPlayerList .playerslist-col-3 {
+.beammpPlayerList .playerslist-col-3 {
   width: 64px;
   padding: 0 !important;
   text-align: right !important;
 }
 
-.multiplayerPlayerList #player-count-badge {
+.beammpPlayerList #player-count-badge {
   display: inline-grid;
   min-width: 17px;
   height: 17px;
@@ -131,7 +131,7 @@
   font-size: 10px;
 }
 
-.multiplayerPlayerList .buttons {
+.beammpPlayerList .buttons {
   border: 0;
   background: transparent;
   color: var(--bng-cool-gray-200);
@@ -139,12 +139,12 @@
   transition: background-color 120ms ease, color 120ms ease;
 }
 
-.multiplayerPlayerList .buttons:hover {
+.beammpPlayerList .buttons:hover {
   background: rgba(var(--bng-orange-500-rgb), 0.2);
   color: var(--bng-off-white);
 }
 
-.multiplayerPlayerList .direction-buttons {
+.beammpPlayerList .direction-buttons {
   float: none;
   width: 30px;
   height: 34px;
@@ -152,7 +152,7 @@
   font-size: 15px;
 }
 
-.multiplayerPlayerList .tp-button {
+.beammpPlayerList .tp-button {
   width: 100% !important;
   min-height: 34px;
   padding: 0 5px;
@@ -160,7 +160,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-.multiplayerPlayerList #show-button {
+.beammpPlayerList #show-button {
   width: 28px;
   height: 75px;
   margin: 0 0 0 4px;
@@ -176,7 +176,7 @@
   font-weight: 700;
 }
 
-.multiplayerPlayerList #playerlist-contextmenu {
+.beammpPlayerList #playerlist-contextmenu {
   max-width: 210px;
   padding: 6px;
   border: 1px solid rgba(var(--bng-cool-gray-300-rgb), 0.34);
@@ -185,7 +185,7 @@
   box-shadow: 0 5px 18px rgba(var(--bng-off-black-rgb), 0.4);
 }
 
-.multiplayerPlayerList #playerlist-contextmenu > button {
+.beammpPlayerList #playerlist-contextmenu > button {
   width: 100%;
   margin: 0 0 3px;
   padding: 7px 9px;
@@ -197,15 +197,15 @@
   cursor: pointer;
 }
 
-.multiplayerPlayerList #playerlist-contextmenu > button:hover {
+.beammpPlayerList #playerlist-contextmenu > button:hover {
   background: rgba(var(--bng-orange-500-rgb), 0.32);
 }
 
-.multiplayerPlayerList #plist-container::-webkit-scrollbar {
+.beammpPlayerList #plist-container::-webkit-scrollbar {
   width: 4px;
 }
 
-.multiplayerPlayerList #plist-container::-webkit-scrollbar-thumb {
+.beammpPlayerList #plist-container::-webkit-scrollbar-thumb {
   border-radius: 2px;
   background: rgba(var(--bng-cool-gray-300-rgb), 0.5);
 }

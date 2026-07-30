@@ -47,7 +47,7 @@
 
     <main class="main-grid" :style="{ marginBottom: infobarMarginBottom }">
       <aside class="sidebar">
-        <img src="/ui/modModulesOLD/multiplayer/beammp_new_cropped.png" alt="BeamMP" class="logo" />
+        <img src="/ui/assets/BeamMP/beammp_new_cropped.png" alt="BeamMP" class="logo" />
         <div class="beammp-version">
           <span aria-hidden="true" />
           {{ $tt("ui.common.beammp.beammp") }} v{{ state.beammpMetrics.value.beammpGameVer }}

@@ -1,20 +1,20 @@
-.multiplayerChat {
+.beammpChat {
     box-sizing: border-box;
     color: var(--bng-off-white);
     font-family: var(--bmp-fnt-defs);
 }
 
-.multiplayerChat *,
-.multiplayerChat *::before,
-.multiplayerChat *::after {
+.beammpChat *,
+.beammpChat *::before,
+.beammpChat *::after {
     box-sizing: border-box;
 }
 
-.multiplayerChat .error {
+.beammpChat .error {
     color: var(--bng-add-red-400);
 }
 
-.multiplayerChat #chat-window {
+.beammpChat #chat-window {
     display: flex;
     width: 100%;
     height: 100%;
@@ -26,7 +26,7 @@
     font-size: 0.9rem;
 }
 
-.multiplayerChat #chat-list {
+.beammpChat #chat-list {
     display: flex;
     width: 100%;
     min-height: 0;
@@ -42,7 +42,7 @@
     scrollbar-gutter: stable;
 }
 
-.multiplayerChat .chat-message {
+.beammpChat .chat-message {
     padding: 0.32rem 0.5rem;
     border-left: 0.16rem solid transparent;
     border-radius: var(--bng-corners-1, 3px);
@@ -53,16 +53,16 @@
     transition: border-color 100ms ease, background-color 100ms ease, opacity 120ms ease;
 }
 
-.multiplayerChat .chat-message:nth-child(2n+1) {
+.beammpChat .chat-message:nth-child(2n+1) {
     background: rgba(var(--bng-cool-gray-800-rgb), 0.7);
 }
 
-.multiplayerChat .chat-message:hover {
+.beammpChat .chat-message:hover {
     border-left-color: var(--bng-orange-500);
     background: rgba(var(--bng-cool-gray-700-rgb), 0.82);
 }
 
-.multiplayerChat .chat-message-timestamp {
+.beammpChat .chat-message-timestamp {
     padding-right: 0.45rem;
     color: var(--bng-cool-gray-300);
     font-family: "VueNotoSans Mono", monospace;
@@ -71,7 +71,7 @@
     line-height: 1;
 }
 
-.multiplayerChat #chatbox {
+.beammpChat #chatbox {
     display: flex;
     width: 100%;
     min-width: 0;
@@ -88,20 +88,20 @@
     transition: border-color 100ms ease, background-color 100ms ease, box-shadow 100ms ease;
 }
 
-.multiplayerChat #chatbox:hover {
+.beammpChat #chatbox:hover {
     border-color: rgba(var(--bng-cool-gray-100-rgb), 0.6);
     border-left-color: var(--bng-orange-500);
     background: rgba(var(--bng-cool-gray-800-rgb), 0.94);
 }
 
-.multiplayerChat #chatbox:focus-within {
+.beammpChat #chatbox:focus-within {
     border-color: var(--bng-orange-400);
     box-shadow:
         0 0 0 0.12rem rgba(var(--bng-orange-500-rgb), 0.35),
         0 0.2rem 0.75rem rgba(var(--bng-off-black-rgb), 0.35);
 }
 
-.multiplayerChat #chat-input {
+.beammpChat #chat-input {
     width: 100%;
     min-width: 0;
     flex: 1 1 auto;
@@ -113,11 +113,11 @@
     font: inherit;
 }
 
-.multiplayerChat #chat-input::placeholder {
+.beammpChat #chat-input::placeholder {
     color: var(--bng-cool-gray-300);
 }
 
-.multiplayerChat .buttons {
+.beammpChat .buttons {
     min-width: 2.35rem;
     height: auto;
     margin: 0;
@@ -133,14 +133,14 @@
     transition: background-color 100ms ease, color 100ms ease;
 }
 
-.multiplayerChat .buttons:hover,
-.multiplayerChat .buttons:focus-visible {
+.beammpChat .buttons:hover,
+.beammpChat .buttons:focus-visible {
     outline: 0;
     background: rgba(var(--bng-orange-500-rgb), 0.32);
     color: var(--bng-off-white);
 }
 
-.multiplayerChat #send-button {
+.beammpChat #send-button {
     min-width: 3.7rem;
     border-left: 0;
     border-right: 1px solid rgba(var(--bng-cool-gray-300-rgb), 0.2);
@@ -148,41 +148,41 @@
     color: var(--bng-off-white);
 }
 
-.multiplayerChat #send-button:hover,
-.multiplayerChat #send-button:focus-visible {
+.beammpChat #send-button:hover,
+.beammpChat #send-button:focus-visible {
     background: var(--bng-orange-500);
 }
 
-.multiplayerChat .swap-buttons {
+.beammpChat .swap-buttons {
     flex: 0 0 2.35rem;
     padding: 0;
 }
 
-.multiplayerChat #chat-list::-webkit-scrollbar {
+.beammpChat #chat-list::-webkit-scrollbar {
     width: 0.3rem;
 }
 
-.multiplayerChat #chat-list::-webkit-scrollbar-track {
+.beammpChat #chat-list::-webkit-scrollbar-track {
     background: transparent;
 }
 
-.multiplayerChat #chat-list::-webkit-scrollbar-thumb {
+.beammpChat #chat-list::-webkit-scrollbar-thumb {
     border-radius: 0.2rem;
     background: rgba(var(--bng-cool-gray-300-rgb), 0.55);
 }
 
 @media (max-width: 420px) {
-    .multiplayerChat #chat-window {
+    .beammpChat #chat-window {
         font-size: 0.82rem;
     }
 
-    .multiplayerChat #send-button {
+    .beammpChat #send-button {
         min-width: 2.7rem;
         overflow: hidden;
         font-size: 0;
     }
 
-    .multiplayerChat #send-button::before {
+    .beammpChat #send-button::before {
         content: "↗";
         font-size: 1rem;
     }

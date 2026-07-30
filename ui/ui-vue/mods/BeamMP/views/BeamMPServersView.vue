@@ -580,13 +580,13 @@ function playerNames(server) {
 function locationFlag(location) {
   const code = String(location || "--").trim().toLowerCase()
   const safeCode = /^[a-z]{2}(?:-[a-z]{3})?$/.test(code) ? code : "--"
-  return `/ui/modModulesOLD/multiplayer/flags/${safeCode}.png`
+  return `/ui/assets/BeamMP/flags/${safeCode}.png`
 }
 
 function useFallbackFlag(event) {
   const image = event.currentTarget
   image.onerror = null
-  image.src = "/ui/modModulesOLD/multiplayer/flags/--.png"
+  image.src = "/ui/assets/BeamMP/flags/--.png"
 }
 
 function serverCategoryClass(server) {
