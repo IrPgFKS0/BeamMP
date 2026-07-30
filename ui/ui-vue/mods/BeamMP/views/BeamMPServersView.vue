@@ -105,7 +105,7 @@
 
                     <section class="mods mods-panel">
                       <h4 class="section-header">{{ $tt("ui.common.beammp.mods") }} ({{ modList(server.modlist).length }})</h4>
-                      <div v-if="modList(server.modlist).length === 0">{{ $tt("ui.beammp.server.isUnmodded") }}</div>
+                      <div v-if="modList(server.modlist).length === 0">{{ $tt("ui.common.beammp.vanilla") }}</div>
                       <div v-else class="tag-list-container">
                         <span v-for="mod in modList(server.modlist)" :key="`${server.id}:${mod}`" class="chip">{{ mod }}</span>
                       </div>
@@ -128,7 +128,7 @@
       <aside class="filters-rail">
         <h2 class="rail-title">Search Filters</h2>
         <BngButton class="reset-button" accent="attention" @click="resetFilters">
-          {{ $tt("ui.beammp.serverBrowser.resetFilters") }}
+          {{ $tt("ui.beammp.serverBrowser.filters.resetFilters") }}
         </BngButton>
 
         <section class="filter-group">
@@ -203,7 +203,7 @@
         </section>
 
         <section class="filter-group">
-          <h3>{{ $tt("ui.beammp.serverBrowser.filters.selectVersionss") }}</h3>
+          <h3>{{ $tt("ui.beammp.serverBrowser.filters.selectVersions") }}</h3>
         <div class="filter-options">
           <button
             v-for="version in availableVersions"

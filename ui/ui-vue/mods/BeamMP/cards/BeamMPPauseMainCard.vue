@@ -12,26 +12,28 @@
     </header>
 
     <div class="actions">
-      <Button class="action action--primary" @click="resume">
+      <Button class="action action--primary action--wide" @click="resume">
         <template #prefix><BngIcon :type="icons.play" /></template>
         <span>{{ $tt("ui.common.action.resume") }}</span>
       </Button>
       <Button class="action" @click="openBrowser">
         <template #prefix><BngIcon :type="icons.info" /></template>
-        <span>{{ $tt("ui.beammp.pauseMenu.serverDetails") }}</span>
+        <span>{{ $tt("ui.common.beammp.serverDetails") }}</span>
       </Button>
+      <!--
       <Button class="action action--wide" @click="openServerList">
         <template #prefix><BngIcon :type="icons.globe" /></template>
         <span>Server List</span>
       </Button>
       <Button class="action" @click="showLeaveConfirm = true">
         <template #prefix><BngIcon :type="icons.exit" /></template>
-        <span>{{ $tt("ui.beammp.pauseMenu.disconnect") }}</span>
+        <span>{{ $tt("ui.common.beammp.disconnect") }}</span>
       </Button>
       <Button class="action action--danger" @click="showQuitConfirm = true">
         <template #prefix><BngIcon :type="icons.powerOnOff" /></template>
-        <span>{{ $tt("ui.beammp.pauseMenu.quitGame") }}</span>
+        <span>{{ $tt("ui.common.beammp.quitGame") }}</span>
       </Button>
+      -->
     </div>
 
     <BeamMPModal
