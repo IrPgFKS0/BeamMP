@@ -11,6 +11,22 @@
 
 local M = {}
 
+--- Test PlayerTags
+local playerTags = require("ge/extensions/render/playerTags")
+
+local playerCount = 1   -- last settled player count (from getAssignedPlayers)
+local taggedCount = nil -- player count the current tags were built for (nil = none built)
+
+local function rebuildTags()
+  local tags = {}
+  for i = 0, playerCount - 1 do
+    tags[#tags + 1] = {player = i, label = core_locales.contextTranslate("ui.multiseat.playerTag", {number = i + 1}), color = playerTags.color(i + 1, playerCount)}
+  end
+  playerTags.rebuild(tags)
+  taggedCount = playerCount
+end
+---
+
 setmetatable(_G,{}) -- temporarily disable global notifications
 
 -- ============= VARIABLES =============

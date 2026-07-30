@@ -21,42 +21,42 @@
     <template v-else>
       <div class="details-grid">
         <section class="panel">
-          <h3>{{ $tt("ui.multiplayer.server.information") }}</h3>
+          <h3>{{ $tt("ui.common.beammp.information") }}</h3>
           <dl>
             <div>
-              <dt>Address</dt>
+              <dt>{{ $tt("ui.common.beammp.address") }}</dt>
               <dd>
                 <button
                   class="endpoint-reveal"
                   type="button"
                   :aria-pressed="endpointVisible"
-                  :title="endpointVisible ? 'Hide server address' : 'Reveal server address'"
+                  :title="endpointVisible ? $tt('ui.beammp.server.hideAddress') : $tt('ui.beammp.server.revealAddress')"
                   @click="endpointVisible = !endpointVisible"
                 >
                   <span :class="{ concealed: !endpointVisible }">{{ currentEndpoint }}</span>
-                  <small>{{ endpointVisible ? "Hide" : "Reveal" }}</small>
+                  <small>{{ endpointVisible ? $tt('ui.beammp.server.hide') : $tt('ui.beammp.server.reveal') }}</small>
                 </button>
               </dd>
             </div>
             <div>
-              <dt>{{ $tt("ui.multiplayer.server.owner") }}</dt>
+              <dt>{{ $tt("ui.beammp.server.owner") }}</dt>
               <dd>{{ currentServer.owner || "—" }}</dd>
             </div>
             <div>
-              <dt>{{ $tt("ui.multiplayer.server.map") }}</dt>
+              <dt>{{ $tt("ui.beammp.server.map") }}</dt>
               <dd>{{ currentServer.mapName || currentServer.map || "—" }}</dd>
             </div>
             <div>
-              <dt>{{ $tt("ui.multiplayer.players") }}</dt>
+              <dt>{{ $tt("ui.common.beammp.players") }}</dt>
               <dd>{{ playerCount }}</dd>
             </div>
           </dl>
         </section>
 
         <section class="panel">
-          <h3>{{ $tt("ui.multiplayer.server.tags") }}</h3>
+          <h3>{{ $tt("ui.beammp.server.tags") }}</h3>
           <div v-if="!serverTags.length" class="muted">
-            {{ $tt("ui.multiplayer.server.noTags") }}
+            {{ $tt("ui.beammp.server.noTags") }}
           </div>
           <div v-else class="chips">
             <span v-for="tag in serverTags" :key="tag.raw" class="chip">{{ tag.text }}</span>
@@ -65,23 +65,23 @@
       </div>
 
       <section class="panel">
-        <h3>{{ $tt("ui.multiplayer.server.description") }}</h3>
+        <h3>{{ $tt("ui.beammp.server.description") }}</h3>
         <p class="description">{{ currentServer.sdesc || "No description supplied." }}</p>
       </section>
 
       <section class="panel">
         <div class="panel-heading">
-          <h3>{{ $tt("ui.multiplayer.server.mods") }}</h3>
+          <h3>{{ $tt("ui.beammp.server.mods") }}</h3>
           <span>{{ displayedMods.length }}</span>
         </div>
         <div v-if="!displayedMods.length" class="muted">
-          {{ $tt("ui.multiplayer.server.isUnmodded") }}
+          {{ $tt("ui.beammp.server.isUnmodded") }}
         </div>
         <div v-else class="chips">
           <span v-for="modName in displayedMods" :key="modName" class="chip chip--mod">{{ modName }}</span>
         </div>
         <small v-if="currentServer.modstotalsize">
-          {{ $tt("ui.multiplayer.server.modsTotalFilesize") }} {{ formatBytes(currentServer.modstotalsize) }}
+          {{ $tt("ui.beammp.server.modsTotalFilesize") }} {{ formatBytes(currentServer.modstotalsize) }}
         </small>
       </section>
 

@@ -19,11 +19,11 @@
         <div class="metrics">
           <span class="metric-item">
             <img src="../icons/account-multiple.svg" alt="" />
-            <span>Players: {{ state.beammpMetrics.value.players }}</span>
+            <span>{{ $tt("ui.common.beammp.players") }}: {{ state.beammpMetrics.value.players }}</span>
           </span>
           <span class="metric-item">
             <img src="../icons/dns.svg" alt="" />
-            <span>Servers: {{ state.beammpMetrics.value.servers }}</span>
+            <span>{{ $tt("ui.common.beammp.servers") }}: {{ state.beammpMetrics.value.servers }}</span>
           </span>
         </div>
 
@@ -39,7 +39,7 @@
             <small>{{ accountRole }}</small>
           </div>
           <BngButton accent="secondary" class="logout-button" @click="handleLogout">
-            {{ $tt("ui.multiplayer.logout") }}
+            {{ $tt("ui.common.beammp.logout") }}
           </BngButton>
         </section>
       </div>
@@ -50,24 +50,24 @@
         <img src="/ui/modModulesOLD/multiplayer/beammp_new_cropped.png" alt="BeamMP" class="logo" />
         <div class="beammp-version">
           <span aria-hidden="true" />
-          BeamMP v{{ state.beammpMetrics.value.beammpGameVer }}
+          {{ $tt("ui.common.beammp.beammp") }} v{{ state.beammpMetrics.value.beammpGameVer }}
         </div>
 
-        <button class="nav-btn" :class="{ active: isServerView('servers') }" @click="gotoView('servers')">{{ $tt("ui.multiplayer.servers") }}</button>
-        <button class="nav-btn category-official" :class="{ active: isServerView('official') }" @click="gotoView('official')">{{ $tt("ui.multiplayer.official") }}</button>
-        <button class="nav-btn category-featured" :class="{ active: isServerView('featured') }" @click="gotoView('featured')">{{ $tt("ui.multiplayer.featured") }}</button>
-        <button class="nav-btn category-partner" :class="{ active: isServerView('partner') }" @click="gotoView('partner')">{{ $tt("ui.multiplayer.partner") }}</button>
-        <button class="nav-btn category-favorite" :class="{ active: isServerView('favorites') }" @click="gotoView('favorites')">{{ $tt("ui.multiplayer.favorites") }}</button>
-        <button class="nav-btn" :class="{ active: isServerView('recent') }" @click="gotoView('recent')">{{ $tt("ui.multiplayer.recent") }}</button>
-        <button class="nav-btn" :class="{ active: route.name === BEAMMP_DIRECT_ROUTE_NAME }" @click="gotoRoute(BEAMMP_DIRECT_ROUTE_NAME)">{{ $tt("ui.multiplayer.direct_connect") }}</button>
-        <button class="nav-btn" :class="{ active: route.name === BEAMMP_TILES_ROUTE_NAME }" @click="gotoRoute(BEAMMP_TILES_ROUTE_NAME)">Tiles</button>
+        <button class="nav-btn" :class="{ active: isServerView('servers') }" @click="gotoView('servers')">{{ $tt("ui.common.beammp.servers") }}</button>
+        <button class="nav-btn category-official" :class="{ active: isServerView('official') }" @click="gotoView('official')">{{ $tt("ui.common.beammp.official") }}</button>
+        <button class="nav-btn category-featured" :class="{ active: isServerView('featured') }" @click="gotoView('featured')">{{ $tt("ui.common.beammp.featured") }}</button>
+        <button class="nav-btn category-partner" :class="{ active: isServerView('partner') }" @click="gotoView('partner')">{{ $tt("ui.common.beammp.partner") }}</button>
+        <button class="nav-btn category-favorite" :class="{ active: isServerView('favorites') }" @click="gotoView('favorites')">{{ $tt("ui.common.beammp.favorites") }}</button>
+        <button class="nav-btn" :class="{ active: isServerView('recent') }" @click="gotoView('recent')">{{ $tt("ui.common.beammp.recent") }}</button>
+        <button class="nav-btn" :class="{ active: route.name === BEAMMP_DIRECT_ROUTE_NAME }" @click="gotoRoute(BEAMMP_DIRECT_ROUTE_NAME)">{{ $tt("ui.common.beammp.direct_connect") }}</button>
+        <!--<button class="nav-btn" :class="{ active: route.name === BEAMMP_TILES_ROUTE_NAME }" @click="gotoRoute(BEAMMP_TILES_ROUTE_NAME)">Tiles</button>-->
 
         <div class="spacer" />
 
-        <button class="nav-btn secondary" @click="openExternal('https://forum.beammp.com')">{{ $tt("ui.multiplayer.forum") }}</button>
-        <button class="nav-btn secondary" @click="openExternal('https://discord.gg/BeamMP')">{{ $tt("ui.multiplayer.discord") }}</button>
-        <button class="nav-btn secondary" @click="openExternal('https://docs.beammp.com')">{{ $tt("ui.multiplayer.docs") }}</button>
-        <button class="nav-btn secondary" @click="openExternal('https://github.com/BeamMP/')">{{ $tt("ui.multiplayer.github") }}</button>
+        <button class="nav-btn secondary" @click="openExternal('https://forum.beammp.com')">{{ $tt("ui.common.beammp.forum") }}</button>
+        <button class="nav-btn secondary" @click="openExternal('https://discord.gg/BeamMP')">{{ $tt("ui.common.beammp.discord") }}</button>
+        <button class="nav-btn secondary" @click="openExternal('https://docs.beammp.com')">{{ $tt("ui.common.beammp.docs") }}</button>
+        <button class="nav-btn secondary" @click="openExternal('https://github.com/BeamMP/')">{{ $tt("ui.common.beammp.github") }}</button>
       </aside>
 
       <section ref="contentPanel" class="content">
@@ -77,8 +77,8 @@
 
     <div v-if="state.loadingOverlayVisible.value" class="loading-overlay">
       <div class="loading-card">
-        <h2>{{ $tt("ui.multiplayer.connectingToServer") }}</h2>
-        <p>{{ state.loadingStatus.value || $tt("ui.multiplayer.connecting") }}</p>
+        <h2>{{ $tt("ui.beammp.connectingToServer") }}</h2>
+        <p>{{ state.loadingStatus.value || $tt("ui.beammp.connecting") }}</p>
 
         <div v-if="state.downloadingMods.value.length" class="mods-list">
           <div
@@ -91,7 +91,7 @@
             <div class="download-info">
               <div class="download-line">
                 <code>{{ mod.number }} - {{ mod.name }}</code>
-                <small>{{ index === 0 ? mod.speed : $tt("ui.multiplayer.download.downloaded") }}</small>
+                <small>{{ index === 0 ? mod.speed : $tt("ui.beammp.download.downloaded") }}</small>
               </div>
               <div v-if="index === 0 && mod.progress < 100" class="progress-track">
                 <span :style="{ width: `${Math.max(0, Math.min(100, mod.progress))}%` }" />
@@ -108,10 +108,10 @@
 
     <BeamMPModal
       :visible="state.securityPromptVisible.value"
-      :title="$tt('ui.multiplayer.security.title')"
-      :message="state.securityPromptMessage.value || $tt('ui.multiplayer.security.prompt')"
-      :confirm-text="$tt('ui.multiplayer.security.accept_proceed')"
-      :cancel-text="$tt('ui.multiplayer.security.no_return')"
+      :title="$tt('ui.beammp.security.title')"
+      :message="state.securityPromptMessage.value || $tt('ui.beammp.security.prompt')"
+      :confirm-text="$tt('ui.beammp.security.accept_proceed')"
+      :cancel-text="$tt('ui.beammp.security.no_return')"
       @confirm="approveSecurityPrompt"
       @cancel="rejectSecurityPrompt"
     />

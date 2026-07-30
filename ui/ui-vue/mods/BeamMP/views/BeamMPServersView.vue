@@ -6,22 +6,22 @@
           <BngInput
             class="search-input"
             :model-value="state.filters.value.searchText"
-            :placeholder="$tt('ui.multiplayer.searchPlaceholder')"
+            :placeholder="$tt('ui.beammp.searchPlaceholder')"
             @update:model-value="onSearch"
           />
-          <BngButton @click="requestServerList">{{ $tt("ui.multiplayer.refresh") }}</BngButton>
+          <BngButton @click="requestServerList">{{ $tt("ui.beammp.refresh") }}</BngButton>
           <span class="mod-size-summary">Total Mod Size &lt; {{ maxModSizeLabel }}</span>
-          <BngButton v-if="state.view.value === 'recent'" accent="secondary" @click="clearRecents">{{ $tt("ui.multiplayer.clearRecent") }}</BngButton>
+          <BngButton v-if="state.view.value === 'recent'" accent="secondary" @click="clearRecents">{{ $tt("ui.beammp.clearRecent") }}</BngButton>
           <span class="server-count">{{ visibleServers.length }} servers</span>
         </header>
 
         <table class="servers-table">
           <thead>
             <tr>
-              <th>{{ $tt("ui.multiplayer.location") }}</th>
-              <th>{{ $tt("ui.multiplayer.description") }}</th>
-              <th>{{ $tt("ui.multiplayer.map") }}</th>
-              <th>{{ $tt("ui.multiplayer.players") }}</th>
+              <th>{{ $tt("ui.beammp.location") }}</th>
+              <th>{{ $tt("ui.beammp.description") }}</th>
+              <th>{{ $tt("ui.beammp.map") }}</th>
+              <th>{{ $tt("ui.beammp.players") }}</th>
               <th></th>
             </tr>
           </thead>
@@ -62,24 +62,24 @@
 
                     <div class="details-grid">
                       <section class="info-panel">
-                        <h4 class="section-header">{{ $tt("ui.multiplayer.server.information") }}</h4>
+                        <h4 class="section-header">{{ $tt("ui.beammp.server.information") }}</h4>
                         <table class="description-table">
                           <tr>
-                            <th>{{ $tt("ui.multiplayer.server.owner") }}</th>
+                            <th>{{ $tt("ui.beammp.server.owner") }}</th>
                             <td>{{ server.owner || "" }}</td>
                           </tr>
                           <tr>
-                            <th>{{ $tt("ui.multiplayer.server.map") }}</th>
+                            <th>{{ $tt("ui.beammp.server.map") }}</th>
                             <td>{{ server.mapName || "" }}</td>
                           </tr>
                           <tr>
-                            <th>{{ $tt("ui.multiplayer.server.description") }}</th>
+                            <th>{{ $tt("ui.beammp.server.description") }}</th>
                             <td class="desc-cell">{{ server.sdesc || "" }}</td>
                           </tr>
                           <tr>
-                            <th>{{ $tt("ui.multiplayer.server.tags") }}</th>
+                            <th>{{ $tt("ui.beammp.server.tags") }}</th>
                             <td>
-                              <span v-if="!server.tagsList.length">{{ $tt("ui.multiplayer.server.noTags") }}</span>
+                              <span v-if="!server.tagsList.length">{{ $tt("ui.beammp.server.noTags") }}</span>
                               <div v-else class="tag-list-container">
                                 <span v-for="tag in server.tagsList" :key="`${server.id}:${tag.raw}`" class="chip">{{ tag.text }}</span>
                               </div>
@@ -89,8 +89,8 @@
                       </section>
 
                       <section class="players-panel">
-                        <h4 class="section-header">{{ $tt("ui.multiplayer.server.playerList") }}</h4>
-                        <div v-if="!playerNames(server).length" class="muted">{{ $tt("ui.multiplayer.server.noPlayers") }}</div>
+                        <h4 class="section-header">{{ $tt("ui.beammp.server.playerList") }}</h4>
+                        <div v-if="!playerNames(server).length" class="muted">{{ $tt("ui.beammp.server.noPlayers") }}</div>
                         <div v-else class="tag-list-container">
                           <span
                             v-for="playerName in playerNames(server)"
@@ -104,18 +104,18 @@
                     </div>
 
                     <section class="mods mods-panel">
-                      <h4 class="section-header">{{ $tt("ui.multiplayer.server.mods") }} ({{ modList(server.modlist).length }})</h4>
-                      <div v-if="modList(server.modlist).length === 0">{{ $tt("ui.multiplayer.server.isUnmodded") }}</div>
+                      <h4 class="section-header">{{ $tt("ui.beammp.server.mods") }} ({{ modList(server.modlist).length }})</h4>
+                      <div v-if="modList(server.modlist).length === 0">{{ $tt("ui.beammp.server.isUnmodded") }}</div>
                       <div v-else class="tag-list-container">
                         <span v-for="mod in modList(server.modlist)" :key="`${server.id}:${mod}`" class="chip">{{ mod }}</span>
                       </div>
-                      <small>{{ $tt("ui.multiplayer.server.modsTotalFilesize") }} {{ formatBytes(server.modstotalsize) }}</small>
+                      <small>{{ $tt("ui.beammp.server.modsTotalFilesize") }} {{ formatBytes(server.modstotalsize) }}</small>
                     </section>
 
                     <div class="actions">
-                      <BngButton @click.stop="join(server)">{{ $tt("ui.multiplayer.connect") }}</BngButton>
-                      <BngButton v-if="!isFavorite(server)" accent="secondary" @click.stop="addFavorite(server)">{{ $tt("ui.multiplayer.addFavorite") }}</BngButton>
-                      <BngButton v-else accent="secondary" @click.stop="removeFavorite(server)">{{ $tt("ui.multiplayer.removeFavorite") }}</BngButton>
+                      <BngButton @click.stop="join(server)">{{ $tt("ui.beammp.connect") }}</BngButton>
+                      <BngButton v-if="!isFavorite(server)" accent="secondary" @click.stop="addFavorite(server)">{{ $tt("ui.beammp.addFavorite") }}</BngButton>
+                      <BngButton v-else accent="secondary" @click.stop="removeFavorite(server)">{{ $tt("ui.beammp.removeFavorite") }}</BngButton>
                     </div>
                   </section>
                 </td>
@@ -128,7 +128,7 @@
       <aside class="filters-rail">
         <h2 class="rail-title">Search Filters</h2>
         <BngButton class="reset-button" accent="attention" @click="resetFilters">
-          {{ $tt("ui.multiplayer.clearFilters") }}
+          {{ $tt("ui.beammp.clearFilters") }}
         </BngButton>
 
         <section class="filter-group">
@@ -188,7 +188,7 @@
         </section>
 
         <section class="filter-group">
-          <h3>{{ $tt("ui.multiplayer.filters.selectTags") }}</h3>
+          <h3>{{ $tt("ui.beammp.filters.selectTags") }}</h3>
         <div class="filter-options">
           <button
             v-for="tag in availableTags"
@@ -203,7 +203,7 @@
         </section>
 
         <section class="filter-group">
-          <h3>{{ $tt("ui.multiplayer.filters.selectVersions") }}</h3>
+          <h3>{{ $tt("ui.beammp.filters.selectVersions") }}</h3>
         <div class="filter-options">
           <button
             v-for="version in availableVersions"
@@ -218,7 +218,7 @@
         </section>
 
         <section class="filter-group">
-          <h3>{{ $tt("ui.multiplayer.filters.selectServerLocations") }}</h3>
+          <h3>{{ $tt("ui.beammp.filters.selectServerLocations") }}</h3>
         <div class="filter-options">
           <button
             v-for="location in availableLocations"
@@ -234,7 +234,7 @@
         </section>
 
         <section class="filter-group">
-          <h3>{{ $tt("ui.multiplayer.filters.selectMaps") }}</h3>
+          <h3>{{ $tt("ui.beammp.filters.selectMaps") }}</h3>
         <div class="filter-options">
           <button
             v-for="map in availableMaps"

@@ -6,10 +6,10 @@
       <p v-if="state.loginError.value" class="error">{{ state.loginError.value }}</p>
 
       <template v-if="mode === 'account'">
-        <h2 class="login-title">{{ $tt("ui.multiplayer.loginDescription1") }}</h2>
+        <h2 class="login-title">{{ $tt("ui.beammp.loginDescription1") }}</h2>
 
         <div class="input-group">
-          <label for="beammp-login-username">{{ $tt("ui.multiplayer.login.username") }}</label>
+          <label for="beammp-login-username">{{ $tt("ui.beammp.login.username") }}</label>
           <div class="input-shell">
             <span class="field-prefix" aria-hidden="true">@</span>
             <input
@@ -25,7 +25,7 @@
         </div>
 
         <div class="input-group">
-          <label for="beammp-login-password">{{ $tt("ui.multiplayer.login.password") }}</label>
+          <label for="beammp-login-password">{{ $tt("ui.beammp.login.password") }}</label>
           <div class="input-shell">
             <span class="field-prefix password-prefix" aria-hidden="true">•••</span>
             <input
@@ -40,17 +40,17 @@
         </div>
 
         <div class="actions">
-          <BngButton @click="submitLogin">{{ $tt("ui.multiplayer.login") }}</BngButton>
-          <BngButton accent="secondary" @click="register">{{ $tt("ui.multiplayer.register") }}</BngButton>
-          <BngButton accent="secondary" @click="switchToGuest">{{ $tt("ui.multiplayer.playAsGuest") }}</BngButton>
+          <BngButton @click="submitLogin">{{ $tt("ui.beammp.login") }}</BngButton>
+          <BngButton accent="secondary" @click="register">{{ $tt("ui.beammp.register") }}</BngButton>
+          <BngButton accent="secondary" @click="switchToGuest">{{ $tt("ui.beammp.playAsGuest") }}</BngButton>
         </div>
       </template>
 
       <template v-else>
-        <p class="guest-copy">{{ $tt("ui.multiplayer.guestDescription1") }}</p>
+        <p class="guest-copy">{{ $tt("ui.beammp.guestDescription1") }}</p>
         <div class="actions">
-          <!--<BngButton @click="switchToAccount">{{ $tt("ui.multiplayer.iHaveAnAccount") }}</BngButton>-->
-          <BngButton accent="secondary" @click="submitGuest">{{ $tt("ui.multiplayer.play") }}</BngButton>
+          <!--<BngButton @click="switchToAccount">{{ $tt("ui.beammp.iHaveAnAccount") }}</BngButton>-->
+          <BngButton accent="secondary" @click="submitGuest">{{ $tt("ui.beammp.play") }}</BngButton>
         </div>
       </template>
     </article>

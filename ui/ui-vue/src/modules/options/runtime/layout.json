@@ -3232,7 +3232,7 @@
       "condition_visible": ""
     },
     {
-      "label": "ui.beammp.common.title",
+      "label": "ui.common.beammp.title",
       "icon": "peopleOutline",
       "categoryId": "multiplayer",
       "subcategory": false,

@@ -18,7 +18,7 @@
       </Button>
       <Button class="action" @click="openBrowser">
         <template #prefix><BngIcon :type="icons.info" /></template>
-        <span>{{ $tt("ui.multiplayer.pauseMenu.serverDetails") }}</span>
+        <span>{{ $tt("ui.beammp.pauseMenu.serverDetails") }}</span>
       </Button>
       <Button class="action action--wide" @click="openServerList">
         <template #prefix><BngIcon :type="icons.globe" /></template>
@@ -26,19 +26,19 @@
       </Button>
       <Button class="action" @click="showLeaveConfirm = true">
         <template #prefix><BngIcon :type="icons.exit" /></template>
-        <span>{{ $tt("ui.multiplayer.pauseMenu.disconnect") }}</span>
+        <span>{{ $tt("ui.beammp.pauseMenu.disconnect") }}</span>
       </Button>
       <Button class="action action--danger" @click="showQuitConfirm = true">
         <template #prefix><BngIcon :type="icons.powerOnOff" /></template>
-        <span>{{ $tt("ui.multiplayer.pauseMenu.quitGame") }}</span>
+        <span>{{ $tt("ui.beammp.pauseMenu.quitGame") }}</span>
       </Button>
     </div>
 
     <BeamMPModal
       :visible="showLeaveConfirm"
-      :title="$tt('ui.multiplayer.pauseMenu.areYouSure')"
-      :message="$tt('ui.multiplayer.pauseMenu.disconnectConfirmation')"
-      :confirm-text="$tt('ui.multiplayer.pauseMenu.disconnect')"
+      :title="$tt('ui.beammp.pauseMenu.areYouSure')"
+      :message="$tt('ui.beammp.pauseMenu.disconnectConfirmation')"
+      :confirm-text="$tt('ui.beammp.pauseMenu.disconnect')"
       :cancel-text="$tt('ui.common.cancel')"
       @confirm="confirmLeaveServer"
       @cancel="showLeaveConfirm = false"
@@ -46,9 +46,9 @@
 
     <BeamMPModal
       :visible="showQuitConfirm"
-      :title="$tt('ui.multiplayer.pauseMenu.areYouSure')"
-      :message="$tt('ui.multiplayer.pauseMenu.quitToDesktopConfirmation')"
-      :confirm-text="$tt('ui.multiplayer.pauseMenu.quitToDesktop')"
+      :title="$tt('ui.beammp.pauseMenu.areYouSure')"
+      :message="$tt('ui.beammp.pauseMenu.quitToDesktopConfirmation')"
+      :confirm-text="$tt('ui.beammp.pauseMenu.quitToDesktop')"
       :cancel-text="$tt('ui.common.cancel')"
       @confirm="confirmQuitGame"
       @cancel="showQuitConfirm = false"

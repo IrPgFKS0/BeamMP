@@ -1,4 +1,5 @@
-import BeamMPMainMenu from "./views/BeamMPMainMenu.vue"
+import BeamMPMainMenu from "./layouts/BeamMPMain.vue"
+import BeamMPHome from "./layouts/BeamMPHome.vue"
 import BeamMPTOSView from "./views/BeamMPTOSView.vue"
 import BeamMPLauncherView from "./views/BeamMPLauncherView.vue"
 import BeamMPLoginView from "./views/BeamMPLoginView.vue"
@@ -9,6 +10,7 @@ import BeamMPDirectView from "./views/BeamMPDirectView.vue"
 import {
   BEAMMP_CURRENT_SERVER_ROUTE_NAME,
   BEAMMP_DIRECT_ROUTE_NAME,
+  BEAMMP_HOME_ROUTE_NAME,
   BEAMMP_LAUNCHER_ROUTE_NAME,
   BEAMMP_LOGIN_ROUTE_NAME,
   BEAMMP_ROUTE_NAME,
@@ -27,7 +29,7 @@ export const routeRecords = [
       {
         path: "",
         name: BEAMMP_ROUTE_NAME,
-        redirect: { name: BEAMMP_TOS_ROUTE_NAME },
+        redirect: { name: BEAMMP_HOME_ROUTE_NAME },
         meta: {
           luaRoute: {
             title: "BeamMP",
@@ -35,6 +37,11 @@ export const routeRecords = [
             scopeTree: { "beammp-route": {} },
           },
         },
+      },
+      {
+        path: "home",
+        name: BEAMMP_HOME_ROUTE_NAME,
+        component: BeamMPHome,
       },
       {
         path: "tos",

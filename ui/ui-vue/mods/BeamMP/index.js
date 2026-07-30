@@ -14,23 +14,23 @@ const MOD_ROOT = "/ui/ui-vue/mods/BeamMP"
 
 // title for the button and tabs
 const TITLE = "BeamMP"
-const TITLE_translationId = 'ui.beammp.common.title'
+const TITLE_translationId = 'ui.common.beammp.title'
 
 // 1 and 2. Register a Main Menu button. `addButton` is a function.
 function addBeamMPMainMenuButton(addButton) {
   addButton({
     // Old Angular-compatible menu button shape.
-    translateid: TITLE_translationId,
-    icon: `${MOD_ROOT}/icons/account-multiple.svg`,
-    targetState: BEAMMP_ROUTE_NAME,
+    //translateid: TITLE_translationId,
+    //icon: `${MOD_ROOT}/icons/account-multiple.svg`,
+    //targetState: BEAMMP_ROUTE_NAME,
 
     // New Vue Way
     // main menu button title
-    //title: TITLE,
+    title: TITLE,
     // main menu button icon (must be a valid icon id from the bngIcons.js)
-    //iconId: "wrench"
+    iconId: "peopleOutline",
     // route to open when the button is pressed
-    //action: BEAMMP_ROUTE_NAME,
+    action: BEAMMP_ROUTE_NAME,
   })
 }
 

@@ -2,13 +2,13 @@
   <div class="card">
     <header class="card-header">
       <div>
-        <h3>{{ $tt("ui.multiplayer.server.playerList") }}</h3>
+        <h3>{{ $tt("ui.beammp.server.playerList") }}</h3>
         <p>{{ players.length }} {{ players.length === 1 ? "player" : "players" }} connected</p>
       </div>
       <span class="count">{{ players.length }}</span>
     </header>
 
-    <div v-if="!players.length" class="empty">{{ $tt("ui.multiplayer.server.noPlayers") }}</div>
+    <div v-if="!players.length" class="empty">{{ $tt("ui.beammp.server.noPlayers") }}</div>
     <div v-for="player in players" :key="`${player.id}:${player.name}`" class="player-row">
       <div class="avatar"><BngIcon :type="icons.personSolid" /></div>
       <div class="player">

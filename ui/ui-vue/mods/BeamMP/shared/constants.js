@@ -1,4 +1,5 @@
 export const BEAMMP_ROUTE_NAME = "menu.beammp"
+export const BEAMMP_HOME_ROUTE_NAME = "menu.beammp.home"
 export const BEAMMP_TOS_ROUTE_NAME = "menu.beammp.tos"
 export const BEAMMP_LAUNCHER_ROUTE_NAME = "menu.beammp.launcher"
 export const BEAMMP_LOGIN_ROUTE_NAME = "menu.beammp.login"
