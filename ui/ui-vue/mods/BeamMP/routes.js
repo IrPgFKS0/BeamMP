@@ -29,7 +29,10 @@ export const routeRecords = [
       {
         path: "",
         name: BEAMMP_ROUTE_NAME,
-        redirect: { name: BEAMMP_TOS_ROUTE_NAME },
+        // LAN: entry skips the Rules/TOS screen entirely (terms for BeamMP's public service; this
+        // fork runs a private LAN with no backend). The TOS route/view stay registered but unrouted.
+        redirect: { name: BEAMMP_LAUNCHER_ROUTE_NAME },
+        //redirect: { name: BEAMMP_TOS_ROUTE_NAME },
         //redirect: { name: BEAMMP_HOME_ROUTE_NAME },
         meta: {
           luaRoute: {

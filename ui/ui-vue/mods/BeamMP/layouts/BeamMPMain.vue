@@ -228,7 +228,8 @@ onMounted(async () => {
   if (state.loggedIn.value) await requestServerList()
   authStateReady.value = true
 
-  if (!state.tosAccepted.value) {
+  // LAN: TOS gate removed (see routes.js) -- never bounce into the Rules/TOS screen.
+  if (false && !state.tosAccepted.value) {
     router.replace({ name: BEAMMP_TOS_ROUTE_NAME })
     return
   }

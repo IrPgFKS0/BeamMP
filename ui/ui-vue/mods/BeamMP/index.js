@@ -107,8 +107,37 @@ async function showBeamMPDialog(options = {}) {
   }
 }
 
+
+// LAN: bottom info-bar version badge. Upstream 4.22 removed the old bottom-left "BeamMP vX" info-bar
+// injection (the version now only shows inside the BeamMP menu sidebar) -- but at-a-glance build
+// identification from the MAIN menu has repeatedly mattered on this LAN, so re-add a small badge in
+// the game's info-bar (the same wrapper upstream's margin observer reads). Data comes from the
+// onBeamMPInfo hook; we also poke Lua once so it shows without opening the BeamMP menu.
+const LAN_BADGE_ID = "beammp-lan-version-badge"
+function upsertLanVersionBadge(data) {
+  try {
+    const bar = document.querySelector("#vue-app > div.vue-app-main > div.app-infobar-wrapper")
+    if (!bar) return
+    let el = document.getElementById(LAN_BADGE_ID)
+    if (!el) {
+      el = document.createElement("div")
+      el.id = LAN_BADGE_ID
+      el.style.cssText = "display:inline-flex;align-items:center;margin-left:0.5em;padding:0.15em 0.6em;" +
+        "background:rgba(0,0,0,0.65);border-radius:0.25em;font-size:0.85em;color:#fff;white-space:nowrap;"
+      bar.appendChild(el)
+    }
+    el.textContent = "BeamMP v" + (data?.beammpGameVer || "?") + " · launcher " + (data?.beammpLauncherVer || "?")
+  } catch (e) { /* the badge is cosmetic -- never let it break the mod */ }
+}
+function removeLanVersionBadge() {
+  const el = document.getElementById(LAN_BADGE_ID)
+  if (el && el.parentNode) el.parentNode.removeChild(el)
+}
+
 export async function onLoad() {
   events.on("onBeamMPShowVueDialog", showBeamMPDialog)
+  events.on("onBeamMPInfo", upsertLanVersionBadge) // LAN version badge feed
+  api.engineLua("if MPCoreNetwork and MPCoreNetwork.sendBeamMPInfo then MPCoreNetwork.sendBeamMPInfo() end")
 
   // Register the standalone route before advertising its Main Menu button.
   const routeResult = await registerRoutes()
@@ -147,6 +176,8 @@ export async function onLoad() {
 
 export async function onUnload() {
   events.off("onBeamMPShowVueDialog", showBeamMPDialog)
+  events.off("onBeamMPInfo", upsertLanVersionBadge) // LAN version badge cleanup
+  removeLanVersionBadge()
 
   // stop listening for the Main Menu button - this is important to do to avoid memory leaks
   events.off("MainMenuButtons", addBeamMPMainMenuButton)
