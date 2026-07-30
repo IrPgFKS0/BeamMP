@@ -170,7 +170,7 @@ local function updateQueue( spawnCount, editCount, queuedPlayers)
 	if UIqueue.show then
 		--log('D', 'queueNotification', 'Creating queue message')
 		ui_message({
-				txt = "ui.multiplayer.queuedEvents",
+				txt = "ui.beammp.queuedEvents",
 				context = {count = (UIqueue.spawnCount or 0) + (UIqueue.editCount or 0)}
 			},
 			60,
