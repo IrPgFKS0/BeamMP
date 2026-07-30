@@ -90,7 +90,7 @@ function openServerList() {
 
 function confirmLeaveServer() {
   showLeaveConfirm.value = false
-  api.engineLua("MPCoreNetwork.leaveServer(true)")
+  api.engineLua("if MPCoreNetwork and MPCoreNetwork.leaveServer then MPCoreNetwork.leaveServer(true) end")
 }
 
 function confirmQuitGame() {

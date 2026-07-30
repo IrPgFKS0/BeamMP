@@ -18,7 +18,7 @@ onMounted(async () => {
 		{ label: $translate.instant("ui.common.no"), value: false, extras: { accent: ACCENTS.text } },
 	])
 	if (res) {
-		api.engineLua("MPCoreNetwork.leaveServer(true)")
+		api.engineLua("if MPCoreNetwork and MPCoreNetwork.leaveServer then MPCoreNetwork.leaveServer(true) end")
 	} else {
 		console.log(bngVue)
 		lua.ui_router.back().back()

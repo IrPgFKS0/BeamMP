@@ -170,6 +170,7 @@ app.controller("BeamMPChatController", ['$scope', 'Settings', function ($scope, 
 
 	$scope.$on('SettingsChanged', function (event, data) {
 		Settings.values = data.values;
+		newChatMenu = Settings.values.enableNewChatMenu;
 
 		applyChatStyle(Settings.values.useUiAppRedesign);
 

@@ -1,7 +1,7 @@
 import { computed, ref } from "vue"
 import { useBridge } from "@/bridge"
 
-const { api } = useBridge()
+let api = null
 
 const DEFAULT_FILTERS = {
   searchText: "",
@@ -100,6 +100,20 @@ function luaCall(command) {
   return new Promise(resolve => {
     engineLua(command, data => resolve(data))
   })
+}
+
+function extensionCommand(extensionName, methodName, args = "") {
+  engineLua(
+    `if ${extensionName} and ${extensionName}.${methodName} then `
+    + `${extensionName}.${methodName}(${args}) end`,
+  )
+}
+
+function extensionCall(extensionName, methodName, args = "") {
+  return luaCall(
+    `${extensionName} and ${extensionName}.${methodName} `
+    + `and ${extensionName}.${methodName}(${args}) or nil`,
+  )
 }
 
 function encodeBase64(input) {
@@ -231,8 +245,8 @@ function applyFilters(items, view) {
 
     const checks = []
 
-    checks.push(Number(server.players || 0) >= Number(f.playerCountMin || 0))
-    checks.push(Number(server.players || 0) <= Number(f.playerCountMax || 9999))
+    checks.push(Number(server.players || 0) >= Number(f.playerCountMin ?? 0))
+    checks.push(Number(server.players || 0) <= Number(f.playerCountMax ?? 9999))
 
     if (server.modstotalsize) {
       checks.push((Number(f.sliderMaxModSize) * 1048576) >= Number(server.modstotalsize))
@@ -301,11 +315,11 @@ function addRecent(server) {
 
 function saveFavorites() {
   const encoded = encodeBase64(JSON.stringify(state.favorites.value))
-  engineLua(`MPConfig.setFavorites('${encoded}')`)
+  extensionCommand("MPConfig", "setFavorites", `'${encoded}'`)
 }
 
 async function loadFavorites() {
-  const data = await luaCall("MPConfig.getFavorites()")
+  const data = await extensionCall("MPConfig", "getFavorites")
   if (!data) {
     state.favorites.value = []
     return
@@ -345,19 +359,19 @@ function selectServer(serverId) {
 }
 
 async function refreshConnectionState() {
-  state.loggedIn.value = Boolean(await luaCall("MPCoreNetwork.isLoggedIn()"))
-  state.launcherConnected.value = Boolean(await luaCall("MPCoreNetwork.isLauncherConnected()"))
+  state.loggedIn.value = Boolean(await extensionCall("MPCoreNetwork", "isLoggedIn"))
+  state.launcherConnected.value = Boolean(await extensionCall("MPCoreNetwork", "isLauncherConnected"))
   state.auth.value = state.loggedIn.value
-    ? (await luaCall("MPCoreNetwork.getAuthResult()")) || {}
+    ? (await extensionCall("MPCoreNetwork", "getAuthResult")) || {}
     : {}
 }
 
 async function requestServerList() {
-  engineLua("MPCoreNetwork.requestServerList()")
+  extensionCommand("MPCoreNetwork", "requestServerList")
 }
 
 async function connectToLauncher() {
-  engineLua("MPCoreNetwork.connectToLauncher()")
+  extensionCommand("MPCoreNetwork", "connectToLauncher")
 }
 
 async function login(username, password) {
@@ -367,16 +381,16 @@ async function login(username, password) {
     return
   }
   const credentials = { username: username.trim(), password: password.trim() }
-  engineLua(`MPCoreNetwork.login(${api.serializeToLua(credentials)})`)
+  extensionCommand("MPCoreNetwork", "login", api.serializeToLua(credentials))
 }
 
 async function guestLogin() {
   state.loginError.value = ""
-  engineLua("MPCoreNetwork.login()")
+  extensionCommand("MPCoreNetwork", "login")
 }
 
 async function logout() {
-  engineLua("MPCoreNetwork.logout()")
+  extensionCommand("MPCoreNetwork", "logout")
   state.loggedIn.value = false
   state.auth.value = {}
 }
@@ -395,14 +409,18 @@ async function connectToServer(ip, port, name = "", skipModWarning = false) {
   state.loadingOverlayVisible.value = true
   state.loadingStatus.value = ""
   state.downloadingMods.value = []
-  engineLua(`MPCoreNetwork.connectToServer(\"${useIp}\", ${usePort}, \"${name || ""}\", ${skipModWarning ? "true" : "false"})`)
+  extensionCommand(
+    "MPCoreNetwork",
+    "connectToServer",
+    `\"${useIp}\", ${usePort}, \"${name || ""}\", ${skipModWarning ? "true" : "false"}`,
+  )
 }
 
 function closeLoadingOverlay() {
   state.loadingOverlayVisible.value = false
   state.loadingStatus.value = ""
   state.downloadingMods.value = []
-  engineLua("MPCoreNetwork.leaveServer()")
+  extensionCommand("MPCoreNetwork", "leaveServer")
 }
 
 function showSecurityPrompt(message = "") {
@@ -413,13 +431,13 @@ function showSecurityPrompt(message = "") {
 function approveSecurityPrompt() {
   state.securityPromptVisible.value = false
   state.securityPromptMessage.value = ""
-  engineLua("MPCoreNetwork.approveModDownload()")
+  extensionCommand("MPCoreNetwork", "approveModDownload")
 }
 
 function rejectSecurityPrompt() {
   state.securityPromptVisible.value = false
   state.securityPromptMessage.value = ""
-  engineLua("MPCoreNetwork.rejectModDownload()")
+  extensionCommand("MPCoreNetwork", "rejectModDownload")
   state.loadingOverlayVisible.value = false
 }
 
@@ -429,17 +447,17 @@ async function directConnectFromClipboard() {
 
 function openExternal(url) {
   if (!url) return
-  engineLua(`MPCoreNetwork.openURL(\"${url}\")`)
+  extensionCommand("MPCoreNetwork", "openURL", `\"${url}\"`)
 }
 
 async function getLauncherVersion() {
-  return await luaCall("MPCoreNetwork.getLauncherVersion()")
+  return await extensionCall("MPCoreNetwork", "getLauncherVersion")
 }
 
 function acceptTos() {
   localStorage.setItem("tosAccepted", "true")
   state.tosAccepted.value = true
-  engineLua("MPConfig.acceptTos()")
+  extensionCommand("MPConfig", "acceptTos")
 }
 
 function setView(viewName) {
@@ -625,6 +643,8 @@ const visibleServers = computed(() => {
 })
 
 export function useBeamMPState(events) {
+  const bridge = useBridge()
+  if (!api) api = bridge.api
   if (events) ensureListeners(events)
 
   return {

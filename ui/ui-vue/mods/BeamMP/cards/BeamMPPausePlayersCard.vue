@@ -70,7 +70,10 @@ function copyName(name) {
 
 function openProfile(name) {
   const url = `https://forum.beammp.com/u/${name}/summary`
-  api.engineLua(`MPCoreNetwork.openURL(${api.serializeToLua(url)})`)
+  api.engineLua(
+    `if MPCoreNetwork and MPCoreNetwork.openURL then `
+    + `MPCoreNetwork.openURL(${api.serializeToLua(url)}) end`,
+  )
 }
 
 onMounted(() => {

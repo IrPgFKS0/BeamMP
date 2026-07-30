@@ -178,10 +178,13 @@ function updateSessionMods(value) {
 
 function refreshCurrentServer() {
   loading.value = true
-  api.engineLua("MPCoreNetwork.getCurrentServer()", value => {
+  api.engineLua(
+    "MPCoreNetwork and MPCoreNetwork.getCurrentServer and MPCoreNetwork.getCurrentServer() or nil",
+    value => {
     coreServer.value = value || null
     loading.value = false
-  })
+    },
+  )
   api.engineLua("MPModManager.getServerMods()", updateSessionMods)
 }
 
