@@ -34,7 +34,7 @@
                   @click="endpointVisible = !endpointVisible"
                 >
                   <span :class="{ concealed: !endpointVisible }">{{ currentEndpoint }}</span>
-                  <small>{{ endpointVisible ? $tt('ui.beammp.server.hide') : $tt('ui.beammp.server.reveal') }}</small>
+                  <small>{{ endpointVisible ? $tt('ui.common.beammp.hide') : $tt('ui.common.beammp.reveal') }}</small>
                 </button>
               </dd>
             </div>

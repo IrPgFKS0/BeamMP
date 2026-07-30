@@ -33,5 +33,7 @@
 	"ui.beammp.queuedEvents": "Vehicle updates waiting: {{count}}.\nSelect \"Events queued\" in the BeamMP session bar to apply them.",
 	"ui.beammp.mdDialog.disconnectGeneric": "You have been disconnected from the server",
 	"ui.beammp.mdDialog.continueOffline": "Continue offline",
-	"ui.beammp.mdDialog.returnToMenu": "Return to menu"
+	"ui.beammp.mdDialog.returnToMenu": "Return to menu",
+    "ui.beammp.server.hideAddress": "Hide server address",
+    "ui.beammp.server.revealAddress": "Reveal server address"
 }
