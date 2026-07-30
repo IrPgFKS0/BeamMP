@@ -60,7 +60,7 @@ local function setDefaultUnicycle(configFileName)
 end
 
 local defaultSettings = {
-	autoSyncVehicles = true, nameTagShowDistance = true, enableBlobs = true, showSpectators = true, licensePlateUsesPlayerName = true, nametagCharLimit = 32, showPlayerIDs = false, nameTagsHideBehindObjects = false,
+	autoSyncVehicles = true, nameTagShowDistance = true, enableBlobs = true, showSpectators = true, licensePlateUsesPlayerName = true, nametagCharLimit = 32, showPlayerIDs = true, nameTagsHideBehindObjects = false,
 	-- queue system
 	enableSpawnQueue = true, enableQueueAuto = true, queueSkipUnicycle = true, queueApplySpeed = 2, queueApplyTimeout = 3, highlightQueuedPlayers = true,
 	-- colors

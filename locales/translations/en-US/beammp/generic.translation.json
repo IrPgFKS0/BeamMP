@@ -30,7 +30,8 @@
     "ui.beammp.patreon.popup.user": "Support BeamMP on Patreon",
     "ui.beammp.patreon.popup.ea": "Thank you for supporting BeamMP!",
 	"ui.beammp.pauseMenu.disconnectConfirmation": "This will disconnect you from the server and return you to the main menu. Proceed?",
-    "ui.beammp.queuedEvents": "Vehicle updates waiting: {{count}}.\nSelect \"Events queued\" in the BeamMP session bar to apply them.",
+	"ui.beammp.queuedEvents": "Vehicle updates waiting: {{count}}.\nSelect \"Events queued\" in the BeamMP session bar to apply them.",
 	"ui.beammp.mdDialog.disconnectGeneric": "You have been disconnected from the server",
-	"ui.beammp.mdDialog.continueOffline": "Continue offline"
+	"ui.beammp.mdDialog.continueOffline": "Continue offline",
+	"ui.beammp.mdDialog.returnToMenu": "Return to menu"
 }
