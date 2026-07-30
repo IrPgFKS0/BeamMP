@@ -9,7 +9,7 @@ let lastSentMessage = "";
 let lastMsgId = 0;
 let newChatMenu = false;
 import('/ui/lib/ext/purify.min.js')
-app.directive('multiplayerchat', [function () {
+app.directive('beammpchat', [function () {
 	return {
 		templateUrl: '/ui/modules/apps/BeamMP-Chat/app.html',
 		replace: true,
