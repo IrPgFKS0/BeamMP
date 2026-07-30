@@ -722,7 +722,7 @@ runPostJoin = function() -- gets called once loaded into a map
 		MPGameNetwork.connectToLauncher()
 		log('W', 'runPostJoin', 'isGoingMpSession = false')
 		isGoingMpSession = false
-		core_gamestate.setGameState('multiplayer', 'multiplayer', 'multiplayer')
+		core_gamestate.setGameState('multiplayer', 'beammp', 'multiplayer')
 		status = "Playing"
 		if ui_topBar then
 			ui_topBar.getEntries()["multiplayerPause"] = {
