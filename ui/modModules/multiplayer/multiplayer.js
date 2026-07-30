@@ -120,6 +120,10 @@ export default angular.module('multiplayer', ['ui.router'])
 
 .run(['$rootScope', function ($rootScope) {
   $rootScope.$on('MainMenuButtons', function (event, addButton) {
+    // 0.39: the Angular menu states this button targeted no longer exist (the game's menu router
+    // is Vue-only); the ported ui-vue BeamMP module registers its own 'BeamMP' button targeting
+    // menu.beammp. Registering this legacy one too would add a dead duplicate -- bail out.
+    if (true) { return; }
     addButton({
       translateid: 'ui.playmodes.multiplayer',
       icon: '/ui/modModules/multiplayer/icons/account-multiple.svg',
