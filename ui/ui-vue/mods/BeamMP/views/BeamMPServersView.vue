@@ -34,8 +34,8 @@
               <th></th>
             </tr>
           </thead>
-          <tbody>
-            <template v-for="server in visibleServers" :key="server.id">
+          <tbody ref="serversTbody" @scroll.passive="onServersScroll">
+            <template v-for="server in renderedServers" :key="server.id">
               <tr
                 class="server-row"
                 :class="[serverCategoryClass(server), { selected: state.selectedServerId.value === server.id }]"
@@ -276,11 +276,16 @@ import { icons as bngIcons } from "/ui/ui-vue/src/assets/fonts/bngIcons/bngIcons
 
 const route = useRoute()
 const filtersRail = ref(null)
+const serversTbody = ref(null)
 const filtersRailMaxHeight = ref("")
 const uiFilters = ref({})
 let filtersRailResizeObserver = null
 let applyFiltersDebounceTimer = null
 const FILTERS_DEBOUNCE_MS = 400
+const INITIAL_RENDER_COUNT = 180
+const RENDER_BATCH_COUNT = 140
+const RENDER_SCROLL_THRESHOLD_PX = 360
+const renderedServerCount = ref(INITIAL_RENDER_COUNT)
 const {
   addFavorite,
   availableLocations,
@@ -306,6 +311,10 @@ const {
 const maxModSizeLabel = computed(() => formatBytes(
   Number(uiFilters.value.sliderMaxModSize || 0) * 1024 * 1024,
 ))
+
+const renderedServers = computed(() => {
+  return visibleServers.value.slice(0, renderedServerCount.value)
+})
 
 const filtersRailStyle = computed(() => {
   if (!filtersRailMaxHeight.value) return null
@@ -417,6 +426,42 @@ function queueFilterUpdate() {
   }, FILTERS_DEBOUNCE_MS)
 }
 
+function growRenderedServers(batchSize = RENDER_BATCH_COUNT) {
+  const total = visibleServers.value.length
+  if (renderedServerCount.value >= total) return false
+  renderedServerCount.value = Math.min(total, renderedServerCount.value + batchSize)
+  return true
+}
+
+function resetRenderedServers() {
+  renderedServerCount.value = Math.min(INITIAL_RENDER_COUNT, visibleServers.value.length)
+}
+
+function ensureRenderedServersFillContainer(maxIterations = 8) {
+  const tbody = serversTbody.value
+  if (!tbody) return
+
+  let iterations = 0
+  while (iterations < maxIterations && tbody.scrollHeight <= tbody.clientHeight + 2) {
+    const grew = growRenderedServers()
+    if (!grew) break
+    iterations += 1
+  }
+}
+
+function onServersScroll(event) {
+  const tbody = event?.target
+  if (!tbody) return
+
+  const nearBottom = tbody.scrollTop + tbody.clientHeight >= tbody.scrollHeight - RENDER_SCROLL_THRESHOLD_PX
+  if (!nearBottom) return
+
+  const grew = growRenderedServers()
+  if (grew) {
+    nextTick(() => ensureRenderedServersFillContainer(2))
+  }
+}
+
 function escapeHtml(value = "") {
   return String(value)
     .replace(/&/g, "&amp;")
@@ -505,9 +550,22 @@ watch(
   { deep: true, immediate: true },
 )
 
+watch(
+  visibleServers,
+  async () => {
+    resetRenderedServers()
+    await nextTick()
+    const tbody = serversTbody.value
+    if (tbody) tbody.scrollTop = 0
+    ensureRenderedServersFillContainer()
+  },
+  { immediate: true },
+)
+
 onMounted(async () => {
   await nextTick()
   updateFiltersRailMaxHeight()
+  ensureRenderedServersFillContainer()
 
   const rail = filtersRail.value
   const container = rail?.closest(".content")

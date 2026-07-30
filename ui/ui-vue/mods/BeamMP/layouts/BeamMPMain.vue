@@ -426,7 +426,7 @@ onBeforeUnmount(() => {
 .logo {
   width: 8.5rem;
   display: block;
-  margin: 0 auto 0.1rem;
+  margin: 1rem auto;
 }
 
 .beammp-version {
