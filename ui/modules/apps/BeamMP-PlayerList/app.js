@@ -7,7 +7,7 @@ var players = [];
 var pingList = [];
 var nickname = "";
 var app = angular.module('beamng.apps');
-app.directive('beammpPlayerList', [function () {
+app.directive('beammpPlayerListAngular', [function () {
 	console.log("BeamMP Player List Directive initialized");
 	return {
 		templateUrl: '/ui/modules/apps/BeamMP-PlayerList/app.html',

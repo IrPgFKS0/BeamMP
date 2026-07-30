@@ -14,5 +14,5 @@
   "description": "The playerlist for the BeamMP Session.",
   "author": "BeamMP Team",
   "version": "1.1",
-  "directive": "beammpPlayerList"
+  "directive": "beammpPlayerListAngular"
 }
