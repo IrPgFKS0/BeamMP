@@ -1,6 +1,6 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.21.1-LAN p13h57` · combined host exe `p13h34`
+**Build:** mod `4.22.0-LAN p13h60` · combined host exe `p13h35` (Windows + Linux) · **for BeamNG 0.39**
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -44,6 +44,24 @@ a little tuning (see `LAN-TUNING.md`).
   cores so the relay/bridge keep up), and in-game **Save all logs (zip)** for support.
 
 ## This release
+
+- **BeamNG 0.39 support (p13h58-p13h60).** Validated against 0.39.1.0 and upstream BeamMP 4.22:
+  the mod version base now tracks upstream (`4.22.0-LAN`). The 0.39 blocker was stock BeamMP's own
+  version gate silently deactivating the whole mod on any game update — the fork now **warns loudly
+  but keeps loading** on unknown future game versions instead of bricking multiplayer. Also ported:
+  the 0.39 imgui unconditional-End requirement (chat/options/player-list windows), the renamed
+  unicycle/walking APIs (with 0.38 fallback), and chat keybinds on key-release.
+- **New multiplayer menu (0.39's menu is Vue-only).** Upstream 4.22's rebuilt menu UI is ported and
+  **trimmed for LAN**: a "BeamMP" main-menu button opens straight into your server list — no
+  Rules/TOS screen, no login/account chrome, no Official/Featured/Partner categories, no
+  Patreon/Discord links. Sidebar: Favorites (default) / Recent / Direct Connect, with the mod
+  version shown. The bottom info-bar **version badge is back in the 0.38 style** (native font, right
+  of the game version, orange divider) — upstream removed it; the fork keeps it.
+- **Combined exe p13h35** — p13h34 code with an honest pairing banner (`pairs with mod
+  4.22.0-LAN p13h60+; BeamNG 0.39`). If you stay on p13h34 everything still works.
+- **Rollback:** the previous release bundle (`p13h57`, for BeamNG 0.38) is tagged
+  `lan-0.38-last-good` on all three repos and kept in `dist/` — if a machine can't update the game,
+  run that pairing.
 
 - **Direct vehicle socket (p13h57, from BeamMP-Launcher#245 — experimental, default off).**
   Options → Multiplayer → advanced → "Direct vehicle socket": your own vehicles send
