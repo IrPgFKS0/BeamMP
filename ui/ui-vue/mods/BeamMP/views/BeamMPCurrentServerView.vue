@@ -101,10 +101,17 @@ import { BngButton } from "@/common/components/base"
 import { BEAMMP_SERVERS_ROUTE_NAME } from "../shared/constants.js"
 import { useBeamMPState } from "../shared/beammpState.js"
 
-const { api, events } = useBridge()
+const { events } = useBridge()
 const router = useRouter()
 const bngVue = window.bngVue || { gotoGameState() {} }
-const { formatBytes, modList, requestServerList, setView, state } = useBeamMPState(events)
+const {
+  extensionCall,
+  formatBytes,
+  modList,
+  requestServerList,
+  setView,
+  state,
+} = useBeamMPState(events)
 
 const coreServer = ref(null)
 const sessionMods = ref([])
@@ -176,16 +183,15 @@ function updateSessionMods(value) {
   sessionMods.value = normalizeMods(value)
 }
 
-function refreshCurrentServer() {
+async function refreshCurrentServer() {
   loading.value = true
-  api.engineLua(
-    "MPCoreNetwork and MPCoreNetwork.getCurrentServer and MPCoreNetwork.getCurrentServer() or nil",
-    value => {
-    coreServer.value = value || null
-    loading.value = false
-    },
-  )
-  api.engineLua("MPModManager.getServerMods()", updateSessionMods)
+  const [server, mods] = await Promise.all([
+    extensionCall("MPCoreNetwork", "getCurrentServer"),
+    extensionCall("MPModManager", "getServerMods"),
+  ])
+  coreServer.value = server || null
+  updateSessionMods(mods)
+  loading.value = false
 }
 
 function resume() {

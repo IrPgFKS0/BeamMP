@@ -1,7 +1,9 @@
 import { computed, ref } from "vue"
 import { useBridge } from "@/bridge"
 
-let api = null
+// useBridge is a Vue composable, so initialise it from useBeamMPState() while
+// component setup is active, then retain its API for this shared state module.
+let bridgeApi
 
 const DEFAULT_FILTERS = {
   searchText: "",
@@ -91,9 +93,12 @@ const state = {
 }
 
 let listenersReady = false
+let lastExtensionErrorNotificationAt = 0
+const EXTENSION_ERROR_NOTIFICATION_COOLDOWN_MS = 10000
+const LUA_IDENTIFIER_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/
 
 function engineLua(command, callback) {
-  api.engineLua(command, callback)
+  bridgeApi.engineLua(command, callback)
 }
 
 function luaCall(command) {
@@ -102,18 +107,74 @@ function luaCall(command) {
   })
 }
 
-function extensionCommand(extensionName, methodName, args = "") {
-  engineLua(
-    `if ${extensionName} and ${extensionName}.${methodName} then `
-    + `${extensionName}.${methodName}(${args}) end`,
-  )
+function extensionInvocation(extensionName, methodName, args = "") {
+  if (!LUA_IDENTIFIER_PATTERN.test(extensionName) || !LUA_IDENTIFIER_PATTERN.test(methodName)) {
+    throw new Error(`Invalid BeamMP extension call: ${extensionName}.${methodName}`)
+  }
+
+  const callArgs = String(args || "").trim()
+  const missingExtension = bridgeApi.serializeToLua(`Extension ${extensionName} is not loaded.`)
+  const missingMethod = bridgeApi.serializeToLua(`Method ${extensionName}.${methodName} is not available.`)
+
+  return `(function() `
+    + `local _extension = ${extensionName}; `
+    + `if not _extension then return {ok=false, error=${missingExtension}} end; `
+    + `local _method = _extension.${methodName}; `
+    + `if type(_method) ~= "function" then return {ok=false, error=${missingMethod}} end; `
+    + `local _ok, _value = pcall(_method${callArgs ? `, ${callArgs}` : ""}); `
+    + `if not _ok then return {ok=false, error=tostring(_value)} end; `
+    + `return {ok=true, value=_value} `
+    + `end)()`
 }
 
-function extensionCall(extensionName, methodName, args = "") {
-  return luaCall(
-    `${extensionName} and ${extensionName}.${methodName} `
-    + `and ${extensionName}.${methodName}(${args}) or nil`,
-  )
+function notifyExtensionError(extensionName, methodName, error) {
+  const operation = `${extensionName}.${methodName}`
+  const detail = String(error || "The Lua call did not return a status.")
+  const message = `${operation} failed. ${detail}`
+  const now = Date.now()
+
+  console.error(`[BeamMP] ${message}`)
+  if (now - lastExtensionErrorNotificationAt < EXTENSION_ERROR_NOTIFICATION_COOLDOWN_MS) return
+
+  lastExtensionErrorNotificationAt = now
+  const notification = bridgeApi.serializeToLua({
+    type: "error",
+    title: "BeamMP error",
+    msg: message,
+    config: {
+      closeButton: true,
+      timeOut: 8000,
+      extendedTimeOut: 2000,
+    },
+  })
+  engineLua(`guihooks.trigger("toastrMsg", ${notification})`)
+}
+
+async function invokeExtension(extensionName, methodName, args = "") {
+  let invocation
+  try {
+    invocation = extensionInvocation(extensionName, methodName, args)
+  } catch (error) {
+    notifyExtensionError(extensionName, methodName, error?.message)
+    return { ok: false }
+  }
+
+  const result = await luaCall(invocation)
+  if (!result?.ok) {
+    notifyExtensionError(extensionName, methodName, result?.error)
+    return { ok: false }
+  }
+  return result
+}
+
+async function extensionCommand(extensionName, methodName, args = "") {
+  const result = await invokeExtension(extensionName, methodName, args)
+  return Boolean(result.ok)
+}
+
+async function extensionCall(extensionName, methodName, args = "") {
+  const result = await invokeExtension(extensionName, methodName, args)
+  return result.ok ? result.value : undefined
 }
 
 function encodeBase64(input) {
@@ -381,7 +442,7 @@ async function login(username, password) {
     return
   }
   const credentials = { username: username.trim(), password: password.trim() }
-  extensionCommand("MPCoreNetwork", "login", api.serializeToLua(credentials))
+  extensionCommand("MPCoreNetwork", "login", bridgeApi.serializeToLua(credentials))
 }
 
 async function guestLogin() {
@@ -447,7 +508,7 @@ async function directConnectFromClipboard() {
 
 function openExternal(url) {
   if (!url) return
-  extensionCommand("MPCoreNetwork", "openURL", `\"${url}\"`)
+  extensionCommand("MPCoreNetwork", "openURL", bridgeApi.serializeToLua(String(url)))
 }
 
 async function getLauncherVersion() {
@@ -643,8 +704,8 @@ const visibleServers = computed(() => {
 })
 
 export function useBeamMPState(events) {
-  const bridge = useBridge()
-  if (!api) api = bridge.api
+  const { api } = useBridge()
+  if (!bridgeApi) bridgeApi = api
   if (events) ensureListeners(events)
 
   return {
@@ -662,6 +723,8 @@ export function useBeamMPState(events) {
     connectToLauncher,
     connectToServer,
     directConnectFromClipboard,
+    extensionCall,
+    extensionCommand,
     formatBytes,
     getLauncherVersion,
     guestLogin,
