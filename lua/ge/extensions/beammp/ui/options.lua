@@ -74,8 +74,8 @@ local function renderTheming()
             end
         end
 
-        imgui.EndChild()
     end
+    imgui.EndChild()
 
     imgui.SetCursorPosY(imgui.GetWindowHeight() - 32)
     if imgui.Button("Reset to default") then
@@ -155,29 +155,29 @@ local function renderGeneral()
             UI.settings.window.keepActive = pKeepActive[0]
         end
         
-        -- Bottom Buttons
-        imgui.EndChild()
+    end
+    imgui.EndChild()
 
-        imgui.SetCursorPosY(imgui.GetWindowHeight() - 32)
-        if imgui.Button("Reset to default") then
-            UI.settings = utils.copyTable(UI.defaultSettings)
-            sortedSettings = {}
-            local newSortedSettings = {}
-            for name, category in pairs(UI.defaultSettings) do
-                newSortedSettings[name] = {}
-                for settingName, setting in pairs(category) do
-                    table.insert(newSortedSettings[name], {name = settingName, tab = setting})
-                end
-                table.sort(newSortedSettings[name], function(a, b) return a.name < b.name end)
+    -- Bottom Buttons
+    imgui.SetCursorPosY(imgui.GetWindowHeight() - 32)
+    if imgui.Button("Reset to default") then
+        UI.settings = utils.copyTable(UI.defaultSettings)
+        sortedSettings = {}
+        local newSortedSettings = {}
+        for name, category in pairs(UI.defaultSettings) do
+            newSortedSettings[name] = {}
+            for settingName, setting in pairs(category) do
+                table.insert(newSortedSettings[name], {name = settingName, tab = setting})
             end
-            sortedSettings = newSortedSettings
+            table.sort(newSortedSettings[name], function(a, b) return a.name < b.name end)
         end
+        sortedSettings = newSortedSettings
+    end
 
-        imgui.SameLine()
+    imgui.SameLine()
 
-        if imgui.Button("Save") then
-            saveConfig()
-        end
+    if imgui.Button("Save") then
+        saveConfig()
     end
 end
 

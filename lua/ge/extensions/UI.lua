@@ -235,7 +235,7 @@ end
 --- Show a UI dialog / alert box to inform the user of something.
 -- @param options any
 local function showMdDialog(options)
-	guihooks.trigger("onBeamMPShowDialog", options)
+	guihooks.trigger("onBeamMPShowVueDialog", options)
 end
 
 -- -------------------------------------------------------------
@@ -359,15 +359,15 @@ local function renderWindow()
                 currentWindow = windows.options
                 windowTitle = "BeamMP Chat (Options)"
             end
-            imgui.EndChild()
+        end
+        imgui.EndChild()
 
-            if not collapsed then
-                currentWindow.render()
-            end
+        if not collapsed then
+            currentWindow.render()
         end
         imgui.PopStyleVar()
-        imgui.End()
     end
+    imgui.End()
 
     imgui.PopStyleColor(16)
     imgui.PopStyleVar(3)

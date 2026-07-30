@@ -37,7 +37,7 @@
   "blobColorIllegal"            : [ "cloud", "#000000" ],
   "showBlobIllegal"             : [ "cloud", true ],
   "enablePosSmoother"           : [ "cloud", false ],
-  "showPlayerIDs"               : [ "cloud", false ],
+  "showPlayerIDs"               : [ "cloud", true  ],
   "protectConfigFromClone"      : [ "cloud", false ],
   "skipModSecurityWarning"      : [ "local", false ],
   "highlightQueuedPlayers"      : [ "local", true  ],

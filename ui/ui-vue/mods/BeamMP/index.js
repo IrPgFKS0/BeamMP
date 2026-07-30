@@ -4,9 +4,11 @@ import { useBridge } from "@/bridge"
 import { ROUTE_SOURCE_ID, routeRecords } from "./routes.js"
 import { BEAMMP_ROUTE_NAME } from "./shared/constants.js"
 import { $translate } from "@/services/translation"
+import { ACCENTS } from "@/common/components/base"
+import { openConfirmation } from "@/services/popup"
 
 // get lua and events interfaces
-const { lua, events } = useBridge()
+const { api, lua, events } = useBridge()
 // note: here we use "low-level" events from the bridge because this file is not a Vue component
 //       so, never forget to unsubscribe from events when the mod is unloaded
 
@@ -70,8 +72,41 @@ async function unregisterRoutes() {
 
 // convenience ID for for example #3
 const TAB_ID = "beammp"
+let activeBeamMPDialog = null
+
+async function showBeamMPDialog(options = {}) {
+  if (activeBeamMPDialog) return
+
+  activeBeamMPDialog = openConfirmation(
+    options.title || $translate.instant("ui.beammp.mdDialog.disconnectGeneric"),
+    options.text || "",
+    [
+      {
+        label: options.okText || $translate.instant("ui.beammp.mdDialog.returnToMenu"),
+        value: "returnToMenu",
+        extras: { default: true, confirm: true, accent: ACCENTS.main },
+      },
+      {
+        label: $translate.instant("ui.beammp.mdDialog.continueOffline"),
+        value: "continueOffline",
+        extras: { cancel: true, outsideCancel: false, accent: ACCENTS.text },
+      },
+    ],
+  )
+
+  try {
+    const result = await activeBeamMPDialog
+    if (result === "returnToMenu") {
+      api.engineLua(options.okLua || "MPCoreNetwork.leaveServer(true)")
+    }
+  } finally {
+    activeBeamMPDialog = null
+  }
+}
 
 export async function onLoad() {
+  events.on("onBeamMPShowVueDialog", showBeamMPDialog)
+
   // Register the standalone route before advertising its Main Menu button.
   const routeResult = await registerRoutes()
   if (routeResult?.success) {
@@ -108,6 +143,8 @@ export async function onLoad() {
 }
 
 export async function onUnload() {
+  events.off("onBeamMPShowVueDialog", showBeamMPDialog)
+
   // stop listening for the Main Menu button - this is important to do to avoid memory leaks
   events.off("MainMenuButtons", addBeamMPMainMenuButton)
   events.emit("BroadcastMainMenuButtons") // poke buttons to update

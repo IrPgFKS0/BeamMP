@@ -48,6 +48,7 @@ local function render()
             imgui.Text(player.ping)
         end
     end
+    imgui.EndChild()
 end
 
 
