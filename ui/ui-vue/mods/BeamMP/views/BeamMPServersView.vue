@@ -3,15 +3,24 @@
     <div class="browser-layout">
       <div class="server-pane">
         <header class="toolbar">
-          <BngInput
-            class="search-input"
-            :model-value="state.filters.value.searchText"
-            :placeholder="$tt('ui.common.beammp.searchPlaceholder')"
-            @update:model-value="onSearch"
-          />
-          <BngButton @click="requestServerList">{{ $tt("ui.common.beammp.refresh") }}</BngButton>
-          <span class="mod-size-summary">Total Mod Size &lt; {{ maxModSizeLabel }}</span>
-          <BngButton v-if="state.view.value === 'recent'" accent="secondary" @click="clearRecents">{{ $tt("ui.beammp.serverBrowser.clearRecent") }}</BngButton>
+          <div class="toolbar-main">
+            <BngInput
+              class="search-input"
+              :model-value="uiFilters.searchText"
+              :placeholder="$tt('ui.common.beammp.searchPlaceholder')"
+              @update:model-value="onSearch"
+            />
+            <BngButton class="refresh-btn" @click="requestServerList">{{ $tt("ui.common.beammp.refresh") }}</BngButton>
+            <span class="mod-size-summary">Total Mod Size &lt; {{ maxModSizeLabel }}</span>
+            <BngButton
+              v-if="state.view.value === 'recent'"
+              class="clear-recents-btn"
+              accent="secondary"
+              @click="clearRecents"
+            >
+              {{ $tt("ui.beammp.serverBrowser.clearRecent") }}
+            </BngButton>
+          </div>
           <span class="server-count">{{ visibleServers.length }} servers</span>
         </header>
 
@@ -139,7 +148,7 @@
             class="number-input"
             type="number"
             min="0"
-            :value="state.filters.value.playerCountMin"
+            :value="uiFilters.playerCountMin"
             @input="event => updateNumber('playerCountMin', event.target.value)"
           />
         </label>
@@ -149,7 +158,7 @@
             class="number-input"
             type="number"
             min="0"
-            :value="state.filters.value.playerCountMax"
+            :value="uiFilters.playerCountMax"
             @input="event => updateNumber('playerCountMax', event.target.value)"
           />
         </label>
@@ -164,7 +173,7 @@
               min="0"
               max="107520"
               step="10"
-              :value="state.filters.value.sliderMaxModSize"
+              :value="uiFilters.sliderMaxModSize"
               @input="event => updateNumber('sliderMaxModSize', event.target.value)"
             />
             <span>{{ maxModSizeLabel }}</span>
@@ -176,8 +185,8 @@
         <label class="match-all">
           <input
             type="checkbox"
-            :checked="state.filters.value.matchAll"
-            @change="event => updateFilter({ matchAll: event.target.checked })"
+            :checked="uiFilters.matchAll"
+            @change="event => updateMatchAll(event.target.checked)"
           />
           <span class="checkmark" aria-hidden="true" />
           <span>
@@ -268,7 +277,10 @@ import { icons as bngIcons } from "/ui/ui-vue/src/assets/fonts/bngIcons/bngIcons
 const route = useRoute()
 const filtersRail = ref(null)
 const filtersRailMaxHeight = ref("")
+const uiFilters = ref({})
 let filtersRailResizeObserver = null
+let applyFiltersDebounceTimer = null
+const FILTERS_DEBOUNCE_MS = 400
 const {
   addFavorite,
   availableLocations,
@@ -292,7 +304,7 @@ const {
 } = useBeamMPState()
 
 const maxModSizeLabel = computed(() => formatBytes(
-  Number(state.filters.value.sliderMaxModSize || 0) * 1024 * 1024,
+  Number(uiFilters.value.sliderMaxModSize || 0) * 1024 * 1024,
 ))
 
 const filtersRailStyle = computed(() => {
@@ -323,37 +335,86 @@ function updateFiltersRailMaxHeight() {
 }
 
 function updateNumber(key, value) {
-  updateFilter({ [key]: Number(value || 0) })
+  uiFilters.value = {
+    ...uiFilters.value,
+    [key]: Number(value || 0),
+  }
+  queueFilterUpdate()
 }
 
 function onSearch(value) {
-  updateFilter({ searchText: value || "" })
+  uiFilters.value = {
+    ...uiFilters.value,
+    searchText: value || "",
+  }
+  queueFilterUpdate()
 }
 
 function simpleFilterSelected(key, value) {
-  return state.filters.value[key].includes(value)
+  return (uiFilters.value[key] || []).includes(value)
 }
 
 function toggleSimpleFilter(key, value) {
-  const current = state.filters.value[key]
-  updateFilter({
+  const current = uiFilters.value[key] || []
+  uiFilters.value = {
+    ...uiFilters.value,
     [key]: current.includes(value)
       ? current.filter(item => item !== value)
       : [...current, value],
-  })
+  }
+  queueFilterUpdate()
 }
 
 function tagSelected(tag) {
-  return state.filters.value.selectedTags.some(selected => String(selected.raw || selected) === tag.raw)
+  return (uiFilters.value.selectedTags || []).some(selected => String(selected.raw || selected) === tag.raw)
 }
 
 function toggleTag(tag) {
-  const current = state.filters.value.selectedTags
-  updateFilter({
+  const current = uiFilters.value.selectedTags || []
+  uiFilters.value = {
+    ...uiFilters.value,
     selectedTags: tagSelected(tag)
       ? current.filter(selected => String(selected.raw || selected) !== tag.raw)
-      : [...current, tag],
-  })
+      : [...current, tag.raw],
+  }
+  queueFilterUpdate()
+}
+
+function updateMatchAll(value) {
+  uiFilters.value = {
+    ...uiFilters.value,
+    matchAll: Boolean(value),
+  }
+  queueFilterUpdate()
+}
+
+function normalizeFilters(filters = {}) {
+  const source = filters || {}
+  return {
+    searchText: String(source.searchText || ""),
+    playerCountMin: Number(source.playerCountMin || 0),
+    playerCountMax: Number(source.playerCountMax || 0),
+    sliderMaxModSize: Number(source.sliderMaxModSize || 0),
+    selectedMaps: Array.isArray(source.selectedMaps) ? [...source.selectedMaps] : [],
+    selectedServerVersions: Array.isArray(source.selectedServerVersions) ? [...source.selectedServerVersions] : [],
+    selectedTags: Array.isArray(source.selectedTags)
+      ? source.selectedTags
+        .map(tag => (typeof tag === "string" ? tag : String(tag?.raw || "")))
+        .filter(Boolean)
+      : [],
+    selectedServerLocations: Array.isArray(source.selectedServerLocations) ? [...source.selectedServerLocations] : [],
+    matchAll: Boolean(source.matchAll),
+  }
+}
+
+function queueFilterUpdate() {
+  if (applyFiltersDebounceTimer) {
+    clearTimeout(applyFiltersDebounceTimer)
+  }
+  applyFiltersDebounceTimer = setTimeout(() => {
+    applyFiltersDebounceTimer = null
+    updateFilter(normalizeFilters(uiFilters.value))
+  }, FILTERS_DEBOUNCE_MS)
 }
 
 function escapeHtml(value = "") {
@@ -436,6 +497,14 @@ function syncView() {
 
 watch(() => route.params.view, syncView, { immediate: true })
 
+watch(
+  () => state.filters.value,
+  filters => {
+    uiFilters.value = normalizeFilters(filters)
+  },
+  { deep: true, immediate: true },
+)
+
 onMounted(async () => {
   await nextTick()
   updateFiltersRailMaxHeight()
@@ -451,6 +520,10 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  if (applyFiltersDebounceTimer) {
+    clearTimeout(applyFiltersDebounceTimer)
+    applyFiltersDebounceTimer = null
+  }
   if (filtersRailResizeObserver) {
     filtersRailResizeObserver.disconnect()
     filtersRailResizeObserver = null
@@ -484,42 +557,66 @@ onBeforeUnmount(() => {
 }
 
 .toolbar {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  align-items: stretch;
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  align-items: center;
   min-height: 3.5rem;
-  padding: 0.55rem 0.65rem;
-  border-radius: var(--bng-corners-1);
-  background: rgba(55, 61, 70, 0.86);
+  padding: 0.6rem 0.7rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--bng-corners-2);
+  background:
+    linear-gradient(180deg, rgba(60, 66, 75, 0.96), rgba(44, 49, 57, 0.96)),
+    radial-gradient(circle at 12% 0%, rgba(var(--bng-orange-500-rgb), 0.15), transparent 38%);
+}
+
+.toolbar-main {
+  display: flex;
+  min-width: 0;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: nowrap;
 }
 
 .search-input {
-  flex: 1 1 16rem;
+  flex: 1 1 22rem;
   min-width: 12rem;
-  max-width: 28rem;
+}
+
+.refresh-btn,
+.clear-recents-btn {
+  flex: 0 0 auto;
 }
 
 .mod-size-summary {
   display: inline-flex;
   align-items: center;
-  min-height: 2.25rem;
-  padding: 0 0.7rem;
+  min-height: 2.1rem;
+  padding: 0 0.72rem;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: var(--bng-corners-1);
-  color: var(--bng-cool-gray-100);
-  background: rgba(13, 17, 22, 0.48);
-  font-size: 0.78rem;
+  color: var(--bng-cool-gray-50);
+  background: rgba(20, 24, 31, 0.6);
+  font-size: 0.8rem;
+  font-weight: 600;
   white-space: nowrap;
 }
 
 .server-count {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  margin-left: auto;
-  padding: 0 0.35rem;
-  color: var(--bng-cool-gray-300);
-  font-size: 0.8rem;
+  justify-content: center;
+  min-height: 2.1rem;
+  padding: 0 0.75rem;
+  border: 1px solid rgba(var(--bng-orange-500-rgb), 0.35);
+  border-radius: var(--bng-corners-1);
+  color: var(--bng-cool-gray-100);
+  background: rgba(0, 0, 0, 0.28);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
   white-space: nowrap;
 }
 
@@ -746,7 +843,7 @@ onBeforeUnmount(() => {
 }
 
 .servers-table {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
   width: 100%;
   border-collapse: collapse;
@@ -1021,6 +1118,18 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 1180px) {
+  .toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar-main {
+    flex-wrap: wrap;
+  }
+
+  .server-count {
+    justify-self: end;
+  }
+
   .browser-layout {
     grid-template-columns: minmax(0, 1fr) 20rem;
   }
