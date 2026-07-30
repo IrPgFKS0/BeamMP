@@ -108,10 +108,10 @@
 
     <BeamMPModal
       :visible="state.securityPromptVisible.value"
-      :title="$tt('ui.beammp.security.title')"
-      :message="state.securityPromptMessage.value || $tt('ui.beammp.security.prompt')"
-      :confirm-text="$tt('ui.beammp.security.accept_proceed')"
-      :cancel-text="$tt('ui.beammp.security.no_return')"
+      :title="$tt('ui.beammp.serverBrowser.modSecurityWarning.title')"
+      :message="state.securityPromptMessage.value || $tt('ui.beammp.serverBrowser.modSecurityWarning.prompt')"
+      :confirm-text="$tt('ui.beammp.serverBrowser.modSecurityWarning.accept_proceed')"
+      :cancel-text="$tt('ui.beammp.serverBrowser.modSecurityWarning.no_return')"
       @confirm="approveSecurityPrompt"
       @cancel="rejectSecurityPrompt"
     />

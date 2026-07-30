@@ -1240,8 +1240,8 @@ local core_vehicles_cloneCurrent = core_vehicles.cloneCurrent
 core_vehicles.cloneCurrent = function ()
 	local vehicle = be:getPlayerVehicle(0)
 	if vehicle:getField("protected", 0) == "1" then
-		local title = MPTranslate("ui.multiplayer.configprotection.clone.title", "Vehicle Clone Error")
-		local msg = MPTranslate("ui.multiplayer.configprotection.clone.message", "Sorry, you cannot clone this vehicle.")
+		local title = MPTranslate("ui.beammp.configprotection.clone.title", "Vehicle Clone Error")
+		local msg = MPTranslate("ui.beammp.configprotection.clone.message", "Sorry, you cannot clone this vehicle.")
 		guihooks.trigger("toastrMsg", {type="error", title=title, msg=msg})
 		return
 	else
@@ -1253,8 +1253,8 @@ local core_vehicle_partmgmt_saveLocal = extensions.core_vehicle_partmgmt.saveLoc
 local function core_vehicle_partmgmt_saveLocal_overwrite(p1)
 	local vehicle = be:getPlayerVehicle(0)
 	if vehicle:getField("protected", 0) == "1" then
-		local title = MPTranslate("ui.multiplayer.configprotection.save.title", "Vehicle Save Error")
-		local msg = MPTranslate("ui.multiplayer.configprotection.save.message", "Sorry, you cannot save this vehicle.")
+		local title = MPTranslate("ui.beammp.configprotection.save.title", "Vehicle Save Error")
+		local msg = MPTranslate("ui.beammp.configprotection.save.message", "Sorry, you cannot save this vehicle.")
 		guihooks.trigger("toastrMsg", {type="error", title=title, msg=msg})
 		return
 	else
@@ -1266,8 +1266,8 @@ local core_vehicle_partmgmnt_savedefault = extensions.core_vehicle_partmgmt.save
 local function core_vehicle_partmgmnt_savedefault_overwrite(p1)
 	local vehicle = be:getPlayerVehicle(0)
 	if vehicle:getField("protected", 0) == "1" then
-		local title = MPTranslate("ui.multiplayer.configprotection.save.title", "Vehicle Save Error")
-		local msg = MPTranslate("ui.multiplayer.configprotection.save.message", "Sorry, you cannot save this vehicle.")
+		local title = MPTranslate("ui.beammp.configprotection.save.title", "Vehicle Save Error")
+		local msg = MPTranslate("ui.beammp.configprotection.save.message", "Sorry, you cannot save this vehicle.")
 		guihooks.trigger("toastrMsg", {type="error", title=title, msg=msg})
 		return
 	else
@@ -1279,8 +1279,8 @@ local gameplay_garageMode_start = gameplay_garageMode.start
 local function gameplay_garageMode_start_overwrite()
 	local vehicle = be:getPlayerVehicle(0)
 	if vehicle and vehicle:getField("protected", 0) == "1" then
-		local title = MPTranslate("ui.multiplayer.configprotection.save.title", "Vehicle Save Error")
-		local msg = MPTranslate("ui.multiplayer.configprotection.save.message", "Sorry, you cannot save this vehicle.")
+		local title = MPTranslate("ui.beammp.configprotection.save.title", "Vehicle Save Error")
+		local msg = MPTranslate("ui.beammp.configprotection.save.message", "Sorry, you cannot save this vehicle.")
 		guihooks.trigger("toastrMsg", {type="error", title=title, msg=msg})
 		return
 	else
