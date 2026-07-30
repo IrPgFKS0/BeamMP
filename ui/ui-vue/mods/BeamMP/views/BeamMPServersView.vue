@@ -79,7 +79,7 @@
                           <tr>
                             <th>{{ $tt("ui.beammp.serverBrowser.server.tags") }}</th>
                             <td>
-                              <span v-if="!server.tagsList.length">{{ $tt("ui.beammp.server.noTags") }}</span>
+                              <span v-if="!server.tagsList.length">{{ $tt("ui.common.beammp.noTags") }}</span>
                               <div v-else class="tag-list-container">
                                 <span v-for="tag in server.tagsList" :key="`${server.id}:${tag.raw}`" class="chip">{{ tag.text }}</span>
                               </div>
@@ -90,7 +90,7 @@
 
                       <section class="players-panel">
                         <h4 class="section-header">{{ $tt("ui.common.beammp.playerList") }}</h4>
-                        <div v-if="!playerNames(server).length" class="muted">{{ $tt("ui.beammp.server.noPlayers") }}</div>
+                        <div v-if="!playerNames(server).length" class="muted">{{ $tt("ui.common.beammp.noPlayers") }}</div>
                         <div v-else class="tag-list-container">
                           <span
                             v-for="playerName in playerNames(server)"
@@ -125,7 +125,7 @@
         </table>
       </div>
 
-      <aside class="filters-rail">
+      <aside ref="filtersRail" class="filters-rail" :style="filtersRailStyle">
         <h2 class="rail-title">Search Filters</h2>
         <BngButton class="reset-button" accent="attention" @click="resetFilters">
           {{ $tt("ui.beammp.serverBrowser.filters.resetFilters") }}
@@ -259,13 +259,16 @@
 </template>
 
 <script setup>
-import { computed, watch } from "vue"
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useRoute } from "vue-router"
 import { BngButton, BngInput } from "@/common/components/base"
 import { useBeamMPState } from "../shared/beammpState.js"
 import { icons as bngIcons } from "/ui/ui-vue/src/assets/fonts/bngIcons/bngIcons.js"
 
 const route = useRoute()
+const filtersRail = ref(null)
+const filtersRailMaxHeight = ref("")
+let filtersRailResizeObserver = null
 const {
   addFavorite,
   availableLocations,
@@ -291,6 +294,33 @@ const {
 const maxModSizeLabel = computed(() => formatBytes(
   Number(state.filters.value.sliderMaxModSize || 0) * 1024 * 1024,
 ))
+
+const filtersRailStyle = computed(() => {
+  if (!filtersRailMaxHeight.value) return null
+  return {
+    maxHeight: filtersRailMaxHeight.value,
+  }
+})
+
+function updateFiltersRailMaxHeight() {
+  const rail = filtersRail.value
+  if (!rail) return
+
+  const container = rail.closest(".content")
+  if (!container) {
+    filtersRailMaxHeight.value = ""
+    return
+  }
+
+  const railRect = rail.getBoundingClientRect()
+  const containerRect = container.getBoundingClientRect()
+  const containerStyle = window.getComputedStyle(container)
+  const containerPaddingBottom = Number.parseFloat(containerStyle.paddingBottom) || 0
+  const topOffsetInContainer = railRect.top - containerRect.top
+  const availableHeight = Math.floor(containerRect.height - containerPaddingBottom - topOffsetInContainer)
+
+  filtersRailMaxHeight.value = availableHeight > 0 ? `${availableHeight}px` : ""
+}
 
 function updateNumber(key, value) {
   updateFilter({ [key]: Number(value || 0) })
@@ -405,11 +435,35 @@ function syncView() {
 }
 
 watch(() => route.params.view, syncView, { immediate: true })
+
+onMounted(async () => {
+  await nextTick()
+  updateFiltersRailMaxHeight()
+
+  const rail = filtersRail.value
+  const container = rail?.closest(".content")
+  if (container && "ResizeObserver" in window) {
+    filtersRailResizeObserver = new ResizeObserver(() => updateFiltersRailMaxHeight())
+    filtersRailResizeObserver.observe(container)
+  }
+
+  window.addEventListener("resize", updateFiltersRailMaxHeight)
+})
+
+onBeforeUnmount(() => {
+  if (filtersRailResizeObserver) {
+    filtersRailResizeObserver.disconnect()
+    filtersRailResizeObserver = null
+  }
+  window.removeEventListener("resize", updateFiltersRailMaxHeight)
+})
 </script>
 
 <style scoped lang="scss">
 .servers-wrap {
-  padding-bottom: 12rem;
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 0;
 }
 
 .browser-layout {
@@ -417,12 +471,16 @@ watch(() => route.params.view, syncView, { immediate: true })
   grid-template-columns: minmax(0, 1fr) clamp(22rem, 25vw, 29rem);
   gap: 0.45rem;
   align-items: start;
+  height: 100%;
+  min-height: 0;
 }
 
 .server-pane {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
   min-width: 0;
-  overflow-x: auto;
-  padding-bottom: 5rem;
 }
 
 .toolbar {
@@ -430,7 +488,7 @@ watch(() => route.params.view, syncView, { immediate: true })
   gap: 0.5rem;
   flex-wrap: wrap;
   align-items: stretch;
-  min-height: 2.5rem;
+  min-height: 3.5rem;
   padding: 0.55rem 0.65rem;
   border-radius: var(--bng-corners-1);
   background: rgba(55, 61, 70, 0.86);
@@ -472,12 +530,14 @@ watch(() => route.params.view, syncView, { immediate: true })
   flex-direction: column;
   gap: 0.65rem;
   box-sizing: border-box;
-  max-height: calc(100vh - 8rem);
+  min-height: 0;
+  max-height: 100%;
   padding: 0.75rem;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--bng-corners-2);
   background: rgba(50, 57, 66, 0.94);
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .rail-title {
@@ -686,9 +746,57 @@ watch(() => route.params.view, syncView, { immediate: true })
 }
 
 .servers-table {
+  flex: 1 1 auto;
+  min-height: 0;
   width: 100%;
   border-collapse: collapse;
   background: rgba(42, 47, 54, 0.42);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+
+  thead,
+  tbody {
+    display: block;
+  }
+
+  tbody {
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+  }
+
+  thead tr,
+  tbody tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  thead th:nth-child(1),
+  .server-row td:nth-child(1) {
+    width: 3.5rem;
+  }
+
+  thead th:nth-child(2),
+  .server-row td:nth-child(2) {
+    width: 46%;
+  }
+
+  thead th:nth-child(3),
+  .server-row td:nth-child(3) {
+    width: 22%;
+  }
+
+  thead th:nth-child(4),
+  .server-row td:nth-child(4) {
+    width: 8.5rem;
+  }
+
+  thead th:nth-child(5),
+  .server-row td:nth-child(5) {
+    width: 5.5rem;
+  }
 
   th,
   td {

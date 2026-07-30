@@ -503,7 +503,7 @@ onBeforeUnmount(() => {
   border: 1px solid rgba(var(--bng-orange-400-rgb), 0.35);
   border-radius: var(--bng-corners-2);
   background: rgba(0, 0, 0, 0.28);
-  padding: 0.9rem 0.9rem 4rem;
+  padding: 0.9rem 0.9rem;
 }
 
 .loading-overlay {
