@@ -246,7 +246,6 @@
             <img
               v-if="officialMaps.includes(map)"
               class="filter-option-icon filter-option-icon--beamng"
-              src="/ui/ui-vue/src/assets/fonts/bngIcons/svg/beamNG.svg"
               alt=""
               aria-hidden="true"
             />
@@ -781,7 +780,11 @@ watch(() => route.params.view, syncView, { immediate: true })
 .filter-option-icon--beamng {
   width: 1rem;
   height: 1rem;
-  object-fit: contain;
+  display: inline-block;
+  flex: 0 0 1rem;
+  background-color: var(--bng-orange-400);
+  -webkit-mask: url("/ui/ui-vue/src/assets/fonts/bngIcons/svg/beamNG.svg") center / contain no-repeat;
+  mask: url("/ui/ui-vue/src/assets/fonts/bngIcons/svg/beamNG.svg") center / contain no-repeat;
 }
 
 .details-cell {
