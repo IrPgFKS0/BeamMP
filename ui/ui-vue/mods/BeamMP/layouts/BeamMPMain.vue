@@ -64,10 +64,29 @@
 
         <div class="spacer" />
 
-        <button class="nav-btn secondary" @click="openExternal('https://forum.beammp.com')">{{ $tt("ui.common.beammp.forum") }}</button>
-        <button class="nav-btn secondary" @click="openExternal('https://discord.gg/BeamMP')">{{ $tt("ui.common.beammp.discord") }}</button>
-        <button class="nav-btn secondary" @click="openExternal('https://docs.beammp.com')">{{ $tt("ui.common.beammp.docs") }}</button>
-        <button class="nav-btn secondary" @click="openExternal('https://github.com/BeamMP/')">{{ $tt("ui.common.beammp.github") }}</button>
+        <button class="nav-btn secondary external-link external-link--patreon" @click="openExternal('https://www.patreon.com/BeamMP')">
+          <img src="../icons/PATREON_SYMBOL_1_WHITE_RGB.svg" alt="" class="external-link-icon" />
+          <span class="external-link-copy">
+            <span class="external-link-title">{{ $tt("ui.common.beammp.patreon") }}</span>
+            <small class="external-link-subtitle">{{ $tt("ui.beammp.patreon.message.user") }}</small>
+          </span>
+        </button>
+        <button class="nav-btn secondary external-link" @click="openExternal('https://forum.beammp.com')">
+          <img src="/ui/ui-vue/src/assets/fonts/bngIcons/svg/chatBubble.svg" alt="" class="external-link-icon external-link-icon--invert" />
+          <span>{{ $tt("ui.common.beammp.forum") }}</span>
+        </button>
+        <button class="nav-btn secondary external-link" @click="openExternal('https://discord.gg/BeamMP')">
+          <img src="../icons/icon_clyde_white_RGB.svg" alt="" class="external-link-icon" />
+          <span>{{ $tt("ui.common.beammp.discord") }}</span>
+        </button>
+        <button class="nav-btn secondary external-link" @click="openExternal('https://docs.beammp.com')">
+          <img src="/ui/ui-vue/src/assets/fonts/bngIcons/svg/info.svg" alt="" class="external-link-icon external-link-icon--invert" />
+          <span>{{ $tt("ui.common.beammp.docs") }}</span>
+        </button>
+        <button class="nav-btn secondary external-link" @click="openExternal('https://github.com/BeamMP/')">
+          <img src="../icons/github-mark.svg" alt="" class="external-link-icon" />
+          <span>{{ $tt("ui.common.beammp.github") }}</span>
+        </button>
       </aside>
 
       <section ref="contentPanel" class="content">
@@ -491,6 +510,62 @@ onBeforeUnmount(() => {
 
 .secondary {
   opacity: 0.9;
+}
+
+.external-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  .external-link-icon {
+    width: 1rem;
+    height: 1rem;
+    flex: 0 0 1rem;
+    object-fit: contain;
+  }
+
+  .external-link-icon--invert {
+    filter: contrast(0) brightness(2);
+  }
+
+  span {
+    line-height: 1;
+  }
+
+  .external-link-copy {
+    display: inline-flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.12rem;
+  }
+
+  .external-link-title {
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .external-link-subtitle {
+    color: var(--bng-cool-gray-300);
+    font-size: 0.68rem;
+    line-height: 1.2;
+    white-space: normal;
+  }
+}
+
+.external-link--patreon {
+  border-color: rgba(var(--bng-add-green-550-rgb), 0.92);
+  background: rgba(var(--bng-add-green-550-rgb), 0.2);
+
+  &:hover {
+    border-color: rgba(var(--bng-add-green-550-rgb), 1);
+    background: rgba(var(--bng-add-green-550-rgb), 0.32);
+  }
+
+  .external-link-subtitle {
+    color: var(--bng-add-green-200);
+  }
 }
 
 .spacer {
