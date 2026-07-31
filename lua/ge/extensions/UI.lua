@@ -215,7 +215,13 @@ end
 --- Show a UI dialog / alert box to inform the user of something.
 -- @param options any
 local function showMdDialog(options)
-	guihooks.trigger("showMdDialog", options)
+	-- 0.39: the old 'showMdDialog' Angular handler (BeamMP-Session app $mdDialog) still
+	-- renders on the legacy HUD surface but its buttons no longer receive clicks. Emit
+	-- upstream 4.22's Vue hook instead -- the ported Vue module (index.js showBeamMPDialog)
+	-- shows a native dialog with working Continue offline / Return to menu buttons.
+	-- Deliberately NOT dual-emitted: both would stack, and the dead Angular overlay
+	-- would sit on top of (and block) the working Vue one.
+	guihooks.trigger("onBeamMPShowVueDialog", options)
 end
 
 -- -------------------------------------------------------------
