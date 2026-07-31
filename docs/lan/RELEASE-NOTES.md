@@ -1,6 +1,6 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.22.0-LAN p13h65` · combined host exe `p13h35` (Windows + Linux) · **for BeamNG 0.39**
+**Build:** mod `4.22.0-LAN p13h66` · combined host exe `p13h35` (Windows + Linux) · **for BeamNG 0.39**
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -61,6 +61,10 @@ a little tuning (see `LAN-TUNING.md`).
   `tools/inject_lan_options.py` re-applies the LAN items *and* the LAN prunes on every re-sync
   (notably: upstream's "refresh server list in-game" is removed — on a LAN build that request
   would terminate the running session).
+- **"Playing as" reads the launcher's persisted name (p13h66).** The sidebar name, Direct
+  Connect prefill and Change-name default now seed from the launcher's login response when the
+  menu's own storage is empty — previously they showed "Player" on machines where the name had
+  been set anywhere other than this menu's dialog.
 - **In-session menu fixes (p13h63-p13h65).** The current-server view lists the server's mods
   again (`getServerMods` bridge), the "server browser" link lands on Favorites (the public list is
   empty by design on LAN), the disconnect dialog's **Continue offline / Return to menu buttons work
