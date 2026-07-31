@@ -1,6 +1,6 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.22.0-LAN p13h61` · combined host exe `p13h35` (Windows + Linux) · **for BeamNG 0.39**
+**Build:** mod `4.22.0-LAN p13h65` · combined host exe `p13h35` (Windows + Linux) · **for BeamNG 0.39**
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -45,6 +45,29 @@ a little tuning (see `LAN-TUNING.md`).
 
 ## This release
 
+- **Per-frame Lua garbage cleanup (p13h62).** Hand-port of the two self-contained pieces of
+  upstream PR 838: nametag/spectator strings and their engine-string wrappers are now cached per
+  vehicle and rebuilt only when an input changes (nick/role/name/settings/camera switches), the
+  per-frame vector/quaternion allocations in the render loop and the position-receive path are
+  pooled, blob colors parse once instead of three hex-parses per frame, and the imgui chat measures
+  each message once at arrival instead of twice per text segment per frame. Fixes three bugs in the
+  PR itself along the way (a dropped rotation negation, a nil-index on departed spectators, dead
+  code not ported).
+- **BeamMP settings on 0.39 (p13h63-p13h64).** 0.39 rebuilt the game Options screen on a Vue
+  schema, which silently orphaned the old settings page. The fork now ships upstream 4.22's answer
+  (a layout override adding a Multiplayer category) **plus all the LAN fork's own settings** with
+  their original tooltips — auto-spawn on join, AI-chase consent, projectile/position/mailbox/
+  marker tuning, direct vehicle socket, diagnostics, and the Save-all-logs button.
+  `tools/inject_lan_options.py` re-applies the LAN items *and* the LAN prunes on every re-sync
+  (notably: upstream's "refresh server list in-game" is removed — on a LAN build that request
+  would terminate the running session).
+- **In-session menu fixes (p13h63-p13h65).** The current-server view lists the server's mods
+  again (`getServerMods` bridge), the "server browser" link lands on Favorites (the public list is
+  empty by design on LAN), the disconnect dialog's **Continue offline / Return to menu buttons work
+  again** (moved off the dead Angular dialog onto the game's native Vue dialog), and three LAN menu
+  features lost in the Vue port are restored: **"Playing as" name display with a Change-name
+  prompt**, the **Direct Connect name field**, and **favorite rename** (which now also survives
+  list rebuilds — the 0.38 menu's rename had never stuck through one).
 - **BeamNG 0.39 support (p13h58-p13h61).** Validated against 0.39.1.0 and upstream BeamMP 4.22:
   the mod version base now tracks upstream (`4.22.0-LAN`). The 0.39 blocker was stock BeamMP's own
   version gate silently deactivating the whole mod on any game update — the fork now **warns loudly
