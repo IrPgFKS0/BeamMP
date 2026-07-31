@@ -660,7 +660,11 @@ onMounted(async () => {
   const rail = filtersRail.value
   const container = rail?.closest(".content")
   if (container && "ResizeObserver" in window) {
-    filtersRailResizeObserver = new ResizeObserver(() => updateFiltersRailMaxHeight())
+    // rAF-wrapped: the callback sets the rail's max-height INSIDE the observed
+    // container, which can re-trigger layout in the same frame -- the browser then
+    // logs "ResizeObserver loop completed with undelivered notifications" (benign
+    // but noisy in beamng.log). Deferring to the next frame breaks the loop.
+    filtersRailResizeObserver = new ResizeObserver(() => requestAnimationFrame(() => updateFiltersRailMaxHeight()))
     filtersRailResizeObserver.observe(container)
   }
 

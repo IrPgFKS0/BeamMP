@@ -66,6 +66,17 @@ const officialMaps = [
   "West Coast Usa",
 ]
 
+// LAN: declared before `state` -- its initializer calls loadLanPlayerName at module eval
+const LAN_PLAYER_NAME_KEY = "lanPlayerName"
+
+function loadLanPlayerName() {
+  try {
+    return String(window.localStorage.getItem(LAN_PLAYER_NAME_KEY) || "")
+  } catch (error) {
+    return ""
+  }
+}
+
 const state = {
   isReady: ref(false),
   tosAccepted: ref(localStorage.getItem("tosAccepted") === "true"),
@@ -92,18 +103,12 @@ const state = {
   view: ref("servers"),
   // LAN: the local player name (no BeamMP account on a LAN fork). Persisted in
   // localStorage AND pushed to Lua (the launcher persists it too), same as the
-  // 0.38 Angular menu did.
+  // 0.38 Angular menu did. NOTE: LAN_PLAYER_NAME_KEY and loadLanPlayerName are
+  // declared ABOVE this literal -- the initializer runs at module eval, and a
+  // const declared below it would be in its temporal dead zone (the resulting
+  // ReferenceError was silently eaten by the try/catch, so the localStorage
+  // fast-path always returned "" until the launcher-name seed arrived).
   lanPlayerName: ref(loadLanPlayerName()),
-}
-
-const LAN_PLAYER_NAME_KEY = "lanPlayerName"
-
-function loadLanPlayerName() {
-  try {
-    return String(window.localStorage.getItem(LAN_PLAYER_NAME_KEY) || "")
-  } catch (error) {
-    return ""
-  }
 }
 
 // LAN: set the name other players see. Persists locally and tells Lua/the launcher.
