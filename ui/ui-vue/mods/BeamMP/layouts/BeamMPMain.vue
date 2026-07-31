@@ -140,14 +140,15 @@ const {
   setView,
 } = useBeamMPState(events)
 
-// LAN: who am I (no BeamMP account on a LAN fork) + rename prompt
-const lanPlayerName = computed(() => state.lanPlayerName.value || "Player")
+// LAN: who am I (no BeamMP account on a LAN fork) + rename prompt. Fallback chain:
+// name set via this menu -> the launcher's persisted name (auth.username) -> "Player"
+const lanPlayerName = computed(() => state.lanPlayerName.value || state.auth.value?.username || "Player")
 
 async function changeLanName() {
   const result = await openPrompt(
     "This is the name other players see you as on the server.",
     "Set your name",
-    { defaultValue: state.lanPlayerName.value || "", maxLength: 40 },
+    { defaultValue: state.lanPlayerName.value || state.auth.value?.username || "", maxLength: 40 },
   )
   if (result === false || result === null || result === undefined) return
   setLanPlayerName(result)

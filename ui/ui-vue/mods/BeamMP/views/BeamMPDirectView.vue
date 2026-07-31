@@ -63,15 +63,20 @@
 </template>
 
 <script setup>
-import { ref } from "vue"
+import { ref, watch } from "vue"
 import { BngButton } from "@/common/components/base"
 import { useBeamMPState } from "../shared/beammpState.js"
 
 const ip = ref("")
 const port = ref("30814")
 const { state, addFavorite, connectToServer, directConnectFromClipboard, setLanPlayerName } = useBeamMPState()
-// LAN: prefill with the current name so it is visible/editable, not retyped per connect
-const playerName = ref(state.lanPlayerName.value)
+// LAN: prefill with the current name so it is visible/editable, not retyped per connect.
+// The launcher's persisted name (auth.username) can arrive after mount -- fill the
+// field then, but never overwrite something the user already typed.
+const playerName = ref(state.lanPlayerName.value || state.auth.value?.username || "")
+watch([() => state.lanPlayerName.value, () => state.auth.value], () => {
+  if (!playerName.value) playerName.value = state.lanPlayerName.value || state.auth.value?.username || ""
+})
 
 async function pasteFromClipboard() {
   const text = String(await directConnectFromClipboard() || "")

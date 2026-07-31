@@ -654,6 +654,19 @@ function ensureListeners(events) {
   })
   events.on("onBeamMPAuthReceived", data => {
     state.auth.value = data || {}
+    // LAN: the launcher's login-check response carries the PERSISTED player name
+    // (Core.cpp 'Nc' -> Auth["username"]). localStorage only knows the name if it was
+    // set through this menu's own dialog on this machine, so seed from the launcher
+    // when we have nothing local. No Lua push -- this already IS the launcher's name.
+    const username = String(data?.username || "").trim()
+    if (username && !state.lanPlayerName.value) {
+      state.lanPlayerName.value = username
+      try {
+        window.localStorage.setItem(LAN_PLAYER_NAME_KEY, username)
+      } catch (error) {
+        /* storage disabled -- the ref still carries it for this session */
+      }
+    }
   })
   events.on("onBeamMPServerJoined", () => {
     state.loadingOverlayVisible.value = false
