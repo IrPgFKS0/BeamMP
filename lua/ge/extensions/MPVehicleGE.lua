@@ -43,6 +43,14 @@ end
 
 -- debug drawers, using the FFI functions for debugDraw is a lot faster and produces no garbage
 local drawTextAdvanced = ffiFound and ffi.C.BNG_DBG_DRAW_TextAdvanced or nop
+local drawSphere = ffiFound and ffi.C.BNG_DBG_DRAW_Sphere or nop -- #838: blob spheres without Point3F/ColorF garbage
+
+-- #838 garbage cleanup: scratch vectors reused every frame by onPreRender (never
+-- stored anywhere -- per-vehicle persistent state uses its own per-vehicle objects)
+local scratchCameraPos = vec3()
+local scratchDrawPos = vec3()
+local scratchDir = vec3()
+local scratchDirUp = vec3()
 
 --- Contains Information about Backend authorized Roles
 -- @table roleToInfo
@@ -963,21 +971,33 @@ function Player:addVehicle(v)
 	if not self.activeVehicleID and id then self.activeVehicleID = id end
 	log('W', 'Player:addVehicle', 'Assigned vehicle ID '..tostring(id)..' to player '..self.name)
 end
+-- #838 nametag caching: drop the cached tag strings of all this player's vehicles so
+-- the render loop rebuilds them (it rebuilds lazily whenever nameTagBody is nil)
+function Player:invalidateNameTags()
+	for id, _ in pairs(self.vehicles.IDs) do
+		local veh = vehicles[id]
+		if veh then veh.nameTagBody = nil end
+	end
+end
 function Player:setNickPrefix(tagSource, text)
 	--setPlayerNickPrefix(self.name, tagSource, text)
 	if text == nil then text = tagSource; tagSource = "default" end
 	self.nickPrefixes[tagSource] = text
+	self:invalidateNameTags()
 end
 function Player:setNickSuffix(tagSource, text)
 	--setPlayerNickSuffix(self.name, tagSource, text)
 	if text == nil then text = tagSource; tagSource = "default" end
 	self.nickSuffixes[tagSource] = text
+	self:invalidateNameTags()
 end
 function Player:setCustomRole(role)
 	self.customRole = role
+	self:invalidateNameTags()
 end
 function Player:clearCustomRole(roleName)
 	self.customRole = nil
+	self:invalidateNameTags()
 end
 function Player:delete()
 	log('W', 'Player:delete', string.format('Removing player %s (%i)! Data: %s', self.name, self.playerID, dumps(self)))
@@ -985,6 +1005,14 @@ function Player:delete()
 		v:delete()
 	end
 	if self.activeVehicleID and vehicles[self.activeVehicleID] then vehicles[self.activeVehicleID].spectators[self.playerID] = nil end
+	-- #838 nametag caching: this player may still be listed as a spectator on other
+	-- vehicles; remove them everywhere so no cached spectator tag keeps their name
+	for _, veh in pairs(vehicles) do
+		if veh.spectators and veh.spectators[self.playerID] then
+			veh.spectators[self.playerID] = nil
+			veh.spectatorsDirty = true
+		end
+	end
 	players[self.playerID] = nil
 
 	self = nil
@@ -1049,6 +1077,10 @@ function Vehicle:new(data)
 	o.rotation = nil
 
 	o.spectators = {}
+	-- #838 nametag caching: nameTagBody/nameTag are built lazily by the render loop
+	-- (the owner may not exist yet here); spectator tag starts empty and dirty
+	o.spectatorsDirty = true
+	o.spectatorsTagPlain = ""
 
 	if not settings.getValue("showDebugOutput") then
 		log('W', 'Vehicle:new', string.format("Vehicle %s (%s) created! Data:%s", o.serverVehicleString, o.ownerName, dumps(data)))
@@ -1072,12 +1104,15 @@ function Vehicle:delete()
 end
 function Vehicle:setCustomRole(role)
 	self.customRole = role
+	self.nameTagBody = nil -- #838: rebuild cached nametag
 end
 function Vehicle:clearCustomRole(roleName)
 	self.customRole = nil
+	self.nameTagBody = nil -- #838: rebuild cached nametag
 end
 function Vehicle:setDisplayName(displayName)
 	self.customName = displayName
+	self.nameTagBody = nil -- #838: rebuild cached nametag
 end
 function Vehicle:onSerialized()
 	local t = {
@@ -1966,13 +2001,16 @@ end
 local function onServerCameraSwitched(playerID, serverVehicleID)
 	if not players[playerID] then return end -- TODO: better fix?
 	if players[playerID] and players[playerID].activeVehicleID and vehicles[players[playerID].activeVehicleID] then
-		vehicles[players[playerID].activeVehicleID].spectators[playerID] = nil -- clear prev spectator field
+		local prevVeh = vehicles[players[playerID].activeVehicleID]
+		prevVeh.spectators[playerID] = nil -- clear prev spectator field
+		prevVeh.spectatorsDirty = true -- #838: cached spectator tag must rebuild
 	end
 
 	players[playerID].activeVehicleID = serverVehicleID
 
 	if not vehicles[serverVehicleID] then return end
 	vehicles[serverVehicleID].spectators[playerID] = true
+	vehicles[serverVehicleID].spectatorsDirty = true -- #838: cached spectator tag must rebuild
 end
 
 local function onServerVehicleColorChanged(serverVehicleID, data)
@@ -2439,6 +2477,63 @@ local function guestNameForJbeam(jbeam)
 	return result
 end
 
+-- ============= #838 NAMETAG CACHING =============
+-- The render loop used to rebuild the prefix/name/suffix/tag string (plus a String()
+-- wrapper) for EVERY vehicle EVERY frame -- steady per-frame Lua garbage that scales
+-- with vehicle count. These caches rebuild only when an input changes:
+--   nameTagBody nil-ed by: Player nick/role setters, Vehicle role/name setters, the
+--   global onSettingsChanged, and the per-frame activeVehicleID marker check (which
+--   also heals guest-name flips after camera switches without an explicit hook).
+--   spectatorsDirty set by: camera switches, Player:delete, onSettingsChanged.
+-- Defined down here (not next to the other Vehicle methods) because they need
+-- guestNameForJbeam, which is a local declared above.
+function Vehicle:updateNameTagCache()
+	local owner = self:getOwner()
+	if not owner then return end
+	local sShorten = settings.getValue("shortenNametags")
+	local roleInfo = self.customRole or owner.customRole or owner.role
+
+	local ownerName = sShorten and owner.shortname or owner.name
+	local name = self.customName or ownerName
+	-- LAN/MP: a player's name only follows their CURRENTLY ACTIVE vehicle; their other
+	-- vehicles (e.g. spawned traffic) show as "guest_<vehicle>" (see guestNameForJbeam)
+	if not self.customName and owner.activeVehicleID ~= nil and owner.activeVehicleID ~= self.serverVehicleString then
+		name = guestNameForJbeam(self.jbeam)
+	end
+
+	local tag = sShorten and roleInfo.shorttag or roleInfo.tag
+
+	local prefix = ""
+	for _, t in pairs(owner.nickPrefixes) do prefix = prefix..t.." " end
+	local suffix = ""
+	for _, t in pairs(owner.nickSuffixes) do suffix = suffix..t.." " end
+
+	self.nameTagBody = table.concat({prefix, name, suffix, tag})
+	self.nameTag = String(" "..self.nameTagBody.." ") -- pre-wrapped for the no-distance fast path
+	self.nameTagActiveID = owner.activeVehicleID -- marker: rebuild when the owner's active vehicle changes
+end
+function Vehicle:updateSpectatorsTagCache()
+	self.spectatorsDirty = false
+	local owner = self:getOwner()
+	local sShorten = settings.getValue("shortenNametags")
+	local spectators = ""
+	for spectatorID, _ in pairs(self.spectators) do
+		local spectator = players[spectatorID]
+		if not spectator then
+			self.spectators[spectatorID] = nil -- stale: player left but wasn't cleaned from this set
+		elseif not (spectator == owner or spectator.isLocal) then
+			spectators = spectators .. (sShorten and spectator.shortname or spectator.name) .. ', '
+		end
+	end
+	if spectators ~= "" then
+		self.spectatorsTagPlain = spectators:sub(1,-3) -- cut off trailing comma
+		self.spectatorsTag = String(" "..self.spectatorsTagPlain.." ")
+	else
+		self.spectatorsTagPlain = ""
+		self.spectatorsTag = nil
+	end
+end
+
 local function focusCameraOnPlayer(targetName)
 	local activeVehicle = be:getPlayerVehicle(0)
 	local activeVehicleID = activeVehicle and activeVehicle:getID() or nil
@@ -2496,6 +2591,25 @@ local function onUpdate(dt)
 	end
 end
 
+-- #838: blob colors parsed from settings ONCE (and again on settings change) instead
+-- of 3 hex-string parses + table allocs per frame; packed ints for the ffi drawer
+local hasInitBlobColors = false
+local blobColorQueued  = color(0, 0, 0, 127)
+local blobColorIllegal = color(0, 0, 0, 127)
+local blobColorDeleted = color(0, 0, 0, 127)
+local blobColorFallback = color(255, 0, 255, 127)
+
+local function initBlobColors()
+	if not MPHelpers then return end
+	local q = MPHelpers.hex2rgb(settings.getValue("blobColorQueued"))
+	local i = MPHelpers.hex2rgb(settings.getValue("blobColorIllegal"))
+	local d = MPHelpers.hex2rgb(settings.getValue("blobColorDeleted"))
+	blobColorQueued  = color(q[1]*255, q[2]*255, q[3]*255, 127)
+	blobColorIllegal = color(i[1]*255, i[2]*255, i[3]*255, 127)
+	blobColorDeleted = color(d[1]*255, d[2]*255, d[3]*255, 127)
+	hasInitBlobColors = true
+end
+
 local function onPreRender(dt)
 	if MPGameNetwork and MPGameNetwork.launcherConnected() then
 		-- LAN: deferred auto-spawn of the default/last car after joining, unless the
@@ -2533,9 +2647,7 @@ local function onPreRender(dt)
 			if chaseOptInRebroadcast >= 10 then chaseOptInRebroadcast = 0; broadcastChaseOptIn() end
 		end
 
-		local blobColorQueued = MPHelpers.hex2rgb(settings.getValue("blobColorQueued"))
-		local blobColorIllegal = MPHelpers.hex2rgb(settings.getValue("blobColorIllegal"))
-		local blobColorDeleted = MPHelpers.hex2rgb(settings.getValue("blobColorDeleted"))
+		if not hasInitBlobColors then initBlobColors() end -- #838: parsed once, re-parsed on settings change
 
 		-- get current vehicle ID and position
 		local activeVeh = be:getPlayerVehicle(0)
@@ -2572,9 +2684,10 @@ local function onPreRender(dt)
 
 
 		-- get camera position, apply queue
-		local cameraPos = vec3(core_camera.getPosition())
+		local cameraPos = scratchCameraPos -- #838: reused scratch, values only live this frame
+		cameraPos:set(core_camera.getPositionXYZ())
 		if activeVeh then
-			if not commands.isFreeCamera() then cameraPos = activeVehPos end
+			if not commands.isFreeCamera() and activeVehPos then cameraPos:set(activeVehPos.x, activeVehPos.y, activeVehPos.z) end
 
 			if settings.getValue("queueAutoSkipRemote") and not isOwn(activeVehID) then applyQueuedEvents() end
 
@@ -2630,7 +2743,6 @@ local function onPreRender(dt)
 		local sNameTagFadeEnabled     = settings.getValue("nameTagFadeEnabled")
 		local sNameTagFadeInvert      = settings.getValue("nameTagFadeInvert")
 		local sNameTagDontFullyHide   = settings.getValue("nameTagDontFullyHide")
-		local sShortenNametags        = settings.getValue("shortenNametags")
 		local sShowSpectators         = settings.getValue("showSpectators")
 		local sSpectatorUnified       = settings.getValue("spectatorUnifiedColors")
 		local sHideBehindObjects      = settings.getValue("nameTagsHideBehindObjects")
@@ -2647,15 +2759,26 @@ local function onPreRender(dt)
 				if not v.vehicleHeight or v.vehicleHeight == 0 then
 					v.vehicleHeight = veh:getInitialHeight()
 				end
+				-- #838: ONE persistent vec3/quat per vehicle, :set() into them every frame
+				-- (positionGE pools the same pair; the flag marks "safe to :set")
+				if not v.mpPooledPos then
+					v.position = vec3()
+					v.rotation = quat(0, 0, 0, 1)
+					v.mpPooledPos = true
+				end
 				local tempPosx,tempPosy,tempPosz = be:getObjectOOBBCenterXYZ(gameVehicleID)
-				v.position = vec3(tempPosx,tempPosy,tempPosz)
-				v.position.z = v.position.z + (v.vehicleHeight * 0.5) + 0.2
+				v.position:set(tempPosx, tempPosy, tempPosz + (v.vehicleHeight * 0.5) + 0.2)
 
-				v.rotation = quatFromDir(-vec3(veh:getDirectionVector()), vec3(veh:getDirectionVectorUp())) -- getRotation doesn't update in GE so we need to use direction vectors instead
+				-- getRotation doesn't update in GE so we need to use direction vectors instead
+				local dirx, diry, dirz = veh:getDirectionVectorXYZ()
+				scratchDir:set(-dirx, -diry, -dirz) -- same negation quatFromDir(-dir, up) applied
+				scratchDirUp:set(veh:getDirectionVectorUpXYZ())
+				v.rotation:setFromDir(scratchDir, scratchDirUp)
 			end
 
 			if not v.position then goto skip_vehicle end -- return if no position has been received yet
-			local pos = Point3F(v.position.x, v.position.y, v.position.z)
+			local pos = scratchDrawPos -- #838: reused scratch, replaces the per-frame Point3F
+			pos:set(v.position.x, v.position.y, v.position.z)
 
 			if sEnableBlobs and not v.isSpawned then
 				local colors = nil
@@ -2673,11 +2796,11 @@ local function onPreRender(dt)
 						colors = blobColorDeleted
 					end
 				else
-					colors = { 1, 0, 1 }
+					colors = blobColorFallback
 				end
 
 				if colors then
-					debugDrawer:drawSphere(pos, 1, ColorF(colors[1], colors[2], colors[3], 0.5))
+					drawSphere(pos.x, pos.y, pos.z, 1, colors, true) -- #838: ffi drawer, packed color, no ColorF garbage
 					pos.z = pos.z + 1
 				end
 			end
@@ -2685,7 +2808,7 @@ local function onPreRender(dt)
 			local nametagAlpha = 1
 			local nametagFadeoutDistance = sNameTagFadeDistance
 
-			local distfloat = (cameraPos or vec3()):distance(pos)
+			local distfloat = cameraPos:distance(pos)
 			distanceMap[gameVehicleID] = distfloat
 			nametagAlpha = clamp(linearScale(distfloat, nametagFadeoutDistance, 0, 0, 1), 0, 1)
 
@@ -2735,53 +2858,29 @@ local function onPreRender(dt)
 
 
 				local roleInfo = v.customRole or owner.customRole or owner.role
-
-				local ownerName = sShortenNametags and owner.shortname or owner.name
-				local name = v.customName or ownerName
-				-- LAN/MP: a player's name only follows their CURRENTLY ACTIVE vehicle.
-				-- Their other vehicles (e.g. spawned traffic) show as "guest_<vehicle>".
-				-- Until the owner's active vehicle is known, default to the owner name.
-				if not v.customName and owner.activeVehicleID ~= nil and owner.activeVehicleID ~= serverVehicleID then
-					name = guestNameForJbeam(v.jbeam)
-				end
-
-				local tag = sShortenNametags and roleInfo.shorttag or roleInfo.tag
 				local backColor = color(roleInfo.backcolor.r, roleInfo.backcolor.g, roleInfo.backcolor.b, math.floor(nametagAlpha*127))
 
-				local prefix = ""
-				for source, tag in pairs(owner.nickPrefixes)
-					do prefix = prefix..tag.." " end
-
-				local suffix = ""
-				for source, tag in pairs(owner.nickSuffixes)
-					do suffix = suffix..tag.." " end
-
+				-- #838: tag strings are cached on the vehicle and rebuilt only when an input
+				-- changed (see updateNameTagCache). The activeVehicleID marker also heals the
+				-- guest_<vehicle> name flip after camera switches without an explicit hook.
+				if not v.nameTagBody or v.nameTagActiveID ~= owner.activeVehicleID then
+					v:updateNameTagCache()
+					if not v.nameTagBody then goto skip_vehicle end
+				end
 
 				-- draw spectators
 				if sShowSpectators then
-					local spectators = ""
-
-					for spectatorID, _ in pairs(v.spectators) do
-						local spectator = players[spectatorID]
-						if not spectator then
-							v.spectators[spectatorID] = nil -- stale: player left but wasn't cleaned from this set
-						elseif not (spectator == owner or spectator.isLocal) then
-							spectators = spectators .. spectator.name .. ', '
-						end
-					end
-
-					spectators = spectators:sub(1,-3) -- cut off tailing comma
-
-					if spectators ~= "" then
+					if v.spectatorsDirty then v:updateSpectatorsTagCache() end
+					if v.spectatorsTagPlain ~= "" then
 						local spectatorBackColor = backColor
 						if sSpectatorUnified then
 							spectatorBackColor = color(roleToInfo.USER.backcolor.r, roleToInfo.USER.backcolor.g, roleToInfo.USER.backcolor.b, math.floor(nametagAlpha*127))
 						end
 						drawTextAdvanced(
 							pos.x, pos.y, pos.z, -- Location
-							String(" ".. spectators .." "), -- Text
+							v.spectatorsTag, -- Text (#838: cached String)
 							color(255, 255, 255, nametagAlpha*254), -- Foreground Color, Alpha is multiplied by 254 because using 255 seems to break backround alpha in 0.37
-							true, -- Draw background 
+							true, -- Draw background
 							false, -- Wtf
 							spectatorBackColor, -- Background Color
 							false, -- shadow
@@ -2791,12 +2890,14 @@ local function onPreRender(dt)
 						pos.z = pos.z + 0.01 -- has to be positive
 					end
 				end
-				-- draw main nametag
+				-- draw main nametag (#838: cached String unless a distance suffix is shown)
+				local tagText = v.nameTag
+				if dist ~= "" then tagText = String(" " .. v.nameTagBody .. dist .. " ") end
 				drawTextAdvanced(
 					pos.x, pos.y, pos.z, -- Location
-					String(" " .. table.concat({prefix, name, suffix, tag, dist}) .. " "), -- Text
+					tagText, -- Text
 					color(255, 255, 255, nametagAlpha*254), -- Foreground Color, Alpha is multiplied by 254 because using 255 seems to break backround alpha in 0.37
-					true, -- Draw background 
+					true, -- Draw background
 					false, -- Wtf
 					backColor, -- Background Color
 					false, -- shadow
@@ -2907,6 +3008,14 @@ local function onSettingsChanged()
 	for playerID,player in pairs(players) do
 		player:onSettingsChanged()
 	end
+
+	-- #838: cached nametag/spectator strings and blob colors depend on several settings
+	-- (shortenNametags, nametagCharLimit, blob colors); rebuild them all
+	for _, veh in pairs(vehicles) do
+		veh.nameTagBody = nil
+		veh.spectatorsDirty = true
+	end
+	initBlobColors()
 
 	local cacheKeys = { "showBlobQueued", "showBlobIllegal", "showBlobDeleted" }
 	local colorKeys = { "blobColorQueued", "blobColorIllegal", "blobColorDeleted" }

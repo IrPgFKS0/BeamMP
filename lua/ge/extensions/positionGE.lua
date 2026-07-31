@@ -277,8 +277,16 @@ local function applyPos(decoded, serverVehicleID)
 
 	vehicle.ping = ping
 	vehicle.fps = 1/deltaDt
-	vehicle.position = Point3F(decoded.pos[1],decoded.pos[2],decoded.pos[3])
-	vehicle.rotation = quat(decoded.rot[1],decoded.rot[2],decoded.rot[3],decoded.rot[4])
+	-- #838 garbage cleanup: pool ONE vec3/quat per vehicle and :set() into them per packet
+	-- (was a fresh Point3F + quat per packet; MPVehicleGE's render loop pools the same pair
+	-- via the same mpPooledPos flag, so both writers share safe-to-:set objects)
+	if not vehicle.mpPooledPos then
+		vehicle.position = vec3()
+		vehicle.rotation = quat(0, 0, 0, 1)
+		vehicle.mpPooledPos = true
+	end
+	vehicle.position:set(decoded.pos[1], decoded.pos[2], decoded.pos[3])
+	vehicle.rotation:set(decoded.rot[1], decoded.rot[2], decoded.rot[3], decoded.rot[4])
 	-- Dedicated copy of the RECEIVED pose for the self-heal watchdog. vehicle.position above is
 	-- overwritten every frame by MPVehicleGE's nametag loop (it sets it to the rendered OOBB
 	-- center + height), so the watchdog can't use it to detect a drifted/frozen ghost -- it would

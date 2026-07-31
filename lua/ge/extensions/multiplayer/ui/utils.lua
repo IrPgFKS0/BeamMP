@@ -12,6 +12,12 @@ local M = {}
 
 local imgui = ui_imgui
 
+-- #838 garbage cleanup: constant vectors allocated once instead of per call. Style
+-- colors are NOT cached (the fork's theming options can change them mid-session).
+local ImVec4One = imgui.ImVec4(1, 1, 1, 1)
+local ImVec4Zero = imgui.ImVec4(0, 0, 0, 0)
+local buttonSize = imgui.ImVec2(1, 1)
+
 --- Creates an image button with the specified texture ID, size, and colors using IMGUI.
 --- @param texID number The ID of the texture to use for the button.
 --- @param size number The size of the button.
@@ -26,9 +32,10 @@ M.imageButton = function(texID, size, color, activeColor, hoveredColor)
     hoveredColor = hoveredColor or imgui.GetStyleColorVec4(imgui.Col_ButtonHovered)
 
     -- Remove background
-    imgui.PushStyleColor2(imgui.Col_Button, imgui.ImVec4(0, 0, 0, 0))
-    local buttonSize = imgui.ImVec2(size, size)
-    if imgui.ImageButton("##ImageButton" .. tostring(texID), texID, buttonSize, imgui.ImVec2Zero, imgui.ImVec2One, imgui.ImVec4(0, 0, 0, 0), imgui.ImVec4(1, 1, 1, 1)) then
+    imgui.PushStyleColor2(imgui.Col_Button, ImVec4Zero)
+    buttonSize.x = size
+    buttonSize.y = size
+    if imgui.ImageButton("##ImageButton" .. tostring(texID), texID, buttonSize, imgui.ImVec2Zero, imgui.ImVec2One, ImVec4Zero, ImVec4One) then
         imgui.PopStyleColor()
         return true
     end

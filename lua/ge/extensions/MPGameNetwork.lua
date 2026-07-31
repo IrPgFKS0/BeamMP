@@ -37,6 +37,8 @@ local keypressTriggers = {}
 
 -- ============= VARIABLES =============
 
+local connectRetryTimer = 0 -- declared before disconnectLauncher so its reset hits this local, not a global
+
 setmetatable(_G,{}) -- temporarily disable global notifications
 
 
@@ -508,7 +510,6 @@ local HandleNetwork = {
 
 
 local heartbeatTimer = 0
-local connectRetryTimer = 0
 
 local recvState = {
 	-- 'ready': ready to receive a new packet, data is contained within `data` if any

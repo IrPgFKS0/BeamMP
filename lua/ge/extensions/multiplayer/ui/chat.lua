@@ -35,6 +35,24 @@ local function colorByRGB(r, g, b, a)
     return imgui.ImVec4(r/255, g/255, b/255, a/255)
 end
 
+-- #838 garbage cleanup: reusable temp vectors so the render loop allocates no ImVec2/4
+-- per frame. A temp vector is only valid for ONE argument of one imgui call at a time.
+local tempVec2 = imgui.ImVec2(0, 0)
+local function useTempVec2(x, y)
+    tempVec2.x = x
+    tempVec2.y = y
+    return tempVec2
+end
+
+local tempVec4 = imgui.ImVec4(0, 0, 0, 0)
+local function useTempVec4(x, y, z, w)
+    tempVec4.x = x
+    tempVec4.y = y
+    tempVec4.z = z
+    tempVec4.w = w
+    return tempVec4
+end
+
 
 local colorCodes = {
     ['0'] = colorByRGB(000,000,000,255),
@@ -80,9 +98,12 @@ local function textToColorAndText(text, nocolor)
         else
             if(not wasSpace) then currentTxt = currentTxt .. c
             else
+                local size = imgui.CalcTextSize(currentTxt) -- #838: measure once at parse time, not per frame
                 table.insert(txtList, {
                     color = color,
-                    text = currentTxt
+                    text = currentTxt,
+                    width = size.x,
+                    height = size.y
                 })
                 currentTxt = c
             end
@@ -91,9 +112,12 @@ local function textToColorAndText(text, nocolor)
     end
 
     if(currentTxt ~= "") then
+        local size = imgui.CalcTextSize(currentTxt) -- #838: measure once at parse time, not per frame
         table.insert(txtList, {
             color = color,
-            text = currentTxt
+            text = currentTxt,
+            width = size.x,
+            height = size.y
         })
     end
 
@@ -230,8 +254,14 @@ local function addMessage(username, message, id, color)
         color = color,
         message = message,
         sentTime = os.time(),
-        id = #M.chatMessages + 1
+        id = #M.chatMessages + 1,
+        -- #838: measure the "name: " prefix once here instead of every frame
+        prefixWidth = imgui.CalcTextSize(username .. ": ").x
     }
+    if messageTable.color then
+        -- #838: convert the 0-255 color table to an ImVec4 once at add time
+        messageTable.color = imgui.ImVec4(messageTable.color[0]/255, messageTable.color[1]/255, messageTable.color[2]/255, (messageTable.color[3] or 127)/255)
+    end
 
     table.insert(M.chatMessages, messageTable)
 
@@ -251,7 +281,7 @@ local scrollbarVisible = false
 local function render()
     local scrollbarSize = imgui.GetStyle().ScrollbarSize
 
-    if imgui.BeginChild1("ChatArea", imgui.ImVec2(0, -imgui.GetTextLineHeightWithSpacing() - heightOffset), false) then
+    if imgui.BeginChild1("ChatArea", useTempVec2(0, -imgui.GetTextLineHeightWithSpacing() - heightOffset), false) then
         scrollbarVisible = imgui.GetScrollMaxY() > 0
         local windowWidth = imgui.GetWindowWidth()
         local scrollbarPos = imgui.GetScrollY()
@@ -279,19 +309,19 @@ local function render()
             columnWidth = columnWidth - 10
             
             if message.color then
-                imgui.TextColored(imgui.ImVec4(message.color[0]/255, message.color[1]/255, message.color[2]/255, (message.color[3] or 127)/255), message.username)
+                imgui.TextColored(message.color, message.username) -- #838: ImVec4 pre-converted at add time
                 imgui.SameLine()
             else
                 imgui.Text(message.username .. ": ")
                 imgui.SameLine()
             end
-            
-            local currentWidth = imgui.CalcTextSize(message.username .. ": ").x
+
+            local currentWidth = message.prefixWidth -- #838: cached at add time
 
             for _, v in ipairs(message.message) do
-                if (currentWidth + imgui.CalcTextSize(v.text).x <= columnWidth) then imgui.SameLine(currentWidth)
+                if (currentWidth + v.width <= columnWidth) then imgui.SameLine(currentWidth)
                 else currentWidth = 0 end
-                currentWidth = currentWidth + imgui.CalcTextSize(v.text).x
+                currentWidth = currentWidth + v.width
                 imgui.TextColored(v.color, v.text)
             end
 
@@ -312,14 +342,14 @@ local function render()
         scrollToBottom = false
     end
 
-    imgui.PushStyleVar2(imgui.StyleVar_FramePadding, imgui.ImVec2(2, 2))
-    imgui.PushStyleVar2(imgui.StyleVar_ItemSpacing, imgui.ImVec2(2, 0))
-    imgui.PushStyleVar2(imgui.StyleVar_CellPadding, imgui.ImVec2(0, 0))
+    imgui.PushStyleVar2(imgui.StyleVar_FramePadding, useTempVec2(2, 2))
+    imgui.PushStyleVar2(imgui.StyleVar_ItemSpacing, useTempVec2(2, 0))
+    imgui.PushStyleVar2(imgui.StyleVar_CellPadding, useTempVec2(0, 0))
     imgui.SetCursorPosY(imgui.GetWindowHeight() - 35)
 
-    imgui.PushStyleColor2(imgui.Col_FrameBg, imgui.ImVec4(UI.settings.colors.primaryColor.x, UI.settings.colors.primaryColor.y, UI.settings.colors.primaryColor.z, 1))
+    imgui.PushStyleColor2(imgui.Col_FrameBg, useTempVec4(UI.settings.colors.primaryColor.x, UI.settings.colors.primaryColor.y, UI.settings.colors.primaryColor.z, 1))
 
-    if imgui.BeginChild1("ChatInput", imgui.ImVec2(0, 30), false) then
+    if imgui.BeginChild1("ChatInput", useTempVec2(0, 30), false) then
         imgui.SetNextItemWidth(imgui.GetWindowWidth() - 25)
         local flags = 0
         flags = flags + imgui.InputTextFlags_EnterReturnsTrue
@@ -355,7 +385,7 @@ local function render()
         heightOffset = 40
 
         if not forceBottom then
-            imgui.SetCursorPos(imgui.ImVec2(imgui.GetWindowWidth() - (scrollbarVisible and scrollbarSize or 0) - 24, imgui.GetWindowHeight() - 60))
+            imgui.SetCursorPos(useTempVec2(imgui.GetWindowWidth() - (scrollbarVisible and scrollbarSize or 0) - 24, imgui.GetWindowHeight() - 60))
             if utils.imageButton(UI.uiIcons.down.texId, 16) then
                 scrollToBottom = true
                 wasMessageSent = false
