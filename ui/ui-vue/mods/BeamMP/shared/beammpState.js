@@ -90,6 +90,34 @@ const state = {
   favorites: ref([]),
   recents: ref(loadRecents()),
   view: ref("servers"),
+  // LAN: the local player name (no BeamMP account on a LAN fork). Persisted in
+  // localStorage AND pushed to Lua (the launcher persists it too), same as the
+  // 0.38 Angular menu did.
+  lanPlayerName: ref(loadLanPlayerName()),
+}
+
+const LAN_PLAYER_NAME_KEY = "lanPlayerName"
+
+function loadLanPlayerName() {
+  try {
+    return String(window.localStorage.getItem(LAN_PLAYER_NAME_KEY) || "")
+  } catch (error) {
+    return ""
+  }
+}
+
+// LAN: set the name other players see. Persists locally and tells Lua/the launcher.
+function setLanPlayerName(name) {
+  const trimmed = String(name || "").trim()
+  if (!trimmed) return false
+  state.lanPlayerName.value = trimmed
+  try {
+    window.localStorage.setItem(LAN_PLAYER_NAME_KEY, trimmed)
+  } catch (error) {
+    /* private mode / storage disabled -- the Lua push below still applies it */
+  }
+  extensionCommand("MPCoreNetwork", "setPlayerName", `"${trimmed.replace(/["\\]/g, "")}"`)
+  return true
 }
 
 let listenersReady = false
@@ -247,7 +275,10 @@ function formatBytes(bytes = 0, decimals = 2) {
 
 function normalizeServer(server, listIndex) {
   const endpoint = `${server?.ip}:${server?.port}`
-  const displayName = server?.sname || server?.name || ""
+  // LAN: a renamed favorite carries customName -- prefer it over the server's real
+  // name so the rename persists across reloads (rebuilding from sname alone was the
+  // original "renames don't stick" bug in the 0.38 menu).
+  const displayName = server?.customName || server?.sname || server?.name || ""
   return {
     ...server,
     strippedName: stripCustomFormatting(displayName),
@@ -412,6 +443,22 @@ function addFavorite(server) {
 
 function removeFavorite(server) {
   state.favorites.value = state.favorites.value.filter(f => !(f.ip === server.ip && f.port === server.port))
+  saveFavorites()
+}
+
+// LAN: rename a favorite. Stored in a dedicated customName field (the row's real
+// sname is left intact), which normalizeServer prefers when building the display
+// name -- so the rename survives a list rebuild. Empty name clears the rename.
+function renameFavorite(server, newName) {
+  if (!server) return
+  const trimmed = String(newName || "").trim().slice(0, 40)
+  state.favorites.value = state.favorites.value.map(f => {
+    if (f.ip !== server.ip || String(f.port) !== String(server.port)) return f
+    const next = { ...f }
+    if (trimmed) next.customName = trimmed
+    else delete next.customName
+    return next
+  })
   saveFavorites()
 }
 
@@ -737,6 +784,8 @@ export function useBeamMPState(events) {
     openExternal,
     refreshConnectionState,
     removeFavorite,
+    renameFavorite,
+    setLanPlayerName,
     requestServerList,
     resetFilters,
     approveSecurityPrompt,

@@ -34,6 +34,23 @@
             />
           </div>
         </label>
+
+        <!-- LAN: player name field (no BeamMP account on a LAN fork). Applied before
+             connecting; blank keeps the current name. -->
+        <label class="field field-name">
+          <span>Your name</span>
+          <div class="input-shell">
+            <span class="field-prefix">NAME</span>
+            <input
+              v-model.trim="playerName"
+              type="text"
+              maxlength="40"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="Leave blank to keep current"
+            />
+          </div>
+        </label>
       </div>
 
       <div class="actions">
@@ -52,7 +69,9 @@ import { useBeamMPState } from "../shared/beammpState.js"
 
 const ip = ref("")
 const port = ref("30814")
-const { addFavorite, connectToServer, directConnectFromClipboard } = useBeamMPState()
+const { state, addFavorite, connectToServer, directConnectFromClipboard, setLanPlayerName } = useBeamMPState()
+// LAN: prefill with the current name so it is visible/editable, not retyped per connect
+const playerName = ref(state.lanPlayerName.value)
 
 async function pasteFromClipboard() {
   const text = String(await directConnectFromClipboard() || "")
@@ -63,6 +82,8 @@ async function pasteFromClipboard() {
 }
 
 async function connect() {
+  // LAN: apply the name BEFORE connecting (blank keeps the current one)
+  if (playerName.value) setLanPlayerName(playerName.value)
   await connectToServer(ip.value || "127.0.0.1", port.value || "30814")
 }
 
@@ -119,6 +140,11 @@ async function favorite() {
   display: grid;
   grid-template-columns: minmax(14rem, 2fr) minmax(9rem, 1fr);
   gap: 0.75rem;
+}
+
+/* LAN: the name field spans the full row under IP/port */
+.field-name {
+  grid-column: 1 / -1;
 }
 
 .field {

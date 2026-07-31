@@ -125,6 +125,8 @@
                       <BngButton @click.stop="join(server)">{{ $tt("ui.common.beammp.connect") }}</BngButton>
                       <BngButton v-if="!isFavorite(server)" accent="secondary" @click.stop="addFavorite(server)">{{ $tt("ui.beammp.serverBrowser.addFavorite") }}</BngButton>
                       <BngButton v-else accent="secondary" @click.stop="removeFavorite(server)">{{ $tt("ui.beammp.serverBrowser.removeFavorite") }}</BngButton>
+                      <!-- LAN: rename a favorite (stored as customName; blank clears it) -->
+                      <BngButton v-if="isFavorite(server)" accent="secondary" @click.stop="renameFav(server)">Rename</BngButton>
                     </div>
                   </section>
                 </td>
@@ -284,6 +286,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { useRoute } from "vue-router"
 import { BngButton, BngInput } from "@/common/components/base"
 import { vBngTextInput } from "@/common/directives"
+import { openPrompt } from "@/services/popup" // LAN: favorite-rename prompt
 import { useBeamMPState } from "../shared/beammpState.js"
 import { icons as bngIcons } from "/ui/ui-vue/src/assets/fonts/bngIcons/bngIcons.js"
 
@@ -314,6 +317,7 @@ const {
   connectToServer,
   formatBytes,
   isFavorite,
+  renameFavorite,
   modList,
   removeFavorite,
   requestServerList,
@@ -539,7 +543,9 @@ function escapeHtml(value = "") {
 }
 
 function serverTitleMarkup(server) {
-  const raw = String(server?.sname || server?.strippedName || "")
+  // LAN: a renamed favorite carries customName -- it must win over the server's own
+  // sname here too, or the rename shows only until the row is rebuilt.
+  const raw = String(server?.customName || server?.sname || server?.strippedName || "")
   if (!raw) return ""
 
   const tokens = raw.split(/(\^.)/g)
@@ -600,6 +606,19 @@ function serverCategoryClass(server) {
 async function join(server) {
   if (!server) return
   await connectToServer(server.ip, server.port, server.sname)
+}
+
+// LAN: rename a favorite. Stored as customName so the display name survives a list
+// rebuild; submitting an empty name clears the rename and restores the real one.
+async function renameFav(server) {
+  if (!server) return
+  const result = await openPrompt(
+    "Shown instead of the server's own name in your Favorites. Leave blank to restore the original.",
+    "Rename favorite",
+    { defaultValue: server.customName || server.sname || "", maxLength: 40 },
+  )
+  if (result === false || result === null || result === undefined) return
+  renameFavorite(server, result)
 }
 
 function syncView() {

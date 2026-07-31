@@ -39,6 +39,14 @@
 
         <div class="spacer" />
 
+        <!-- LAN: who am I + rename (replaces upstream's account panel -- LAN has no
+             BeamMP account, but you still need to see/set the name others see) -->
+        <div class="lan-player">
+          <span class="lan-player-label">Playing as</span>
+          <span class="lan-player-name" :title="lanPlayerName">{{ lanPlayerName }}</span>
+          <button class="lan-player-change" @click="changeLanName">Change name</button>
+        </div>
+
         <!-- LAN: Patreon/Discord/GitHub external links removed -->
       </aside>
 
@@ -105,6 +113,7 @@ import {
   BEAMMP_TILES_ROUTE_NAME,
   BEAMMP_TOS_ROUTE_NAME,
 } from "../shared/constants.js"
+import { openPrompt } from "@/services/popup" // LAN: name-change prompt
 import { useBeamMPState } from "../shared/beammpState.js"
 import BeamMPModal from "../shared/BeamMPModal.vue"
 
@@ -127,8 +136,22 @@ const {
   rejectSecurityPrompt,
   refreshConnectionState,
   requestServerList,
+  setLanPlayerName,
   setView,
 } = useBeamMPState(events)
+
+// LAN: who am I (no BeamMP account on a LAN fork) + rename prompt
+const lanPlayerName = computed(() => state.lanPlayerName.value || "Player")
+
+async function changeLanName() {
+  const result = await openPrompt(
+    "This is the name other players see you as on the server.",
+    "Set your name",
+    { defaultValue: state.lanPlayerName.value || "", maxLength: 40 },
+  )
+  if (result === false || result === null || result === undefined) return
+  setLanPlayerName(result)
+}
 
 async function gotoRoute(name) {
   if (route.name === name) return
@@ -400,6 +423,50 @@ onBeforeUnmount(() => {
   width: 8.5rem;
   display: block;
   margin: 1rem auto;
+}
+
+/* LAN: "Playing as <name>" + rename, in the sidebar footer where upstream's
+   account panel would be */
+.lan-player {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0.1rem 0.2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.lan-player-label {
+  color: var(--bng-cool-gray-400);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.lan-player-name {
+  overflow: hidden;
+  color: var(--bng-off-white);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lan-player-change {
+  align-self: flex-start;
+  margin-top: 0.15rem;
+  padding: 0;
+  border: 0;
+  color: var(--bng-orange-400, var(--bng-orange-500));
+  background: transparent;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
 }
 
 .beammp-version {
