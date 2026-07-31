@@ -29,7 +29,7 @@ rm -f "$OUT"
 # These are the same paths the upstream release workflow packages (minus the
 # private Beamlings avatars and a couple of docs that don't exist in this tree).
 zip -r "$OUT" \
-    icons lua mp_locales scripts settings ui vehicles \
+    icons locales lua mp_locales scripts settings ui vehicles \
     CONTRIBUTING.md CODE_OF_CONDUCT.md LICENSE README.md NOTICES.md \
     -x '*/.git/*' -x '*/.idea/*' > /dev/null
 
