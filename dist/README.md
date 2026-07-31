@@ -1,17 +1,17 @@
 # BeamMP LAN fork — release downloads
 
-**Current release: `BeamMP-LAN-p13h67.zip`** (mod `4.22.0-LAN p13h67`, combined host exe `p13h35`, **for BeamNG 0.39**,
+**Current release: `BeamMP-LAN-p13h68.zip`** (mod `4.22.0-LAN p13h68`, combined host exe `p13h35`, **for BeamNG 0.39**,
 Windows + Linux x86-64).
 
 | File | sha256 |
 |---|---|
-| `BeamMP-LAN-p13h67.zip` | `A5F62FC672E85B2AB9E9F3202BA7FDE59760E59C6AA8F12F5B0B8DC659D65E34` |
+| `BeamMP-LAN-p13h68.zip` | `46EFB051FFD43802018C6BD60AF0C91078BDEDE35805C93372F892D4BF8E2D95` |
 | `BeamMP-LAN-p13h61.zip` (previous 0.39 build) | `35899644C593C619B06250B1EB1A2C2AC3E6EDBA11138919D9FC0ED673E6D08C` |
 | `BeamMP-LAN-p13h57.zip` (0.38 ROLLBACK — tag `lan-0.38-last-good`) | `1B1673CEA703FECC5D5CEB1B594812916E15EEB03BFC8F9DE17F9DC7808B851B` |
 
-The exes are **identical to p13h61's** (`p13h35`) — p13h62-67 are mod-only. An existing host can
-drop in just the new `BeamMP.zip`. (p13h65/p13h66 were superseded same-day — their zips were
-removed from this folder; the `lan-release-p13h65`/`-p13h66` tags remain for source reference.)
+The exes are **identical to p13h61's** (`p13h35`) — p13h62-68 are mod-only. An existing host can
+drop in just the new `BeamMP.zip`. (p13h65/p13h66/p13h67 zips were superseded and removed from
+this folder; their `lan-release-*` tags remain for source reference.)
 
 The zip contains:
 
@@ -34,7 +34,7 @@ Everyone in a session should run the matching `BeamMP.zip` **and** matching exe 
 
 Binaries are built from the `lan` branches of this repo and the companion repos
 ([BeamMP-Launcher](https://github.com/IrPgFKS0/BeamMP-Launcher),
-[BeamMP-Server](https://github.com/IrPgFKS0/BeamMP-Server)) at tag `lan-release-p13h67`
+[BeamMP-Server](https://github.com/IrPgFKS0/BeamMP-Server)) at tag `lan-release-p13h68`
 (AGPL-3.0-or-later — complete corresponding source at those tags).
 
 > Note: each release adds a ~50 MB zip to this repo's history. If that ever gets heavy,
