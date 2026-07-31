@@ -134,13 +134,36 @@ end
 --- Called when the mod is loaded by the games modloader.
 -- @usage INTERNAL ONLY / GAME SPECIFIC
 local function onExtensionLoaded()
+	-- The game's settings loader (lua/common/settings.lua upgradeSetting) DROPS any
+	-- settings.json key that is not in its defaults registry at load time -- and it loads
+	-- ~6s before this extension registers our keys ("Unrecognized setting name" x40 each
+	-- boot). The values usually survive through a later merge, but that is a boot-order
+	-- race: any save in the window rewrites the file without them (observed: keys written
+	-- by one session vanished after the next). So when a key is nil in the live values,
+	-- restore the USER'S SAVED value straight from the settings file before falling back
+	-- to our default.
+	local savedValues = {}
+	local savedPath = (settings.impl and settings.impl.pathLocal) or '/settings/settings.json'
+	local ok, saved = pcall(jsonReadFile, savedPath)
+	if ok and type(saved) == 'table' then savedValues = saved end
+	local restored = 0
 	for k,v in pairs(defaultSettings) do
-		if settings.getValue(k) == nil or k == 'unicycleConfigs' then settings.setValue(k, v) end
+		if settings.getValue(k) == nil or k == 'unicycleConfigs' then
+			if savedValues[k] ~= nil and k ~= 'unicycleConfigs' then
+				settings.setValue(k, savedValues[k])
+				restored = restored + 1
+			else
+				settings.setValue(k, v)
+			end
+		end
 		-- Register each key in the game's settings defaults (settings.impl == lua/common/settings.lua,
 		-- whose M.defaults is what the "Unrecognized setting name" check reads). {'local', v} is the
 		-- game's [scope, value] default format. Guarded against settings-API churn between versions.
 		if settings.impl and settings.impl.defaults then settings.impl.defaults[k] = { 'local', v } end
 		if settings.impl and settings.impl.defaultValues then settings.impl.defaultValues[k] = v end
+	end
+	if restored > 0 then
+		log('I', 'mpSettingsRestore', 'restored '..restored..' saved MP setting(s) the game loader had dropped')
 	end
 
 	if settings.getValue("queueWithLMB") ~= nil then
