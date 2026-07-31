@@ -199,7 +199,7 @@ function resume() {
 }
 
 function openServerList() {
-  setView("servers")
+  setView("favorites") // LAN: no public server list -- land on Favorites (matches the menu's default landing)
   router.push({ name: BEAMMP_SERVERS_ROUTE_NAME })
 }
 

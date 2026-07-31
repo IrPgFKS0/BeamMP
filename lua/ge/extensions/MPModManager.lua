@@ -10,6 +10,7 @@
 local M = {}
 
 local serverMods = {} -- multiplayerModName1, multiplayerModName2
+local serverModDisplayNames = {} -- raw mod names for the UI (0.39 Vue current-server view)
 local whitelist = {"multiplayerbeammp", "beammp", "translations"} -- these mods won't be activated or deactivated
 local hasMods = false
 local deactivateMod = core_modmanager.deactivateMod
@@ -217,10 +218,24 @@ local function setServerMods(modsString)
 		end
 	end
 	log('M', 'setServerMods', 'Server Mods set to: ' .. dumps(mods))
+	serverModDisplayNames = {}
 	for key, modName in pairs(mods) do -- mods in a directory deeper than /mods/ have "<directory name> + modname" as their mod name
+		serverModDisplayNames[key] = modName -- raw name for the UI (0.39 Vue current-server view)
 		mods[key] = string.lower('multiplayer'..modName)
 	end
 	serverMods = mods
+	guihooks.trigger("onBeamMPServerModsChanged", serverModDisplayNames)
+end
+
+--- Returns the raw (display) names of the current server's mods. Called by the 0.39
+-- Vue UI (current-server view / mods card) through the extension bridge.
+-- @usage MPModManager.getServerMods()
+local function getServerMods()
+	local result = {}
+	for index, modName in ipairs(serverModDisplayNames) do
+		result[index] = modName
+	end
+	return result
 end
 
 --- A BeamNG event that is called when a mod is loaded by the games mod manager
@@ -321,6 +336,8 @@ local function onServerLeave()
 	if MPCoreNetwork.isMPSession() or MPCoreNetwork.isGoingMPSession() then
 		log('W', 'onServerLeave', 'MPModManager')
 		serverMods = {}
+		serverModDisplayNames = {}
+		guihooks.trigger("onBeamMPServerModsChanged", serverModDisplayNames)
 		cleanUpSessionMods() -- removes any leftover session mods
 	end
 end
@@ -349,6 +366,7 @@ M.cleanUpSessionMods = cleanUpSessionMods
 M.isModWhitelisted = isModWhitelisted
 M.loadServerMods = loadServerMods
 M.setServerMods = setServerMods
+M.getServerMods = getServerMods -- 0.39 Vue UI (current-server view / mods card)
 M.checkAllMods = checkAllMods
 M.isModAllowed = isModAllowed
 M.getModList = getModList
