@@ -94,6 +94,7 @@ local defaultSettings = {
 	aiChaseIncludeSelf = false, -- DEPRECATED: "include yourself as a target" is now AUTOMATIC in retargetLocalAICars (so BeamNG's "Chase"=chase-the-local-player works). Kept registered only to avoid an "unrecognized setting" warning on old configs; no longer read by code.
 	showVramWarning = true, -- LAN: warn in chat when tracked VRAM use nears the card total (heavy-mod crash guard)
 	defaultCameraFov = 0, -- LAN: default camera FOV applied on vehicle switch/camera change (degrees). 0 = off (each vehicle's own default). The zoom keys (PGUp/PGDn-style binds) still adjust live afterward.
+	defaultCameraDistance = 0, -- LAN: default ORBIT camera distance (meters) applied on vehicle switch/camera change -- this is the lever the zoom keys actually move on the orbit cam, so it zooms OUT as well as in. 0 = off (each vehicle's own default, typically ~5m).
 
 	-- Settings the mod reads/writes (or the options UI binds) but that were never registered
 	-- here, so a settings.json holding them logged "Unrecognized setting name" on load. Defaults
@@ -589,15 +590,25 @@ local function applyEnvSync(payload)
 	end
 end
 
--- LAN: default camera FOV (degrees; the zoom keys still adjust live afterward). Applied on
--- vehicle switches / camera-mode changes / slider moves; 0 (or <10) = off, vehicle default.
+-- LAN: default camera FOV (degrees) + default ORBIT camera distance (meters). The zoom keys
+-- on the orbit camera move DISTANCE (not FOV), so the distance slider is what lets a default
+-- sit zoomed OUT as well as in; the FOV slider stays for wide/narrow lens preferences.
+-- Applied on vehicle switches / camera-mode changes / slider moves; 0 = off (vehicle default).
 local function applyDefaultFov()
-	local fov = tonumber(settings.getValue("defaultCameraFov")) or 0
-	if fov < 10 then return end
-	if fov > 120 then fov = 120 end
 	pcall(function()
 		local veh = be:getPlayerVehicle(0)
-		if veh and core_camera and core_camera.setFOV then core_camera.setFOV(veh:getID(), fov) end
+		if not veh or not core_camera then return end
+		local vid = veh:getID()
+		local fov = tonumber(settings.getValue("defaultCameraFov")) or 0
+		if fov >= 10 and core_camera.setFOV then
+			if fov > 120 then fov = 120 end
+			core_camera.setFOV(vid, fov)
+		end
+		local dist = tonumber(settings.getValue("defaultCameraDistance")) or 0
+		if dist >= 1 and core_camera.setDistance then
+			if dist > 50 then dist = 50 end
+			core_camera.setDistance(vid, dist)
+		end
 	end)
 end
 
