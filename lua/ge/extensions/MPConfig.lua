@@ -93,6 +93,7 @@ local defaultSettings = {
 	allowRemoteAIChase = false, -- LAN/consent (default off, opt-in): allow OTHER players' AI/weapon cars to chase ME when I'm their nearest valid target. Your OWN cars chasing is unchanged (AI radial "Chase"); they target yourself + remote players who turned this on. Synced via MPVehicleGE chaseOptIn ('B'/C: relay). UI: "Allow other players' AI cars to chase me".
 	aiChaseIncludeSelf = false, -- DEPRECATED: "include yourself as a target" is now AUTOMATIC in retargetLocalAICars (so BeamNG's "Chase"=chase-the-local-player works). Kept registered only to avoid an "unrecognized setting" warning on old configs; no longer read by code.
 	showVramWarning = true, -- LAN: warn in chat when tracked VRAM use nears the card total (heavy-mod crash guard)
+	defaultCameraFov = 0, -- LAN: default camera FOV applied on vehicle switch/camera change (degrees). 0 = off (each vehicle's own default). The zoom keys (PGUp/PGDn-style binds) still adjust live afterward.
 
 	-- Settings the mod reads/writes (or the options UI binds) but that were never registered
 	-- here, so a settings.json holding them logged "Unrecognized setting name" on load. Defaults
@@ -381,6 +382,7 @@ local function onSettingsChanged()
 		settings.setValue("saveLogsAction", false) -- reset to prevent reapply on every setting change
 		if M.saveLogs then M.saveLogs() end
 	end
+	if M.applyDefaultFov then M.applyDefaultFov() end -- LAN: apply the default-FOV slider live
 	getUnicycleConfigs()
 end
 
@@ -545,11 +547,69 @@ local function saveLogs()
 	guihooks.trigger('toastrMsg', { type = "success", title = "BeamMP savelogs", msg = m, config = { timeOut = 9000 } })
 end
 
+-- LAN: one-shot environment sync. /syncenv pushes the SENDER'S full environment state
+-- (time of day, clouds, fog, wind, precipitation, gravity, temperature -- the game's own
+-- core_environment.getState() snapshot) to every other player over the reliable 'B' relay
+-- (sub-tag "E:", demuxed in MPWeaponsGE.handle). One-time adopt, no continuous sync.
+-- Old-mod peers ignore the unknown sub-tag silently, so mixed versions are safe.
+local function sendEnvSync()
+	if not (MPGameNetwork and MPGameNetwork.launcherConnected and MPGameNetwork.launcherConnected()) then
+		guihooks.trigger('toastrMsg', { type = "warning", title = "Environment sync",
+			msg = "Not in a session -- nothing to sync to.", config = { timeOut = 4000 } })
+		return
+	end
+	local ok, state = pcall(function() return core_environment.getState() end)
+	if not ok or type(state) ~= 'table' then
+		log('W', 'envSync', 'core_environment.getState() unavailable: ' .. tostring(state))
+		guihooks.trigger('toastrMsg', { type = "error", title = "Environment sync",
+			msg = "Could not read the environment state on this game version.", config = { timeOut = 5000 } })
+		return
+	end
+	MPGameNetwork.send("BE:" .. jsonEncode({ from = getNickname(), env = state }))
+	log('I', 'envSync', 'environment state pushed to other players')
+	guihooks.trigger('toastrMsg', { type = "success", title = "Environment sync",
+		msg = "Your environment (time of day, weather, wind...) was pushed to the other players.",
+		config = { timeOut = 5000 } })
+end
+
+local function applyEnvSync(payload)
+	local ok, data = pcall(jsonDecode, payload)
+	if not ok or type(data) ~= 'table' or type(data.env) ~= 'table' then
+		log('W', 'envSync', 'received unparseable env-sync payload')
+		return
+	end
+	local applied = pcall(function() core_environment.setState(data.env, 2) end) -- 2s blend
+	if applied then
+		log('I', 'envSync', 'environment adopted from ' .. tostring(data.from))
+		guihooks.trigger('toastrMsg', { type = "info", title = "Environment sync",
+			msg = "Environment adopted from " .. tostring(data.from or "another player") .. ".",
+			config = { timeOut = 5000 } })
+	else
+		log('W', 'envSync', 'core_environment.setState failed on this game version')
+	end
+end
+
+-- LAN: default camera FOV (degrees; the zoom keys still adjust live afterward). Applied on
+-- vehicle switches / camera-mode changes / slider moves; 0 (or <10) = off, vehicle default.
+local function applyDefaultFov()
+	local fov = tonumber(settings.getValue("defaultCameraFov")) or 0
+	if fov < 10 then return end
+	if fov > 120 then fov = 120 end
+	pcall(function()
+		local veh = be:getPlayerVehicle(0)
+		if veh and core_camera and core_camera.setFOV then core_camera.setFOV(veh:getID(), fov) end
+	end)
+end
+
 -- Events
 M.onSerialize = onSerialize
 M.onDeserialized = onDeserialized
 M.onExtensionLoaded = onExtensionLoaded
 M.onSettingsChanged = onSettingsChanged
+M.onVehicleSwitched = function(oldId, newId, player)
+	if newId and newId ~= -1 then applyDefaultFov() end
+end
+M.onCameraModeChanged = function() applyDefaultFov() end
 
 -- Functions
 M.getPlayerServerID = getPlayerServerID
@@ -568,6 +628,9 @@ M.saveLogs = saveLogs
 M.buildMpStateText = buildMpStateText
 M.setNetDebug = setNetDebug
 M.printMpState = printMpState
+M.sendEnvSync = sendEnvSync   -- LAN: /syncenv chat command (UI.chatSend)
+M.applyEnvSync = applyEnvSync -- LAN: receive side ('B' relay "E:" sub-tag via MPWeaponsGE.handle)
+M.applyDefaultFov = applyDefaultFov
 
 M.acceptTos = acceptTos
 M.onInit = function() setExtensionUnloadMode(M, "manual") end

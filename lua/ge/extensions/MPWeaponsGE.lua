@@ -114,6 +114,8 @@ local function handle(data)
 	if data:sub(1, 2) == "F:" then return handleFire(data:sub(3)) end
 	-- Chase opt-in sub-message, routed to MPVehicleGE: "C:<playerServerID>:<0|1>"
 	if data:sub(1, 2) == "C:" then if MPVehicleGE and MPVehicleGE.handleChaseOptIn then MPVehicleGE.handleChaseOptIn(data:sub(3)) end return end
+	-- LAN env-sync sub-message (/syncenv), routed to MPConfig: "E:<json {from, env}>"
+	if data:sub(1, 2) == "E:" then if MPConfig and MPConfig.applyEnvSync then MPConfig.applyEnvSync(data:sub(3)) end return end
 	local px, py, pz, r1, r2, force, invCoef = data:match(
 		"^(%-?[%d%.eE]+),(%-?[%d%.eE]+),(%-?[%d%.eE]+),(%-?[%d%.eE]+),(%-?[%d%.eE]+),(%-?[%d%.eE]+),(%-?[%d%.eE]+)$")
 	px, py, pz = tonumber(px), tonumber(py), tonumber(pz)

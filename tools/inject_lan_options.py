@@ -57,6 +57,18 @@ def dropdown(setting, label, tooltip, options):
     }
 
 
+def slider(setting, label, tooltip, minv, maxv, step, unit):
+    return {
+        "version": "LAN", "label": label, "tooltip": tooltip, "setting": setting,
+        "interactive": True, "condition_always_off": False, "condition_not_shipping": False,
+        "condition_simplemenu": "", "condition_visible": "", "condition_enabled": "",
+        "itemType": "slider", "component": "BngSlider", "separateLabel": True,
+        "min": float(minv), "max": float(maxv), "step": float(step), "compact": False,
+        "valueMultiplier": 1, "unit": unit, "lua": "", "basic_interaction": False,
+        "search": SEARCH_CB,
+    }
+
+
 def text_input(setting, label, tooltip):
     return {
         "version": "LAN", "label": label, "tooltip": tooltip, "setting": setting,
@@ -87,6 +99,9 @@ LAN_ITEMS = [
              [("Off", 0), ("Default car", 1), ("Last used car", 2)]),
     checkbox("allowRemoteAIChase", "Allow other players' AI cars to chase me (LAN)",
              "Consent toggle. OFF (default): another player's AI/weapon-mod pursuit cars will NOT lock onto you, even when you're their nearest target. ON: you volunteer as a target, so their \"Chase\" cars can come after you when you're nearest. This does NOT affect your OWN cars -- you can always spawn AI/weapon cars and pick \"Chase\" in BeamNG's AI radial; they'll hunt yourself plus any remote player who has turned this on (and \"Stop\"/\"Park\" disengages + stops their guns)."),
+    slider("defaultCameraFov", "Default camera FOV (LAN)",
+           "Camera field-of-view applied whenever you switch into a vehicle or change camera mode, so you don't have to re-zoom every time. 0 = off (each vehicle's own default). The zoom keys still adjust the FOV live afterward. Default: 0.",
+           0, 120, 1, "°"),
     checkbox("remoteFullProjectiles", "Full weapon projectiles on remote cars (LAN)",
              "A weapon car another player is DRIVING already fires full physics projectiles on your screen. This also makes SPAWNED / AI weapon cars fire full physics projectiles instead of just a muzzle flash + sound -- accurate, but CPU-heavy when lots of guns fire at once. Enable only if every machine has CPU headroom. Default: off."),
     heading("LAN fork — position sync & performance"),

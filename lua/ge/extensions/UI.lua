@@ -524,6 +524,11 @@ local function chatSend(msg)
 		if MPConfig and MPConfig.printMpState then MPConfig.printMpState() end
 		return
 	end
+	if cmd == "/syncenv" or cmd == "/envsync" then
+		-- LAN: one-shot push of YOUR environment (time of day, weather, wind...) to the others
+		if MPConfig and MPConfig.sendEnvSync then MPConfig.sendEnvSync() end
+		return
+	end
 	if cmd == "/synclog" then
 		local on = not (settings.getValue("logSyncStats") == true)
 		settings.setValue("logSyncStats", on)
