@@ -616,13 +616,25 @@ M.onVehicleSwitched = function(oldId, newId, player)
 	if newId and newId ~= -1 then applyDefaultCamera() end
 end
 M.onCameraModeChanged = function() applyDefaultCamera() end
+local pendingCamApply = 0
 M.onVehicleResetted = function(gameVehicleID)
-	-- a reset restores the camera's own default distance -- re-apply ours, but only when
-	-- it is the PLAYER'S current vehicle that reset (remote resets are none of our business)
+	-- a reset restores the camera's own default distance -- and it does so AFTER this hook
+	-- runs (an immediate re-apply gets clobbered; observed on p13h71). Apply now AND arm a
+	-- short deferred re-apply so ours lands after the camera's own reset has settled.
+	-- Player's current vehicle only (remote resets are none of our business).
 	pcall(function()
 		local veh = be:getPlayerVehicle(0)
-		if veh and veh:getID() == gameVehicleID then applyDefaultCamera() end
+		if veh and veh:getID() == gameVehicleID then
+			applyDefaultCamera()
+			pendingCamApply = 0.3
+		end
 	end)
+end
+M.onUpdate = function(dt)
+	if pendingCamApply > 0 then
+		pendingCamApply = pendingCamApply - (dt or 0)
+		if pendingCamApply <= 0 then applyDefaultCamera() end
+	end
 end
 
 -- Functions
