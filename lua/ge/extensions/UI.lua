@@ -486,14 +486,18 @@ local function chatMessage(rawMessage) -- chat message received (angular)
 		local c = player.role.forecolor
 		local color = {[0] = c.r, [1] = c.g, [2] = c.b, [3] = c.a}
 		log('M', 'chatMessage', 'Chat message received from: '..username..' >' ..msg) -- DO NOT REMOVE
-		guihooks.trigger("chatMessage", {username = username, message = message, id = chatcounter, color = color})
+		local payload = {username = username, message = message, id = chatcounter, color = color}
+		guihooks.trigger("chatMessage", payload)
+		guihooks.trigger("onBeamMPChatMessage", payload) -- 0.39 Vue UI twin -- the HUD chat app (BeamMP-Chat) listens for THIS name only
 		-- For IMGUI
 		chatWindow.addMessage(username, msg, chatcounter, color)
 	else
 		log('M', 'chatMessage', 'Chat message received from: '..username.. ' >' ..msg) -- DO NOT REMOVE
-		guihooks.trigger("chatMessage", {username = username, message = message, id = chatcounter})
+		local payload = {username = username, message = message, id = chatcounter}
+		guihooks.trigger("chatMessage", payload)
+		guihooks.trigger("onBeamMPChatMessage", payload) -- 0.39 Vue UI twin (see above)
 		-- For IMGUI
-		chatWindow.addMessage(username, msg, id)
+		chatWindow.addMessage(username, msg, chatcounter)
 	end
 	TriggerClientEvent("ChatMessageReceived", message, username) -- Username added last to not break other mods.
 end
