@@ -8,7 +8,44 @@ let lastSentMessage = "";
 
 let lastMsgId = 0;
 let newChatMenu = false;
+
+// The mod ships DOMPurify (ui/lib/ext/purify.min.js) and loads it with the fire-and-forget
+// dynamic import below -- but that import is ASYNC and nothing awaits it, so any message
+// formatted before it resolves hit "ReferenceError: DOMPurify is not defined" and threw
+// (observed in beamng.log on 0.39, where UI apps reload on their own schedule). Since
+// formatChatMessage is on the path of EVERY displayed line, one early message killed chat
+// rendering. This wrapper uses the real DOMPurify once it has landed and a parser-based
+// fallback before that, so a sanitize call can never throw.
 import('/ui/lib/ext/purify.min.js')
+function beammpSanitize(input) {
+	const str = String(input == null ? '' : input);
+	try {
+		if (typeof DOMPurify !== 'undefined' && DOMPurify && typeof DOMPurify.sanitize === 'function') {
+			return DOMPurify.sanitize(str);
+		}
+		const BAD_TAGS = new Set(['script', 'style', 'iframe', 'object', 'embed', 'link', 'meta', 'base', 'form', 'input', 'button', 'svg', 'math']);
+		const root = document.createElement('div');
+		root.innerHTML = str;
+		const walk = el => {
+			for (const child of Array.from(el.children)) {
+				if (BAD_TAGS.has(child.tagName.toLowerCase())) { child.remove(); continue; }
+				for (const attr of Array.from(child.attributes)) {
+					const n = attr.name.toLowerCase();
+					const v = String(attr.value || '');
+					if (n.startsWith('on') || n === 'srcdoc' || /^\s*(javascript|data|vbscript):/i.test(v)) {
+						child.removeAttribute(attr.name);
+					}
+				}
+				walk(child);
+			}
+		};
+		walk(root);
+		return root.innerHTML;
+	} catch (e) {
+		// never render unsanitized input -- escape everything instead
+		return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+	}
+}
 app.directive('beammpChat', [function () {
 	return {
 		templateUrl: '/ui/modules/apps/BeamMP-Chat/app.html',
@@ -304,7 +341,7 @@ function formatChatMessage(string) {
     let currentText = '';
     let classes = new Set();
 
-    string = DOMPurify.sanitize(string);
+    string = beammpSanitize(string); // 0.39: the game no longer ships DOMPurify (see beammpSanitize)
     const tokens = string.split(/(\^.)/g);
 
     const flush = () => {

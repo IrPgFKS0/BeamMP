@@ -5,7 +5,41 @@
 var app = angular.module('beamng.apps');
 var mdDialog;
 var mdDialogVisible = false;
+
+// The mod ships DOMPurify (ui/lib/ext/purify.min.js), loaded by the fire-and-forget dynamic
+// import below -- but it is ASYNC and unawaited, so formatServerName could run first and
+// throw "ReferenceError: DOMPurify is not defined" (seen in beamng.log on 0.39). Same
+// never-throw wrapper the chat app uses: real DOMPurify once loaded, parser-based fallback
+// before that.
 import('/ui/lib/ext/purify.min.js')
+function beammpSanitize(input) {
+	const str = String(input == null ? '' : input);
+	try {
+		if (typeof DOMPurify !== 'undefined' && DOMPurify && typeof DOMPurify.sanitize === 'function') {
+			return DOMPurify.sanitize(str);
+		}
+		const BAD_TAGS = new Set(['script', 'style', 'iframe', 'object', 'embed', 'link', 'meta', 'base', 'form', 'input', 'button', 'svg', 'math']);
+		const root = document.createElement('div');
+		root.innerHTML = str;
+		const walk = el => {
+			for (const child of Array.from(el.children)) {
+				if (BAD_TAGS.has(child.tagName.toLowerCase())) { child.remove(); continue; }
+				for (const attr of Array.from(child.attributes)) {
+					const n = attr.name.toLowerCase();
+					const v = String(attr.value || '');
+					if (n.startsWith('on') || n === 'srcdoc' || /^\s*(javascript|data|vbscript):/i.test(v)) {
+						child.removeAttribute(attr.name);
+					}
+				}
+				walk(child);
+			}
+		};
+		walk(root);
+		return root.innerHTML;
+	} catch (e) {
+		return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+	}
+}
 app.directive('multiplayersession', [function () {
 	return {
 		templateUrl: '/ui/modules/apps/BeamMP-Session/app.html',
@@ -175,7 +209,7 @@ function formatServerName(string) {
     let currentText = '';
     let classes = new Set();
 
-	string = DOMPurify.sanitize(string);
+	string = beammpSanitize(string); // 0.39: the game no longer ships DOMPurify (see beammpSanitize)
 
     const tokens = string.split(/(\^.)/g);
 
