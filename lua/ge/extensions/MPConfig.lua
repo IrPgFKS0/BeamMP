@@ -600,9 +600,15 @@ local function applyDefaultCamera()
 		local veh = be:getPlayerVehicle(0)
 		if not veh or not core_camera then return end
 		local dist = tonumber(settings.getValue("defaultCameraDistance")) or 0
-		if dist >= 1 and core_camera.setDistance then
+		if dist >= 1 then
 			if dist > 50 then dist = 50 end
-			core_camera.setDistance(veh:getID(), dist)
+			local vid = veh:getID()
+			-- Make ours the camera's OWN default first: the orbit cam's reset path is
+			-- literally `camDist = defaultDistance` (orbit.lua), so setting the default
+			-- means vehicle resets restore OUR distance natively -- no re-apply race
+			-- (the p13h73 deferred re-apply hack is gone because of this).
+			if core_camera.setDefaultDistance then core_camera.setDefaultDistance(vid, dist) end
+			if core_camera.setDistance then core_camera.setDistance(vid, dist) end
 		end
 	end)
 end
@@ -616,26 +622,8 @@ M.onVehicleSwitched = function(oldId, newId, player)
 	if newId and newId ~= -1 then applyDefaultCamera() end
 end
 M.onCameraModeChanged = function() applyDefaultCamera() end
-local pendingCamApply = 0
-M.onVehicleResetted = function(gameVehicleID)
-	-- a reset restores the camera's own default distance -- and it does so AFTER this hook
-	-- runs (an immediate re-apply gets clobbered; observed on p13h71). Apply now AND arm a
-	-- short deferred re-apply so ours lands after the camera's own reset has settled.
-	-- Player's current vehicle only (remote resets are none of our business).
-	pcall(function()
-		local veh = be:getPlayerVehicle(0)
-		if veh and veh:getID() == gameVehicleID then
-			applyDefaultCamera()
-			pendingCamApply = 0.3
-		end
-	end)
-end
-M.onUpdate = function(dt)
-	if pendingCamApply > 0 then
-		pendingCamApply = pendingCamApply - (dt or 0)
-		if pendingCamApply <= 0 then applyDefaultCamera() end
-	end
-end
+-- No onVehicleResetted hook needed: applyDefaultCamera sets the orbit cam's OWN
+-- defaultDistance, and the camera's reset path restores exactly that value.
 
 -- Functions
 M.getPlayerServerID = getPlayerServerID
