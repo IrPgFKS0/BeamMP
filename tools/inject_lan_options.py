@@ -97,6 +97,8 @@ LAN_ITEMS = [
     dropdown("autoSpawnMode", "Auto-spawn car on join (LAN)",
              "Automatically spawn a car when you join a server, so you don't have to pick one each time. \"Last used\" remembers the car you spawned last (across sessions). Set your preferred default via the vehicle menu's \"Set as default\". Default: Off.",
              [("Off", 0), ("Default car", 1), ("Last used car", 2)]),
+    checkbox("allowEnvSync", "Allow environment sync from other players (LAN)",
+             "When another player pushes their environment (/syncenv or the pause-menu Environment button), adopt it -- time of day, weather, wind and so on, blended over 2 seconds with a toast naming the sender. Turn OFF to ignore incoming pushes (you'll get a short note instead). Your own outgoing pushes are unaffected. Default: on."),
     checkbox("allowRemoteAIChase", "Allow other players' AI cars to chase me (LAN)",
              "Consent toggle. OFF (default): another player's AI/weapon-mod pursuit cars will NOT lock onto you, even when you're their nearest target. ON: you volunteer as a target, so their \"Chase\" cars can come after you when you're nearest. This does NOT affect your OWN cars -- you can always spawn AI/weapon cars and pick \"Chase\" in BeamNG's AI radial; they'll hunt yourself plus any remote player who has turned this on (and \"Stop\"/\"Park\" disengages + stops their guns)."),
     slider("defaultCameraDistance", "Default camera distance (LAN)",

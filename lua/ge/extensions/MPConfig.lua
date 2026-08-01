@@ -90,6 +90,7 @@ local defaultSettings = {
 	showSyncStats = false, -- LAN: tiny on-screen overlay with synced vehicle count + net packet rates
 	logSyncStats = false, -- LAN: also write the sync-health line to beamng.log every ~15s (review via /savelogs after a drift episode); toggle with /synclog
 	directVehicleSocket = false, -- #245 EXPERIMENTAL (default OFF): own vehicles send POSITION + INPUTS straight to the launcher's direct UDP socket (launcherPort+2), bypassing the VE->GE Lua queue + the GE proxy (the measured send-side funnel). Pairs with the p13h34+ combined/launcher exe; SAFE anywhere -- the mod only leaves the GE path after the launcher ACKS the socket (no ack in 3s = one-shot log + revert), so an old launcher or blocked port can never eat a car silently. Slow-mo velocity scaling is skipped on the direct path (identical at normal speed). A/B against the profiler ('GE sendVehiclePosRot' drops toward 0 when active).
+	allowEnvSync = true, -- LAN/consent (default ON so /syncenv works out of the box): apply environment pushes (/syncenv or the pause-menu button) from other players. Off = incoming pushes are ignored with a short toast naming who tried. Default ON (unlike chase consent) because an env change is mild, reversible and sender-attributed.
 	allowRemoteAIChase = false, -- LAN/consent (default off, opt-in): allow OTHER players' AI/weapon cars to chase ME when I'm their nearest valid target. Your OWN cars chasing is unchanged (AI radial "Chase"); they target yourself + remote players who turned this on. Synced via MPVehicleGE chaseOptIn ('B'/C: relay). UI: "Allow other players' AI cars to chase me".
 	aiChaseIncludeSelf = false, -- DEPRECATED: "include yourself as a target" is now AUTOMATIC in retargetLocalAICars (so BeamNG's "Chase"=chase-the-local-player works). Kept registered only to avoid an "unrecognized setting" warning on old configs; no longer read by code.
 	showVramWarning = true, -- LAN: warn in chat when tracked VRAM use nears the card total (heavy-mod crash guard)
@@ -577,6 +578,13 @@ local function applyEnvSync(payload)
 	local ok, data = pcall(jsonDecode, payload)
 	if not ok or type(data) ~= 'table' or type(data.env) ~= 'table' then
 		log('W', 'envSync', 'received unparseable env-sync payload')
+		return
+	end
+	if settings.getValue("allowEnvSync") == false then -- consent: user opted out of adopting pushes
+		log('I', 'envSync', 'ignored env push from ' .. tostring(data.from) .. ' (allowEnvSync off)')
+		guihooks.trigger('toastrMsg', { type = "info", title = "Environment sync",
+			msg = "Ignored an environment push from " .. tostring(data.from or "another player") .. " (disabled in your Multiplayer settings).",
+			config = { timeOut = 4000 } })
 		return
 	end
 	local applied = pcall(function() core_environment.setState(data.env, 2) end) -- 2s blend
