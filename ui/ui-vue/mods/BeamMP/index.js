@@ -150,10 +150,59 @@ function removeLanVersionBadge() {
   if (el && el.parentNode) el.parentNode.removeChild(el)
 }
 
+// LAN: "Sync environment to players" button injected into the pause menu's Environment
+// digest (.pause-environment-digest), same DOM-injection pattern as the version badge --
+// the game's pause components use scoped CSS an injected element can't join, so the
+// button is styled inline. Only shown in an MP session (checked via Lua per attach);
+// clicking runs the same one-shot push as the /syncenv chat command.
+const ENV_SYNC_BTN_ID = "beammp-env-sync-btn"
+let envSyncTimer = null
+function envSyncBtnAttach() {
+  try {
+    const panel = document.querySelector(".pause-environment-digest")
+    const existing = document.getElementById(ENV_SYNC_BTN_ID)
+    if (!panel) {
+      if (existing && existing.parentNode) existing.parentNode.removeChild(existing)
+      return
+    }
+    if (existing) return
+    api.engineLua("(MPCoreNetwork ~= nil and MPCoreNetwork.isMPSession ~= nil and MPCoreNetwork.isMPSession()) and true or false", inSession => {
+      try {
+        if (!inSession) return
+        if (document.getElementById(ENV_SYNC_BTN_ID)) return
+        const p = document.querySelector(".pause-environment-digest")
+        if (!p) return
+        const btn = document.createElement("button")
+        btn.id = ENV_SYNC_BTN_ID
+        btn.type = "button"
+        btn.textContent = "Sync environment to players"
+        btn.title = "One-time push of YOUR time of day / weather / wind to everyone in the session (same as /syncenv)"
+        btn.style.cssText = "display:block;width:100%;margin-top:.6rem;padding:.55rem .75rem;border:1px solid rgba(255,255,255,.25);border-radius:4px;background:rgba(255,102,0,.18);color:#fff;font:inherit;font-weight:600;text-align:left;cursor:pointer;"
+        btn.onmouseenter = () => { btn.style.background = "rgba(255,102,0,.38)" }
+        btn.onmouseleave = () => { btn.style.background = "rgba(255,102,0,.18)" }
+        btn.onclick = () => {
+          api.engineLua("if MPConfig and MPConfig.sendEnvSync then MPConfig.sendEnvSync() end")
+          btn.disabled = true
+          const oldText = btn.textContent
+          btn.textContent = "Environment pushed."
+          setTimeout(() => { try { btn.disabled = false; btn.textContent = oldText } catch (e) { /* gone */ } }, 2500)
+        }
+        p.appendChild(btn)
+      } catch (e) { /* cosmetic only -- never let the button break the pause menu */ }
+    })
+  } catch (e) { /* cosmetic only */ }
+}
+function removeEnvSyncBtn() {
+  if (envSyncTimer) { clearInterval(envSyncTimer); envSyncTimer = null }
+  const el = document.getElementById(ENV_SYNC_BTN_ID)
+  if (el && el.parentNode) el.parentNode.removeChild(el)
+}
+
 export async function onLoad() {
   events.on("onBeamMPShowVueDialog", showBeamMPDialog)
   events.on("onBeamMPInfo", upsertLanVersionBadge) // LAN version badge feed
   lanBadgeTimer = setInterval(lanBadgeAttach, 2000) // re-attach across menu remounts
+  envSyncTimer = setInterval(envSyncBtnAttach, 2000) // pause Environment digest button
   api.engineLua("if MPCoreNetwork and MPCoreNetwork.sendBeamMPInfo then MPCoreNetwork.sendBeamMPInfo() end")
 
   // Register the standalone route before advertising its Main Menu button.
@@ -195,6 +244,7 @@ export async function onUnload() {
   events.off("onBeamMPShowVueDialog", showBeamMPDialog)
   events.off("onBeamMPInfo", upsertLanVersionBadge) // LAN version badge cleanup
   removeLanVersionBadge()
+  removeEnvSyncBtn()
 
   // stop listening for the Main Menu button - this is important to do to avoid memory leaks
   events.off("MainMenuButtons", addBeamMPMainMenuButton)
