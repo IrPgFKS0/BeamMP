@@ -93,8 +93,8 @@ local defaultSettings = {
 	allowRemoteAIChase = false, -- LAN/consent (default off, opt-in): allow OTHER players' AI/weapon cars to chase ME when I'm their nearest valid target. Your OWN cars chasing is unchanged (AI radial "Chase"); they target yourself + remote players who turned this on. Synced via MPVehicleGE chaseOptIn ('B'/C: relay). UI: "Allow other players' AI cars to chase me".
 	aiChaseIncludeSelf = false, -- DEPRECATED: "include yourself as a target" is now AUTOMATIC in retargetLocalAICars (so BeamNG's "Chase"=chase-the-local-player works). Kept registered only to avoid an "unrecognized setting" warning on old configs; no longer read by code.
 	showVramWarning = true, -- LAN: warn in chat when tracked VRAM use nears the card total (heavy-mod crash guard)
-	defaultCameraFov = 0, -- LAN: default camera FOV applied on vehicle switch/camera change (degrees). 0 = off (each vehicle's own default). The zoom keys (PGUp/PGDn-style binds) still adjust live afterward.
-	defaultCameraDistance = 0, -- LAN: default ORBIT camera distance (meters) applied on vehicle switch/camera change -- this is the lever the zoom keys actually move on the orbit cam, so it zooms OUT as well as in. 0 = off (each vehicle's own default, typically ~5m).
+	defaultCameraFov = 0, -- REMOVED from the UI in p13h71 (user wants distance only). Kept registered so an existing settings.json holding it doesn't warn; no code reads it.
+	defaultCameraDistance = 0, -- LAN: default ORBIT camera distance (meters) applied on vehicle switch/camera change/vehicle reset -- this is the lever the zoom keys actually move on the orbit cam, so it zooms OUT as well as in. 0 = off (each vehicle's own default, typically ~5m).
 
 	-- Settings the mod reads/writes (or the options UI binds) but that were never registered
 	-- here, so a settings.json holding them logged "Unrecognized setting name" on load. Defaults
@@ -383,7 +383,7 @@ local function onSettingsChanged()
 		settings.setValue("saveLogsAction", false) -- reset to prevent reapply on every setting change
 		if M.saveLogs then M.saveLogs() end
 	end
-	if M.applyDefaultFov then M.applyDefaultFov() end -- LAN: apply the default-FOV slider live
+	if M.applyDefaultCamera then M.applyDefaultCamera() end -- LAN: apply the default-camera-distance slider live
 	getUnicycleConfigs()
 end
 
@@ -590,24 +590,19 @@ local function applyEnvSync(payload)
 	end
 end
 
--- LAN: default camera FOV (degrees) + default ORBIT camera distance (meters). The zoom keys
--- on the orbit camera move DISTANCE (not FOV), so the distance slider is what lets a default
--- sit zoomed OUT as well as in; the FOV slider stays for wide/narrow lens preferences.
--- Applied on vehicle switches / camera-mode changes / slider moves; 0 = off (vehicle default).
-local function applyDefaultFov()
+-- LAN: default ORBIT camera distance (meters). The zoom keys on the orbit camera move
+-- DISTANCE, so this is the lever that lets a default sit zoomed OUT as well as in.
+-- Applied on vehicle switches / camera-mode changes / vehicle resets / slider moves;
+-- 0 = off (vehicle default). (The p13h70 FOV slider was removed on user request --
+-- distance is the wanted control; defaultCameraFov stays registered-but-inert.)
+local function applyDefaultCamera()
 	pcall(function()
 		local veh = be:getPlayerVehicle(0)
 		if not veh or not core_camera then return end
-		local vid = veh:getID()
-		local fov = tonumber(settings.getValue("defaultCameraFov")) or 0
-		if fov >= 10 and core_camera.setFOV then
-			if fov > 120 then fov = 120 end
-			core_camera.setFOV(vid, fov)
-		end
 		local dist = tonumber(settings.getValue("defaultCameraDistance")) or 0
 		if dist >= 1 and core_camera.setDistance then
 			if dist > 50 then dist = 50 end
-			core_camera.setDistance(vid, dist)
+			core_camera.setDistance(veh:getID(), dist)
 		end
 	end)
 end
@@ -618,9 +613,17 @@ M.onDeserialized = onDeserialized
 M.onExtensionLoaded = onExtensionLoaded
 M.onSettingsChanged = onSettingsChanged
 M.onVehicleSwitched = function(oldId, newId, player)
-	if newId and newId ~= -1 then applyDefaultFov() end
+	if newId and newId ~= -1 then applyDefaultCamera() end
 end
-M.onCameraModeChanged = function() applyDefaultFov() end
+M.onCameraModeChanged = function() applyDefaultCamera() end
+M.onVehicleResetted = function(gameVehicleID)
+	-- a reset restores the camera's own default distance -- re-apply ours, but only when
+	-- it is the PLAYER'S current vehicle that reset (remote resets are none of our business)
+	pcall(function()
+		local veh = be:getPlayerVehicle(0)
+		if veh and veh:getID() == gameVehicleID then applyDefaultCamera() end
+	end)
+end
 
 -- Functions
 M.getPlayerServerID = getPlayerServerID
@@ -641,7 +644,7 @@ M.setNetDebug = setNetDebug
 M.printMpState = printMpState
 M.sendEnvSync = sendEnvSync   -- LAN: /syncenv chat command (UI.chatSend)
 M.applyEnvSync = applyEnvSync -- LAN: receive side ('B' relay "E:" sub-tag via MPWeaponsGE.handle)
-M.applyDefaultFov = applyDefaultFov
+M.applyDefaultCamera = applyDefaultCamera
 
 M.acceptTos = acceptTos
 M.onInit = function() setExtensionUnloadMode(M, "manual") end
