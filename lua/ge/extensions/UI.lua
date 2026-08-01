@@ -529,10 +529,10 @@ local function chatSend(msg)
 		if MPConfig and MPConfig.sendEnvSync then MPConfig.sendEnvSync() end
 		return
 	end
-	if cmd == "/cmds" or cmd == "/help" or cmd == "/commands" then
+	if cmd == "/?" or cmd == "/cmds" or cmd == "/help" or cmd == "/commands" then
 		-- LAN: list the chat commands locally (never sent to the server/other players)
 		local lines = {
-			"/cmds - this list",
+			"/? - this list",
 			"/maps (or /map) - open the interactive map picker; /map <name> asks the server to switch",
 			"/syncenv - push YOUR environment (time of day, weather, wind...) to the other players",
 			"/synclog - toggle sync-health logging to beamng.log (one line every ~15s)",

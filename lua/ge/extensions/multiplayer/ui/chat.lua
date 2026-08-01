@@ -220,15 +220,18 @@ local function sendChatMessage(message)
     if message[0] == 0 then return end
 
     message = ffi.string(message)
-    -- local messageTable = {
-    --     message = message,
-    --     sentTime = os.time(),
-    --     id = #M.chatMessages + 1
-    -- }
 
-    local c = 'C:'..MPConfig.getNickname()..": "..message
-    MPGameNetwork.send(c)
-    TriggerClientEvent("ChatMessageSent", c)
+    -- LAN: route through UI.chatSend so the /commands work from the imgui chat too
+    -- (it handles /?, /maps, /syncenv, /savelogs... locally and otherwise builds +
+    -- sends the same 'C:' line this function used to send raw -- typed commands were
+    -- previously sent to the server as literal chat text and did nothing).
+    if UI and UI.chatSend then
+        UI.chatSend(message)
+    else
+        local c = 'C:'..MPConfig.getNickname()..": "..message
+        MPGameNetwork.send(c)
+        TriggerClientEvent("ChatMessageSent", c)
+    end
 
     wasMessageSent = true
     history[#history+1] = ffi.string(chatMessageBuf)
