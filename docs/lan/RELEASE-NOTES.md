@@ -1,6 +1,6 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.22.0-LAN p13h78` · combined host exe `p13h35` (Windows + Linux) · **for BeamNG 0.39**
+**Build:** mod `4.22.0-LAN p13h80` · combined host exe `p13h35` (Windows + Linux) · **for BeamNG 0.39**
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -45,6 +45,9 @@ a little tuning (see `LAN-TUNING.md`).
 
 ## This release
 
+- **Version badge polish (p13h79-p13h80).** The bottom-bar BeamMP badge reappears
+  near-instantly after opening the pause menu, and never shows a placeholder while the version
+  loads.
 - **One-shot environment sync (p13h69-p13h77).** `/syncenv` in chat — or the new **"Sync
   environment to players" button in the pause menu's Environment tab** — pushes YOUR time of day,
   clouds, fog, wind, precipitation, gravity and temperature (the game's own whole-environment
