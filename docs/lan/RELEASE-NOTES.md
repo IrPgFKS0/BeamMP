@@ -1,6 +1,6 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.22.0-LAN p13h68` · combined host exe `p13h35` (Windows + Linux) · **for BeamNG 0.39**
+**Build:** mod `4.22.0-LAN p13h78` · combined host exe `p13h35` (Windows + Linux) · **for BeamNG 0.39**
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -45,6 +45,24 @@ a little tuning (see `LAN-TUNING.md`).
 
 ## This release
 
+- **One-shot environment sync (p13h69-p13h77).** `/syncenv` in chat — or the new **"Sync
+  environment to players" button in the pause menu's Environment tab** — pushes YOUR time of day,
+  clouds, fog, wind, precipitation, gravity and temperature (the game's own whole-environment
+  snapshot) to everyone in the session; receivers blend over 2 seconds with a toast naming the
+  sender. One-time adopt, no continuous sync; whoever runs it is the source of truth. A consent
+  checkbox ("Allow environment sync from other players", default on) lets anyone opt out of
+  receiving.
+- **Default orbit-camera distance (p13h70-p13h74).** A Multiplayer-options slider that sets the
+  orbit camera's own default distance — applied on vehicle switches and camera changes, and
+  because it *is* the camera's default, vehicle resets restore it natively. (This is the lever
+  the zoom keys actually move, so it works pulled out as well as in.)
+- **Chat fixed on the HUD chat app — it was double-broken (p13h72-p13h78).** The default chat
+  app never received messages (the mod stopped emitting the hook it listens for after the 0.39
+  rename) and threw on rendering when messages did arrive (an unawaited sanitizer import). Both
+  fixed; slash commands also now work typed into any chat surface, and **`/?`** lists them all
+  locally.
+- **Test-harness hygiene (tooling).** The automated smoke gate no longer leaks its debug settings
+  (position profiler, sync log) into real sessions after each deploy.
 - **Per-frame Lua garbage cleanup (p13h62).** Hand-port of the two self-contained pieces of
   upstream PR 838: nametag/spectator strings and their engine-string wrappers are now cached per
   vehicle and rebuilt only when an input changes (nick/role/name/settings/camera switches), the
