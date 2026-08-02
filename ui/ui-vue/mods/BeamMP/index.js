@@ -201,8 +201,8 @@ function removeEnvSyncBtn() {
 export async function onLoad() {
   events.on("onBeamMPShowVueDialog", showBeamMPDialog)
   events.on("onBeamMPInfo", upsertLanVersionBadge) // LAN version badge feed
-  lanBadgeTimer = setInterval(lanBadgeAttach, 2000) // re-attach across menu remounts
-  envSyncTimer = setInterval(envSyncBtnAttach, 2000) // pause Environment digest button
+  lanBadgeTimer = setInterval(lanBadgeAttach, 350) // re-attach across menu remounts (fast tick: the badge vanishes when Esc remounts the menu DOM, and a 2s tick left a visible gap)
+  envSyncTimer = setInterval(envSyncBtnAttach, 700) // pause Environment digest button
   api.engineLua("if MPCoreNetwork and MPCoreNetwork.sendBeamMPInfo then MPCoreNetwork.sendBeamMPInfo() end")
 
   // Register the standalone route before advertising its Main Menu button.
