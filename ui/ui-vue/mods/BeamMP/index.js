@@ -117,6 +117,7 @@ async function showBeamMPDialog(options = {}) {
 const LAN_BADGE_ID = "beammp-lan-version-badge"
 let lanBadgeInfo = null
 let lanBadgeTimer = null
+let lanBadgeLastPoke = 0
 function lanBadgeAttach() {
   try {
     const stats =
@@ -124,6 +125,19 @@ function lanBadgeAttach() {
       || document.querySelector("#vue-app .info-bar .info-bar-stats")
       || document.querySelector(".info-bar-stats")
     if (!stats) return
+    const ver = lanBadgeInfo && lanBadgeInfo.beammpGameVer
+    if (!ver) {
+      // The menu app's module state resets on play->pause transitions, so the cached
+      // version is gone on every Esc. NEVER render a "?" placeholder -- ask Lua for the
+      // info (throttled) and only attach once the version is known; the badge then
+      // appears fully-formed on the next tick after the event lands.
+      const now = Date.now()
+      if (now - lanBadgeLastPoke > 900) {
+        lanBadgeLastPoke = now
+        api.engineLua("if MPCoreNetwork and MPCoreNetwork.sendBeamMPInfo then MPCoreNetwork.sendBeamMPInfo() end")
+      }
+      return
+    }
     let el = document.getElementById(LAN_BADGE_ID)
     if (!el) {
       el = document.createElement("span")
@@ -137,7 +151,7 @@ function lanBadgeAttach() {
       stats.appendChild(el)
     }
     const txt = document.getElementById("beammp-lan-version-text")
-    if (txt) txt.textContent = String(lanBadgeInfo?.beammpGameVer || "?")
+    if (txt) txt.textContent = String(ver)
   } catch (e) { /* cosmetic only -- never let the badge break the mod */ }
 }
 function upsertLanVersionBadge(data) {
