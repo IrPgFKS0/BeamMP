@@ -205,7 +205,10 @@ local function onWorldReadyState(state)
 	if state == 2 then
 		if MPCoreNetwork and MPCoreNetwork.isMPSession() then
 			log('M', 'onWorldReadyState', 'Setting game state to multiplayer.')
-			core_gamestate.setGameState('multiplayer', 'multiplayer', 'multiplayer')
+			-- 0.39: the app layout was renamed 'beammp' in upstream 4.22 (we ship
+			-- beammp.uilayout.json); the old 'multiplayer' layout no longer resolves on
+			-- 0.39, which left the MAIN MENU overlay up after joining with no vehicle.
+			core_gamestate.setGameState('multiplayer', 'beammp', 'multiplayer')
 			local spawnDefaultGroups = { "CameraSpawnPoints", "PlayerSpawnPoints", "PlayerDropPoints", "spawnpoints" }
 
 			for i, v in pairs(spawnDefaultGroups) do

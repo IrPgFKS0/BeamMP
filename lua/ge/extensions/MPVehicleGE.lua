@@ -1418,7 +1418,29 @@ end
 
 local function applyVehEdit(serverID, data)
 	local gameVehicleID = getGameVehicleID(serverID) -- Get the gameVehicleID
-	if not gameVehicleID then log('E','applyVehEdit',"gameVehicleID for "..serverID.." not found") return end
+	if not gameVehicleID then
+		-- No game vehicle: the SPAWN event for this sid was never received (its edit created
+		-- a placeholder entry -- see onServerVehicleEdited). Edits carry the same jbm + full
+		-- vcf as spawns, and by apply time the placeholder has live position packets, so
+		-- synthesize the missed spawn from this edit. Placement comes from the vehicle's
+		-- streamed position (injected below so applyVehSpawn never sees a nil pos).
+		local vehicle = vehicles[serverID]
+		local decoded = jsonDecode(data)
+		if vehicle and decoded and decoded.jbm and vehicle.position and vehicle.rotation then
+			log('W', 'applyVehEdit', serverID..' has no game vehicle (missed spawn) -- synthesizing the spawn from this edit: '..tostring(decoded.jbm))
+			decoded.pos = { vehicle.position.x, vehicle.position.y, vehicle.position.z }
+			decoded.rot = { vehicle.rotation.x, vehicle.rotation.y, vehicle.rotation.z, vehicle.rotation.w }
+			local owner = vehicle:getOwner()
+			applyVehSpawn({
+				playerNickname = (owner and owner.name) or vehicle.ownerName or 'unknown',
+				serverVehicleID = serverID,
+				data = jsonEncode(decoded),
+			})
+			return
+		end
+		log('E','applyVehEdit',"gameVehicleID for "..serverID.." not found"..(vehicle and not (vehicle.position and vehicle.rotation) and " (no live position yet -- cannot synthesize the missed spawn)" or ""))
+		return
+	end
 
 	local veh = be:getObjectByID(gameVehicleID) -- Get the vehicle
 	if not veh then log('E','applyVehEdit',"Vehicle "..gameVehicleID.." not found") return end
@@ -1894,6 +1916,12 @@ local function onServerVehicleEdited(serverID, data)
 	log('I', 'onServerVehicleEdited', "Edit received for "..serverID)
 
 	if not vehicles[serverID] then
+		-- An edit for a vehicle we never received the SPAWN event for (observed live as an
+		-- invisible car + the magenta fallback blob). Register the entry so position packets
+		-- start applying to it; applyVehEdit then SYNTHESIZES the missed spawn from this
+		-- edit's jbm+vcf once a live position is known (see the not-gameVehicleID branch).
+		log('W', 'onServerVehicleEdited', 'Edit received for UNKNOWN vehicle '..serverID..
+			' -- its spawn event was never received (will synthesize the spawn from this edit once its position is known)')
 		vehicles[serverID] = Vehicle:new({ serverVehicleString = serverID, isSpawned = false })
 	end
 	local owner = vehicles[serverID]:getOwner()
@@ -2797,6 +2825,13 @@ local function onPreRender(dt)
 					end
 				else
 					colors = blobColorFallback
+					-- the magenta fallback = not spawned, not queued, not deleted: the spawn
+					-- event was likely LOST (user-observed as an invisible car + purple ball).
+					-- One log per vehicle so the next occurrence is diagnosable from the log.
+					if not v.noSpawnLogged then
+						v.noSpawnLogged = true
+						log('W', 'blobFallback', serverVehicleID..' ('..tostring(v.ownerName)..') has no spawn data and no queue -- spawn event likely lost; self-heals on its next edit')
+					end
 				end
 
 				if colors then
