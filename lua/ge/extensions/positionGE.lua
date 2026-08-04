@@ -11,6 +11,7 @@
 
 local M = {}
 
+local targetGameSpeed = 1
 local actualSimSpeed = 1
 
 --[[
@@ -217,12 +218,12 @@ local function sendVehiclePosRot(data, gameVehicleID)
 
 			decoded.isTransitioning = (simTimeAuthority.get() ~= simspeedReal) or nil
 
-			simspeedReal = simTimeAuthority.getPause() and 0 or simspeedReal -- set velocities to 0 if game is paused
+			-- NOTE (4.22 sync): the vel/rvel sim-speed scaling that used to live here moved into
+			-- positionVE.doSendPosRot (upstream pushes the speed to VE via positionVE.setGameSpeed).
+			-- Doing it there covers BOTH send paths -- including the #245 direct vehicle socket,
+			-- which bypasses this handler entirely and therefore never got scaled before.
 
-			for k,v in pairs(decoded.vel) do decoded.vel[k] = v*simspeedReal end
-			for k,v in pairs(decoded.rvel) do decoded.rvel[k] = v*simspeedReal end
-
-			MPGameNetwork.send('Zp:'..serverVehicleID..":"..jsonEncode(decoded))
+			MPGameNetwork.send(MPNetworkHelpers.generatePacketBuffer('Zp',serverVehicleID,jsonEncode(decoded))) -- 4.22: string-buffer packet build
 			profEnd('sendVehiclePosRot')
 		end
 	end
@@ -230,7 +231,7 @@ end
 
 
 --- This function serves to send the position data received for another players vehicle from GE to VE, where it is handled.
--- @param decoded table The data to be applied to a vehicle, needs to contain "pos", "rot", "vel", "rvel", "ping" and "tim"
+-- @param encoded json The data to be applied to a vehicle, needs to contain "pos", "rot", "vel", "rvel", "ping" and "tim"
 -- @param serverVehicleID string The VehicleID according to the server.
 local applyPosCount = 0  -- LAN sync-stats overlay: positions applied since last sample (receive rate; falls toward 0 when the relay starves -> the visible drift)
 local function applyPos(decoded, serverVehicleID)
@@ -388,9 +389,10 @@ local function handle(rawData)
 		local decoded = jsonDecode(data)
 		if not decoded then return end -- malformed/truncated packet: don't nil-crash applyPos/smoothPosExec
 		if settings.getValue("enablePosSmoother") then
+			local decoded = jsonDecode(data)
 			smoothPosExec(serverVehicleID, decoded)
 		else
-			applyPos(decoded, serverVehicleID)
+			applyPos(data, serverVehicleID)
 		end
 	else
 		log('W', 'handle', "Received unknown packet '"..tostring(code).."'! ".. rawData)
@@ -419,7 +421,7 @@ end
 -- @param y number Coordinate y
 -- @param z number Coordinate z
 local function setPosition(gameVehicleID, x, y, z) -- TODO: this is only here because there seems to be no way to set vehicle position in vehicle lua without resetting the vehicle
-	local veh = be:getObjectByID(gameVehicleID)
+	local veh = getObjectByID(gameVehicleID)
 	veh:setPositionNoPhysicsReset(Point3F(x, y, z))
 end
 
@@ -618,6 +620,21 @@ local function onPreRender(dt)
 	end
 end
 
+local function onUpdate(dtReal, dtSim, dtRaw)
+	if MPGameNetwork and MPGameNetwork.launcherConnected() then
+		setActualSimSpeed(dtSim/dtRaw)
+		local simSpeed = simTimeAuthority.getReal() * (simTimeAuthority.getPause() and 0 or 1)
+		if targetGameSpeed ~= simSpeed then
+			be:queueAllObjectLua("positionVE.setGameSpeed("..simSpeed..")")
+		end
+		targetGameSpeed = simSpeed
+		local players = getPlayers()
+		for k,player in pairs(players) do
+			player.hasUpdatedPing = false
+		end
+	end
+end
+
 --- This function is used to reset the positional update smoother when it is disabled
 local function onSettingsChanged()
 	if not settings.getValue("enablePosSmoother") then -- nil/false
@@ -642,6 +659,7 @@ M.dvSetupVehicle              = dvSetupVehicle -- #245: called by positionVE whe
 M.setActualSimSpeed           = setActualSimSpeed
 M.getActualSimSpeed           = getActualSimSpeed
 M.onPreRender                 = onPreRender
+M.onUpdate                    = onUpdate
 M.onSettingsChanged           = onSettingsChanged
 M.posSmoother                 = POSSMOOTHER -- debug entry
 M.onInit = function() setExtensionUnloadMode(M, "manual"); refreshFlags() end

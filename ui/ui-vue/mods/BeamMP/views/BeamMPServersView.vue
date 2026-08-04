@@ -54,7 +54,13 @@
                   />
                 </td>
                 <td class="title-cell">
-                  <span class="server-title" v-html="serverTitleMarkup(server)"></span>
+                  <span
+                    class="server-title server-title-viewport"
+                    @mouseenter="scrollServerTitle"
+                    @mouseleave="resetServerTitleScroll"
+                  >
+                    <span class="server-title-content" v-html="serverTitleMarkup(server)"></span>
+                  </span>
                 </td>
                 <td>{{ server.mapName }}</td>
                 <td>{{ server.players }}/{{ server.maxplayers }}</td>
@@ -67,7 +73,13 @@
               <tr v-if="state.selectedServerId.value === server.id" class="details-row">
                 <td colspan="5">
                   <section class="details">
-                    <h3 class="server-title server-title--detail" v-html="serverTitleMarkup(server)"></h3>
+                    <h3
+                      class="server-title server-title--detail server-title-viewport"
+                      @mouseenter="scrollServerTitle"
+                      @mouseleave="resetServerTitleScroll"
+                    >
+                      <span class="server-title-content" v-html="serverTitleMarkup(server)"></span>
+                    </h3>
 
                     <div class="details-grid">
                       <section class="info-panel">
@@ -289,6 +301,7 @@ import { vBngTextInput } from "@/common/directives"
 import { openPrompt } from "@/services/popup" // LAN: favorite-rename prompt
 import { useBeamMPState } from "../shared/beammpState.js"
 import { icons as bngIcons } from "/ui/ui-vue/src/assets/fonts/bngIcons/bngIcons.js"
+import { BEAMMP_TEXT_STYLE_MAP } from "../shared/constants.js"
 
 const route = useRoute()
 const filtersRail = ref(null)
@@ -308,6 +321,7 @@ const RENDER_SCROLL_THRESHOLD_PX = 360
 const renderedServerCount = ref(INITIAL_RENDER_COUNT)
 const {
   addFavorite,
+  renameFavorite,
   availableLocations,
   availableMaps,
   availableTags,
@@ -317,7 +331,6 @@ const {
   connectToServer,
   formatBytes,
   isFavorite,
-  renameFavorite,
   modList,
   removeFavorite,
   requestServerList,
@@ -550,25 +563,63 @@ function serverTitleMarkup(server) {
 
   const tokens = raw.split(/(\^.)/g)
   let result = ""
+  let currentText = ""
+  const activeClasses = new Set()
+
+  const flushText = () => {
+    if (!currentText) return
+    const classList = Array.from(activeClasses)
+    const encoded = escapeHtml(currentText)
+    result += classList.length
+      ? `<span class="${classList.join(" ")}">${encoded}</span>`
+      : encoded
+    currentText = ""
+  }
 
   for (let index = 0; index < tokens.length; index += 1) {
     const token = tokens[index]
     const nextToken = (tokens[index + 1] || "").trim()
 
     if (/^\^.$/.test(token)) {
+      flushText()
+
+      if (token === "^r") {
+        activeClasses.clear()
+        continue
+      }
+
+      if (token === "^p") {
+        result += "<br>"
+        continue
+      }
+
       if (token === "^*") {
         const icon = bngIcons?.[nextToken]
         if (icon?.fileSvg) {
           result += `<img class="server-title-icon" src="/ui/ui-vue/src/assets/fonts/bngIcons/${icon.fileSvg}" alt="" aria-hidden="true" />`
         }
         index += 1
+        continue
+      }
+
+      const mappedClass = BEAMMP_TEXT_STYLE_MAP[token]
+      if (mappedClass?.startsWith("color-")) {
+        for (const className of [...activeClasses]) {
+          if (className.startsWith("color-")) {
+            activeClasses.delete(className)
+          }
+        }
+        activeClasses.add(mappedClass)
+      } else if (mappedClass) {
+        activeClasses.add(mappedClass)
       }
       continue
     }
 
-    result += escapeHtml(token)
+    currentText += token
   }
 
+  flushText()
   return result
 }
 
@@ -593,6 +644,25 @@ function useFallbackFlag(event) {
   const image = event.currentTarget
   image.onerror = null
   image.src = "/ui/assets/BeamMP/flags/--.png"
+}
+
+function scrollServerTitle(event) {
+  const viewport = event.currentTarget
+  if (!viewport || viewport.scrollWidth <= viewport.clientWidth) return
+
+  viewport.scrollTo({ left: 0, behavior: "auto" })
+  window.clearTimeout(viewport._beammpScrollTimer)
+  viewport._beammpScrollTimer = window.setTimeout(() => {
+    viewport.scrollTo({ left: viewport.scrollWidth, behavior: "smooth" })
+  }, 180)
+}
+
+function resetServerTitleScroll(event) {
+  const viewport = event.currentTarget
+  if (!viewport) return
+
+  window.clearTimeout(viewport._beammpScrollTimer)
+  viewport.scrollTo({ left: 0, behavior: "smooth" })
 }
 
 function serverCategoryClass(server) {
@@ -660,10 +730,9 @@ onMounted(async () => {
   const rail = filtersRail.value
   const container = rail?.closest(".content")
   if (container && "ResizeObserver" in window) {
-    // rAF-wrapped: the callback sets the rail's max-height INSIDE the observed
-    // container, which can re-trigger layout in the same frame -- the browser then
-    // logs "ResizeObserver loop completed with undelivered notifications" (benign
-    // but noisy in beamng.log). Deferring to the next frame breaks the loop.
+    // rAF-wrapped: the callback sets the rail's max-height INSIDE the observed container,
+    // which can re-trigger layout in the same frame -- the browser then logs "ResizeObserver
+    // loop completed with undelivered notifications" (benign but noisy). Defer a frame.
     filtersRailResizeObserver = new ResizeObserver(() => requestAnimationFrame(() => updateFiltersRailMaxHeight()))
     filtersRailResizeObserver.observe(container)
   }
@@ -683,6 +752,10 @@ onBeforeUnmount(() => {
   window.removeEventListener("resize", updateFiltersRailMaxHeight)
 })
 </script>
+
+<style lang="scss">
+@import url("/ui/assets/BeamMP/shared_styles/formatCodes.css");
+</style>
 
 <style scoped lang="scss">
 .servers-wrap {
@@ -1107,13 +1180,36 @@ onBeforeUnmount(() => {
 
 .title-cell {
   min-width: 18rem;
+  overflow: hidden;
 }
 
 .server-title {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+.server-title-viewport {
+  overflow-x: hidden;
+  overflow-y: hidden;
+  text-overflow: ellipsis;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  cursor: default;
+}
+
+.server-title-viewport::-webkit-scrollbar {
+  display: none;
+}
+
+.server-title-content {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
   line-height: 1.1;
+  width: max-content;
+  min-width: 100%;
 }
 
 .server-title-icon {

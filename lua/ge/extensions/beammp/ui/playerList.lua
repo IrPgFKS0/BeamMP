@@ -2,11 +2,11 @@
 -- Licensed under AGPL-3.0 (or later), see <https://www.gnu.org/licenses/>.
 -- SPDX-License-Identifier: AGPL-3.0-or-later
 
---- multiplayer_ui_playerList API.
+--- beammp_ui_playerList API.
 --- Author of this documentation is Titch
---- @module multiplayer_ui_playerList
+--- @module beammp_ui_playerList
 --- @usage updatePlayerList(jsonData) -- internal access
---- @usage multiplayer_ui_playerList.updatePlayerList(jsonData) -- external access
+--- @usage beammp_ui_playerList.updatePlayerList(jsonData) -- external access
 
 local M = {}
 

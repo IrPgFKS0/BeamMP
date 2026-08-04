@@ -5,11 +5,9 @@
 local M = {}
 
 local function tick()
-	local ownMap = MPVehicleGE.getOwnMap() -- Get map of own vehicles
-	for i,v in pairs(ownMap) do -- For each own vehicle
-		local veh = be:getObjectByID(i) -- Get vehicle
-		if veh then
-			veh:queueLuaCommand("if controllerSyncVE then controllerSyncVE.getControllerData() end") -- Send all devices values
+	for i,v in pairs(MPVehicleGE.getPlayerVehicleObjects(MPConfig.getPlayerServerID())) do
+		if v then
+			v:queueLuaCommand("if controllerSyncVE then controllerSyncVE.getControllerData() end") -- guard: the VE VM may not have loaded its extensions yet (spawn/recover) -- an unguarded call FATALs it
 		end
 	end
 end
@@ -24,14 +22,14 @@ local function sendControllerData(data, gameVehicleID)
 				decodedData.vehID = MPVehicleGE.getServerVehicleID(decodedData.vehID) -- used for controllers that call to another vehicle, like the me262 missile targeting system
 			end
 			data = jsonEncode(decodedData)
-			MPGameNetwork.send('Rc:'..serverVehicleID..":"..data)
+			MPGameNetwork.send(MPNetworkHelpers.generatePacketBuffer('Rc',serverVehicleID,data))
 		end
 	end
 end
 
 local function applyControllerData(data, serverVehicleID)
 	local gameVehicleID = MPVehicleGE.getGameVehicleID(serverVehicleID) or -1
-	local veh = be:getObjectByID(gameVehicleID)
+	local veh = getObjectByID(gameVehicleID)
 	if veh then
 		local decodedData = jsonDecode(data)
 		if not decodedData then return end

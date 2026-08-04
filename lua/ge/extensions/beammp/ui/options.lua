@@ -2,15 +2,15 @@
 -- Licensed under AGPL-3.0 (or later), see <https://www.gnu.org/licenses/>.
 -- SPDX-License-Identifier: AGPL-3.0-or-later
 
---- multiplayer_ui_options API.
+--- beammp_ui_options API.
 --- Author of this documentation is Titch
---- @module multiplayer_ui_options
+--- @module beammp_ui_options
 --- @usage saveConfig(settings) -- internal access
---- @usage multiplayer_ui_options.saveConfig(settings) -- external access
+--- @usage beammp_ui_options.saveConfig(settings) -- external access
 
 local M = {}
 
-local utils = require("multiplayer.ui.utils")
+local utils = require("beammp.ui.utils")
 
 local imgui = ui_imgui
 local longestSettingName = 0
@@ -75,7 +75,7 @@ local function renderTheming()
         end
 
     end
-    imgui.EndChild() -- 0.39 imgui: unconditional
+    imgui.EndChild()
 
     imgui.SetCursorPosY(imgui.GetWindowHeight() - 32)
     if imgui.Button("Reset to default") then
@@ -154,30 +154,31 @@ local function renderGeneral()
         if imgui.Checkbox("##Keep active on Enter", pKeepActive) then
             UI.settings.window.keepActive = pKeepActive[0]
         end
+        
     end
+    imgui.EndChild()
+
     -- Bottom Buttons
-    imgui.EndChild() -- 0.39 imgui: unconditional
-
     imgui.SetCursorPosY(imgui.GetWindowHeight() - 32)
-        if imgui.Button("Reset to default") then
-            UI.settings = utils.copyTable(UI.defaultSettings)
-            sortedSettings = {}
-            local newSortedSettings = {}
-            for name, category in pairs(UI.defaultSettings) do
-                newSortedSettings[name] = {}
-                for settingName, setting in pairs(category) do
-                    table.insert(newSortedSettings[name], {name = settingName, tab = setting})
-                end
-                table.sort(newSortedSettings[name], function(a, b) return a.name < b.name end)
+    if imgui.Button("Reset to default") then
+        UI.settings = utils.copyTable(UI.defaultSettings)
+        sortedSettings = {}
+        local newSortedSettings = {}
+        for name, category in pairs(UI.defaultSettings) do
+            newSortedSettings[name] = {}
+            for settingName, setting in pairs(category) do
+                table.insert(newSortedSettings[name], {name = settingName, tab = setting})
             end
-            sortedSettings = newSortedSettings
+            table.sort(newSortedSettings[name], function(a, b) return a.name < b.name end)
         end
+        sortedSettings = newSortedSettings
+    end
 
-        imgui.SameLine()
+    imgui.SameLine()
 
-        if imgui.Button("Save") then
-            saveConfig()
-        end
+    if imgui.Button("Save") then
+        saveConfig()
+    end
 end
 
 

@@ -23,48 +23,6 @@ function queueExtensionToLoad(extension)  -- temporary workaround for mods still
 	setExtensionUnloadMode(extension, 'manual')
 end
 
-
-local function unloadLocalesAndDefaults()
-	FS:unmount('/temp/beammp/beammp_locales_and_defaults.zip')
-	FS:directoryRemove('/temp/beammp')
-end
-
---- Load the BeamMP provided locales + defalts and merge them into a working set for BeamNG
-local function loadLocalesAndDefaults() -- loads beammp locales and default settings without having to directly replace the game locales and default settings
-	unloadLocalesAndDefaults()
-	local mp_locales = FS:findFiles('/mp_locales/', '*.json', 0)
-	local game_locales = FS:findFiles('/locales/', '*.json', 0)
-
-	for _, mp_locale in pairs(mp_locales) do
-		for _, game_locale in pairs(game_locales) do
-			if game_locale:gsub('/locales/', '') == mp_locale:gsub('/mp_locales/', '') then
-				local merged_locale = tableMergeRecursive(jsonReadFile(game_locale), jsonReadFile(mp_locale))
-				log('M', 'loadLocalesAndDefaults', 'Writing '..game_locale)
-				jsonWriteFile('/temp/beammp/'.. game_locale, merged_locale, true)
-			end
-		end
-	end
-
-	local merged_settings = tableMergeRecursive(jsonReadFile('/settings/defaults.json'), jsonReadFile('/settings/mp_defaults.json'))
-	log('M', 'loadLocalesAndDefaults', 'Writing /settings/defaults.json')
-	jsonWriteFile('/temp/beammp/settings/defaults.json', merged_settings, true)
-
-	if FS:directoryExists('/temp/beammp/locales/') then
-		local zip = ZipArchive()
-		local fileList = FS:findFiles('/temp/beammp/locales/', '*.json', 0)
-		zip:openArchiveName('temp/beammp/beammp_locales_and_defaults.zip', 'w')
-		for _, file in pairs(fileList) do
-			zip:addFile(file, 'locales/'..file:gsub('/temp/beammp/locales/', ''))
-		end
-		
-		zip:addFile('/temp/beammp/settings/defaults.json', 'settings/defaults.json')
-		zip:close()
-	end
-	FS:mount('/temp/beammp/beammp_locales_and_defaults.zip')
-	FS:directoryRemove('/temp/beammp/locales')
-	FS:directoryRemove('/temp/beammp/settings')
-end
-
 --- Check if a mod is allowed according to the servers mods
 -- @param modName string The mod in question to check
 -- @return boolean
@@ -208,7 +166,13 @@ end
 -- @param modsString string The mod string from the server
 -- @usage MPModManager.setServerMods('...')
 local function setServerMods(modsString) 
-	if modsString == "" then log('M', 'setServerMods', 'Received no mods.') return end
+	if modsString == "" then
+		log('M', 'setServerMods', 'Received no mods.')
+		serverMods = {}
+		serverModDisplayNames = {}
+		guihooks.trigger("onBeamMPServerModsChanged", serverModDisplayNames)
+		return
+	end
 	log('W', 'setMods', modsString)
 	local mods = {}
 	if (modsString) then -- takes: mod1.zip;mod2.zip;mod3.zip, returns a table of mod1,mod2,mod3
@@ -219,7 +183,7 @@ local function setServerMods(modsString)
 	end
 	log('M', 'setServerMods', 'Server Mods set to: ' .. dumps(mods))
 	serverModDisplayNames = {}
-	for key, modName in pairs(mods) do -- mods in a directory deeper than /mods/ have "<directory name> + modname" as their mod name
+	for key, modName in ipairs(mods) do -- mods in a directory deeper than /mods/ have "<directory name> + modname" as their mod name
 		serverModDisplayNames[key] = modName -- raw name for the UI (0.39 Vue current-server view)
 		mods[key] = string.lower('multiplayer'..modName)
 	end
@@ -295,7 +259,7 @@ M.repositoryReplacer = function() --TODO: if this function is called onExtension
 end
 
 --- Triggered by BeamNG when the lua mod is loaded by the modmanager system.
--- We use this to load our locales, cleanup the mods ahead of mp use and ensure our modloader is used
+-- We use this to apply BeamMP defaults, cleanup the mods ahead of mp use and ensure our modloader is used
 local function onExtensionLoaded()
 	if VersionCheck then
 		VersionCheck.onInit = function()
@@ -317,16 +281,14 @@ local function onExtensionLoaded()
 	log('I', 'onExtensionLoaded','Amount of files in content/: ' .. tostring(#FS:directoryList("/content/")))
 	extensions.printExtensions()
 
-	loadLocalesAndDefaults()
 	cleanUpSessionMods()
 	--extensionLoader()
 	--M.replaceStuff()
 end
 
 --- Triggered by BeamNG when the lua mod is unloaded by the modmanager system.
--- We use this to cleanup our locales and restore core module defintions
+-- We use this to restore core module defintions
 local function onExtensionUnloaded() -- restore functions back to their default values
-	unloadLocalesAndDefaults()
 	--registerCoreModule = original_registerCoreModule and original_registerCoreModule
 	if core_repository then core_repository.modUnsubscribe = original_Unsubscribe and original_Unsubscribe end
 end
@@ -375,7 +337,7 @@ M.verifyMods = verifyMods
 M.onExtensionLoaded = onExtensionLoaded
 M.onExtensionUnloaded = onExtensionUnloaded
 M.onModActivated = onModActivated
-M.onServerLeave = onServerLeave
+M.onBeamMPServerLeave = onServerLeave
 M.onExit = cleanUpSessionMods
 M.onUpdate = onUpdate
 M.onInit = function() setExtensionUnloadMode(M, "manual") end

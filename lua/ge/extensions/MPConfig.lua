@@ -60,7 +60,7 @@ local function setDefaultUnicycle(configFileName)
 end
 
 local defaultSettings = {
-	autoSyncVehicles = true, nameTagShowDistance = true, enableBlobs = true, showSpectators = true, licensePlateUsesPlayerName = true, nametagCharLimit = 32, showPlayerIDs = false, nameTagsHideBehindObjects = false,
+	autoSyncVehicles = true, nameTagShowDistance = true, enableBlobs = true, showSpectators = true, licensePlateUsesPlayerName = true, nametagCharLimit = 32, showPlayerIDs = true, nameTagsHideBehindObjects = false,
 	-- queue system
 	enableSpawnQueue = true, enableQueueAuto = true, queueSkipUnicycle = true, queueApplySpeed = 2, queueApplyTimeout = 3, highlightQueuedPlayers = true,
 	-- colors
@@ -122,6 +122,54 @@ local defaultSettings = {
 	launcherPort = 4444
 }
 
+--- Reads the user's saved settings straight off disk. The game's settings loader DROPS keys it
+--- doesn't know about at boot (see onExtensionLoaded), so "value is nil" does NOT mean "the user
+--- never set it" -- it usually means the loader threw their value away before we registered it.
+local function readSavedSettings()
+	local savedPath = (settings.impl and settings.impl.pathLocal) or '/settings/settings.json'
+	local ok, saved = pcall(jsonReadFile, savedPath)
+	if ok and type(saved) == 'table' then return saved end
+	return {}
+end
+
+--- Upstream 4.22 registers the stock MP settings from /settings/mp_defaults.json instead of
+--- hardcoding them in Lua (that file also carries the [scope, value] pair, so 'cloud' settings
+--- register with the right scope). Kept as-is apart from the fork's restore rule: a dropped key
+--- is refilled from the user's saved file first, and only falls back to the shipped default.
+--- @tparam table savedValues Result of readSavedSettings()
+--- @treturn number How many settings were restored from the user's file rather than defaulted.
+local function loadMPDefaults(savedValues)
+	savedValues = savedValues or {}
+	local mpDefaults = jsonReadFile('/settings/mp_defaults.json')
+	if not mpDefaults then
+		log('W', 'loadMPDefaults', 'Unable to read /settings/mp_defaults.json')
+		return 0
+	end
+
+	local restored = 0
+	for settingName, settingDef in pairs(mpDefaults) do
+		local settingType = settingDef[1]
+		local defaultValue = settingDef[2]
+
+		if settings.impl and settings.impl.defaults and settingType ~= nil then
+			settings.impl.defaults[settingName] = { settingType, defaultValue }
+		end
+		if settings.impl and settings.impl.defaultValues and defaultValue ~= nil then
+			settings.impl.defaultValues[settingName] = defaultValue
+		end
+
+		if defaultValue ~= nil and (settings.getValue(settingName) == nil or settingName == 'unicycleConfigs') then
+			if savedValues[settingName] ~= nil and settingName ~= 'unicycleConfigs' then
+				settings.setValue(settingName, savedValues[settingName])
+				restored = restored + 1
+			else
+				settings.setValue(settingName, defaultValue)
+			end
+		end
+	end
+	return restored
+end
+
 -- Register the settings DEFAULTS at module load (not only in onExtensionLoaded below), so readers
 -- that run before this extension's onExtensionLoaded -- e.g. positionGE reading physRateSendHz ~1s
 -- into startup -- don't trip BeamNG's "Unrecognized setting name" warning. This ONLY seeds the
@@ -145,11 +193,9 @@ local function onExtensionLoaded()
 	-- by one session vanished after the next). So when a key is nil in the live values,
 	-- restore the USER'S SAVED value straight from the settings file before falling back
 	-- to our default.
-	local savedValues = {}
-	local savedPath = (settings.impl and settings.impl.pathLocal) or '/settings/settings.json'
-	local ok, saved = pcall(jsonReadFile, savedPath)
-	if ok and type(saved) == 'table' then savedValues = saved end
-	local restored = 0
+	local savedValues = readSavedSettings()
+	-- upstream's stock settings (mp_defaults.json) first, then the fork's LAN-only ones below
+	local restored = loadMPDefaults(savedValues)
 	for k,v in pairs(defaultSettings) do
 		if settings.getValue(k) == nil or k == 'unicycleConfigs' then
 			if savedValues[k] ~= nil and k ~= 'unicycleConfigs' then

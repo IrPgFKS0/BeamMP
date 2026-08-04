@@ -14,11 +14,9 @@ local M = {}
 
 --- Called on specified interval by MPUpdatesGE to simulate our own tick event to collect data.
 local function tick()
-	local ownMap = MPVehicleGE.getOwnMap() -- Get map of own vehicles
-	for i,v in pairs(ownMap) do -- For each own vehicle
-		local veh = be:getObjectByID(i) -- Get vehicle
-		if veh then
-			veh:queueLuaCommand("if MPPowertrainVE then MPPowertrainVE.check() end") -- Send all devices values
+	for i,v in pairs(MPVehicleGE.getPlayerVehicleObjects(MPConfig.getPlayerServerID())) do
+		if v then
+			v:queueLuaCommand("if MPPowertrainVE then MPPowertrainVE.check() end") -- guard: the VE VM may not have loaded its extensions yet (spawn/recover) -- an unguarded call FATALs it
 		end
 	end
 end
@@ -32,7 +30,7 @@ local function sendLivePowertrain(data, gameVehicleID)
 	if MPGameNetwork.launcherConnected() then
 		local serverVehicleID = MPVehicleGE.getServerVehicleID(gameVehicleID) -- Get serverVehicleID
 		if serverVehicleID and MPVehicleGE.isOwn(gameVehicleID) then -- If serverVehicleID not null and player own vehicle
-			MPGameNetwork.send('Yl:'..serverVehicleID..":"..data) -- Send powertrain to server
+			MPGameNetwork.send(MPNetworkHelpers.generatePacketBuffer('Yl',serverVehicleID,data))
 		end
 	end
 end
@@ -43,7 +41,7 @@ end
 -- @param serverVehicleID string The VehicleID according to the server.
 local function applyLivePowertrain(data, serverVehicleID)
 	local gameVehicleID = MPVehicleGE.getGameVehicleID(serverVehicleID) or -1 -- get gameID
-	local veh = be:getObjectByID(gameVehicleID)
+	local veh = getObjectByID(gameVehicleID)
 	if veh then
 		veh:queueLuaCommand("if MPPowertrainVE then MPPowertrainVE.applyLivePowertrain(mime.unb64(\'".. MPHelpers.b64encode(data) .."\')) end")
 	end
@@ -54,7 +52,7 @@ local function sendEngineData(data, gameVehicleID)
 	if MPGameNetwork.launcherConnected() then
 		local serverVehicleID = MPVehicleGE.getServerVehicleID(gameVehicleID) -- Get serverVehicleID
 		if serverVehicleID and MPVehicleGE.isOwn(gameVehicleID) then -- If serverVehicleID not null and player own vehicle
-			MPGameNetwork.send('Ye:'..serverVehicleID..":"..data) -- Send powertrain to server
+			MPGameNetwork.send(MPNetworkHelpers.generatePacketBuffer('Ye',serverVehicleID,data))
 		end
 	end
 end
@@ -62,7 +60,7 @@ end
 
 local function applyEngineData(data, serverVehicleID)
 	local gameVehicleID = MPVehicleGE.getGameVehicleID(serverVehicleID) or -1 -- get gameID
-	local veh = be:getObjectByID(gameVehicleID)
+	local veh = getObjectByID(gameVehicleID)
 	if veh then
 		veh:queueLuaCommand("if MPPowertrainVE then MPPowertrainVE.applyEngineData(mime.unb64(\'".. MPHelpers.b64encode(data) .."\')) end")
 	end
@@ -87,6 +85,26 @@ local function applyHydroBeams(data, serverVehicleID)
 		veh:queueLuaCommand("if MPPowertrainHydrosVE then MPPowertrainHydrosVE.applyHydroBeams(mime.unb64(\'".. MPHelpers.b64encode(data) .."\')) end")
 	end
 end
+
+
+local function sendHydroBeamData(data, gameVehicleID)
+	if MPGameNetwork.launcherConnected() then
+		local serverVehicleID = MPVehicleGE.getServerVehicleID(gameVehicleID)
+		if serverVehicleID and MPVehicleGE.isOwn(gameVehicleID) then
+			MPGameNetwork.send('Yh:'..serverVehicleID..":"..data)
+		end
+	end
+end
+
+
+local function applyHydroBeams(data, serverVehicleID)
+	local gameVehicleID = MPVehicleGE.getGameVehicleID(serverVehicleID) or -1
+	local veh = getObjectByID(gameVehicleID)
+	if veh then
+		veh:queueLuaCommand("MPPowertrainHydrosVE.applyHydroBeams(mime.unb64(\'".. MPHelpers.b64encode(data) .."\'))")
+	end
+end
+
 
 
 --- The raw message from the server. This is unpacked first and then sent to applyLivePowertrain()

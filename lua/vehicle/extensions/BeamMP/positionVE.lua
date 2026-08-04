@@ -128,6 +128,7 @@ local raccErrorSmoother = newVectorSmoothing(50)            -- Smoother for angu
 local timeOffsetSmoother = newTemporalSmoothingNonLinear(1) -- Smoother for getting average time offset
 
 -- Persistent data
+local lastMailboxVersion = 0
 local framesSinceReset = 0
 local timer = 0
 local ownPing = 0
@@ -182,6 +183,8 @@ local sd = {
 local physHandlerAdded = false
 
 local debugDrawer = obj.debugDrawProxy
+
+local simSpeedReal = 1
 -- ============= VARIABLES =============
 
 
@@ -317,7 +320,6 @@ local physcounter = 0
 local physstart = 0                                   -- os.clock() fallback start (seconds)
 local physTimer = PROF_TIMER and PROF_TIMER() or nil  -- wall-clock window timer (reuses the timer ctor above)
 
-local physmult = 1
 
 -- Physics-rate position send (decoupled from render FPS), gated by the
 -- physicsRateSend setting. GE arms us each frame via armSelfSend(); we then emit
@@ -387,6 +389,13 @@ local function update(dtSim)
 		end
 	end
 end
+
+
+
+-- NOTE (4.22 sync): upstream's updateRemoteData() (vehPosPckt mailbox -> remoteData) is NOT
+-- used here -- this fork receives positions through setVehiclePosRot (the mpPos mailbox and
+-- the #245 direct vehicle socket) and runs its own predictor on top, so keeping a second,
+-- never-called receive path would only invite the two to drift apart.
 
 
 
@@ -765,9 +774,8 @@ function doSendPosRot(useSendTime)
 		return
 	end
 
-	-- disabled because the GE implementation of slowmo sync is instant, but doesn't account for low fps compensation
-	--vel = vel * physmult
-	--rvel = rvel * physmult
+	vel = vel * simSpeedReal
+	rvel = rvel * simSpeedReal
 
 	local t = posSendTbl
 	t.pos[1], t.pos[2], t.pos[3] = pos.x, pos.y, pos.z
@@ -905,7 +913,9 @@ local function onInit()
 	obj:queueGameEngineLua("if positionGE and positionGE.veReady then positionGE.veReady("..obj:getID()..") end")
 end
 
-
+local function setGameSpeed(speed)
+	simSpeedReal = speed
+end
 
 M.onReset            = onReset
 M.onInit             = onInit
@@ -916,6 +926,7 @@ M.getVehicleRotation = getVehicleRotation
 M.armSelfSend        = armSelfSend
 M.setVehiclePosRot   = setVehiclePosRot
 M.setPing            = setPing
+M.setGameSpeed       = setGameSpeed -- 4.22: GE pushes the sim speed here (used when building the send)
 M.setProfiling       = setProfiling
 M.setMailboxApply    = setMailboxApply
 M.setApplyStallDiag  = setApplyStallDiag

@@ -611,7 +611,7 @@ Both are native C++, so the Lua profilers above don't apply:
   `minimap_lag_workaround`): BeamNG runs `gameplay_markerInteraction.onPreRender` **every
   frame** (mission/POI marker raycasts) — a documented FPS sink in MP that's useless for LAN
   driving (you can't start singleplayer missions in a session anyway). On MP join,
-  [multiplayer.lua](BeamMP/lua/ge/extensions/multiplayer/multiplayer.lua) swaps that hook for
+  [multiplayer.lua](BeamMP/lua/ge/extensions/beammp/multiplayer.lua) swaps that hook for
   `nop` and hides the mission markers; `onServerLeave` restores both. Every engine call is
   guarded (`if gameplay_markerInteraction then`), so it no-ops safely if a BeamNG API change
   renames it. Applied once at join — to A/B it, toggle and rejoin. Toggle off ("Optimize map

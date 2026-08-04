@@ -11,16 +11,35 @@
 
 local M = {}
 
-local chatWindow = require("multiplayer.ui.chat")
-local optionsWindow = require("multiplayer.ui.options")
-local playerListWindow = require("multiplayer.ui.playerList")
+local chatWindow = require("beammp.ui.chat")
+local optionsWindow = require("beammp.ui.options")
+local playerListWindow = require("beammp.ui.playerList")
 require('/common/extensions/ui/flowgraph/editor_api_luaintf')(M)
 local gui_module = require("ge/extensions/editor/api/gui")
 local gui = {setupEditorGuiTheme = nop}
 local imgui = ui_imgui
 local imu = require('ui/imguiUtils')
-local utils = require("multiplayer.ui.utils")
+local utils = require("beammp.ui.utils")
 local configLoaded = false
+
+-- a temp vector only works once in the same function call
+-- if more vectors are needed, for example like im.function(pos1, pos2), then a tempVec2/4 would need to be created for each field
+
+local tempVec2 = imgui.ImVec2(0,0)
+local function useTempVec2(x,y)
+  tempVec2.x = x
+  tempVec2.y = y
+  return tempVec2
+end
+
+local tempVec4 = imgui.ImVec4(0,0,0,0)
+local function useTempVec4(x,y,z,w)
+  tempVec4.x = x
+  tempVec4.y = y
+  tempVec4.z = z
+  tempVec4.w = w
+  return tempVec4
+end
 
 M.uiIcons = {
     settings = 0,
@@ -140,14 +159,14 @@ local function updatePlayersList(data)
 		table.insert(playerListData, {name = p, formatted_name = username, color = color, id = id})
 	end
 	if not MPCoreNetwork.isMPSession() or tableIsEmpty(players) then return end
-	guihooks.trigger("playerList", jsonEncode(playerListData))
-	guihooks.trigger("playerPings", jsonEncode(pings))
+	guihooks.trigger("onBeamMPPlayerList", jsonEncode(playerListData))
+	guihooks.trigger("onBeamMPPlayerPings", jsonEncode(pings))
 	playerListWindow.updatePlayerList(pings) -- Send pings because this is a key-value table that contains name and the ping
 end
 
 --- Used to tell the Ui of new status for the updates queue.
 local function sendQueue() -- sends queue to UI
-	guihooks.trigger("setQueue", UIqueue)
+	guihooks.trigger("onBeamMPSetQueue", UIqueue)
 end
 
 --- This function is used to update the edit/spawn queue values for the UI indicator.
@@ -166,6 +185,26 @@ local function updateQueue( spawnCount, editCount, queuedPlayers)
 
 	UIqueue = {spawnCount = spawnCount, editCount = editCount, queuedPlayers = queuedPlayersJS}
 	UIqueue.show = spawnCount+editCount > 0
+
+	if UIqueue.show then
+		--log('D', 'queueNotification', 'Creating queue message')
+		ui_message({
+				txt = "ui.beammp.queuedEvents",
+				context = {count = (UIqueue.spawnCount or 0) + (UIqueue.editCount or 0)}
+			},
+			60,
+			"queuedEvents",
+			"carClock"
+		)
+	else
+		--log('D', 'queueNotification', 'Deleting queue message')
+		-- ui_message() doesn't support clearing message categories
+		guihooks.trigger('Message', {
+			category = 'queuedEvents',
+			clear = true
+		})
+	end
+	
 	sendQueue()
 end
 
@@ -173,7 +212,7 @@ end
 -- @param ping number
 local function setPing(ping)
 	if tonumber(ping) < 0 then return end -- not connected
-	guihooks.trigger("setPing", ""..ping.." ms")
+	guihooks.trigger("onBeamMPSetPing", tostring(ping))
 	pings[MPConfig.getNickname()] = ping
 end
 
@@ -182,7 +221,7 @@ end
 -- Useful in determining who we are 
 -- @param name any
 local function setNickname(name)
-	guihooks.trigger("setNickname", name)
+	guihooks.trigger("onBeamMPSetNickname", name)
 end
 
 
@@ -191,7 +230,7 @@ end
 -- @param serverName string
 local function setServerName(serverName)
 	serverName = serverName or (MPCoreNetwork.getCurrentServer() and MPCoreNetwork.getCurrentServer().name)
-	guihooks.trigger("setServerName", serverName)
+	guihooks.trigger("onBeamMPSetServerName", serverName)
 end
 
 
@@ -199,7 +238,7 @@ end
 -- This is set as part of the joining process automatically and is updated during the session
 -- @param playerCount string
 local function setPlayerCount(playerCount)
-	guihooks.trigger("setPlayerCount", playerCount)
+	guihooks.trigger("onBeamMPSetPlayerCount", playerCount)
 end
 
 
@@ -229,43 +268,45 @@ end
 -- -------------------------------------------------------------
 
 --- Render the IMGUI chat window and playerlist windows + the settings for them.
-local function renderWindow()
+local function renderWindow(dtRaw)
     if not configLoaded then return end
 
-    imgui.PushStyleVar2(imgui.StyleVar_WindowMinSize, (collapsed and imgui.ImVec2(lastSize.x, 20)) or M.windowMinSize)
+    imgui.PushStyleVar2(imgui.StyleVar_WindowMinSize, (collapsed and useTempVec2(lastSize.x, 20)) or M.windowMinSize)
 
     imgui.PushStyleVar2(imgui.StyleVar_WindowPadding, M.windowPadding)
     imgui.PushStyleVar1(imgui.StyleVar_WindowBorderSize, 0)
 
-    imgui.PushStyleColor2(imgui.Col_WindowBg, imgui.ImVec4(M.settings.colors.windowBackground.x, M.settings.colors.windowBackground.y, M.settings.colors.windowBackground.z, windowOpacity))
-    imgui.PushStyleColor2(imgui.Col_CheckMark, imgui.ImVec4(M.settings.colors.buttonActive.x, M.settings.colors.buttonActive.y, M.settings.colors.buttonActive.z, windowOpacity))
+    imgui.PushStyleColor2(imgui.Col_WindowBg, useTempVec4(M.settings.colors.windowBackground.x, M.settings.colors.windowBackground.y, M.settings.colors.windowBackground.z, windowOpacity))
+    imgui.PushStyleColor2(imgui.Col_CheckMark, useTempVec4(M.settings.colors.buttonActive.x, M.settings.colors.buttonActive.y, M.settings.colors.buttonActive.z, windowOpacity))
 
-    imgui.PushStyleColor2(imgui.Col_Button, imgui.ImVec4(M.settings.colors.buttonBackground.x, M.settings.colors.buttonBackground.y, M.settings.colors.buttonBackground.z, windowOpacity))
-    imgui.PushStyleColor2(imgui.Col_ButtonHovered, imgui.ImVec4(M.settings.colors.buttonHovered.x, M.settings.colors.buttonHovered.y, M.settings.colors.buttonHovered.z, windowOpacity))
-    imgui.PushStyleColor2(imgui.Col_ButtonActive, imgui.ImVec4(M.settings.colors.buttonActive.x, M.settings.colors.buttonActive.y, M.settings.colors.buttonActive.z, windowOpacity))
+    imgui.PushStyleColor2(imgui.Col_Button, useTempVec4(M.settings.colors.buttonBackground.x, M.settings.colors.buttonBackground.y, M.settings.colors.buttonBackground.z, windowOpacity))
+    imgui.PushStyleColor2(imgui.Col_ButtonHovered, useTempVec4(M.settings.colors.buttonHovered.x, M.settings.colors.buttonHovered.y, M.settings.colors.buttonHovered.z, windowOpacity))
+    imgui.PushStyleColor2(imgui.Col_ButtonActive, useTempVec4(M.settings.colors.buttonActive.x, M.settings.colors.buttonActive.y, M.settings.colors.buttonActive.z, windowOpacity))
 
-    imgui.PushStyleColor2(imgui.Col_Text, imgui.ImVec4(M.settings.colors.textColor.x, M.settings.colors.textColor.y, M.settings.colors.textColor.z, windowOpacity))
+    imgui.PushStyleColor2(imgui.Col_Text, useTempVec4(M.settings.colors.textColor.x, M.settings.colors.textColor.y, M.settings.colors.textColor.z, windowOpacity))
 
-    imgui.PushStyleColor2(imgui.Col_ResizeGrip, imgui.ImVec4(M.settings.colors.primaryColor.x, M.settings.colors.primaryColor.y, M.settings.colors.primaryColor.z, windowOpacity))
-    imgui.PushStyleColor2(imgui.Col_ResizeGripHovered, imgui.ImVec4(M.settings.colors.secondaryColor.x, M.settings.colors.secondaryColor.y, M.settings.colors.secondaryColor.z, windowOpacity))
-    imgui.PushStyleColor2(imgui.Col_ResizeGripActive, imgui.ImVec4(M.settings.colors.secondaryColor.x, M.settings.colors.secondaryColor.y, M.settings.colors.secondaryColor.z, windowOpacity))
+    imgui.PushStyleColor2(imgui.Col_ResizeGrip, useTempVec4(M.settings.colors.primaryColor.x, M.settings.colors.primaryColor.y, M.settings.colors.primaryColor.z, windowOpacity))
+    imgui.PushStyleColor2(imgui.Col_ResizeGripHovered, useTempVec4(M.settings.colors.secondaryColor.x, M.settings.colors.secondaryColor.y, M.settings.colors.secondaryColor.z, windowOpacity))
+    imgui.PushStyleColor2(imgui.Col_ResizeGripActive, useTempVec4(M.settings.colors.secondaryColor.x, M.settings.colors.secondaryColor.y, M.settings.colors.secondaryColor.z, windowOpacity))
 
-    imgui.PushStyleColor2(imgui.Col_Separator, imgui.ImVec4(M.settings.colors.secondaryColor.x, M.settings.colors.secondaryColor.y, M.settings.colors.secondaryColor.z, windowOpacity))
-    imgui.PushStyleColor2(imgui.Col_SeparatorHovered, imgui.ImVec4(M.settings.colors.secondaryColor.x, M.settings.colors.secondaryColor.y, M.settings.colors.secondaryColor.z, windowOpacity))
-    imgui.PushStyleColor2(imgui.Col_SeparatorActive, imgui.ImVec4(M.settings.colors.secondaryColor.x, M.settings.colors.secondaryColor.y, M.settings.colors.secondaryColor.z, windowOpacity))
+    imgui.PushStyleColor2(imgui.Col_Separator, useTempVec4(M.settings.colors.secondaryColor.x, M.settings.colors.secondaryColor.y, M.settings.colors.secondaryColor.z, windowOpacity))
+    imgui.PushStyleColor2(imgui.Col_SeparatorHovered, useTempVec4(M.settings.colors.secondaryColor.x, M.settings.colors.secondaryColor.y, M.settings.colors.secondaryColor.z, windowOpacity))
+    imgui.PushStyleColor2(imgui.Col_SeparatorActive, useTempVec4(M.settings.colors.secondaryColor.x, M.settings.colors.secondaryColor.y, M.settings.colors.secondaryColor.z, windowOpacity))
 
-    imgui.PushStyleColor2(imgui.Col_ScrollbarBg, imgui.ImVec4(M.settings.colors.primaryColor.x, M.settings.colors.primaryColor.y, M.settings.colors.primaryColor.z, windowOpacity))
-    imgui.PushStyleColor2(imgui.Col_ScrollbarGrab, imgui.ImVec4(M.settings.colors.secondaryColor.x, M.settings.colors.secondaryColor.y, M.settings.colors.secondaryColor.z, windowOpacity))
-    imgui.PushStyleColor2(imgui.Col_ScrollbarGrabHovered, imgui.ImVec4(M.settings.colors.secondaryColor.x, M.settings.colors.secondaryColor.y, M.settings.colors.secondaryColor.z, windowOpacity))
-    imgui.PushStyleColor2(imgui.Col_ScrollbarGrabActive, imgui.ImVec4(M.settings.colors.secondaryColor.x, M.settings.colors.secondaryColor.y, M.settings.colors.secondaryColor.z, windowOpacity))
+    imgui.PushStyleColor2(imgui.Col_ScrollbarBg, useTempVec4(M.settings.colors.primaryColor.x, M.settings.colors.primaryColor.y, M.settings.colors.primaryColor.z, windowOpacity))
+    imgui.PushStyleColor2(imgui.Col_ScrollbarGrab, useTempVec4(M.settings.colors.secondaryColor.x, M.settings.colors.secondaryColor.y, M.settings.colors.secondaryColor.z, windowOpacity))
+    imgui.PushStyleColor2(imgui.Col_ScrollbarGrabHovered, useTempVec4(M.settings.colors.secondaryColor.x, M.settings.colors.secondaryColor.y, M.settings.colors.secondaryColor.z, windowOpacity))
+    imgui.PushStyleColor2(imgui.Col_ScrollbarGrabActive, useTempVec4(M.settings.colors.secondaryColor.x, M.settings.colors.secondaryColor.y, M.settings.colors.secondaryColor.z, windowOpacity))
 
     if collapsed then
-        imgui.SetNextWindowSize(imgui.ImVec2(lastSize.x, 30))
+        imgui.SetNextWindowSize(useTempVec2(lastSize.x, 30))
     elseif not firstRender then
-        imgui.SetNextWindowSize(imgui.ImVec2(lastSize.x, lastSize.y))
+        imgui.SetNextWindowSize(useTempVec2(lastSize.x, lastSize.y))
     end
 
+
     if imgui.Begin("BeamMP Chat", M.windowOpen, (collapsed and M.windowCollapsedFlags or M.windowFlags)) then
+
         if not collapsed then
             lastSize = imgui.GetWindowSize()
         end
@@ -278,9 +319,9 @@ local function renderWindow()
                 windowOpacity = 0.9
                 fadeTimer = 0
             else
-                fadeTimer = fadeTimer + imgui.GetIO().DeltaTime
+                fadeTimer = fadeTimer + dtRaw --imgui.GetIO().DeltaTime
                 if fadeTimer > M.settings.window.fadeTime then
-                    windowOpacity = windowOpacity - 0.05
+                    windowOpacity = windowOpacity - (dtRaw*2)
                     if windowOpacity < 0 then
                         windowOpacity = 0
                     end
@@ -299,11 +340,12 @@ local function renderWindow()
                 windowTitle = "BeamMP Chat"
             end
         end
-
         -- Titlebar
         imgui.PushStyleVar1(imgui.StyleVar_Alpha, windowOpacity)
-        if imgui.BeginChild1("ChatTitlebar", imgui.ImVec2(0, 30), false) then
-            imgui.SetCursorPosX(imgui.GetStyle().ItemSpacing.x)
+        if windowOpacity >= 0 and imgui.BeginChild1("ChatTitlebar", useTempVec2(0, 30), false) then
+
+            local ItemSpaceX = imgui.GetStyle().ItemSpacing.x
+            imgui.SetCursorPosX(ItemSpaceX)
             if currentWindow ~= windows.chat then
                 local oldPosY = imgui.GetCursorPosY()
                 imgui.SetCursorPosY(imgui.GetCursorPosY() + 4)
@@ -311,12 +353,11 @@ local function renderWindow()
                     currentWindow = windows.chat
                 end
                 imgui.SameLine()
-                imgui.SetCursorPosX(imgui.GetStyle().ItemSpacing.x + 20)
+                imgui.SetCursorPosX(ItemSpaceX + 20)
                 imgui.SetCursorPosY(oldPosY)
             end
 
             imgui.Text(windowTitle)
-
             -- Collapsed
             imgui.SameLine()
             imgui.SetCursorPosX(imgui.GetWindowWidth() - 60)
@@ -346,11 +387,9 @@ local function renderWindow()
                 windowTitle = "BeamMP Chat (Options)"
             end
         end
-        -- 0.39 imgui: EndChild/End must be called UNCONDITIONALLY (regardless of Begin*'s return),
-        -- matching upstream's 0.39-compat restructure. Render moved out of the titlebar child scope.
         imgui.EndChild()
 
-        if not collapsed then
+        if not collapsed and windowOpacity >= 0 then
             currentWindow.render()
         end
         imgui.PopStyleVar()
@@ -623,7 +662,7 @@ end
 --- onUpdate is a game eventloop function. It is called each frame by the game engine.
 -- This is the main processing thread of BeamMP in the game
 -- @param dt float
-local function onUpdate(dt)
+local function onUpdate(dtReal,dtSim,dtRaw) -- 4.22 signature (renderWindow takes dtRaw)
     -- The map picker is its own popup and must render regardless of the imgui-chat setting,
     -- but still only in a live session with the imgui context ready. Guarded so a UI hiccup
     -- can't break the frame.
@@ -632,7 +671,7 @@ local function onUpdate(dt)
         if not ok then log('E', 'renderMapPicker', tostring(err)); M.mapPickerOpen = false end
     end
     if worldReadyState ~= 2 or not settings.getValue("enableNewChatMenu") or not initialized or not M.canRender or MPCoreNetwork and not MPCoreNetwork.isMPSession() then return end
-    renderWindow()
+    renderWindow(dtRaw)
 end
 
 local customPlayerlistButtons = {
@@ -652,17 +691,48 @@ end
 setmetatable(customPlayerlistButtons, {
     __index = function(table, key, value)
         rawset(table, key, value)
-        guihooks.trigger("updateCustomButtons", getCustomButtonNames())
+        guihooks.trigger("onBeamMPUpdateCustomButtons", getCustomButtonNames())
     end,
     __newindex = function(table, key, value)
         rawset(table, key, value)
-        guihooks.trigger("updateCustomButtons", getCustomButtonNames())
+        guihooks.trigger("onBeamMPUpdateCustomButtons", getCustomButtonNames())
     end
 })
 
 local function getCustomPlayerlistButtons()
     return customPlayerlistButtons
 end
+
+
+local pauseMenuModButtons = {}
+
+local function getPauseMenuModButtons()
+	return pauseMenuModButtons
+end
+
+-- Send the list of pause menu mod buttons to UI
+local function sendPauseMenuModButtons()
+	guihooks.trigger('onBeamMPPauseMenuModButtons', pauseMenuModButtons)
+end
+
+local function pushPauseMenuModButton(id, data)
+	pauseMenuModButtons[id] = {
+		text = data.text,
+		lua = data.lua,
+		classList = data.classList
+	}
+	sendPauseMenuModButtons()
+end
+
+local function popPauseMenuModButton(id)
+	pauseMenuModButtons[id] = nil
+	sendPauseMenuModButtons()
+end
+
+local function clearPauseMenuModButtons()
+	pauseMenuModButtons = {}
+end
+
 
 M.updateLoading = updateLoading
 M.promptAutoJoinConfirmation = promptAutoJoinConfirmation
@@ -680,6 +750,12 @@ M.sendQueue = sendQueue
 M.showMdDialog = showMdDialog
 M.getCustomPlayerlistButtons = getCustomPlayerlistButtons
 M.getCustomButtonNames = getCustomButtonNames
+
+M.getPauseMenuModButtons = getPauseMenuModButtons
+M.sendPauseMenuModButtons = sendPauseMenuModButtons
+M.pushPauseMenuModButton = pushPauseMenuModButton
+M.popPauseMenuModButton = popPauseMenuModButton
+M.clearPauseMenuModButtons = clearPauseMenuModButtons
 
 M.bringToFront = bringToFront
 M.toggleChat = toggleChat

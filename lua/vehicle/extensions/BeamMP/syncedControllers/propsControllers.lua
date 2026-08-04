@@ -300,7 +300,7 @@ local function loadFunctions()
     end
 end
 
-M.loadControllerSyncFunctions = loadFunctions
+M.onBeamMPLoadControllerSyncFunctions = loadFunctions
 M.onReset = onReset
 M.updateGFX = updateGFX
 

@@ -2,11 +2,11 @@
 -- Licensed under AGPL-3.0 (or later), see <https://www.gnu.org/licenses/>.
 -- SPDX-License-Identifier: AGPL-3.0-or-later
 
---- multiplayer_multiplayer API.
+--- beammp_multiplayer API.
 --- Author of this documentation is Titch
---- @module multiplayer_multiplayer
+--- @module beammp_multiplayer
 --- @usage modifiedGetDriverData(veh) -- internal access
---- @usage multiplayer_multiplayer.onWorldReadyState(1) -- external access
+--- @usage beammp_multiplayer.onWorldReadyState(1) -- external access
 
 local M = {state={}}
 
@@ -204,13 +204,11 @@ local function onWorldReadyState(state)
 	log('W', 'onWorldReadyState', state)
 	if state == 2 then
 		if MPCoreNetwork and MPCoreNetwork.isMPSession() then
-			log('M', 'onWorldReadyState', 'Setting game state to multiplayer.')
-			-- 0.39: the app layout was renamed 'beammp' in upstream 4.22 (we ship
-			-- beammp.uilayout.json); the old 'multiplayer' layout no longer resolves on
-			-- 0.39, which left the MAIN MENU overlay up after joining with no vehicle.
-			core_gamestate.setGameState('multiplayer', 'beammp', 'multiplayer')
+			log('M', 'onWorldReadyState', 'Setting game state to BeamMP multiplayer.')
 			local spawnDefaultGroups = { "CameraSpawnPoints", "PlayerSpawnPoints", "PlayerDropPoints", "spawnpoints" }
-
+			if not commands.isFreeCamera() then
+				commands.setFreeCamera()
+			end
 			for i, v in pairs(spawnDefaultGroups) do
 				if scenetree.findObject(spawnDefaultGroups[i]) then
 					local spawngroupPoint = scenetree.findObject(spawnDefaultGroups[i]):getRandom()
@@ -244,8 +242,8 @@ M.onUpdate          = onUpdate
 M.onWorldReadyState = onWorldReadyState
 M.onBigMapActivated = onBigMapActivated
 M.onDeactivateBigMapCallback = onDeactivateBigMapCallback
-M.runPostJoin = runPostJoin
-M.onServerLeave = onServerLeave
+M.onBeamMPPostJoin = runPostJoin
+M.onBeamMPServerLeave = onServerLeave
 M.onInit = function() setExtensionUnloadMode(M, "manual") end
 
 return M

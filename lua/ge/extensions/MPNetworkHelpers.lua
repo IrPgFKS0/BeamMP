@@ -1,5 +1,8 @@
 local M = {}
 
+local stringBuffer = require("string.buffer")
+local sendStringBuff = stringBuffer.new()
+
 local ffi = require("ffi")
 
 --- Receives a packet from the launcher, prefixed with a 4-byte binary header. Handles errors and partial receives.
@@ -81,13 +84,26 @@ M.receive = function(launcherSocket, recvState)
 			recvState.state = 'error'
 			return recvState
 		end
-		-- finally received everything (the remaining bytes are in fullBody, NOT partialBody --
-		-- appending (partialBody or "") here silently dropped the tail and truncated the packet)
-		recvState.data = recvState.data..fullBody
+		-- finally received everything
+		recvState.data = recvState.data..(fullBody or "")
 		recvState.missing = 0
 		recvState.state = 'ready'
 	end
 	return recvState
 end
+
+local function generatePacketBuffer(packetType,serverVehicleID,data)
+	sendStringBuff:reset()
+	sendStringBuff:put(packetType)
+	if serverVehicleID then
+		sendStringBuff:put(":",serverVehicleID)
+	end
+	if data then
+		sendStringBuff:put(":",data) -- delete packets doesn't include data
+	end
+	return sendStringBuff
+end
+
+M.generatePacketBuffer = generatePacketBuffer
 
 return M

@@ -2,11 +2,11 @@
 -- Licensed under AGPL-3.0 (or later), see <https://www.gnu.org/licenses/>.
 -- SPDX-License-Identifier: AGPL-3.0-or-later
 
---- multiplayer_ui_utils API.
+--- beammp_ui_utils API.
 --- Author of this documentation is Titch
---- @module multiplayer_ui_utils
+--- @module beammp_ui_utils
 --- @usage copyTable(t) -- internal access
---- @usage multiplayer_ui_utils.imageButton(texID, size, color, activeColor, hoveredColor) -- external access
+--- @usage beammp_ui_utils.imageButton(texID, size, color, activeColor, hoveredColor) -- external access
 
 local M = {}
 
@@ -27,9 +27,9 @@ local buttonSize = imgui.ImVec2(1, 1)
 --- @return boolean Returns true if the button was clicked, false otherwise.
 M.imageButton = function(texID, size, color, activeColor, hoveredColor)
     --local colors = imgui.GetStyle()[1].Colors
-    color = color or imgui.GetStyleColorVec4(imgui.Col_Button)
-    activeColor = activeColor or imgui.GetStyleColorVec4(imgui.Col_ButtonActive)
-    hoveredColor = hoveredColor or imgui.GetStyleColorVec4(imgui.Col_ButtonHovered)
+    color = color or Col_Button
+    activeColor = activeColor or Col_ButtonActive
+    hoveredColor = hoveredColor or Col_ButtonHovered
 
     -- Remove background
     imgui.PushStyleColor2(imgui.Col_Button, ImVec4Zero)
