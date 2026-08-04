@@ -3209,7 +3209,6 @@ local function onSettingsChanged()
 	--
 	--	settingsCache[k]  = ColorF(table.unpack(p))
 	--end
-	initColors()
 end
 
 -- LAN/MP: draw an edge-of-minimap arrow pointing toward each real (human) remote
