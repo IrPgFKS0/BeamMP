@@ -278,7 +278,7 @@ runs as a normal child process and other players join over the LAN as usual.
 
 1. Put these together in your server folder (the one with `ServerConfig.toml` +
    `Resources/`): `BeamMP-Combined.exe`, `BeamMP.zip`, and the two scripts from the
-   repo's [`host/`](host/) folder — `start-server.bat` and `pin-cores.ps1`.
+   repo's [`host/`](../../tools/host/) folder — `start-server.bat` and `pin-cores.ps1`.
 2. Run **`start-server.bat`**. It launches `BeamMP-Combined.exe --combined` and a
    CPU-pinning helper (see below). The host's BeamNG starts automatically.
 3. Other players: put `BeamMP.zip` next to *their* launcher, run it, and
@@ -288,7 +288,7 @@ runs as a normal child process and other players join over the LAN as usual.
 > waits for the real `BeamNG.drive.x64` process, pins the **game** to the low cores,
 > and **reserves the top core(s)** for the in-process relay/bridge so they stop
 > time-slicing against the game's physics threads. Tune `$Reserve` in that script
-> (default 2; 1 on a small CPU). See [`host/README.md`](host/README.md) and the
+> (default 2; 1 on a small CPU). See [`host/README.md`](../../tools/host/README.md) and the
 > **Combined host** section of [`LAN-TUNING.md`](LAN-TUNING.md). On Linux there's no
 > `.bat`; run `./BeamMP-Launcher --combined` and pin with `taskset` (see `host/README.md`).
 
@@ -571,7 +571,7 @@ Both are native C++, so the Lua profilers above don't apply:
   frame** instead of ~16× per remote vehicle per frame, so that loop's cost no longer
   scales with car count (ported in spirit from Olrosse #838).
 - **`physicsRateSend`** (LAN **default-on**, A/B verified): the position *send* is
-  normally driven once per render frame ([MPUpdatesGE.lua](BeamMP/lua/ge/extensions/MPUpdatesGE.lua), and the
+  normally driven once per render frame ([MPUpdatesGE.lua](../../lua/ge/extensions/MPUpdatesGE.lua), and the
   `(positionTimer - tickrate) % tickrate` line discards backlog), so the real send
   rate is **capped at your FPS** — a machine at 16 fps only emits ~16 updates/s no
   matter your send-rate target. With this on, the owned car emits from the **VE physics
@@ -611,13 +611,13 @@ Both are native C++, so the Lua profilers above don't apply:
   `minimap_lag_workaround`): BeamNG runs `gameplay_markerInteraction.onPreRender` **every
   frame** (mission/POI marker raycasts) — a documented FPS sink in MP that's useless for LAN
   driving (you can't start singleplayer missions in a session anyway). On MP join,
-  [multiplayer.lua](BeamMP/lua/ge/extensions/beammp/multiplayer.lua) swaps that hook for
+  [multiplayer.lua](../../lua/ge/extensions/beammp/multiplayer.lua) swaps that hook for
   `nop` and hides the mission markers; `onServerLeave` restores both. Every engine call is
   guarded (`if gameplay_markerInteraction then`), so it no-ops safely if a BeamNG API change
   renames it. Applied once at join — to A/B it, toggle and rejoin. Toggle off ("Optimize map
   markers") only if you specifically want vanilla freeroam markers in MP.
 - **Electrics sync is already optimized** (checked against Olrosse `electrics_cleanup`): our
-  [MPElectricsVE.lua](BeamMP/lua/vehicle/extensions/BeamMP/MPElectricsVE.lua) already rounds every
+  [MPElectricsVE.lua](../../lua/vehicle/extensions/BeamMP/MPElectricsVE.lua) already rounds every
   numeric electric (`round2(val, 4)`), sends **only changed** values (diff), and excludes
   ESC/TCS/brake-glow/filament keys — so there was nothing to port. (Could round more aggressively
   than 4 dp to cut sends further, but that risks visible gauge quantization, so only with measurement.)

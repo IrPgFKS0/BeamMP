@@ -151,7 +151,7 @@ relay has a hard throughput ceiling.
 ### Why the relay caps at ~150 pkt/s — and why raising the send rate backfires
 
 The server (and the combined host's embedded server) relays every client's position stream on **a
-single thread**. `UDPServerMain` (`BeamMP-Server/src/Network/TNetwork.cpp`) loops: `recvfrom()` one
+single thread**. `UDPServerMain` (`BeamMP-Server/src/TNetwork.cpp`) loops: `recvfrom()` one
 packet → linear-scan the client list under a read-lock to find the sender → hand it to `GlobalParser`,
 which **fans the packet out to every *other* client** (one `send_to` each). So every inbound packet
 costs one receive + an **O(players)** locked lookup + **O(players)** sends, all serialized on that one
