@@ -1,17 +1,20 @@
 # BeamMP LAN fork — release downloads
 
-**Current release: `BeamMP-LAN-p13h80.zip`** (mod `4.22.0-LAN p13h80`, combined host exe `p13h35`, **for BeamNG 0.39**,
-Windows + Linux x86-64).
+**Current release: `BeamMP-LAN-p13h86.zip`** (mod `4.22.1-LAN p13h86`, combined host exe `p13h36`, **for BeamNG 0.39.x**
+(validated on 0.39.4), Windows + Linux x86-64).
 
 | File | sha256 |
 |---|---|
-| `BeamMP-LAN-p13h80.zip` | `3F4294EA1ADDE9CBF88932A636ED7D0B93F60AAD208B26F4BC43DD324D729716` |
-| `BeamMP-LAN-p13h78.zip` (previous 0.39 build) | `20AA704465855AC989E49328303EF4EE28C056E43EE2E5B26D97843A54559F39` |
+| `BeamMP-LAN-p13h86.zip` | `E3FFFCC6ED3B934C19358A0D66004787C1BD458596E6E7E5D827CABD28C6C85D` |
+| `BeamMP-LAN-p13h80.zip` (previous 0.39 build) | `3F4294EA1ADDE9CBF88932A636ED7D0B93F60AAD208B26F4BC43DD324D729716` |
 | `BeamMP-LAN-p13h57.zip` (0.38 ROLLBACK — tag `lan-0.38-last-good`) | `1B1673CEA703FECC5D5CEB1B594812916E15EEB03BFC8F9DE17F9DC7808B851B` |
 
-The exes are **identical since p13h61** (`p13h35`) — p13h62-80 are mod-only. An existing host can
-drop in just the new `BeamMP.zip`. (Superseded zips p13h61/65/66/67/68 were removed from this folder; all `lan-release-*` tags
-remain for source reference.)
+**The exe CHANGED in this release** (`p13h35` → `p13h36`): update `BeamMP.zip` **and** the
+`BeamMP-Combined` executable on every machine (p13h62–80 were mod-only; p13h86 is not).
+p13h86's mod sha256 is `012C850F94DFBD3E758ECCA753AC226E617287CCFD5A0BE5CA9FA48548BA40C0`.
+If you ran any p13h82–p13h85 build: those reject every remote position packet in multiplayer
+(remote cars frozen) — update to p13h86. (Superseded zips p13h61/65/66/67/68/78 were removed from
+this folder; all `lan-release-*` tags remain for source reference.)
 
 The zip contains:
 
@@ -34,7 +37,7 @@ Everyone in a session should run the matching `BeamMP.zip` **and** matching exe 
 
 Binaries are built from the `lan` branches of this repo and the companion repos
 ([BeamMP-Launcher](https://github.com/IrPgFKS0/BeamMP-Launcher),
-[BeamMP-Server](https://github.com/IrPgFKS0/BeamMP-Server)) at tag `lan-release-p13h80`
+[BeamMP-Server](https://github.com/IrPgFKS0/BeamMP-Server)) at tag `lan-release-p13h86`
 (AGPL-3.0-or-later — complete corresponding source at those tags).
 
 > Note: each release adds a ~50 MB zip to this repo's history. If that ever gets heavy,

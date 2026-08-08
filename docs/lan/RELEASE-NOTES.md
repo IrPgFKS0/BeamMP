@@ -1,6 +1,6 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.22.0-LAN p13h80` · combined host exe `p13h35` (Windows + Linux) · **for BeamNG 0.39**
+**Build:** mod `4.22.1-LAN p13h86` · combined host exe `p13h36` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -44,6 +44,33 @@ a little tuning (see `LAN-TUNING.md`).
   cores so the relay/bridge keep up), and in-game **Save all logs (zip)** for support.
 
 ## This release
+
+- **Full upstream sync (p13h82).** The fork is now merged with upstream BeamMP `development`
+  4.22.1 — a real 3-way merge (181 commits) instead of cherry-picks. What it brings: server-name
+  color codes + hover marquee in the server list, a multiplayer entry in the in-game top bar's
+  pause menu, the new Vue chat + player-list HUD apps alongside the classic ones, real French and
+  Chinese translations plus new Turkish, the stock MP settings registered from
+  `settings/mp_defaults.json` with proper defaults (nametag fade, hide-behind-objects,
+  license-plate-shows-name, player IDs), string-buffer packet building, and per-player
+  vehicle-object caches in the sync tick loops. Every LAN feature was preserved.
+- **Critical 2-player sync fix (p13h86).** A seam in that merge made the client reject EVERY
+  remote position packet as malformed on the default path — remote cars sat frozen for the whole
+  session (13,963 rejected packets in one real log). The receive path now hands the decoded
+  packet to the fork's apply function. If you run any p13h82–p13h85 build, update.
+- **Nametag distance separator restored (p13h85).** Names rendered as `Caden42 m` after the
+  merge (upstream's distance strings moved their separator); the space is back in all four unit
+  branches (m / km / ft / mi).
+- **Lost-spawn self-heal (p13h81).** A remote car whose spawn event never arrived used to become
+  a permanent magenta ball; the next edit for it now synthesizes the missed spawn (same payload
+  family), and both the husk and the fallback blob log loudly so a recurrence is attributable.
+  Joining with no car no longer leaves the main-menu overlay up.
+- **BeamNG 0.39.4 ready (p13h84).** The options-page override is rebuilt on 0.39.4's layout
+  (the game retired its old apply-display button), verified against a real 0.39.4 boot + join:
+  API self-check 14/14, zero MP errors. (0.39.4 itself also fixes the radial-menu spawn-police
+  bug.) The combined host now always reports which mod build is installed, with hash + size
+  (p13h83/exe p13h36).
+
+## Previous release (p13h80)
 
 - **Version badge polish (p13h79-p13h80).** The bottom-bar BeamMP badge reappears
   near-instantly after opening the pause menu, and never shows a placeholder while the version
