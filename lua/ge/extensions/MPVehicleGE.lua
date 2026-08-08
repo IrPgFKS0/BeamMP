@@ -2985,7 +2985,6 @@ local function onPreRender(dt)
 
 				local dist = ""
 				if distfloat > 10 and sNameTagShowDistance then
-					local unit
 					local mapEntry = distfloat
 					if sImperial then
 						mapEntry = mapEntry * 3.28084
@@ -3059,7 +3058,8 @@ local function onPreRender(dt)
 				end
 				-- draw main nametag (#838: cached String unless a distance suffix is shown)
 				local tagText = v.nameTag
-				if dist ~= "" then tagText = String(" " .. v.nameTagBody .. dist .. " ") end
+				-- dist is trailing-space format ("42 m ") since 4.22.1, so the separator before it is ours to add
+				if dist ~= "" then tagText = String(" " .. v.nameTagBody .. " " .. dist) end
 				drawTextAdvanced(
 					pos.x, pos.y, pos.z, -- Location
 					tagText, -- Text
