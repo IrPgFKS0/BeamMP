@@ -389,10 +389,14 @@ local function handle(rawData)
 		local decoded = jsonDecode(data)
 		if not decoded then return end -- malformed/truncated packet: don't nil-crash applyPos/smoothPosExec
 		if settings.getValue("enablePosSmoother") then
-			local decoded = jsonDecode(data)
 			smoothPosExec(serverVehicleID, decoded)
 		else
-			applyPos(data, serverVehicleID)
+			-- MUST be the decoded TABLE: this fork's applyPos takes the decoded packet (upstream's
+			-- takes the raw string -- the 4.22.1 merge left upstream's string-passing call here,
+			-- so applyPos saw string.pos == nil and rejected EVERY remote position as 'malformed
+			-- pose'; remote cars froze for the whole session. Single-machine gates can't catch
+			-- this -- only a 2-player session exercises this line).
+			applyPos(decoded, serverVehicleID)
 		end
 	else
 		log('W', 'handle', "Received unknown packet '"..tostring(code).."'! ".. rawData)
