@@ -10,13 +10,13 @@
         <label class="field field-address">
           <span>{{ $tt("ui.beammp.serverBrowser.serverIp") }}</span>
           <div class="input-shell">
-            <span class="field-prefix">IP</span>
-            <input
+			<span class="field-prefix">IP</span>
+            <BngInput
               v-model.trim="ip"
+			  class="direct-input"
               type="text"
-              autocomplete="off"
-              spellcheck="false"
               placeholder="127.0.0.1"
+              :show-external-button="false"
             />
           </div>
         </label>
@@ -24,13 +24,14 @@
         <label class="field field-port">
           <span>{{ $tt("ui.beammp.serverBrowser.serverPort") }}</span>
           <div class="input-shell">
-            <span class="field-prefix">:</span>
-            <input
+			<span class="field-prefix">:</span>
+            <BngInput
               v-model.trim="port"
               type="text"
               inputmode="numeric"
               autocomplete="off"
               placeholder="30814"
+              :show-external-button="false"
             />
           </div>
         </label>
@@ -64,7 +65,7 @@
 
 <script setup>
 import { ref, watch } from "vue"
-import { BngButton } from "@/common/components/base"
+import { BngButton, BngInput } from "@/common/components/base" // 4.22 #926: BngInput for the fixed Direct Connect input boxes
 import { useBeamMPState } from "../shared/beammpState.js"
 
 const ip = ref("")
@@ -180,19 +181,8 @@ async function favorite() {
     box-shadow: 0 0 0 0.13rem rgba(var(--bng-orange-500-rgb), 0.32);
   }
 
-  input {
-    flex: 1;
-    min-width: 0;
-    border: 0;
-    outline: 0;
-    padding: 0.55rem 0.7rem;
-    color: var(--bng-off-white);
-    background: transparent;
-    font: inherit;
-
-    &::placeholder {
-      color: var(--bng-cool-gray-400);
-    }
+  .direct-input {
+	width: 100%;
   }
 }
 
