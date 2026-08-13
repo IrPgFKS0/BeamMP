@@ -47,5 +47,11 @@
   "highlightQueuedPlayers"      : [ "local", true  ],
   "playerlistLeftclick"         : [ "cloud", 0 ],
   "useUiAppRedesign"            : [ "cloud", false ],
-  "refreshIngame"               : [ "local", false ]
+  "refreshIngame"               : [ "local", false ],
+  "fadeVehicles"                : [ "cloud", false ],
+  "hideNameTags"                : [ "cloud", false ],
+  "nameTagDontFullyHide"        : [ "cloud", false ],
+  "nameTagFadeInvert"           : [ "cloud", false ],
+  "shortenNametags"             : [ "cloud", false ],
+  "spectatorUnifiedColors"      : [ "cloud", false ]
 }
