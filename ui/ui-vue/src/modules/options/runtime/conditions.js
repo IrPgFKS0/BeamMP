@@ -30,7 +30,7 @@ export default function (deps) {
       return values.userLanguageSelected !== values.languageOS
     },
     richPresenceEnabled(values) {
-      return values.richPresence === "enable"
+      return !!values.richPresence // matches the game 0.39.4 copy: richPresence is a boolean checkbox now ("enable" is the pre-checkbox value -- upstream's copy is stale and permanently disables richPresenceDiscord)
     },
     externalUiEnabled(values) {
       return values.externalUI2 === "enable"
@@ -264,7 +264,7 @@ export default function (deps) {
         return values.showBlobDeleted===true
     },
     beammpNametagsEnabled(values) {
-        return values.hideNametags===false
+        return values.hideNameTags===false // key is hideNameTags (capital T) everywhere it is registered/read -- upstream's lowercase copy made this gate permanently false, disabling the whole nametag options group
     },
     beammpShortenNametagsEnabled(values) {
         return values.shortenNametags===true

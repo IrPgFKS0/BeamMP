@@ -144,6 +144,26 @@ LAN_PRUNE_SETTINGS = {"refreshIngame"}
 #  - playerlistLeftclick "Open player profile" (value 2): opens the online BeamMP
 #    forum, which this fork does not use.
 LAN_PRUNE_DROPDOWN_VALUES = {"playerlistLeftclick": {2}}
+#  - upstream typo fixups, re-applied on every rebuild (reported upstream; harmless once fixed
+#    there): beammpHowBlobIllegal is referenced by their blobColorIllegal group but defined
+#    nowhere -- the defined condition (conditions.js) is beammpShowBlobIllegal.
+LAN_TEXT_FIXUPS = {"beammpHowBlobIllegal": "beammpShowBlobIllegal"}
+
+
+def apply_fixups(node):
+    """Replace known-bad string values anywhere in the layout tree; returns replacements made."""
+    fixed = 0
+    if isinstance(node, dict):
+        for k, v in list(node.items()):
+            if isinstance(v, str) and v in LAN_TEXT_FIXUPS:
+                node[k] = LAN_TEXT_FIXUPS[v]
+                fixed += 1
+            else:
+                fixed += apply_fixups(v)
+    elif isinstance(node, list):
+        for x in node:
+            fixed += apply_fixups(x)
+    return fixed
 
 
 # Upstream #926 split the single "multiplayer" category into a beammp category family:
@@ -222,6 +242,8 @@ def main():
                if str(c.get("categoryId", "")).startswith("beammp"))
     layout["items"].insert(last + 1, lan_category())
 
+    fixed = apply_fixups(layout)
+
     with open(LAYOUT, "w", encoding="utf-8", newline="\n") as f:
         json.dump(layout, f, indent=1, ensure_ascii=False)
         f.write("\n")
@@ -229,7 +251,7 @@ def main():
     fam_n = sum(1 for c in layout["items"] if str(c.get("categoryId", "")).startswith("beammp"))
     print(f"ok: stripped {stripped} previous LAN entries, pruned {pruned} LAN-inappropriate "
           f"upstream entries, inserted the LAN subcategory ({len(LAN_ITEMS)} items); "
-          f"beammp category family now {fam_n} categories")
+          f"beammp category family now {fam_n} categories; {fixed} upstream typo fixup(s)")
     return 0
 
 

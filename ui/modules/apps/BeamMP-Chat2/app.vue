@@ -29,12 +29,15 @@
         >
           {{ sendButtonText }}
         </button>
+		<!-- @enter: BngInput preventDefaults the Enter key (so the form @submit never fires) and
+             emits 'enter' instead -- without this, Enter cannot send (upstream #926's known gap) -->
 		<BngInput
             v-model="inputText"
             class="chat-input"
             type="text"
             :maxlength="500"
             :show-external-button="false"
+            @enter="sendChat"
         />
         <button
 		  id="chat-horizontal-button"

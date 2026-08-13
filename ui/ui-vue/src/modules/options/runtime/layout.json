@@ -4170,7 +4170,7 @@
        "condition_not_shipping": false,
        "condition_simplemenu": "",
        "condition_visible": "",
-       "condition_enabled": "beammpHowBlobIllegal",
+       "condition_enabled": "beammpShowBlobIllegal",
        "itemType": "group",
        "component": "OptionsGroup",
        "layout": "column",
