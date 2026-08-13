@@ -17,8 +17,9 @@ already-committed ones remain in history at their tags).
 `BeamMP-Combined` executable on every machine (p13h62–80 were mod-only; p13h86 is not).
 p13h86's mod sha256 is `012C850F94DFBD3E758ECCA753AC226E617287CCFD5A0BE5CA9FA48548BA40C0`.
 If you ran any p13h82–p13h85 build: those reject every remote position packet in multiplayer
-(remote cars frozen) — update to p13h86. (Superseded zips p13h61/65/66/67/68/78 were removed from
-this folder; all `lan-release-*` tags remain for source reference.)
+(remote cars frozen) — update to p13h86. (Superseded zips and their `lan-release-*` tags were removed 2026-08-13; the only tags kept are
+the three backing published releases -- `lan-release-p13h86`, `lan-release-p13h80` and
+`lan-0.38-last-good` -- which is exactly the set the AGPL source promise needs.)
 
 The zip contains:
 
