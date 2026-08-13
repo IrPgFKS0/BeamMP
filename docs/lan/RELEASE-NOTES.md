@@ -1,6 +1,6 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.22.1-LAN p13h86` · combined host exe `p13h36` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
+**Build:** mod `4.22.1-LAN p13h88` · combined host exe `p13h37` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -45,6 +45,29 @@ a little tuning (see `LAN-TUNING.md`).
 
 ## This release
 
+- **Upstream 0.39-cleanup sync (p13h87).** Merged upstream's #926 and the latest translations:
+  a categorized BeamMP options tab (six sections, with the fork's own settings as a "LAN fork"
+  section at the end), improved pause tab and player-list styling, Chat2 fixes, deduplicated UI
+  assets, and a migration that renames a saved pre-0.39 HUD layout's apps to the new Vue ones.
+- **Five upstream defects fixed before they could bite (p13h87).** An adversarial review of the
+  merge caught issues shipped inside #926 itself: a stale rule that disabled the game's own
+  Discord Rich Presence option game-wide while the mod is mounted; a case typo that grayed out
+  the entire nametag options group; a gate referencing a condition that doesn't exist; Enter no
+  longer sending in the new Chat 2 app; and the login view's logo 404ing every render. All fixed
+  here (and catalogued for reporting upstream).
+- **Nametag/blob settings finally registered (p13h88).** Six options-page settings (hide
+  nametags, fade invert, don't-fully-hide, shorten names, spectator colors, fade vehicles) were
+  never in any defaults registry — so the game's loader could silently drop your saved values at
+  boot, and the new options tab kept the nametag section locked. Registered with proper defaults;
+  the section is editable out of the box.
+- **Launcher: paced connection handshake (exe p13h37).** Upstream #268: the ten UDP registration
+  packets a network client fires at connect are now spaced 10 ms apart, so the server can't miss
+  the whole volley (combined hosts are unaffected; this hardens real LAN clients).
+- **Downloads moved to GitHub Releases.** Release zips are no longer committed to the repo;
+  `dist/README.md` is the checksum ledger with links.
+
+## Previous release (p13h86)
+
 - **Full upstream sync (p13h82).** The fork is now merged with upstream BeamMP `development`
   4.22.1 — a real 3-way merge (181 commits) instead of cherry-picks. What it brings: server-name
   color codes + hover marquee in the server list, a multiplayer entry in the in-game top bar's
@@ -70,7 +93,7 @@ a little tuning (see `LAN-TUNING.md`).
   bug.) The combined host now always reports which mod build is installed, with hash + size
   (p13h83/exe p13h36).
 
-## Previous release (p13h80)
+## Older release (p13h80)
 
 - **Version badge polish (p13h79-p13h80).** The bottom-bar BeamMP badge reappears
   near-instantly after opening the pause menu, and never shows a placeholder while the version
