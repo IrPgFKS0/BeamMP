@@ -146,23 +146,39 @@ LAN_PRUNE_SETTINGS = {"refreshIngame"}
 LAN_PRUNE_DROPDOWN_VALUES = {"playerlistLeftclick": {2}}
 
 
-def main():
-    with open(LAYOUT, encoding="utf-8") as f:
-        layout = json.load(f)
+# Upstream #926 split the single "multiplayer" category into a beammp category family:
+# one main category (categoryId "beammp") plus subcategory:true children (beammpeventqueue,
+# beammpblobs, ..., beammpadvanced). The LAN items now live in their OWN subcategory at the
+# end of that family, and the prunes recurse into nested "group" items (playerlistLeftclick
+# moved inside one).
+LAN_CATEGORY_ID = "beammplan"
 
-    mp = [c for c in layout["items"] if c.get("categoryId") == "multiplayer"]
-    if not mp:
-        print("ERROR: no multiplayer category in layout.json -- re-add upstream's first", file=sys.stderr)
-        return 1
-    mp = mp[0]
 
-    before = len(mp["items"])
-    mp["items"] = [i for i in mp["items"] if i.get("version") != "LAN"]
-    stripped = before - len(mp["items"])
+def lan_category():
+    return {
+        "version": "LAN",  # strip marker: the whole subcategory is LAN-owned
+        "label": "LAN fork",
+        "icon": "settings",
+        "categoryId": LAN_CATEGORY_ID,
+        "subcategory": True,
+        "persistent": False,
+        "spacer": False,
+        "divider": False,
+        "reroute": "",
+        "categoryInfo": "",
+        "condition_always_off": False,
+        "condition_not_shipping": False,
+        "condition_simplemenu": "",
+        "condition_visible": "",
+        "items": list(LAN_ITEMS),
+    }
 
+
+def prune_tree(items):
+    """Remove LAN-pruned settings / dropdown values anywhere in a category's item tree."""
     pruned = 0
     kept = []
-    for i in mp["items"]:
+    for i in items:
         s = i.get("setting")
         if s in LAN_PRUNE_SETTINGS:
             pruned += 1
@@ -172,18 +188,48 @@ def main():
             n = len(i["options"])
             i["options"] = [o for o in i["options"] if o.get("value") not in drop]
             pruned += n - len(i["options"])
+        if isinstance(i.get("items"), list):  # recurse into "group" containers
+            i["items"], sub = prune_tree(i["items"])
+            pruned += sub
         kept.append(i)
-    mp["items"] = kept
+    return kept, pruned
 
-    mp["items"].extend(LAN_ITEMS)
+
+def main():
+    with open(LAYOUT, encoding="utf-8") as f:
+        layout = json.load(f)
+
+    family = [i for i, c in enumerate(layout["items"])
+              if str(c.get("categoryId", "")).startswith("beammp")]
+    if not family:
+        print("ERROR: no beammp category family in layout.json -- re-add upstream's first", file=sys.stderr)
+        return 1
+
+    # idempotence: drop any previous LAN-owned subcategory, then LAN items inside upstream categories
+    before = len(layout["items"])
+    layout["items"] = [c for c in layout["items"] if c.get("version") != "LAN"]
+    stripped = before - len(layout["items"])
+    pruned = 0
+    for c in layout["items"]:
+        if str(c.get("categoryId", "")).startswith("beammp") and isinstance(c.get("items"), list):
+            n = len(c["items"])
+            c["items"] = [i for i in c["items"] if i.get("version") != "LAN"]
+            stripped += n - len(c["items"])
+            c["items"], sub = prune_tree(c["items"])
+            pruned += sub
+
+    last = max(i for i, c in enumerate(layout["items"])
+               if str(c.get("categoryId", "")).startswith("beammp"))
+    layout["items"].insert(last + 1, lan_category())
 
     with open(LAYOUT, "w", encoding="utf-8", newline="\n") as f:
         json.dump(layout, f, indent=1, ensure_ascii=False)
         f.write("\n")
 
-    print(f"ok: stripped {stripped} previous LAN items, pruned {pruned} LAN-inappropriate "
-          f"upstream entries, appended {len(LAN_ITEMS)}; multiplayer category now "
-          f"{len(mp['items'])} items")
+    fam_n = sum(1 for c in layout["items"] if str(c.get("categoryId", "")).startswith("beammp"))
+    print(f"ok: stripped {stripped} previous LAN entries, pruned {pruned} LAN-inappropriate "
+          f"upstream entries, inserted the LAN subcategory ({len(LAN_ITEMS)} items); "
+          f"beammp category family now {fam_n} categories")
     return 0
 
 

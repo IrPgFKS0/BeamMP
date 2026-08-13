@@ -314,7 +314,6 @@ onBeforeUnmount(() => {
   justify-content: flex-end;
   flex-wrap: nowrap;
   gap: 0.55rem;
-  margin-right: 2.75rem;
   max-width: calc(100% - 2.75rem);
 }
 
