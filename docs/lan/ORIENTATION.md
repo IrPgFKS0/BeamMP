@@ -136,6 +136,61 @@ A **BeamMP-Server merge means rebuilding BOTH exes** — the combined host stati
 server as a library, so a server-side fix that is only built into `BeamMP-Server.exe` never reaches
 the machine that actually runs the session.
 
+## Upstream-sync guardrails — do NOT let a merge take these
+
+Every serious regression this fork has shipped came from an upstream sync, and each was a **seam**:
+upstream's half and the fork's half both parse, every syntax check passes, and the break only shows
+at runtime — often only with a second player. Resolve conflicts with this list in hand, and treat
+any upstream change that *touches* one of these areas as guilty until proven innocent.
+
+**Fork-owned surfaces upstream must never overwrite (resolve to OURS, then re-check by hand):**
+- **`positionGE`/`positionVE` receive + predictor path.** The fork's `applyPos` takes the **decoded
+  table**; upstream's takes the raw JSON string. In p13h82 the merge kept upstream's caller with the
+  fork's callee — `string.pos` is nil, so every remote position was rejected as "malformed pose" and
+  remote cars froze all session (13,963 rejections in one log). The fork also does NOT use
+  upstream's `vehPosPckt` VE mailbox path (it has its own `mpPos` mailbox + #245 direct socket +
+  predictor); keeping a second, never-called receive path invites drift — delete it on sight.
+- **The VE-guard convention.** Every GE→VE `queueLuaCommand` must stay wrapped in
+  `if XxxVE then ... end`. Upstream's tick loops are unguarded; re-guard them when adopting.
+- **The nametag/tag-string assembly.** Upstream owns the distance-string *format* (trailing-space
+  since 4.22.1), the fork owns the cached *assembly* — p13h85's `Caden42 m` came from taking their
+  format without re-checking the pairing. When upstream changes any producer whose consumer is
+  fork-owned (string formats, JSON shapes, event payloads), re-verify both halves together.
+- **The Vue menu LAN trims** (no public list/TOS/Patreon/account/metrics), the "Playing as" panel,
+  favorite rename, the Direct Connect name field + `30814` default port, and small fork fixes inside
+  upstream-owned files — upstream edits the same views every release and will silently revert them
+  (#926 reverted the h61 logo-path fix; the merge diff looks like an innocent upstream cleanup).
+  `git diff` the fork's LAN comment markers (`-- LAN:`, `// LAN:`) before and after any merge: a
+  marker that vanished is a fix that got reverted.
+- **The options layout override is NEVER git-merged.** Rebuild it: game layout (current patch) +
+  upstream's beammp category family + `tools/inject_lan_options.py`. The injector also re-applies
+  the LAN prunes — upstream keeps re-adding **`refreshIngame`** to their options UI and it must
+  never come back (it sends the session-killing `B` request) — and `LAN_TEXT_FIXUPS` (known
+  upstream typos, e.g. their `beammpHowBlobIllegal` ghost condition).
+- **`conditions.js` (and any other `ui/ui-vue/src/**` file the mod ships) VFS-shadows the game's
+  copy.** After every game patch AND every upstream sync, diff it against the game's same-path
+  file — upstream shipped a stale `richPresenceEnabled` that disabled a **stock game option**
+  game-wide while the mod was mounted. A shadow file can break the base game, not just the mod.
+- **`modScript.lua`'s version gate stays warn-only.** Upstream hard-deactivates the whole mod on an
+  unexpected game version — that is exactly how MP silently died on a Steam auto-update. Never take
+  their `deactivateMod` branch.
+- **Do not re-take features the fork deliberately removed or rejected:** full deformation sync
+  (removed 2026-07 — CPU-infeasible), the 100Hz send-rate option (relay oversubscription; 60 is the
+  ceiling, lower is better), upstream's async batch mod loading semantics if they change again
+  (#893 caused under-map spawns), and anything moving weapon fire off the reliable `B` path.
+
+**Why the standard checks don't save you:** parse, the sandbox export check, orphan-call scans and
+the 17-assert smoke gate are all **single-machine** — remote receive paths (`applyPos` and friends)
+only execute when a second player streams in. The p13h82 regression passed every one of them. So:
+
+1. After resolving, run the deterministic gauntlet (Conventions below) **plus** a caller/callee
+   shape check for every fork-owned receive callee upstream's diff touched.
+2. For any multi-file merge, run an adversarial seam review (fresh-eyes agents hunting the three
+   seam classes: renamed symbols, producer/consumer format pairs, caller/callee arg shapes — the
+   p13h87 review caught five upstream-authored defects this way).
+3. Nothing that touches sync, spawn, or receive paths is "verified" until a **real 2-player
+   session** ran clean — the gate alone is necessary but not sufficient. Package only after that.
+
 ## Architecture
 
 **The data path.** Own vehicle → `positionVE` (VE Lua, physics step) → either the GE funnel
