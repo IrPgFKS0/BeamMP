@@ -3,11 +3,15 @@
 **Current release: `BeamMP-LAN-p13h86.zip`** (mod `4.22.1-LAN p13h86`, combined host exe `p13h36`, **for BeamNG 0.39.x**
 (validated on 0.39.4), Windows + Linux x86-64).
 
-| File | sha256 |
+Downloads moved to **[GitHub Releases](https://github.com/IrPgFKS0/BeamMP/releases)** — the zips
+are no longer committed to this folder (each added ~20 MB to the repo's history forever; the
+already-committed ones remain in history at their tags).
+
+| Release | sha256 |
 |---|---|
-| `BeamMP-LAN-p13h86.zip` | `E3FFFCC6ED3B934C19358A0D66004787C1BD458596E6E7E5D827CABD28C6C85D` |
-| `BeamMP-LAN-p13h80.zip` (previous 0.39 build) | `3F4294EA1ADDE9CBF88932A636ED7D0B93F60AAD208B26F4BC43DD324D729716` |
-| `BeamMP-LAN-p13h57.zip` (0.38 ROLLBACK — tag `lan-0.38-last-good`) | `1B1673CEA703FECC5D5CEB1B594812916E15EEB03BFC8F9DE17F9DC7808B851B` |
+| [`BeamMP-LAN-p13h86.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-release-p13h86) | `E3FFFCC6ED3B934C19358A0D66004787C1BD458596E6E7E5D827CABD28C6C85D` |
+| [`BeamMP-LAN-p13h80.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-release-p13h80) (previous 0.39 build) | `3F4294EA1ADDE9CBF88932A636ED7D0B93F60AAD208B26F4BC43DD324D729716` |
+| [`BeamMP-LAN-p13h57.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-0.38-last-good) (0.38 ROLLBACK) | `1B1673CEA703FECC5D5CEB1B594812916E15EEB03BFC8F9DE17F9DC7808B851B` |
 
 **The exe CHANGED in this release** (`p13h35` → `p13h36`): update `BeamMP.zip` **and** the
 `BeamMP-Combined` executable on every machine (p13h62–80 were mod-only; p13h86 is not).
@@ -40,5 +44,4 @@ Binaries are built from the `lan` branches of this repo and the companion repos
 [BeamMP-Server](https://github.com/IrPgFKS0/BeamMP-Server)) at tag `lan-release-p13h86`
 (AGPL-3.0-or-later — complete corresponding source at those tags).
 
-> Note: each release adds a ~50 MB zip to this repo's history. If that ever gets heavy,
-> move future zips to GitHub Releases and keep only this README + checksums here.
+> Zips live on GitHub Releases as of 2026-08-13; this README stays the checksum ledger.
