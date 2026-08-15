@@ -76,7 +76,11 @@ local function modified_onInstabilityDetected(vid)
 	if not vid then return end
 	local veh = be:getObjectByID(vid)
 	if not veh then return end
-	if MPVehicleGE and MPVehicleGE.isOwn and not MPVehicleGE.isOwn(vid) then return end
+	-- Recover REMOTE vehicles in place too (p13h90): pre-0.39.4 the engine only paused on
+	-- instability, so leaving remote cars to the position sync was fine -- but 0.39.4 DELETES a
+	-- vehicle that goes unstable twice within its timer window, which is how a remote player's
+	-- unstable prop became a permanent grey ball. recoverInPlace resets the NaN'd physics where
+	-- it stands; the position sync immediately re-drives a remote car afterwards.
 	veh:queueLuaCommand("if recovery and recovery.recoverInPlace then recovery.recoverInPlace() end")
 end
 
@@ -242,6 +246,21 @@ M.onUpdate          = onUpdate
 M.onWorldReadyState = onWorldReadyState
 M.onBigMapActivated = onBigMapActivated
 M.onDeactivateBigMapCallback = onDeactivateBigMapCallback
+-- 0.39.4's stock onInstabilityDetected offers extensions first refusal:
+--   extensions.hook('onInstabilityDetected', vid, returnData)
+-- and, if unhandled, ghosts + safe-teleports the vehicle -- and DELETES it when it goes
+-- unstable AGAIN within the timer window. The global replacement in runPostJoin no longer
+-- intercepts reliably on 0.39.4 (the stock body demonstrably ran in the p13h89 session that
+-- produced the grey-ball report), so claim the instability here on the sanctioned path. The
+-- global override is kept as a harmless belt for older game builds.
+local function onInstabilityDetectedHook(vid, returnData)
+	if not (MPCoreNetwork and MPCoreNetwork.isMPSession()) then return end
+	if settings.getValue("disableInstabilityPausing") == false then return end -- toggle off = let the stock flow run
+	if type(returnData) == 'table' then returnData.instabilityHandled = true end
+	modified_onInstabilityDetected(vid)
+end
+
+M.onInstabilityDetected = onInstabilityDetectedHook
 M.onBeamMPPostJoin = runPostJoin
 M.onBeamMPServerLeave = onServerLeave
 M.onInit = function() setExtensionUnloadMode(M, "manual") end

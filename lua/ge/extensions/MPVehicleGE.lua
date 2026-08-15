@@ -1500,8 +1500,24 @@ local function applyVehSpawn(event)
 end
 
 local function applyVehEdit(serverID, data)
-	local gameVehicleID = getGameVehicleID(serverID) -- Get the gameVehicleID
-	if not gameVehicleID then
+	local gameVehicleID = getGameVehicleID(serverID) -- -1 when unmapped (4.22 semantics; it used to be nil -- the p13h81 heal keyed on nil and silently died in the p13h82 merge)
+	local vehObj = (gameVehicleID and gameVehicleID ~= -1) and getObjectByID(gameVehicleID) or nil
+	if not vehObj then
+		-- Two ways to get here, healed the same way:
+		--  (a) the SPAWN event was never received (edit created a placeholder entry), or
+		--  (b) the game OBJECT died locally while the sid->id mapping went stale -- e.g.
+		--      0.39.4's instability flow DELETES a twice-unstable vehicle (seen live: a remote
+		--      player's inflated_mat prop -> permanent grey ball, edits erroring 'not found').
+		-- Clear any stale mapping, then synthesize the spawn from this edit.
+		if gameVehicleID and gameVehicleID ~= -1 then
+			log('W','applyVehEdit', serverID.."'s game object "..gameVehicleID.." is GONE (destroyed locally) -- clearing the stale mapping and resurrecting from this edit")
+			vehiclesMap[gameVehicleID] = nil
+			if vehicles[serverID] then
+				vehicles[serverID].gameVehicleID = nil
+				vehicles[serverID].isSpawned = false
+				vehicles[serverID].isDeleted = false
+			end
+		end
 		-- No game vehicle: the SPAWN event for this sid was never received (its edit created
 		-- a placeholder entry -- see onServerVehicleEdited). Edits carry the same jbm + full
 		-- vcf as spawns, and by apply time the placeholder has live position packets, so
@@ -1525,8 +1541,7 @@ local function applyVehEdit(serverID, data)
 		return
 	end
 
-	local veh = getObjectByID(gameVehicleID) -- Get the vehicle
-	if not veh then log('E','applyVehEdit',"Vehicle "..gameVehicleID.." not found") return end
+	local veh = vehObj -- resolved (and existence-checked) above
 
 	local decodedData   = jsonDecode(data) -- Decode the data
 	if not decodedData then log('E','applyVehEdit',"could not decode edit payload for "..serverID) return end -- corrupt packet: don't nil-deser .jbm
@@ -1719,6 +1734,18 @@ local function onVehicleDestroyed(gameVehicleID)
 		vehicle.isDeleted = true
 
 		if onVehicleDestroyedAllowed then -- If function is not coming from onServerVehicleRemoved then
+			if not vehicle.isLocal then
+				-- A REMOTE vehicle's object died on THIS machine without any server removal --
+				-- the engine can do this (0.39.4 deletes a twice-unstable vehicle). Its owner
+				-- still has it, so it is NOT deleted from the session: clear the stale sid->id
+				-- mapping so the next incoming edit resurrects it via the spawn synthesis in
+				-- applyVehEdit (position keeps streaming into the placeholder meanwhile).
+				log('W', "onVehicleDestroyed", string.format("REMOTE vehicle %i (%s) destroyed LOCALLY (engine-initiated, e.g. instability) -- mapping cleared; it will resurrect on its next edit", gameVehicleID, serverVehicleID or "?"))
+				vehiclesMap[gameVehicleID] = nil
+				vehicle.gameVehicleID = nil
+				vehicle.isDeleted = false -- 'deleted' would draw the deleted-blob forever; this state is 'awaiting resurrection'
+				return
+			end
 			log('I', "onVehicleDestroyed", string.format("Vehicle %i (%s) removed by local player", gameVehicleID, serverVehicleID or "?"))
 			if vehicle.isLocal then
 				if serverVehicleID then
