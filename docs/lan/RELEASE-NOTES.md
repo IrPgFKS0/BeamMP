@@ -1,6 +1,6 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.22.1-LAN p13h89` · combined host exe `p13h37` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
+**Build:** mod `4.22.1-LAN p13h90` · combined host exe `p13h37` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -45,6 +45,22 @@ a little tuning (see `LAN-TUNING.md`).
 
 ## This release
 
+- **BeamNG 0.39.4 can no longer delete remote players' unstable vehicles (p13h90).** 0.39.4's
+  instability handling escalates to *deleting* a vehicle that goes unstable twice in quick
+  succession — which turned one player's physics-glitched prop into a permanent grey ball on
+  everyone else's screen (the object died locally; nothing could bring it back). The fork now
+  claims instabilities through the game's own extension hook — the old interception point
+  stopped working in 0.39.4 — and recovers *remote* vehicles in place too, so the engine's
+  ghost/teleport/delete ladder never engages in a session.
+- **Lost vehicles resurrect themselves.** If a remote car's object still dies locally for any
+  reason, the stale bookkeeping is cleared instead of wedging: the car comes back automatically
+  on its owner's next edit, at its live streamed position. This also revives the lost-spawn
+  self-heal from p13h81, which had silently stopped firing after the big upstream sync.
+- Mod-only update: the exe is unchanged from p13h88/p13h89 — an existing host drops in just the
+  new `BeamMP.zip`.
+
+## Previous release (p13h89)
+
 - **The sync overlay can no longer lie (p13h89).** Its "Pos applied" counter used to count
   packets *before* validation — so a broken receive path (the exact p13h82 class of failure)
   still showed a healthy apply rate. It now counts only packets that actually applied, and
@@ -60,7 +76,7 @@ a little tuning (see `LAN-TUNING.md`).
 - Mod-only update: the exe is unchanged from p13h88 — an existing host can drop in just the new
   `BeamMP.zip`.
 
-## Previous release (p13h88)
+## Older release (p13h88)
 
 - **Upstream 0.39-cleanup sync (p13h87).** Merged upstream's #926 and the latest translations:
   a categorized BeamMP options tab (six sections, with the fork's own settings as a "LAN fork"
