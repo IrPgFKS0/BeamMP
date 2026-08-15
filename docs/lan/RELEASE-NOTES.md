@@ -1,6 +1,6 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.22.1-LAN p13h88` · combined host exe `p13h37` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
+**Build:** mod `4.22.1-LAN p13h89` · combined host exe `p13h37` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -45,6 +45,23 @@ a little tuning (see `LAN-TUNING.md`).
 
 ## This release
 
+- **The sync overlay can no longer lie (p13h89).** Its "Pos applied" counter used to count
+  packets *before* validation — so a broken receive path (the exact p13h82 class of failure)
+  still showed a healthy apply rate. It now counts only packets that actually applied, and
+  rejected packets get their own red **"Pos REJECTED"** row with a persistent total, a
+  mismatched-builds hint, and a field in the `/synclog` health line. Had this existed earlier,
+  the frozen-remote-cars regression would have been one red line on screen.
+- **The overlay tells the truth about the send path.** The header shows the real send mode —
+  `per-frame` when physics-rate send is off, `+direct` when the direct vehicle socket is on —
+  and Net out now notes that direct-socket sends bypass those counters (they go straight from
+  the vehicle to the launcher), so a near-zero "out" number finally explains itself.
+- **The LAN options section has its own icon** (signal bars, from the game's icon set) instead
+  of the generic gear.
+- Mod-only update: the exe is unchanged from p13h88 — an existing host can drop in just the new
+  `BeamMP.zip`.
+
+## Previous release (p13h88)
+
 - **Upstream 0.39-cleanup sync (p13h87).** Merged upstream's #926 and the latest translations:
   a categorized BeamMP options tab (six sections, with the fork's own settings as a "LAN fork"
   section at the end), improved pause tab and player-list styling, Chat2 fixes, deduplicated UI
@@ -66,7 +83,7 @@ a little tuning (see `LAN-TUNING.md`).
 - **Downloads moved to GitHub Releases.** Release zips are no longer committed to the repo;
   `dist/README.md` is the checksum ledger with links.
 
-## Previous release (p13h86)
+## Older release (p13h86)
 
 - **Full upstream sync (p13h82).** The fork is now merged with upstream BeamMP `development`
   4.22.1 — a real 3-way merge (181 commits) instead of cherry-picks. What it brings: server-name
