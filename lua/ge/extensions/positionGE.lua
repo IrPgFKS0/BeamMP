@@ -234,11 +234,15 @@ end
 -- @param encoded json The data to be applied to a vehicle, needs to contain "pos", "rot", "vel", "rvel", "ping" and "tim"
 -- @param serverVehicleID string The VehicleID according to the server.
 local applyPosCount = 0  -- LAN sync-stats overlay: positions applied since last sample (receive rate; falls toward 0 when the relay starves -> the visible drift)
+local applyPosRejects = 0 -- packets applyPos REFUSED (unknown vehicle / malformed pose): nonzero = receive-path breakage (e.g. mismatched mod builds) -- the exact state the overlay must never paint green
 local function applyPos(decoded, serverVehicleID)
-	applyPosCount = applyPosCount + 1
 	local vehicle = MPVehicleGE.getVehicleByServerID(serverVehicleID)
-	if not vehicle then log('E', 'applyPos', 'Could not find vehicle by ID '..serverVehicleID) return end
-	if not (decoded.pos and decoded.rot) then log('E', 'applyPos', 'malformed pose for '..serverVehicleID) return end -- crafted/short packet: don't nil-index pos[1]/rot[1] below
+	if not vehicle then applyPosRejects = applyPosRejects + 1 log('E', 'applyPos', 'Could not find vehicle by ID '..serverVehicleID) return end
+	if not (decoded.pos and decoded.rot) then applyPosRejects = applyPosRejects + 1 log('E', 'applyPos', 'malformed pose for '..serverVehicleID) return end -- crafted/short packet: don't nil-index pos[1]/rot[1] below
+	-- Count ONLY past the guards: this feeds the overlay's 'Pos applied' row, and counting at the
+	-- top made it read healthy while 100% of packets were being REJECTED (the p13h82-p13h86 break
+	-- would have shown 'applied 30/s' the whole time). Rejects get their own counter + row instead.
+	applyPosCount = applyPosCount + 1
 
 	profBegin()
 
@@ -651,6 +655,7 @@ end
 
 M.applyPos                    = applyPos
 M.getApplyPosRate             = function() local c = applyPosCount; applyPosCount = 0; return c end -- sync-stats overlay: positions applied since last call
+M.getApplyPosRejects          = function() local c = applyPosRejects; applyPosRejects = 0; return c end -- overlay: rejected/s (see applyPos)
 M.getDriftStats               = function() local d, h = wdMaxDrift, wdHealCount; wdMaxDrift, wdHealCount = 0, 0; return d, h end -- overlay: max told-vs-actual (m) + self-heal corrections since last call
 M.tick                        = tick
 M.handle                      = handle

@@ -5156,7 +5156,7 @@
   {
    "version": "LAN",
    "label": "LAN fork",
-   "icon": "settings",
+   "icon": "signal04a",
    "categoryId": "beammplan",
    "subcategory": true,
    "persistent": false,

@@ -178,7 +178,7 @@ def lan_category():
     return {
         "version": "LAN",  # strip marker: the whole subcategory is LAN-owned
         "label": "LAN fork",
-        "icon": "settings",
+        "icon": "signal04a",
         "categoryId": LAN_CATEGORY_ID,
         "subcategory": True,
         "persistent": False,

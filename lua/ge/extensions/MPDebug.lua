@@ -277,6 +277,7 @@ local function drawSyncStatsOverlay(dt)
 		ov.applyPeak, ov.applyWorst, ov.applyBadTime = 0, nil, 0
 		ov.fpsPeak, ov.fpsWorst, ov.fpsBadTime = 0, nil, 0
 		ov.driftBadTime, ov.driftWorst, ov.healTotal = 0, nil, 0
+		ov.rejTotal = 0
 	end
 
 	local synced = 0
@@ -292,6 +293,12 @@ local function drawSyncStatsOverlay(dt)
 		ov.sent, ov.recv, ov.sentB, ov.recvB = 0, 0, 0, 0
 		ov.fps = ov.frames; ov.frames = 0
 		ov.applyRate = (positionGE and positionGE.getApplyPosRate and positionGE.getApplyPosRate()) or 0
+		-- rejected/s: packets the receive path REFUSED (unknown vehicle / malformed pose). Any
+		-- nonzero here is breakage (mismatched mod builds between machines is the classic cause) --
+		-- this row exists because the p13h82 seam rejected 100% of packets while every other row
+		-- looked healthy. Tracked with its own persistent total so a burst is visible after the fact.
+		ov.rejRate = (positionGE and positionGE.getApplyPosRejects and positionGE.getApplyPosRejects()) or 0
+		ov.rejTotal = (ov.rejTotal or 0) + ov.rejRate
 		-- Per-second bad-state eval + peak/persistent tracking (badTime in whole seconds).
 		-- "Bad" = a sharp drop below a slowly-decaying baseline of the best recent value, so it
 		-- adapts to the chosen send rate / car count / a genuinely slow machine instead of a fixed line.
@@ -327,10 +334,10 @@ local function drawSyncStatsOverlay(dt)
 			if ov.logTimer >= 15 then
 				ov.logTimer = 0
 				log('I', 'mpSyncHealth', string.format(
-					"%d synced | drift %.1fm, %d heals | in %d pkt/s %.1f KB/s, out %d pkt/s %.1f KB/s | applied %d/s | FPS %d",
+					"%d synced | drift %.1fm, %d heals | in %d pkt/s %.1f KB/s, out %d pkt/s %.1f KB/s | applied %d/s, rejected %d (total %d) | FPS %d",
 					synced, ov.driftM or 0, ov.healTotal or 0,
 					ov.recvRate or 0, ov.recvKB or 0, ov.sentRate or 0, ov.sentKB or 0,
-					ov.applyRate or 0, ov.fps or 0))
+					ov.applyRate or 0, ov.rejRate or 0, ov.rejTotal or 0, ov.fps or 0))
 			end
 		end
 		ov.timer = ov.timer - 1.0
@@ -345,9 +352,16 @@ local function drawSyncStatsOverlay(dt)
 	im.SetNextWindowPos(im.ImVec2(14, 90), im.Cond_FirstUseEver)
 	im.Begin("BeamMPSyncStats", nil, bit.bor(im.WindowFlags_NoTitleBar, im.WindowFlags_NoResize,
 		im.WindowFlags_AlwaysAutoResize, im.WindowFlags_NoNav, im.WindowFlags_NoFocusOnAppearing))
-	im.Text(string.format("Synced vehicles: %d   (send %d Hz)", synced, hz))
+	local sendMode = (settings.getValue("physicsRateSend") ~= false) and string.format("%d Hz", hz) or "per-frame"
+	if settings.getValue("directVehicleSocket") == true then sendMode = sendMode .. " +direct" end
+	im.Text(string.format("Synced vehicles: %d   (send %s)", synced, sendMode))
 	im.Text(string.format("Net in:  %d pkt/s  (%.1f KB/s)", ov.recvRate, ov.recvKB))
 	im.Text(string.format("Net out: %d pkt/s  (%.1f KB/s)", ov.sentRate, ov.sentKB))
+	if settings.getValue("directVehicleSocket") == true then
+		-- the DV socket sends from VE Lua straight to the launcher, so those packets never pass
+		-- the GE counters above -- say so rather than let 'Net out' read as the whole story
+		im.Text("         (own-car pos/inputs ride the direct socket -- not counted above)")
+	end
 
 	-- Pos applied = positions applied/sec. It reflects BOTH relay delivery AND local apply throughput
 	-- (the apply runs per render frame), so read it WITH the FPS row: a drop while FPS is FINE = the
@@ -356,6 +370,13 @@ local function drawSyncStatsOverlay(dt)
 	local aTxt = string.format("Pos applied: %d/s", ov.applyRate or 0)
 	if (ov.applyBadTime or 0) > 0 then aTxt = aTxt .. string.format("   [dipped to %d/s, bad %ds total]", ov.applyWorst or 0, ov.applyBadTime) end
 	if ov.applyBad then im.TextColored(ov.RED, aTxt) else im.Text(aTxt) end
+	-- rejections are never normal: red whenever this second's count is nonzero, and keep a
+	-- [total] tail so a burst that already ended is still visible on the overlay
+	if (ov.rejTotal or 0) > 0 then
+		local rTxt = string.format("Pos REJECTED: %d/s   [total %d]", ov.rejRate or 0, ov.rejTotal or 0)
+		if (ov.rejRate or 0) > 0 then im.TextColored(ov.RED, rTxt) else im.Text(rTxt) end
+		if (ov.rejRate or 0) > 0 then im.TextColored(ov.RED, ">> packets REJECTED: usually mismatched BeamMP builds between machines -- update BOTH from the same release bundle") end
+	end
 
 	-- FPS = main-thread health (one core). Red while spiking down; tail persists like above.
 	local fTxt = string.format("FPS: %d", ov.fps or 0)
