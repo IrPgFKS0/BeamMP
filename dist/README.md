@@ -1,6 +1,6 @@
 # BeamMP LAN fork — release downloads
 
-**Current release: `BeamMP-LAN-p13h90.zip`** (mod `4.22.1-LAN p13h90`, combined host exe `p13h37`, **for BeamNG 0.39.x**
+**Current release: `BeamMP-LAN-p13h91.zip`** (mod `4.22.1-LAN p13h91`, combined host exe `p13h38`, **for BeamNG 0.39.x**
 (validated on 0.39.4), Windows + Linux x86-64).
 
 Downloads moved to **[GitHub Releases](https://github.com/IrPgFKS0/BeamMP/releases)** — the zips
@@ -9,17 +9,18 @@ already-committed ones remain in history at their tags).
 
 | Release | sha256 |
 |---|---|
-| [`BeamMP-LAN-p13h90.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-release-p13h90) | `8CE249443625D631484E6150DF9E83A7B2E27DAC18EF23C71F059D8625A6F575` |
-| [`BeamMP-LAN-p13h89.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-release-p13h89) (previous 0.39 build) | `7717A76A6E7665E1C10B0AEC291EDBD2B8F40BF1233124CBCC8CD0D98C07235A` |
+| [`BeamMP-LAN-p13h91.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-release-p13h91) | `38E77EABCEAE3F14E229A8CC4912ABACED4744B8CCC717B3859A0F2982EABC38` |
+| [`BeamMP-LAN-p13h90.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-release-p13h90) (previous 0.39 build) | `8CE249443625D631484E6150DF9E83A7B2E27DAC18EF23C71F059D8625A6F575` |
 | [`BeamMP-LAN-p13h57.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-0.38-last-good) (0.38 ROLLBACK) | `1B1673CEA703FECC5D5CEB1B594812916E15EEB03BFC8F9DE17F9DC7808B851B` |
 
-**Mod-only update from p13h88/p13h89** (the exe is unchanged at `p13h37`): an existing host can
-drop in just the new `BeamMP.zip` (sha256
-`6D2BC5C43E16AF652C31E60E2DBA6B41773FC9BA5A8B632ADCF6A4B39EED5FBE`). Coming from p13h86 or
-earlier, update **both** files. If you ran any p13h82–p13h85 build: those reject every remote
-position packet in multiplayer (remote cars frozen) — update now. (Superseded zips and their `lan-release-*` tags were removed 2026-08-13; the only tags kept are
-the three backing published releases -- `lan-release-p13h90`, `lan-release-p13h89` and
-`lan-0.38-last-good` -- which is exactly the set the AGPL source promise needs.)
+**Update BOTH files this time** — the exe changed (`p13h37` → `p13h38`, it carries a security fix:
+the launcher now rejects malformed mod filenames a server sends, closing a path-traversal write).
+New mod `BeamMP.zip` sha256 `831609832DEAFB9115BAC9C84FA140DAD003D29FE58BE9DDE9E59EB4A2414609`.
+If you ran any p13h82–p13h85 build: those reject every remote position packet in multiplayer
+(remote cars frozen) — update now. (Superseded zips and their `lan-release-*` tags are removed as
+releases roll; the only tags kept are the three backing published releases --
+`lan-release-p13h91`, `lan-release-p13h90` and `lan-0.38-last-good` -- which is exactly the set
+the AGPL source promise needs.)
 
 The zip contains:
 

@@ -23,7 +23,11 @@ cd /d "%ROOT%BeamMP-Launcher" || goto :no_dir
 echo === CONFIGURE (combined exe, x64-windows-static) ===
 cmake . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release ^
   -DCMAKE_TOOLCHAIN_FILE="%ROOT%BeamMP-Server\vcpkg\scripts\buildsystems\vcpkg.cmake" ^
-  -DVCPKG_TARGET_TRIPLET=x64-windows-static || goto :build_fail
+  -DVCPKG_TARGET_TRIPLET=x64-windows-static ^
+  -DVCPKG_APPLOCAL_DEPS=OFF || goto :build_fail
+REM APPLOCAL_DEPS=OFF: the static triplet ships no DLLs, and the post-link
+REM applocal.ps1 step dies on the nonexistent vcpkg_installed\...\bin dir
+REM ("The system cannot find the path specified"), failing an otherwise-good link.
 echo === BUILD ===
 cmake --build build --parallel --config Release || goto :build_fail
 echo.

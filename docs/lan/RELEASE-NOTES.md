@@ -1,6 +1,6 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.22.1-LAN p13h90` · combined host exe `p13h37` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
+**Build:** mod `4.22.1-LAN p13h91` · combined host exe `p13h38` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -45,6 +45,25 @@ a little tuning (see `LAN-TUNING.md`).
 
 ## This release
 
+- **Security: the launcher now validates the mod filenames a server sends (exe p13h38).** Upstream
+  fixed this quietly inside a commit titled just "Bump version to v2.8.1": the mod-sync handshake
+  accepted any `file_name` the server supplied, so a malicious or compromised server could use
+  path separators or `../` to make the launcher write a downloaded file *outside* the mods folder
+  — an arbitrary-file-write against every connecting client. Any name that is not a bare `*.zip`
+  now aborts the sync with a clear error. Verified against this fork's own 89-mod server list
+  (including names with spaces and parentheses) with zero false positives.
+- **Two crash guards silently lost in the big upstream merge are restored.** The 4.22.1 merge
+  kept *both* copies of two GE→VE helpers the fork had guarded and upstream had also edited —
+  and in Lua the later definition wins, so upstream's unguarded copy was the one running. A
+  hydraulic-equipment vehicle (WL-40 loader etc.) whose remote VM was still loading could have
+  its sync killed by the unguarded `applyHydroBeams`; the unguarded `setGameSpeed` push fired
+  into every vehicle VM on any pause or slow-motion change. Both are guarded again, and the
+  merge checklist now greps for this both-copies-kept revert class.
+- **Both files need updating this time** (the exe changed p13h37 → p13h38). Also carried:
+  upstream #266's reserved reliable-packet route (inert until upstream's TimeSync work ships).
+
+## Previous release (p13h90)
+
 - **BeamNG 0.39.4 can no longer delete remote players' unstable vehicles (p13h90).** 0.39.4's
   instability handling escalates to *deleting* a vehicle that goes unstable twice in quick
   succession — which turned one player's physics-glitched prop into a permanent grey ball on
@@ -59,7 +78,7 @@ a little tuning (see `LAN-TUNING.md`).
 - Mod-only update: the exe is unchanged from p13h88/p13h89 — an existing host drops in just the
   new `BeamMP.zip`.
 
-## Previous release (p13h89)
+## Older release (p13h89)
 
 - **The sync overlay can no longer lie (p13h89).** Its "Pos applied" counter used to count
   packets *before* validation — so a broken receive path (the exact p13h82 class of failure)
