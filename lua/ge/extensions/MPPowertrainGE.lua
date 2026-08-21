@@ -87,26 +87,6 @@ local function applyHydroBeams(data, serverVehicleID)
 end
 
 
-local function sendHydroBeamData(data, gameVehicleID)
-	if MPGameNetwork.launcherConnected() then
-		local serverVehicleID = MPVehicleGE.getServerVehicleID(gameVehicleID)
-		if serverVehicleID and MPVehicleGE.isOwn(gameVehicleID) then
-			MPGameNetwork.send('Yh:'..serverVehicleID..":"..data)
-		end
-	end
-end
-
-
-local function applyHydroBeams(data, serverVehicleID)
-	local gameVehicleID = MPVehicleGE.getGameVehicleID(serverVehicleID) or -1
-	local veh = getObjectByID(gameVehicleID)
-	if veh then
-		veh:queueLuaCommand("MPPowertrainHydrosVE.applyHydroBeams(mime.unb64(\'".. MPHelpers.b64encode(data) .."\'))")
-	end
-end
-
-
-
 --- The raw message from the server. This is unpacked first and then sent to applyLivePowertrain()
 -- @param rawData string The raw message data.
 local function handle(rawData)

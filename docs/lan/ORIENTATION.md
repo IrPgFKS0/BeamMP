@@ -50,7 +50,7 @@ z.close(); print(n, 'entries', hashlib.sha256(open(out,'rb').read()).hexdigest()
 
 A renamed or moved source folder must be **loud**: `os.walk` on a missing directory yields nothing
 and raises nothing, so without the pre-flight check above a `mp_locales/`-style rename produces a
-valid-looking zip with a whole subsystem missing. Sanity-check the entry count (466 at p13h83).
+valid-looking zip with a whole subsystem missing. Sanity-check the entry count (465 at p13h91; it dropped from 466 when #926 deleted the dead AngularJS vehicleconfig/optionsOLD).
 
 **Build the C++ binaries.** `cmd.exe /c foo.bat` from the **Bash tool silently does nothing** (prints
 the cmd banner, exits 0) — always invoke batch files from PowerShell with an absolute path:
@@ -185,9 +185,13 @@ only execute when a second player streams in. The p13h82 regression passed every
 
 1. After resolving, run the deterministic gauntlet (Conventions below) **plus** a caller/callee
    shape check for every fork-owned receive callee upstream's diff touched.
-2. For any multi-file merge, run an adversarial seam review (fresh-eyes agents hunting the three
-   seam classes: renamed symbols, producer/consumer format pairs, caller/callee arg shapes — the
-   p13h87 review caught five upstream-authored defects this way).
+2. For any multi-file merge, run an adversarial seam review (fresh-eyes agents hunting the four
+   seam classes: renamed symbols, producer/consumer format pairs, caller/callee arg shapes, and
+   **sentinel-value semantics changed under an unchanged name** — upstream's `getGameVehicleID`
+   returns `-1` where the fork's returned `nil`, which silently killed the p13h81 lost-spawn heal
+   from the p13h82 merge until p13h90. The p13h87 review caught five upstream-authored defects,
+   and a later completeness audit found two reverted VE-guards a conflict-free merge had kept
+   *both* copies of — the unguarded upstream copy shadowing and winning).
 3. Nothing that touches sync, spawn, or receive paths is "verified" until a **real 2-player
    session** ran clean — the gate alone is necessary but not sufficient. Package only after that.
 

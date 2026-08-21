@@ -633,7 +633,7 @@ local function onUpdate(dtReal, dtSim, dtRaw)
 		setActualSimSpeed(dtSim/dtRaw)
 		local simSpeed = simTimeAuthority.getReal() * (simTimeAuthority.getPause() and 0 or 1)
 		if targetGameSpeed ~= simSpeed then
-			be:queueAllObjectLua("positionVE.setGameSpeed("..simSpeed..")")
+			be:queueAllObjectLua("if positionVE then positionVE.setGameSpeed("..simSpeed..") end") -- guard: fires in EVERY vehicle VM on any pause/slow-mo; an unguarded call FATALs a VM still mid-load (upstream b2bb5685 shipped it unguarded)
 		end
 		targetGameSpeed = simSpeed
 		local players = getPlayers()
