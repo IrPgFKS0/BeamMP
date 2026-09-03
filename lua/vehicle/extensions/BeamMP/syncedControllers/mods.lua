@@ -37,33 +37,65 @@ local lastvehID = 0
 
 local aimMode = "auto"
 
+-- LAN fork: shared by prepairID (missiles/rockets, which MUST send every call -- each call assigns
+-- the next missile) and prepairAimID (targetAim, which must NOT). Returns the vehicle id the target
+-- belongs to and stores tempTable.missileID when the id was a missile's.
+local function normalizeTargetID(vehID, tempTable)
+	-- syncing targeting missiles, missiles have the vehicleID of the original vehicle but with it's own id added at the end
+	-- this system checks if removing two numbers make it match with a vehicle, if it does then we know that this is the vehicle it belongs too,
+	-- if not then we try removing just one number and check again, it has to be done in this order or id 11 will mistake the missile with id 1 as being it's vehicle
+	-- thanks Stefan750 for helping me figure out this system
+	local mapObjects = mapmgr.getObjects() or {}
+	local flooredID100 = math.floor((vehID/100))
+	local found = false
+	for k,_ in pairs(mapObjects) do
+		if k == flooredID100 then
+			tempTable.missileID = vehID - (k*100)
+			vehID = flooredID100
+			found = true
+		end
+	end
+	local flooredID10 = math.floor((vehID/10))
+	if not found then -- if we already found a matching id we skip this loop
+		for k,_ in pairs(mapObjects) do
+			if k == flooredID10 then
+				tempTable.missileID = vehID - (k*10)
+				vehID = flooredID10
+			end
+		end
+	end
+	return vehID
+end
+
+-- LAN fork: targetAim.setTargetID is called by the CIWS/RAM controllers EVERY graphics frame while
+-- locked, and prepairID sent a controller packet on every call -- 60-140 pkt/s per turret over
+-- the same UDP relay lane as positions (the fork's measured ~150 pkt/s wall). The ghost's
+-- targetAim no-ops on an unchanged id, so that stream carried nothing. Send on CHANGE (including
+-- the nil transition) plus a 0.5 s keepalive while a target is set -- the keepalive is required:
+-- a ghost whose VE VM reloads (edit) starts with an empty controller state and its own auto-aim is
+-- disabled by the sync wrapper, so without it the ghost would never aim until the owner's target
+-- changed. Sim time pauses with the game, which is the right clock for this.
+local aimLastVehID = 0        -- 0 = 'never sent' (a real id is never 0; nil = 'no target')
+local aimLastSendTime = -1
+local AIM_KEEPALIVE_S = 0.5
+local function prepairAimID(controllerName, funcName, tempTable, ...)
+	local vehID = tempTable.variables[1]
+	if vehID then vehID = normalizeTargetID(vehID, tempTable) end
+	local now = obj:getSimTime()
+	if vehID ~= aimLastVehID or (vehID ~= nil and now - aimLastSendTime >= AIM_KEEPALIVE_S) then
+		tempTable["vehID"] = vehID -- store vehicleID separately so we can convert it to serverVehID in GE
+		controllerSyncVE.sendControllerData(tempTable)
+		aimLastVehID = vehID
+		aimLastSendTime = now
+	end
+	return controllerSyncVE.OGcontrollerFunctionsTable[controllerName][funcName](...)
+end
+
 local function prepairID(controllerName, funcName, tempTable, ...)
 	local vehID = tempTable.variables[1]
 	if vehID or lastvehID then -- the Phulcan spams the setTargetID in auto mode, but just comparing to last can break normal targeting, and we still need to send an empty table once, so instead I'm checking if either is true
 		if vehID then
-			-- syncing targeting missiles, missiles have the vehicleID of the original vehicle but with it's own id added at the end
-			-- this system checks if removing two numbers make it match with a vehicle, if it does then we know that this is the vehicle it belongs too,
-			-- if not then we try removing just one number and check again, it has to be done in this order or id 11 will mistake the missile with id 1 as being it's vehicle
-			-- thanks Stefan750 for helping me figure out this system
-			local mapObjects = mapmgr.getObjects() or {}
-			local flooredID100 = math.floor((vehID/100))
-			local found = false
-			for k,_ in pairs(mapObjects) do
-				if k == flooredID100 then
-					tempTable.missileID = vehID - (k*100)
-					vehID = flooredID100
-					found = true
-				end
-			end
-			local flooredID10 = math.floor((vehID/10))
-			if not found then -- if we already found a matching id we skip this loop
-				for k,_ in pairs(mapObjects) do
-					if k == flooredID10 then
-						tempTable.missileID = vehID - (k*10)
-						vehID = flooredID10
-					end
-				end
-			end
+			vehID = normalizeTargetID(vehID, tempTable)
 		end
 		tempTable["vehID"] = vehID -- store vehicleID separately so we can convert it to serverVehID in GE
 		controllerSyncVE.sendControllerData(tempTable)
@@ -160,14 +192,29 @@ local includedControllerTypes = {
 
 	-- me262 and Phoulkon --
 	["bombs"] = {
-		["deployWeaponDown"] = {},
+		-- LAN fork: deployWeaponDown(useBombCam) replayed on a GHOST would arm the bomb-cam on the
+		-- OBSERVER's machine (camera hijack + a queued chunk into the observer's own vehicle VM that
+		-- indexes a controller it doesn't have = the sync-killing FATAL class). Force the cam off.
+		["deployWeaponDown"] = {
+			receiveFunction = function(data)
+				controllerSyncVE.OGcontrollerFunctionsTable[data.controllerName][data.functionName](false)
+			end
+		},
 		["deployWeaponUp"] = {},
 	},
 	["countermeasures"] = {
 		["activateCountermeasures"] = {}
 	},
 	["missiles"] = {
-		["deployWeaponDown"] = {},
+		-- LAN fork: deployWeaponDown(index, useMissileCam) -- same cam-hijack class as bombs above
+		-- (seen with the turrets mod: a remote RAM launch in semi-auto/manual switched every
+		-- observer's camera and queued a nil-index into their own car's VM). Keep the index, force
+		-- the cam flag off on the ghost.
+		["deployWeaponDown"] = {
+			receiveFunction = function(data)
+				controllerSyncVE.OGcontrollerFunctionsTable[data.controllerName][data.functionName](type(data.variables) == "table" and data.variables[1] or nil, false)
+			end
+		},
 		["setTargetID"] = {
 			ownerFunction = prepairID,
 			receiveFunction = receiveID,
@@ -191,7 +238,7 @@ local includedControllerTypes = {
 			storeState = true
 		},
 		["setTargetID"] = {
-			ownerFunction = prepairID,
+			ownerFunction = prepairAimID, -- LAN fork: change + 0.5 s keepalive instead of one packet per frame
 			receiveFunction = receiveID,
 			storeState = true, -- restoring the states happens in the wrong order for this and setAimMode causing it not to aim on local reset
 		},

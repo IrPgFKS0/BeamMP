@@ -126,10 +126,18 @@ local defaultSettings = {
 --- doesn't know about at boot (see onExtensionLoaded), so "value is nil" does NOT mean "the user
 --- never set it" -- it usually means the loader threw their value away before we registered it.
 local function readSavedSettings()
-	local savedPath = (settings.impl and settings.impl.pathLocal) or '/settings/settings.json'
-	local ok, saved = pcall(jsonReadFile, savedPath)
-	if ok and type(saved) == 'table' then return saved end
-	return {}
+	-- The game keeps TWO files (lua/common/settings.lua): cloud-scoped keys in cloud/settings.json,
+	-- local-scoped in settings.json. The six nametag keys h88 registered are cloud-scoped, so a
+	-- refill that only read the local file could never restore them. Read both; local wins on overlap.
+	local merged = {}
+	for _, savedPath in ipairs({ settings.impl and settings.impl.pathCloud or '/settings/cloud/settings.json',
+	                             settings.impl and settings.impl.pathLocal or '/settings/settings.json' }) do
+		local ok, saved = pcall(jsonReadFile, savedPath)
+		if ok and type(saved) == 'table' then
+			for k, v in pairs(saved) do merged[k] = v end
+		end
+	end
+	return merged
 end
 
 --- Upstream 4.22 registers the stock MP settings from /settings/mp_defaults.json instead of

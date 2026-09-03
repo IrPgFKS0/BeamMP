@@ -152,6 +152,7 @@ local function veReady(gameVehicleID)
 	veh:queueLuaCommand("if positionVE and positionVE.setMailboxApply then positionVE.setMailboxApply("..tostring(mailboxOn)..") end")
 	veh:queueLuaCommand("if positionVE and positionVE.setApplyStallDiag then positionVE.setApplyStallDiag("..tostring(applyStallDiagOn)..") end")
 	veh:queueLuaCommand("if positionVE and positionVE.setSendHz then positionVE.setSendHz("..sendHz..") end")
+	veh:queueLuaCommand("if positionVE and positionVE.setGameSpeed then positionVE.setGameSpeed("..targetGameSpeed..") end") -- a VM that (re)loads mid slow-mo/pause otherwise sends unscaled velocities until the speed next changes
 	local v = MPVehicleGE and MPVehicleGE.getVehicleByGameID and MPVehicleGE.getVehicleByGameID(gameVehicleID)
 	if v and not v.isLocal then
 		veh:queueLuaCommand("if MPVehicleVE then MPVehicleVE.setVehicleType('R') end")

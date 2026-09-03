@@ -1482,6 +1482,7 @@ local function applyVehSpawn(event)
 
 		vehicle.gameVehicleID = spawnedVehID
 		vehicle.isSpawned = true
+		vehicle.isDeleted = false -- a resurrected/restored car is live again (the remote-destroy branch leaves this TRUE until here)
 		vehicle.jbeam = vehicleName
 		vehicle.protected = protected
 		vehicle.absMode = absMode
@@ -1513,7 +1514,7 @@ local function applyVehEdit(serverID, data)
 			log('W','applyVehEdit', serverID.."'s game object "..gameVehicleID.." is GONE (destroyed locally) -- clearing the stale mapping and resurrecting from this edit")
 			vehiclesMap[gameVehicleID] = nil
 			if vehicles[serverID] then
-				vehicles[serverID].gameVehicleID = nil
+				vehicles[serverID].gameVehicleID = -1 -- the class invariant is NUMERIC (-1 = unmapped); nil here threw 'compare nil with number' in onServerVehicleRemoved and 'table index is nil' in every nametag frame
 				vehicles[serverID].isSpawned = false
 				vehicles[serverID].isDeleted = false
 			end
@@ -1578,7 +1579,7 @@ local function applyVehEdit(serverID, data)
 				veh:setDynDataFieldbyName("autoEnterVehicle", 0, tostring((getPlayerVehicle(0) and getPlayerVehicle(0):getID() == gameVehicleID) or false))
 				veh:respawn(serialize(playerVehicle.config))
 				if settings.getValue("licensePlateUsesPlayerName") then
-					core_vehicles.setPlateText(data.playerNickname, gameVehicleID)
+					core_vehicles.setPlateText(playerName, gameVehicleID) -- was data.playerNickname: `data` is the raw JSON string here, so that was always nil and the plate went random after every remote config edit
 				end
 			elseif vehicleConfig.paints then
 				log('I','applyVehEdit', "only color changed")
@@ -1740,10 +1741,12 @@ local function onVehicleDestroyed(gameVehicleID)
 				-- still has it, so it is NOT deleted from the session: clear the stale sid->id
 				-- mapping so the next incoming edit resurrects it via the spawn synthesis in
 				-- applyVehEdit (position keeps streaming into the placeholder meanwhile).
-				log('W', "onVehicleDestroyed", string.format("REMOTE vehicle %i (%s) destroyed LOCALLY (engine-initiated, e.g. instability) -- mapping cleared; it will resurrect on its next edit", gameVehicleID, serverVehicleID or "?"))
+				log('W', "onVehicleDestroyed", string.format("REMOTE vehicle %i (%s) destroyed LOCALLY (engine instability delete, or a local player-list Delete) -- mapping cleared; it resurrects on its owner's next edit, or via Restore", gameVehicleID, serverVehicleID or "?"))
 				vehiclesMap[gameVehicleID] = nil
-				vehicle.gameVehicleID = nil
-				vehicle.isDeleted = false -- 'deleted' would draw the deleted-blob forever; this state is 'awaiting resurrection'
+				vehicle.gameVehicleID = -1 -- NUMERIC sentinel (nil broke onServerVehicleRemoved's '> 0' and the per-frame nametag getObjectByID cache)
+				-- isDeleted stays TRUE (set above): that is what lets the player-list Restore action run
+				-- (its gate refuses isDeleted==false) and draws the stock deleted-blob meanwhile. The
+				-- blob is NOT forever -- applyVehSpawn clears isDeleted on any resurrection.
 				return
 			end
 			log('I', "onVehicleDestroyed", string.format("Vehicle %i (%s) removed by local player", gameVehicleID, serverVehicleID or "?"))

@@ -449,7 +449,7 @@ function addKeyEventListener(keyname, f, type)
 	table.insert(keypressTriggers, {key = keyname, func = f, type = type or 'both'})
 	table.insert(keysToPoll, keyname)
 
-	be:queueAllObjectLua("if true then addKeyEventListener(".. serialize(keysToPoll) ..") end")
+	be:queueAllObjectLua("if addKeyEventListener then addKeyEventListener(".. serialize(keysToPoll) ..") end") -- guard: addKeyEventListener is MPVehicleVE's global; a VM mid-load has no such function
 end
 
 --- Handles the state change of a key.
@@ -484,7 +484,7 @@ local function onVehicleReady(gameVehicleID)
 		log('R', 'onVehicleReady', 'Vehicle does not exist!')
 		return
 	end
-	veh:queueLuaCommand("addKeyEventListener(".. serialize(keysToPoll) ..")")
+	veh:queueLuaCommand("if addKeyEventListener then addKeyEventListener(".. serialize(keysToPoll) ..") end")
 end
 
 -------------------------------------------------------------------------------

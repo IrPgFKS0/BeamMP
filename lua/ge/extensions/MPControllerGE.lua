@@ -34,7 +34,8 @@ local function applyControllerData(data, serverVehicleID)
 		local decodedData = jsonDecode(data)
 		if not decodedData then return end
 		if decodedData.vehID then
-			decodedData.vehID = MPVehicleGE.getGameVehicleID(decodedData.vehID)
+			local id = MPVehicleGE.getGameVehicleID(decodedData.vehID)
+			decodedData.vehID = (id and id ~= -1) and id or nil -- -1 (unmapped since 4.22.1) must not reach the VE: receiveID would build a bogus missile id from it
 		end
 		data = jsonEncode(decodedData)
 		veh:queueLuaCommand("if controllerSyncVE then controllerSyncVE.applyControllerData(mime.unb64(\'".. MPHelpers.b64encode(data) .."\')) end")
