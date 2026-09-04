@@ -21,7 +21,8 @@ set "PATH=%VSPATH%\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin;%VSPAT
 cd /d "%ROOT%BeamMP-Server" || goto :no_dir
 echo === CONFIGURE (server, LTO on, x64-windows-static) ===
 cmake . -B bin -G Ninja -DCMAKE_BUILD_TYPE=Release -DBeamMP-Server_ENABLE_LTO=ON ^
-  -DVCPKG_TARGET_TRIPLET=x64-windows-static || goto :build_fail
+  -DVCPKG_TARGET_TRIPLET=x64-windows-static ^
+  -DVCPKG_APPLOCAL_DEPS=OFF || goto :build_fail
 echo === BUILD ===
 cmake --build bin --parallel -t BeamMP-Server --config Release || goto :build_fail
 echo.

@@ -1,6 +1,6 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.22.1-LAN p13h91` · combined host exe `p13h38` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
+**Build:** mod `4.22.2-LAN p13h92` · combined host exe `p13h39` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -45,6 +45,39 @@ a little tuning (see `LAN-TUNING.md`).
 
 ## This release
 
+- **Upstream sync: mod 4.22.2, launcher #269, server 3.9.4.** The mod bump is version-only. The
+  launcher's ten-packet UDP registration burst now runs on its own thread, so joining is no longer
+  held up by it. The server gains upstream's "time ping" handler and `MP.GetServerTime` — the server
+  half of their upcoming TimeSync work; it is dormant until the mod half ships upstream.
+- **A remote player's missile or bomb launch could hijack your camera and kill your car's sync.**
+  Weapon-cam launches (turrets mod, semi-auto/manual) replayed into every other player's machine:
+  the observer's camera switched, and a command was queued into the observer's *own* vehicle that
+  referenced a controller it doesn't have — the class of error that silently kills that vehicle's
+  multiplayer sync until rejoin. Ghosts now always receive the launch with the camera flag off, and
+  the fork's turrets build additionally refuses to arm a weapon-cam for anyone not seated in the
+  firing vehicle.
+- **Turret target sync no longer floods the position lane.** The CIWS/RAM turrets update their aim
+  target every frame, and each update sent a controller packet — 60–140 packets per second per
+  locked turret, on the same UDP relay lane as everyone's positions. Now sent on change plus a
+  half-second keepalive.
+- **Two p13h90 defects fixed.** A remote car deleted locally (engine instability delete, or you
+  deleting it from the player list) left bookkeeping that threw every frame in the nametag loop and
+  made the server's later removal of that car error out, so it could never be cleaned up; and a car
+  you deleted yourself could not be brought back with **Restore**. Both corrected — Restore works, the
+  stock deleted blob shows until the car returns.
+- **Smaller fixes:** your licence plate no longer turns random after another player edits their car;
+  a vehicle reloaded mid slow-motion/pause now sends correctly scaled velocities; the settings
+  refill backstop now also reads the game's cloud settings file (where the nametag options live);
+  two more vehicle-side pushes are guarded against a VM still loading; the launcher's direct
+  vehicle socket registries are now thread-safe (a rare unexplained launcher crash); the
+  mod-filename security abort shows an in-game error instead of a stuck "Loading…"; the combined
+  host no longer holds a dead pointer if its embedded server exits.
+- **Both files need updating** (exe p13h38 → p13h39). If you use the turrets mod, take the matching
+  `turrets_h92sweep` build too — it also fixes a crash when cycling semi-auto targets after one
+  despawns.
+
+## Previous release (p13h91)
+
 - **Security: the launcher now validates the mod filenames a server sends (exe p13h38).** Upstream
   fixed this quietly inside a commit titled just "Bump version to v2.8.1": the mod-sync handshake
   accepted any `file_name` the server supplied, so a malicious or compromised server could use
@@ -62,7 +95,7 @@ a little tuning (see `LAN-TUNING.md`).
 - **Both files need updating this time** (the exe changed p13h37 → p13h38). Also carried:
   upstream #266's reserved reliable-packet route (inert until upstream's TimeSync work ships).
 
-## Previous release (p13h90)
+## Older release (p13h90)
 
 - **BeamNG 0.39.4 can no longer delete remote players' unstable vehicles (p13h90).** 0.39.4's
   instability handling escalates to *deleting* a vehicle that goes unstable twice in quick
