@@ -53,9 +53,7 @@ a little tuning (see `LAN-TUNING.md`).
   Weapon-cam launches (turrets mod, semi-auto/manual) replayed into every other player's machine:
   the observer's camera switched, and a command was queued into the observer's *own* vehicle that
   referenced a controller it doesn't have — the class of error that silently kills that vehicle's
-  multiplayer sync until rejoin. Ghosts now always receive the launch with the camera flag off, and
-  the fork's turrets build additionally refuses to arm a weapon-cam for anyone not seated in the
-  firing vehicle.
+  multiplayer sync until rejoin. Ghosts now always receive the launch with the camera flag off.
 - **Turret target sync no longer floods the position lane.** The CIWS/RAM turrets update their aim
   target every frame, and each update sent a controller packet — 60–140 packets per second per
   locked turret, on the same UDP relay lane as everyone's positions. Now sent on change plus a
@@ -72,9 +70,7 @@ a little tuning (see `LAN-TUNING.md`).
   vehicle socket registries are now thread-safe (a rare unexplained launcher crash); the
   mod-filename security abort shows an in-game error instead of a stuck "Loading…"; the combined
   host no longer holds a dead pointer if its embedded server exits.
-- **Both files need updating** (exe p13h38 → p13h39). If you use the turrets mod, take the matching
-  `turrets_h92sweep` build too — it also fixes a crash when cycling semi-auto targets after one
-  despawns.
+- **Both files need updating** (exe p13h38 → p13h39).
 
 ## Previous release (p13h91)
 
