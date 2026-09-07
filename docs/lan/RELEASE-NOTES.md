@@ -1,6 +1,6 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.22.2-LAN p13h94` · combined host exe `p13h41` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
+**Build:** mod `4.22.2-LAN p13h95` · combined host exe `p13h41` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -44,6 +44,17 @@ a little tuning (see `LAN-TUNING.md`).
   cores so the relay/bridge keep up), and in-game **Save all logs (zip)** for support.
 
 ## This release
+
+- **Much less garbage on the physics step (mod-only update; the exe is unchanged).** The velocity
+  smoother allocated three vectors every call and runs twice per physics step in *every* vehicle,
+  so a busy session was handing the Lua collector hundreds of kilobytes a second per car for
+  nothing. Measured in a real session: **220 bytes per physics step down to 21, about 90% less**,
+  roughly 400 KB/s of allocation removed per vehicle. You should notice it as fewer collector
+  hitches rather than as a frame-rate number. Adapted by hand from a community optimisation by
+  stefan750 (upstream PR #952) — with one of its changes corrected, because as written it dropped a
+  frame rotation and could mis-correct a tilted car by several rad/s.
+
+## Previous release (p13h94)
 
 - **Upstream sync: mod 4.22.2, launcher #269, server 3.9.4.** The mod bump is version-only. The
   launcher's ten-packet UDP registration burst now runs on its own thread, so joining is no longer
