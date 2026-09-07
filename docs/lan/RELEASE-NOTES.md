@@ -55,8 +55,10 @@ a little tuning (see `LAN-TUNING.md`).
   frame rotation and could mis-correct a tilted car by several rad/s.
 - **...and on the send path too.** Building each outgoing position packet allocated about fifteen
   vectors; it now reuses one working set. End to end the physics step went from **220 bytes of
-  garbage per call to 12, about 94% less**, with the worst-case spike down by a third. Every value
-  that goes on the wire was verified unchanged, to the bit.
+  garbage per call to 12, about 94% less**. Every value that goes on the wire was verified
+  unchanged, to the bit. Confirmed in a real two-player session on both machines: the *receiving*
+  car's physics step allocates **exactly zero** bytes now, and what little remains on the sending
+  side is the packet encoding itself.
 
 ## Previous release (p13h94)
 
