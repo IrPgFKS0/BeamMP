@@ -1,6 +1,6 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.22.2-LAN p13h93` · combined host exe `p13h40` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
+**Build:** mod `4.22.2-LAN p13h94` · combined host exe `p13h41` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -80,7 +80,14 @@ a little tuning (see `LAN-TUNING.md`).
   twice-unstable remote car (the permanent "grey ball") is gated on this setting, and **`true` means
   the fork handles instabilities**. With it off, the stock engine flow runs instead and the grey ball
   can come back.
-- **Both files need updating** (exe p13h38 → p13h40).
+- **Two upstream server fixes taken (exe p13h41).** `Util.JsonEncode` treated *any* numeric key as
+  an array index, so a server-plugin table like `{[0]="a",[1]=true}` was written out as `["a",true]`
+  — the `0` key silently disappeared, and zero, negative and fractional keys all hit the same hole;
+  a table is now only an array when every key is an integer ≥ 1 (upstream #454). And the server
+  could finish shutting every subsystem down and then hang forever on a lingering thread, so it now
+  exits once the handlers have run — guarded so it never fires in combined-host mode, where exiting
+  would take the launcher and your game session with it (upstream #501).
+- **Both files need updating** (exe p13h38 → p13h41).
 
 ## Previous release (p13h91)
 
