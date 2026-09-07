@@ -24,29 +24,49 @@ M.cogRel = vec3(0,0,0)
 
 local refNode = v.data.refNodes[0].ref
 
+-- Cached scratch vectors (in-place mutation, GC-free -- upstream PR #952).
+-- INVARIANT: none of these may ESCAPE this file.
+local dir = vec3()
+local dirUp = vec3()
+local rot = quat()
+local cog = vec3()
+local rvel = vec3()
+local vel = vec3()
+
+local vehRvel = vec3()
+local vehVel = vec3()
+
+local zeroVec = vec3(0,0,0)
+local forceVec = vec3()
+
 -- Calculate center of gravity from connected nodes
 local function calcCOG()
 	
 	--print("Calculating COG "..obj:getId())
 	
 	local totalMass = 0
-	local cog = vec3(0,0,0)
+	cog:set(0,0,0)
 	
 	for i = 1, #nodes do
 		local node = nodes[i]
 		local nid = node[1]
 		local nodeMass = node[2]
 		local nodePos = obj:getNodePosition(nid)
+		nodePos:setScaled(nodeMass)
 		
-		cog:setAdd(nodePos*nodeMass)
+		cog:setAdd(nodePos)
 		
 		totalMass = totalMass + nodeMass
 	end
 	
 	cog:setScaled(1/totalMass)
 	
-	local rot = quatFromDir(-obj:getDirectionVector(), obj:getDirectionVectorUp())
-	M.cogRel = cog:rotated(rot:inversed())
+	dir:set(obj:getDirectionVectorXYZ())
+	dir:setScaled(-1)
+	dirUp:set(obj:getDirectionVectorUpXYZ())
+	rot:setFromDir(dir, dirUp)
+	rot:inverse()
+	M.cogRel = cog:rotated(rot)
 end
 
 -- Find all nodes that are connected to the parent node
@@ -66,18 +86,21 @@ local function findConnectedNodesImpl()
 	nodeStack[1] = parentNode
 	visited[parentNode] = true
 	
-	local cog = vec3(0,0,0)
+	cog:set(0,0,0)
 	local totalMass = 0
+
+	local refClusterID = obj:getNodeCluster(refNode)
 	
 	while stackIdx > 0 do
 		local node = nodeStack[stackIdx]
 		local nodeMass = obj:getNodeMass(node)
 		local nodePos = obj:getNodePosition(node)
+		nodePos:setScaled(nodeMass)
 		
 		nodes[#nodes+1] = {node, nodeMass*physicsFPS}
 		connected[node] = 1
 		
-		cog:setAdd(nodePos*nodeMass)
+		cog:setAdd(nodePos)
 		totalMass = totalMass + nodeMass
 		
 		nodeStack[stackIdx] = nil
@@ -101,7 +124,6 @@ local function findConnectedNodesImpl()
 		end
 	end
 
-	local refClusterID = obj:getNodeCluster(refNode)
 	for cid,_ in pairs(v.data.nodes) do
 		if not connected[cid] then
 			if obj:getNodeCluster(cid) == refClusterID then
@@ -112,8 +134,12 @@ local function findConnectedNodesImpl()
 	end
 	cog:setScaled(1/totalMass)
 	
-	local rot = quatFromDir(-obj:getDirectionVector(), obj:getDirectionVectorUp())
-	M.cogRel = cog:rotated(rot:inversed())
+	dir:set(obj:getDirectionVectorXYZ())
+	dir:setScaled(-1)
+	dirUp:set(obj:getDirectionVectorUpXYZ())
+	rot:setFromDir(dir, dirUp)
+	rot:inverse()
+	M.cogRel = cog:rotated(rot)
 end
 
 -- Guard: on a transiently-invalid vehicle (e.g. just after BeamNG's AI chasePlan or an
@@ -209,7 +235,8 @@ local function addForce(nodes, x, y, z, isCounterVel)
 		local node = nodes[i]
 		if node then
 			if not isCounterVel or obj:getNodeCluster(node[1]) == mainClusterID then
-				obj:applyForceVector(node[1], float3(x*node[2], y*node[2], z*node[2]))
+				forceVec:set(x*node[2], y*node[2], z*node[2])
+				obj:applyForceVector(node[1], forceVec)
 			elseif isCounterVel then
 				table.remove(disconnectedNodes,i)
 			end
@@ -225,16 +252,17 @@ local function addVelocity(x, y, z)
 	if connectedNodeCount < disconnectedNodeCount then
 		addForce(nodes, x, y, z)
 	else
-		obj:applyClusterLinearAngularAccel(refNode,vec3(x, y, z)*physicsFPS, vec3())
+		forceVec:set(x*physicsFPS, y*physicsFPS, z*physicsFPS)
+		obj:applyClusterLinearAngularAccel(refNode, forceVec, zeroVec)
 		addForce(disconnectedNodes, -x, -y, -z, true)
 	end
 end
 
 -- Instantly set vehicle velocity in m/s
 local function setVelocity(x, y, z)
-	local vvel = obj:getVelocity()
+	local vvelX, vvelY, vvelZ = obj:getVelocityXYZ()
 	
-	addVelocity(x - vvel.x, y - vvel.y, z - vvel.z)
+	addVelocity(x - vvelX, y - vvelY, z - vvelZ)
 end
 
 -- Add angular velocity to vehicle in rad/s
@@ -242,8 +270,11 @@ end
 --               and apply enough force to reach the calculated speed in 1 physics tick.
 -- NOTE: - very high values can destroy vehicles (above about 20-30 rad/s for most cars) or cause instability
 local function addAngularForce(nodes, x, y, z, pitchAV, rollAV, yawAV, isCounterVel)
-	local rot = quatFromDir(-vec3(obj:getDirectionVector()), vec3(obj:getDirectionVectorUp()))
-	local cog = M.cogRel:rotated(rot)
+	dir:set(obj:getDirectionVectorXYZ())
+	dir:setScaled(-1)
+	dirUp:set(obj:getDirectionVectorUpXYZ())
+	rot:setFromDir(dir, dirUp)
+	cog:setRotate(rot, M.cogRel)
 	local mainClusterID = obj:getNodeCluster(refNode)
 	--print("addAngularVelocity: pitchAV: "..pitchAV..", rollAV: "..rollAV..", yawAV: "..yawAV)
 	for i=#nodes, 1, -1 do -- reverse: table.remove(disconnectedNodes,i) below skips elements in a forward loop
@@ -263,7 +294,8 @@ local function addAngularForce(nodes, x, y, z, pitchAV, rollAV, yawAV, isCounter
 				local forceY = (y + posZ * pitchAV - posX * yawAV)*mul
 				local forceZ = (z + posX * rollAV - posY * pitchAV)*mul
 				
-				obj:applyForceVector(cid, float3(forceX, forceY, forceZ))
+				forceVec:set(forceX, forceY, forceZ)
+				obj:applyForceVector(cid, forceVec)
 			elseif isCounterVel then
 				table.remove(disconnectedNodes,i)
 			end
@@ -272,9 +304,16 @@ local function addAngularForce(nodes, x, y, z, pitchAV, rollAV, yawAV, isCounter
 end
 
 local function addAngularVelocity(x, y, z, pitchAV, rollAV, yawAV, onlyAngularVelocity, noCounterVelocity)
-	local rot = quatFromDir(-vec3(obj:getDirectionVector()), vec3(obj:getDirectionVectorUp()))
-	local cog = M.cogRel:rotated(rot)
-	local vel = vec3(x, y, z) - cog:cross(vec3(pitchAV, rollAV, yawAV))
+	dir:set(obj:getDirectionVectorXYZ())
+	dir:setScaled(-1)
+	dirUp:set(obj:getDirectionVectorUpXYZ())
+	rot:setFromDir(dir, dirUp)
+	cog:setRotate(rot, M.cogRel)
+	
+	rvel:set(pitchAV, rollAV, yawAV)
+	vel:set(x, y, z)
+	cog:setCross(cog, rvel)
+	vel:setSub(cog)
 	local velMulti = 1
 
 	if onlyAngularVelocity then
@@ -297,7 +336,9 @@ local function addAngularVelocity(x, y, z, pitchAV, rollAV, yawAV, onlyAngularVe
 			end
 		end
 	else
-		obj:applyClusterLinearAngularAccel(refNode,vel*physicsFPS*velMulti, -vec3(pitchAV, rollAV, yawAV)*physicsFPS)
+		rvel:setScaled(-physicsFPS)
+		vel:setScaled(physicsFPS*velMulti)
+		obj:applyClusterLinearAngularAccel(refNode, vel, rvel)
 		if noCounterVelocity then return end -- used on spawn and reset to wait with the counter velocity for a bit so things like logs on the T-series don't slide off
 		addAngularForce(disconnectedNodes, -x, -y, -z, -pitchAV, -rollAV, -yawAV, true)
 	end
@@ -305,18 +346,26 @@ end
 
 -- Instantly set vehicle angular velocity in rad/s
 local function setAngularVelocity(x, y, z, pitchAV, rollAV, yawAV, onlyAngularVelocity, noCounterVelocity)
-	local rot = quatFromDir(-vec3(obj:getDirectionVector()), vec3(obj:getDirectionVectorUp()))
-	local cog = M.cogRel:rotated(rot)
+	dir:set(obj:getDirectionVectorXYZ())
+	dir:setScaled(-1)
+	dirUp:set(obj:getDirectionVectorUpXYZ())
+	rot:setFromDir(dir, dirUp)
+	cog:setRotate(rot, M.cogRel)
 	
-	local rvel = vec3(pitchAV, rollAV, yawAV)
-	local vrvel = vec3(obj:getPitchAngularVelocity(), obj:getRollAngularVelocity(), obj:getYawAngularVelocity()):rotated(rot)
-	local rvelDiff = rvel - vrvel
+	vehRvel.y, vehRvel.x, vehRvel.z = obj:getRollPitchYawAngularVelocity()
+	vehRvel:setRotate(rot)
+	local rvdX = pitchAV - vehRvel.x
+	local rvdY = rollAV  - vehRvel.y
+	local rvdZ = yawAV   - vehRvel.z
 	
-	local vel = vec3(x, y, z)
-	local vvel = vec3(obj:getVelocity()) + cog:cross(vrvel)
-	local velDiff = vel - vvel
+	vehVel:set(obj:getVelocityXYZ())
+	cog:setCross(cog, vehRvel)
+	vehVel:setAdd(cog)
+	local vdX = x - vehVel.x
+	local vdY = y - vehVel.y
+	local vdZ = z - vehVel.z
 	
-	addAngularVelocity(velDiff.x, velDiff.y, velDiff.z, rvelDiff.x, rvelDiff.y, rvelDiff.z, onlyAngularVelocity, noCounterVelocity)
+	addAngularVelocity(vdX, vdY, vdZ, rvdX, rvdY, rvdZ, onlyAngularVelocity, noCounterVelocity)
 end
 
 local function updateGFX(dt)

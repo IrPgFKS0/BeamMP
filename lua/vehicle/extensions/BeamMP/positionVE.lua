@@ -23,20 +23,31 @@ local function newVectorSmoothing(rate)
   return data
 end
 
+-- GC: computed component-wise straight into the persistent state vector. The old form allocated
+-- THREE vec3 per call (sample-st, dif*k, st+...) and this runs twice per physics step at ~2000 Hz
+-- in every vehicle VM. Returns the state vector ITSELF, so callers must treat it as read-only and
+-- must not stash it expecting a snapshot -- see the audit note on set() below.
 function vectorSmoothing:get(sample, dt)
   local st = self.state
-  local dif = sample - st
-  st = st + dif * min(self.rate * dt, 1)
-  self.state = st
+  local k = min(self.rate * dt, 1)
+  st:set(st.x + (sample.x - st.x) * k,
+         st.y + (sample.y - st.y) * k,
+         st.z + (sample.z - st.z) * k)
   return st
 end
 
+-- COPIES, never aliases. It used to do `self.state = sample`, which made the smoother's state the
+-- caller's vector: with the in-place get() above, the very next get() would then mutate the
+-- caller's object. remoteVelSmoother:set(remoteData.vel) does exactly that, so aliasing here would
+-- silently corrupt the received packet data.
 function vectorSmoothing:set(sample)
-  self.state = sample
+  self.state:set(sample.x, sample.y, sample.z)
 end
 
+-- In place, so the state vector keeps a stable identity for the whole VM lifetime (get() relies on
+-- mutating one object rather than replacing it).
 function vectorSmoothing:reset()
-  self.state = vec3(0,0,0)
+  self.state:set(0, 0, 0)
 end
 -- =============================== SOME FUNCTIONS ===============================
 
@@ -157,6 +168,10 @@ local remoteData = {
 
 local smoothVel = vec3(0,0,0)
 local smoothRvel = vec3(0,0,0)
+-- Reusable samples for the 2000 Hz smoother feed (see update()). Never escape this file.
+local sVelSample = vec3(0,0,0)
+local sRvelSample = vec3(0,0,0)
+local mailboxName = nil     -- GC: cached "mpPos"..obj:getID(), built once on first use
 
 -- Ghost anti-sleep: set true once this vehicle proves remote (first received packet) and
 -- obj:setSleepingEnabled(false) has been applied; cleared on reset (onReset) so it re-arms.
@@ -205,6 +220,25 @@ local profReportT = PROF_TIMER and PROF_TIMER() or nil  -- report-interval timer
 local profClkFallback = os.clock()                      -- only used when PROF_TIMER is nil
 local PROF_INTERVAL_MS = 5000
 
+-- ONE table, deliberately: updateGFX sits within a couple of upvalues of LuaJIT's hard cap of 60,
+-- and exceeding it fails the WHOLE FILE at load. Two plain local functions cost two upvalues; this
+-- costs one. Same reason the scratch vectors below live in a table rather than as file locals.
+local gc = { mark = 0, stats = {} }   -- stats: key -> { n, sum(bytes), max(bytes) }
+function gc.begin_()
+	if profOn then gc.mark = collectgarbage('count') end
+end
+
+function gc.finish(key)
+	if not profOn then return end
+	local delta = (collectgarbage('count') - gc.mark) * 1024 -- KB -> bytes
+	if delta < 0 then return end -- a collection ran mid-call; that sample tells us nothing
+	local s = gc.stats[key]
+	if not s then s = {n = 0, sum = 0, max = 0}; gc.stats[key] = s end
+	s.n = s.n + 1
+	s.sum = s.sum + delta
+	if delta > s.max then s.max = delta end
+end
+
 local function profMaybeReport()
 	local win = profReportT and profReportT:stop() or ((os.clock() - profClkFallback) * 1000)  -- ms
 	if win < PROF_INTERVAL_MS then return end
@@ -212,6 +246,12 @@ local function profMaybeReport()
 		if v.n > 0 then
 			log('I', 'posProf', string.format('VE %-20s n=%d rate=%.0f/s avg=%.4fms max=%.4fms',
 				k, v.n, v.n * 1000 / win, v.sum / v.n, v.max))
+		end
+		v.n = 0; v.sum = 0; v.max = 0
+	end
+	for k, v in pairs(gc.stats) do
+		if v.n > 0 then
+			log('I', 'posProf', string.format('VE %-20s n=%d avg=%.0fB/call max=%.0fB', k, v.n, v.sum / v.n, v.max))
 		end
 		v.n = 0; v.sum = 0; v.max = 0
 	end
@@ -239,6 +279,10 @@ local function profEnd(key)
 	profMaybeReport()
 end
 
+-- GC accounting for the hot path: bytes of Lua garbage produced per call, which is what actually
+-- drives collector stutter (timings alone hide it). Sampled around a whole updateGFX call via
+-- collectgarbage('count'), which returns KB and allocates nothing itself. Gated on profOn so a
+-- before/after comparison runs under identical conditions.
 -- Count-only metric (no timing) for things measured by frequency: send rate,
 -- frame rate, predictor starvation, etc.
 local function profCount(key)
@@ -251,6 +295,7 @@ local function setProfiling(state)
 	profOn = state and true or false
 	for k in pairs(profStats)  do profStats[k]  = nil end   -- clean window on each toggle
 	for k in pairs(profCounts) do profCounts[k] = nil end
+	for k in pairs(gc.stats)   do gc.stats[k]   = nil end
 	if profReportT then profReportT:stopAndReset() end
 	profClkFallback = os.clock()
 end
@@ -372,9 +417,16 @@ local function update(dtSim)
 	end
 
 
-	-- Smooth vehicle velocity to prevent vibrating
-	smoothVel = localVelSmoother:get(vec3(obj:getVelocity()), dtSim)
-	smoothRvel = localRvelSmoother:get(vec3(obj:getPitchAngularVelocity(), obj:getRollAngularVelocity(), obj:getYawAngularVelocity()), dtSim)
+	-- Smooth vehicle velocity to prevent vibrating.
+	-- GC: both samples are built into reusable scratch vectors instead of allocating a fresh vec3
+	-- per physics step. getVelocityXYZ returns the three components directly, avoiding the engine
+	-- allocating a vec3 that we then copied again. The smoothers return their own state vector, so
+	-- smoothVel/smoothRvel are references to it -- only ever READ below (:rotated / + cross, both
+	-- of which allocate their own result), never stored as a snapshot.
+	sVelSample:set(obj:getVelocityXYZ())
+	sRvelSample:set(obj:getPitchAngularVelocity(), obj:getRollAngularVelocity(), obj:getYawAngularVelocity())
+	smoothVel = localVelSmoother:get(sVelSample, dtSim)
+	smoothRvel = localRvelSmoother:get(sRvelSample, dtSim)
 
 	-- Physics-rate self-send: emit at ~100Hz from here (runs ~2000Hz) instead of
 	-- once per render frame, so a low-FPS machine still sends fresh data. Active
@@ -400,6 +452,7 @@ end
 
 
 local function updateGFX(dt)
+	gc.begin_()
 	local rawDt = dt                        -- real render dt, BEFORE the simSpeed scaling below (stall diag)
 	sd.realTimer = sd.realTimer + rawDt
 	dt = dt * (remoteData.localSimspeed or 1)
@@ -410,7 +463,11 @@ local function updateGFX(dt)
 	-- Mailbox apply: pull the latest position GE delivered (when enabled). Latest-wins
 	-- is correct -- stale intermediate samples are useless to the predictor.
 	if mailboxOn then
-		local name = "mpPos"..obj:getID()
+		-- GC: the mailbox name is constant for this VM's lifetime; building it per frame allocated a
+		-- fresh string every render frame on every ghost. Built once, lazily (obj:getID() is not
+		-- reliable at file scope).
+		if not mailboxName then mailboxName = "mpPos"..obj:getID() end
+		local name = mailboxName
 		local ver = obj:getLastMailboxVersion(name)
 		if ver ~= lastMailboxVer then
 			lastMailboxVer = ver
@@ -625,6 +682,7 @@ local function updateGFX(dt)
 	lastRacc = targetRacc
 
 	profEnd('updateGFX')
+	gc.finish('updateGFX.gc')
 end
 
 
