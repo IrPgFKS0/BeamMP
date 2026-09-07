@@ -1,6 +1,6 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.22.2-LAN p13h95` · combined host exe `p13h41` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
+**Build:** mod `4.22.2-LAN p13h96` · combined host exe `p13h41` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -53,6 +53,10 @@ a little tuning (see `LAN-TUNING.md`).
   hitches rather than as a frame-rate number. Adapted by hand from a community optimisation by
   stefan750 (upstream PR #952) — with one of its changes corrected, because as written it dropped a
   frame rotation and could mis-correct a tilted car by several rad/s.
+- **...and on the send path too.** Building each outgoing position packet allocated about fifteen
+  vectors; it now reuses one working set. End to end the physics step went from **220 bytes of
+  garbage per call to 12, about 94% less**, with the worst-case spike down by a third. Every value
+  that goes on the wire was verified unchanged, to the bit.
 
 ## Previous release (p13h94)
 

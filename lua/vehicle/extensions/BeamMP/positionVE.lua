@@ -174,6 +174,10 @@ local smoothRvel = vec3(0,0,0)
 -- Reusable samples for the 2000 Hz smoother feed (see update()). Never escape this file.
 local sVelSample = vec3(0,0,0)
 local sRvelSample = vec3(0,0,0)
+-- Reusable working set for doSendPosRot, which allocated ~15 vec3/quat per send. ONE table so it
+-- costs a single upvalue. Every member is written before it is read on each send, and none escapes:
+-- the values leave only as NUMBERS copied into posSendTbl for jsonEncode.
+local W = { dir = vec3(), dirUp = vec3(), rot = quat(), rvel = vec3(), cog = vec3(), pos = vec3(), vel = vec3() }
 local mailboxName = nil     -- GC: cached "mpPos"..obj:getID(), built once on first use
 
 -- Ghost anti-sleep: set true once this vehicle proves remote (first received packet) and
@@ -819,12 +823,23 @@ end
 function doSendPosRot(useSendTime)
 	profBegin()
 	-- this attempts to send a full table of nan if there are several rapid instability causing VE lua to break after next vehicle reload, seems to be caused by a game issue
-	local rot = quatFromDir(-vec3(obj:getDirectionVector()), vec3(obj:getDirectionVectorUp()))
-	local rvel = smoothRvel:rotated(rot)
+	-- GC: computed in place into the reusable W pool. getPositionXYZ / getDirectionVector*XYZ were
+	-- verified IN-GAME to return values bit-identical to their vec3-returning counterparts (worst
+	-- delta 0 over 801 samples at 17 significant digits), so this cannot shift what goes on the wire.
+	local rot, rvel, cog, pos, vel = W.rot, W.rvel, W.cog, W.pos, W.vel
+	W.dir:set(obj:getDirectionVectorXYZ())
+	W.dir:setScaled(-1)
+	W.dirUp:set(obj:getDirectionVectorUpXYZ())
+	rot:setFromDir(W.dir, W.dirUp)
 
-	local cog = velocityVE.cogRel:rotated(rot)
-	local pos = vec3(obj:getPosition()) + cog
-	local vel = smoothVel + cog:cross(rvel)
+	rvel:set(smoothRvel.x, smoothRvel.y, smoothRvel.z) -- COPY: smoothRvel IS the smoother's own state
+	rvel:setRotate(rot)
+
+	cog:setRotate(rot, velocityVE.cogRel)
+	pos:set(obj:getPositionXYZ())
+	pos:setAdd(cog)
+	vel:setCross(cog, rvel)          -- vel = cog x rvel ...
+	vel:setAdd(smoothVel)            -- ... + smoothVel (addition commutes, cog is not clobbered)
 	-- Skip sending if ANY value is NaN. During rapid instability the game can
 	-- produce NaN position/rotation (not just velocity); sending it teleports our
 	-- car to NaN on every other client -- it "disappears" for them until we reload.
@@ -837,8 +852,8 @@ function doSendPosRot(useSendTime)
 		return
 	end
 
-	vel = vel * simSpeedReal
-	rvel = rvel * simSpeedReal
+	vel:setScaled(simSpeedReal)
+	rvel:setScaled(simSpeedReal)
 
 	local t = posSendTbl
 	t.pos[1], t.pos[2], t.pos[3] = pos.x, pos.y, pos.z
