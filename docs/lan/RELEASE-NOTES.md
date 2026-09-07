@@ -1,6 +1,6 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.22.2-LAN p13h92` · combined host exe `p13h39` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
+**Build:** mod `4.22.2-LAN p13h93` · combined host exe `p13h40` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -70,7 +70,17 @@ a little tuning (see `LAN-TUNING.md`).
   vehicle socket registries are now thread-safe (a rare unexplained launcher crash); the
   mod-filename security abort shows an in-game error instead of a stuck "Loading…"; the combined
   host no longer holds a dead pointer if its embedded server exits.
-- **Both files need updating** (exe p13h38 → p13h39).
+- **Two thread-safety/behaviour fixes on top (p13h93 / exe p13h40).** The direct vehicle socket sent
+  through a single shared address struct, so with two receive threads a position or input packet
+  could leave for the wrong vehicle's port — it now stamps a per-call copy. And the new turret
+  aim-rate limiter kept one de-duplication state per vehicle rather than per controller, so a
+  platform carrying both a gun and a missile turret had one turret's aim updates suppressed by the
+  other's; that turret then never re-aimed on anyone else's screen.
+- **Host note — check `disableInstabilityPausing`.** The protection against BeamNG 0.39.4 deleting a
+  twice-unstable remote car (the permanent "grey ball") is gated on this setting, and **`true` means
+  the fork handles instabilities**. With it off, the stock engine flow runs instead and the grey ball
+  can come back.
+- **Both files need updating** (exe p13h38 → p13h40).
 
 ## Previous release (p13h91)
 

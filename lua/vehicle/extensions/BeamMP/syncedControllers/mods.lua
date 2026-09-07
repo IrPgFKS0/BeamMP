@@ -75,18 +75,22 @@ end
 -- a ghost whose VE VM reloads (edit) starts with an empty controller state and its own auto-aim is
 -- disabled by the sync wrapper, so without it the ghost would never aim until the owner's target
 -- changed. Sim time pauses with the game, which is the right clock for this.
-local aimLastVehID = 0        -- 0 = 'never sent' (a real id is never 0; nil = 'no target')
-local aimLastSendTime = -1
+-- Keyed BY CONTROLLER, not per VM: one vehicle can carry more than one targetAim (a platform with
+-- both a gun turret and a missile turret), and a single shared last-id would let one turret's
+-- update suppress the other's -- that turret would then never re-aim on the ghosts.
+local aimSendState = {}       -- controllerName -> { id = <last sent, false = never sent>, t = <sim time> }
 local AIM_KEEPALIVE_S = 0.5
 local function prepairAimID(controllerName, funcName, tempTable, ...)
 	local vehID = tempTable.variables[1]
 	if vehID then vehID = normalizeTargetID(vehID, tempTable) end
+	local st = aimSendState[controllerName]
+	if not st then st = { id = false, t = -1 }; aimSendState[controllerName] = st end
 	local now = obj:getSimTime()
-	if vehID ~= aimLastVehID or (vehID ~= nil and now - aimLastSendTime >= AIM_KEEPALIVE_S) then
+	if vehID ~= st.id or (vehID ~= nil and now - st.t >= AIM_KEEPALIVE_S) then
 		tempTable["vehID"] = vehID -- store vehicleID separately so we can convert it to serverVehID in GE
 		controllerSyncVE.sendControllerData(tempTable)
-		aimLastVehID = vehID
-		aimLastSendTime = now
+		st.id = vehID
+		st.t = now
 	end
 	return controllerSyncVE.OGcontrollerFunctionsTable[controllerName][funcName](...)
 end
