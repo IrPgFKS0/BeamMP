@@ -145,11 +145,14 @@ local timer = 0
 local ownPing = 0
 local lastDT = 0
 
-local lastVehVel = nil
-local lastVehRvel = nil
+-- Cross-frame predictor state, deliberately in ONE table: updateGFX reads all four, and as separate
+-- file locals they cost it four upvalues out of LuaJIT's hard cap of 60 (exceeding it fails the
+-- WHOLE file at load, and this function was sitting at 58). One table costs one, which buys back
+-- the headroom the remaining GC work needs. Values are replaced, never mutated in place, so the
+-- semantics are unchanged.
+local P = { vehVel = nil, vehRvel = nil, acc = nil, racc = nil }
 
-local lastAcc = nil
-local lastRacc = nil
+
 
 local tpTimer = 0
 
@@ -346,11 +349,11 @@ local function onReset()
 	accErrorSmoother:reset()
 	raccErrorSmoother:reset()
 	
-	lastVehVel = nil
-	lastVehRvel = nil
+	P.vehVel = nil
+	P.vehRvel = nil
 
-	lastAcc = nil
-	lastRacc = nil
+	P.acc = nil
+	P.racc = nil
 
 	smoothVel = vec3(0,0,0)
 	smoothRvel = vec3(0,0,0)
@@ -417,6 +420,7 @@ local function update(dtSim)
 	end
 
 
+	gc.begin_()
 	-- Smooth vehicle velocity to prevent vibrating.
 	-- GC: both samples are built into reusable scratch vectors instead of allocating a fresh vec3
 	-- per physics step. getVelocityXYZ returns the three components directly, avoiding the engine
@@ -440,6 +444,7 @@ local function update(dtSim)
 			doSendPosRot(true)
 		end
 	end
+	gc.finish('update.gc')   -- physics-step garbage: the number the GC rework targets
 end
 
 
@@ -535,15 +540,15 @@ local function updateGFX(dt)
 	-- Local vehicle data
 	local vehRot = quatFromDir(-vec3(obj:getDirectionVector()), vec3(obj:getDirectionVectorUp()))
 	local vehRvel = smoothRvel:rotated(vehRot)
-	local vehRacc = vehRvel-(lastVehRvel or vehRvel)
+	local vehRacc = vehRvel-(P.vehRvel or vehRvel)
 	
 	local cog = velocityVE.cogRel:rotated(vehRot)
 	local vehPos = vec3(obj:getPosition()) + cog
 	local vehVel = smoothVel + cog:cross(vehRvel)
-	local vehAcc = vehVel-(lastVehVel or vehVel)
+	local vehAcc = vehVel-(P.vehVel or vehVel)
 
-	lastVehVel = vehVel
-	lastVehRvel = vehRvel
+	P.vehVel = vehVel
+	P.vehRvel = vehRvel
 
 	-- Smoothed difference between local and remote timestamps
 	local timeOffset = timeOffsetSmoother:get(remoteData.timeOffset, dt)
@@ -639,7 +644,7 @@ local function updateGFX(dt)
 			remoteAccSmoother:reset()
 			remoteRaccSmoother:reset()
 	
-			lastAcc = nil
+			P.acc = nil
 	
 			accErrorSmoother:reset()
 			raccErrorSmoother:reset()
@@ -650,11 +655,11 @@ local function updateGFX(dt)
 	end
 
 	local velError = vel - vehVel
-	local accError = accErrorSmoother:get((lastAcc or vehAcc) - vehAcc, dt)
+	local accError = accErrorSmoother:get((P.acc or vehAcc) - vehAcc, dt)
 	--print("AccError: "..tostring(accError:length()/dt))
 
 	local rvelError = rvel - vehRvel
-	local raccError = raccErrorSmoother:get((lastRacc or vehRacc) - vehRacc, dt)
+	local raccError = raccErrorSmoother:get((P.racc or vehRacc) - vehRacc, dt)
 	--print("RaccError: "..tostring(raccError:length()/dt))
 
 	local targetAcc = limitVecLength((velError + posError*posCorrectMul)*min(posForceMul*dt,1), maxPosForce*dt)
@@ -678,8 +683,8 @@ local function updateGFX(dt)
 		end
 	end
 
-	lastAcc = targetAcc
-	lastRacc = targetRacc
+	P.acc = targetAcc
+	P.racc = targetRacc
 
 	profEnd('updateGFX')
 	gc.finish('updateGFX.gc')
@@ -929,8 +934,8 @@ function setVehiclePosRot(data)  -- assigns the forward-declared local (called b
 		remoteRvelSmoother:set(rvel)
 		remoteAccSmoother:reset()
 		remoteRaccSmoother:reset()
-		lastAcc = nil
-		lastRacc = nil
+		P.acc = nil
+		P.racc = nil
 		remoteData.timer = tim -- remoteDT below floors at 0.001; with the deltas zeroed acc/racc stay 0
 	end
 
