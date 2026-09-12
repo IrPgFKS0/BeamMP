@@ -459,7 +459,11 @@ local function update(dtSim)
 		-- physmult below 1 even at full realtime. hptimer is wall-clock on both OSes.
 		local physdiff = physTimer and (physTimer:stop() / 1000) or (os.clock() - physstart)
 		if playerInfo.firstPlayerSeated then
-			physmult = 1/physdiff -- (physdiff == 0) and 0 or 1/physdiff
+			-- `local`: without it this writes a GLOBAL in every seated vehicle's VM, which the
+			-- engine's globals watchdog logs with a stack traceback (~5x per machine per session).
+			-- Nothing reads it elsewhere -- it is consumed on the next line, and it reaches GE as a
+			-- stringified literal in the queued command, not as a global lookup.
+			local physmult = 1/physdiff -- (physdiff == 0) and 0 or 1/physdiff
 			--print(tostring(physmult*100) .."% realtime")
 			obj:queueGameEngineLua("positionGE.setActualSimSpeed("..tostring(physmult)..")")
 		end

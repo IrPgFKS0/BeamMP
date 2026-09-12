@@ -11,6 +11,7 @@ already-committed ones remain in history at their tags).
 |---|---|
 | [`BeamMP-LAN-p13h98.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-release-p13h98) | `BFD01870CFA5A85163EB473C290BA5A2CF5FB01E9145CF4C8031E9C7C08A046D` |
 | [`BeamMP-LAN-p13h96.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-release-p13h96) (previous 0.39 build) | `629688AE7BE135ECD06BF75B872A02E53E422E04630A4983DC3082F6F15D3184` |
+| [`BeamMP-LAN-p13h94.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-release-p13h94) | `79BAF72680A5462D42E4E012AE35DFB559D30008393B8D1915A69595D85D2851` |
 | [`BeamMP-LAN-p13h57.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-0.38-last-good) (0.38 ROLLBACK) | `1B1673CEA703FECC5D5CEB1B594812916E15EEB03BFC8F9DE17F9DC7808B851B` |
 
 **Update BOTH files** — the exe changed (`p13h41` → `p13h42`). New mod `BeamMP.zip` sha256
@@ -23,9 +24,11 @@ decode alone costs — so the predictor's own share is gone. The exe changes onl
 behaviour for the *standalone* Linux server (terminal restored and streams flushed before exit);
 the combined host was never affected. If you ran any p13h82–p13h85 build: those reject every
 remote position packet in multiplayer (remote cars frozen) — update now.
-(Superseded zips and their `lan-release-*` tags are removed as releases roll; the only tags kept
-are the three backing published releases -- `lan-release-p13h98`, `lan-release-p13h96` and
-`lan-0.38-last-good` -- which is exactly the set the AGPL source promise needs.)
+(Superseded zips and their `lan-release-*` tags are removed as releases roll; the tags kept are
+exactly the ones backing a published release -- currently `lan-release-p13h98`,
+`lan-release-p13h96`, `lan-release-p13h94` and `lan-0.38-last-good` -- which is the set the AGPL
+source promise needs. Every row in the table above must link a release that still exists, and the
+source offer at the bottom must name a tag `git ls-remote --tags` actually shows.)
 
 The zip contains:
 
