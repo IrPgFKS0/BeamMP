@@ -1,6 +1,6 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.22.2-LAN p13h96` · combined host exe `p13h41` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
+**Build:** mod `4.22.2-LAN p13h98` · combined host exe `p13h42` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -44,6 +44,41 @@ a little tuning (see `LAN-TUNING.md`).
   cores so the relay/bridge keep up), and in-game **Save all logs (zip)** for support.
 
 ## This release
+
+> **Not yet verified in a two-player session.** The ghost predictor below only runs when a second
+> player is streaming in, so nothing on one machine can exercise it — see "How this was checked".
+
+- **The remote-car predictor stopped churning memory (mod-only; no wire change).** Every frame, for
+  every other player's car on your screen, the code that smooths and predicts their motion was
+  building about fifty throwaway vectors — roughly **2.8 KB of garbage per frame per remote car**,
+  and unlike the earlier send-path work this cost *grows with how many people are in the session*.
+  It now computes into one reusable working set. The arithmetic is unchanged: the new code was run
+  against a verbatim copy of the old, over 15 adversarial input streams × 25,000 frames × 5 seeds
+  — **258.7 million bit-for-bit comparisons, zero differences**. The check was itself tested by
+  deliberately breaking the code 20 different ways; all 20 were caught.
+- **Server shutdown no longer wrecks your terminal (Linux, standalone server only).** Shutting the
+  dedicated server down with Ctrl+C or SIGTERM left the shell with no echo and no line editing
+  until you ran `reset`. The fast-exit path added last release skips the cleanup that normally
+  restores the terminal; it now restores it first. The same path also skipped flushing open files,
+  so a Lua plugin writing its own log could lose its last few lines — also fixed. **The combined
+  host was never affected** by either.
+- **The server's own test suite runs to completion again.** That same fast exit was terminating the
+  test binary a third of the way through: 13 of 36 cases had silently not been running since last
+  release, while the run still reported success. Now 32 of 36 pass (the remaining 4 are a
+  pre-existing upstream socket hang on Windows; they pass on Linux).
+
+### How this was checked
+
+A full bug-and-regression sweep over everything built since p13h92 — nine independent reviewers by
+subject area, every candidate defect then re-checked by three more who each tried to disprove it.
+The predictor rework and the turret-aim fix came back clean; the two shutdown defects above are what
+it found. Ten further issues it surfaced were confirmed to **pre-date** p13h92 and are listed in the
+project's upstream ledger rather than fixed here, to keep this release to one concern.
+
+The offline equivalence harness that proves the predictor rework is in `tools/predictor-guard/`, and
+it is re-runnable after any future upstream merge that touches those files.
+
+## Previous release (p13h96)
 
 - **Much less garbage on the physics step (mod-only update; the exe is unchanged).** The velocity
   smoother allocated three vectors every call and runs twice per physics step in *every* vehicle,
