@@ -139,7 +139,6 @@ local raccErrorSmoother = newVectorSmoothing(50)            -- Smoother for angu
 local timeOffsetSmoother = newTemporalSmoothingNonLinear(1) -- Smoother for getting average time offset
 
 -- Persistent data
-local lastMailboxVersion = 0
 local framesSinceReset = 0
 local timer = 0
 local ownPing = 0
@@ -148,9 +147,17 @@ local lastDT = 0
 -- Cross-frame predictor state, deliberately in ONE table: updateGFX reads all four, and as separate
 -- file locals they cost it four upvalues out of LuaJIT's hard cap of 60 (exceeding it fails the
 -- WHOLE file at load, and this function was sitting at 58). One table costs one, which buys back
--- the headroom the remaining GC work needs. Values are replaced, never mutated in place, so the
--- semantics are unchanged.
-local P = { vehVel = nil, vehRvel = nil, acc = nil, racc = nil }
+-- the headroom the remaining GC work needs.
+--
+-- The four fields keep their nil-or-vector semantics exactly (nil = "no previous frame", which is
+-- what onReset, the teleport branch and setVehiclePosRot's clock-reset branch all rely on). What
+-- changed in p13h97 is only WHERE the vector lives: updateGFX now COPIES into the dedicated s*
+-- backing vectors below and points the field at one of those, instead of handing over a freshly
+-- allocated one. An s* slot must NEVER be one of E's scratch slots -- E is rewritten at the top of
+-- the next frame, before these are read, so aliasing would make vehAcc/vehRacc identically zero
+-- every frame with no error anywhere (verified: naive pooling gives vec3(0,0,0) forever).
+local P = { vehVel = nil, vehRvel = nil, acc = nil, racc = nil,
+            sVehVel = vec3(), sVehRvel = vec3(), sAcc = vec3(), sRacc = vec3() }
 
 
 
@@ -178,6 +185,28 @@ local sRvelSample = vec3(0,0,0)
 -- costs a single upvalue. Every member is written before it is read on each send, and none escapes:
 -- the values leave only as NUMBERS copied into posSendTbl for jsonEncode.
 local W = { dir = vec3(), dirUp = vec3(), rot = quat(), rvel = vec3(), cog = vec3(), pos = vec3(), vel = vec3() }
+-- W's sibling for the RECEIVE side: the remote-ghost predictor in updateGFX, which allocated
+-- ~2.8 KB per render frame PER GHOST (44 vec3 + 5 quat) and, unlike the send path, scales with the
+-- number of remote players. ONE table = ONE upvalue (updateGFX sits near LuaJIT's hard cap of 60,
+-- and exceeding it fails the WHOLE file at load); inlining limitVecLength's clamp pays that back.
+--
+-- ALIASING CONTRACT -- read this before touching updateGFX:
+--  * READ-ONLY, never the SELF of a set*: the four remote*Smoother:get returns, accError/raccError,
+--    smoothVel/smoothRvel (all are the smoothers' OWN state vectors since p13h95), every
+--    remoteData.* field (received packet state), and velocityVE.cogRel (velocityVE's own state).
+--    Passing them as an OPERAND is safe -- every mathlib set* reads its operands into locals first.
+--  * Never assign a slot from here into P or into remoteData; P has its own s* backing vectors.
+--  * One slot per named value. Do NOT share two live values on one slot to save memory: vehAcc
+--    stays live until the accError line and vehRacc until raccError, long after they are computed.
+local E = {
+	dir = vec3(), dirUp = vec3(), vehRot = quat(),
+	vehRvel = vec3(), vehRacc = vec3(), cog = vec3(), vehPos = vec3(),
+	vehVel = vec3(), vehAcc = vec3(),
+	pos = vec3(), vel = vec3(), rotAdd = vec3(), qe = quat(), rot = quat(), rvel = vec3(),
+	posError = vec3(), rotErrQ = quat(), eul = vec3(), rotError = vec3(),
+	velError = vec3(), accSample = vec3(), rvelError = vec3(), raccSample = vec3(),
+	targetAcc = vec3(), targetRacc = vec3(),
+}
 local mailboxName = nil     -- GC: cached "mpPos"..obj:getID(), built once on first use
 
 -- Ghost anti-sleep: set true once this vehicle proves remote (first received packet) and
@@ -329,6 +358,19 @@ local function limitVecLength(vec, length)
 	return vec
 end
 
+-- In-place sibling of the above, for the per-frame predictor (updateGFX) where the returned vector
+-- was pure garbage. Same arithmetic: __mul(vec, n) computes n*v.x and setScaled(n) computes v.x*n,
+-- and IEEE multiplication is bitwise commutative. Kept SEPARATE rather than converting the original
+-- because the two differ in ownership of the result and their callers are disjoint: the allocating
+-- version stays for the receive path (setVehiclePosRot), which assigns straight into remoteData.acc
+-- /.racc and so needs a fresh, uniquely-owned vector. Do not point that path at this one.
+local function limitVecLengthIP(vec, length)
+	local vecLength = vec:length()
+	if vecLength > length then
+		vec:setScaled(length/vecLength)
+	end
+end
+
 
 
 -- Rotate the vehicle relative to its current rotation
@@ -457,6 +499,9 @@ end
 -- used here -- this fork receives positions through setVehiclePosRot (the mpPos mailbox and
 -- the #245 direct vehicle socket) and runs its own predictor on top, so keeping a second,
 -- never-called receive path would only invite the two to drift apart.
+-- Its state variable `lastMailboxVersion` went with it (p13h97) -- upstream still declares and
+-- uses that name, so a merge may reintroduce the bare declaration: it belongs to the removed
+-- path, not to the live poll below, which uses `lastMailboxVer`. Delete it again if it returns.
 
 
 
@@ -542,17 +587,36 @@ local function updateGFX(dt)
 	profBegin()
 
 	-- Local vehicle data
-	local vehRot = quatFromDir(-vec3(obj:getDirectionVector()), vec3(obj:getDirectionVectorUp()))
-	local vehRvel = smoothRvel:rotated(vehRot)
-	local vehRacc = vehRvel-(P.vehRvel or vehRvel)
-	
-	local cog = velocityVE.cogRel:rotated(vehRot)
-	local vehPos = vec3(obj:getPosition()) + cog
-	local vehVel = smoothVel + cog:cross(vehRvel)
-	local vehAcc = vehVel-(P.vehVel or vehVel)
+	-- GC: computed in place into the E pool. The *XYZ getters hand back the three components
+	-- directly, so neither the engine nor mathlib allocates -- the same substitution doSendPosRot
+	-- already ships and p13h96 verified in-game. smoothRvel/smoothVel and velocityVE.cogRel are
+	-- foreign state: OPERANDS ONLY (the two-arg setRotate; the one-arg form would overwrite them).
+	local vehRot = E.vehRot
+	E.dir:set(obj:getDirectionVectorXYZ())
+	E.dir:setScaled(-1)
+	E.dirUp:set(obj:getDirectionVectorUpXYZ())
+	vehRot:setFromDir(E.dir, E.dirUp)
 
-	P.vehVel = vehVel
-	P.vehRvel = vehRvel
+	local vehRvel = E.vehRvel
+	vehRvel:setRotate(vehRot, smoothRvel)
+	local vehRacc = E.vehRacc
+	vehRacc:setSub2(vehRvel, P.vehRvel or vehRvel)
+
+	local cog = E.cog
+	cog:setRotate(vehRot, velocityVE.cogRel)
+	local vehPos = E.vehPos
+	vehPos:set(obj:getPositionXYZ())
+	vehPos:setAdd(cog)
+	local vehVel = E.vehVel
+	vehVel:setCross(cog, vehRvel)   -- cog x vehRvel ...
+	vehVel:setAdd(smoothVel)        -- ... + smoothVel (IEEE addition commutes; cog is not clobbered)
+	local vehAcc = E.vehAcc
+	vehAcc:setSub2(vehVel, P.vehVel or vehVel)
+
+	-- COPY into P's backing vectors -- see the aliasing contract on E. Order matters: this runs
+	-- AFTER vehRacc/vehAcc have consumed last frame's values.
+	P.sVehVel:set(vehVel.x, vehVel.y, vehVel.z);     P.vehVel  = P.sVehVel
+	P.sVehRvel:set(vehRvel.x, vehRvel.y, vehRvel.z); P.vehRvel = P.sVehRvel
 
 	-- Smoothed difference between local and remote timestamps
 	local timeOffset = timeOffsetSmoother:get(remoteData.timeOffset, dt)
@@ -575,11 +639,27 @@ local function updateGFX(dt)
 	local remoteRacc = remoteRaccSmoother:get(remoteData.racc, smootherDT)
 
 	-- Use received position, and smoothed velocity and acceleration to predict vehicle position
-	local pos = remoteData.pos + remoteVel*predictTime + 0.5*remoteAcc*predictTime*predictTime
-	local vel = remoteVel + remoteAcc*predictTime
-	local rotAdd = remoteRvel*predictTime + 0.5*remoteRacc*predictTime*predictTime
-	local rot = remoteData.rot * quatFromEuler(rotAdd.x, rotAdd.y, rotAdd.z)
-	local rvel = remoteRvel + remoteRacc*predictTime
+	-- GC: written per component so the float grouping is EXACTLY the old operator form,
+	--   a + b*t + 0.5*c*t*t  ==  (a + (b*t)) + (((0.5*c)*t)*t)
+	-- Do NOT "simplify" by hoisting 0.5*predictTime*predictTime into a local: that re-associates the
+	-- multiply and moves the last bit. remoteVel/remoteRvel/remoteAcc/remoteRacc above ARE the
+	-- smoothers' own state vectors -- every appearance here is a READ.
+	local pt = predictTime
+	local pos, vel, rotAdd, rot, rvel = E.pos, E.vel, E.rotAdd, E.rot, E.rvel
+	pos:set(remoteData.pos.x + remoteVel.x*pt + 0.5*remoteAcc.x*pt*pt,
+	        remoteData.pos.y + remoteVel.y*pt + 0.5*remoteAcc.y*pt*pt,
+	        remoteData.pos.z + remoteVel.z*pt + 0.5*remoteAcc.z*pt*pt)
+	vel:set(remoteVel.x + remoteAcc.x*pt,
+	        remoteVel.y + remoteAcc.y*pt,
+	        remoteVel.z + remoteAcc.z*pt)
+	rotAdd:set(remoteRvel.x*pt + 0.5*remoteRacc.x*pt*pt,
+	           remoteRvel.y*pt + 0.5*remoteRacc.y*pt*pt,
+	           remoteRvel.z*pt + 0.5*remoteRacc.z*pt*pt)
+	E.qe:setFromEuler(rotAdd.x, rotAdd.y, rotAdd.z)
+	rot:setMul2(remoteData.rot, E.qe)   -- destination must never be an operand: keep E.rot dedicated
+	rvel:set(remoteRvel.x + remoteRacc.x*pt,
+	         remoteRvel.y + remoteRacc.y*pt,
+	         remoteRvel.z + remoteRacc.z*pt)
 
 	--[[
 	-- Debug
@@ -593,10 +673,16 @@ local function updateGFX(dt)
 	--]]
 
 	-- Error correction
-	local posError = pos - vehPos
-	local rotErrorQuat = vehRot:inversed() * rot
-	local rotError = rotErrorQuat:toEulerYXZ()
-	rotError = vec3(rotError.y, rotError.z, rotError.x)
+	-- GC: setInvMul2 IS vehRot:inversed() * rot -- same invSqNorm, same setMulXYZW, no temporaries --
+	-- and setEulerYXZ is the body toEulerYXZ calls. The y,z,x swizzle needs its own second slot:
+	-- done in one vector it would read a component after overwriting it.
+	local posError = E.posError
+	posError:setSub2(pos, vehPos)
+	local rotErrorQuat = E.rotErrQ
+	rotErrorQuat:setInvMul2(vehRot, rot)
+	E.eul:setEulerYXZ(rotErrorQuat)
+	local rotError = E.rotError
+	rotError:set(E.eul.y, E.eul.z, E.eul.x)
 	
 	-- Calculate teleport thresholds
 	local maxVel = tpVelSmoother:get(max(vel:length(), vehVel:length()), dt)
@@ -636,7 +722,11 @@ local function updateGFX(dt)
 			if framesSinceReset == 6 then
 				noCounterVelocity = 1 -- logs on the t series count as not attached so they would fly backwards on spawn, this disables the counter velocity preventing that
 			end
-			local posData = {pos = tpPos, vel = vel, vehVel = vehVel, rot = rot,rvel = rvel , noCounter = noCounterVelocity}
+			-- RARE path, deliberately left allocating: it returns immediately and is dominated by
+			-- serialize() anyway. vehVel and rvel here are the OUTER E pool slots (rvel was computed at
+			-- the un-incremented predictTime, unlike the shadowed pos/vel/rot above) -- copied so the
+			-- payload cannot depend on nothing having touched the pool between here and serialize().
+			local posData = {pos = tpPos, vel = vel, vehVel = vec3(vehVel), rot = rot,rvel = vec3(rvel) , noCounter = noCounterVelocity}
 			
 			obj:queueGameEngineLua("positionGE.setPositionRotationVelocity("..obj:getID()..","..serialize(posData)..")")
 	
@@ -658,24 +748,40 @@ local function updateGFX(dt)
 		end
 	end
 
-	local velError = vel - vehVel
-	local accError = accErrorSmoother:get((P.acc or vehAcc) - vehAcc, dt)
+	-- GC: E.accSample/E.raccSample carry the (previous - current) difference into the smoothers,
+	-- which read the sample componentwise and keep no reference. accError/raccError come back as the
+	-- smoothers' OWN state vectors: only :dot()'ed below, never written.
+	local velError = E.velError
+	velError:setSub2(vel, vehVel)
+	E.accSample:setSub2(P.acc or vehAcc, vehAcc)
+	local accError = accErrorSmoother:get(E.accSample, dt)
 	--print("AccError: "..tostring(accError:length()/dt))
 
-	local rvelError = rvel - vehRvel
-	local raccError = raccErrorSmoother:get((P.racc or vehRacc) - vehRacc, dt)
+	local rvelError = E.rvelError
+	rvelError:setSub2(rvel, vehRvel)
+	E.raccSample:setSub2(P.racc or vehRacc, vehRacc)
+	local raccError = raccErrorSmoother:get(E.raccSample, dt)
 	--print("RaccError: "..tostring(raccError:length()/dt))
 
-	local targetAcc = limitVecLength((velError + posError*posCorrectMul)*min(posForceMul*dt,1), maxPosForce*dt)
-	local targetRacc = limitVecLength((rvelError + rotError*rotCorrectMul)*min(rotForceMul*dt,1), maxRotForce*dt)
+	local targetAcc, targetRacc = E.targetAcc, E.targetRacc
+	local kPos = min(posForceMul*dt,1)
+	targetAcc:set((velError.x + posCorrectMul*posError.x)*kPos,
+	              (velError.y + posCorrectMul*posError.y)*kPos,
+	              (velError.z + posCorrectMul*posError.z)*kPos)
+	limitVecLengthIP(targetAcc, maxPosForce*dt)
+	local kRot = min(rotForceMul*dt,1)
+	targetRacc:set((rvelError.x + rotCorrectMul*rotError.x)*kRot,
+	               (rvelError.y + rotCorrectMul*rotError.y)*kRot,
+	               (rvelError.z + rotCorrectMul*rotError.z)*kRot)
+	limitVecLengthIP(targetRacc, maxRotForce*dt)
 
 	local targetAccMul = 1-min(max(targetAcc:dot(accError)/(targetAcc:squaredLength()+maxAccError*maxAccError*dt),0),1)
 	--print("Force multiplier: "..targetAccMul)
-	targetAcc = targetAcc*targetAccMul
+	targetAcc:setScaled(targetAccMul)
 
 	local targetRaccMul = 1-min(max(targetRacc:dot(raccError)/(targetRacc:squaredLength()+maxRaccError*maxRaccError*dt),0),1)
 	--print("Rotation force multiplier: "..targetRaccMul)
-	targetRacc = targetRacc*targetRaccMul
+	targetRacc:setScaled(targetRaccMul)
 
 	--print("targetAcc: "..targetAcc:length())
 	--print("targetRacc: "..targetRacc:length())
@@ -687,8 +793,9 @@ local function updateGFX(dt)
 		end
 	end
 
-	P.acc = targetAcc
-	P.racc = targetRacc
+	-- COPY, never alias: targetAcc/targetRacc are E slots, rewritten next frame.
+	P.sAcc:set(targetAcc.x, targetAcc.y, targetAcc.z);     P.acc  = P.sAcc
+	P.sRacc:set(targetRacc.x, targetRacc.y, targetRacc.z); P.racc = P.sRacc
 
 	profEnd('updateGFX')
 	gc.finish('updateGFX.gc')
