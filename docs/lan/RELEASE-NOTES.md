@@ -1,6 +1,6 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.22.2-LAN p13h98` · combined host exe `p13h42` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
+**Build:** mod `4.22.2-LAN p13h99` · combined host exe `p13h43` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -44,6 +44,39 @@ a little tuning (see `LAN-TUNING.md`).
   cores so the relay/bridge keep up), and in-game **Save all logs (zip)** for support.
 
 ## This release
+
+> **Linux clients: this is the one to take.** Windows is unaffected by the main fix.
+
+- **The Linux launcher could fail to find BeamNG and quit with a confusing error.** It reported
+  "The game directory was not found" and then, misleadingly, `cannot get file size: integrity.json`
+  — the second message is only a side effect of the first, but it is the one that looks like the
+  bug. Three separate causes, all fixed:
+  - It searched only the **first** Steam installation it found. A machine with both a native and a
+    Flatpak Steam never looked in the second, so if the game was registered there it was never
+    found. Every Steam installation is now searched.
+  - It crashed on a Steam library folder that contains no games (it read a missing entry as if it
+    were present).
+  - Two common Steam locations were missing from the search: a native install without the
+    `~/.steam` symlinks, and Flatpak's real data directory.
+
+  A failure now says what was looked for instead of burying the cause. Reported upstream as
+  [BeamMP-Launcher#251](https://github.com/BeamMP/BeamMP-Launcher/issues/251); the same fix is
+  offered back to the upstream project as
+  [PR #274](https://github.com/BeamMP/BeamMP-Launcher/pull/274).
+
+- **Mod side is a one-word fix.** The position code created a global variable in every seated
+  vehicle's Lua VM instead of a local one, which the game logged with a stack traceback several
+  times a session. Harmless, but noisy in exactly the logs you read when something else goes wrong.
+
+### Verification
+
+The Linux binaries were rebuilt and confirmed to actually contain the fix. The mod change is
+cosmetic and carries the p13h98 verification forward — that build was 2-player verified on both
+machines with zero findings. **The Linux game-detection fix has not been confirmed on a failing
+machine yet**; if you have a Linux box where the previous build could not find BeamNG, this is the
+build to test.
+
+## Previous release (p13h98)
 
 > **Not yet verified in a two-player session.** The ghost predictor below only runs when a second
 > player is streaming in, so nothing on one machine can exercise it — see "How this was checked".
