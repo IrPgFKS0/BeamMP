@@ -1466,12 +1466,25 @@ local function applyVehSpawn(event)
 
 	if spawnedVeh then -- if a vehicle with this ID was found update the obj
 		log('W', 'applyVehSpawn', "(spawn)Updating vehicle from server "..vehicleName.." with id "..spawnedVehID)
-		spawn.setVehicleObject(spawnedVeh, {model=vehicleName, config=serialize(vehicleConfig), pos=pos, rot=rot, cling=true})
+		-- removeWhenNoPositionFound=false (upstream 10c7518c set it on the fresh-spawn call only): BeamNG's default
+		-- DELETES the car when its safe-spawn search finds no clear spot, and the code below kept using the deleted
+		-- object. Kept where it is instead; the predictor's 6th-frame teleport moves it to its synced pose.
+		if not spawn.setVehicleObject(spawnedVeh, {model=vehicleName, config=serialize(vehicleConfig), pos=pos, rot=rot, cling=true, removeWhenNoPositionFound=false}) then
+			log('W', 'applyVehSpawn', "spawn.setVehicleObject could not place "..vehicleName.." (id "..spawnedVehID..") -- leaving it for position sync to move")
+		end
 		spawnedVeh:setField("protected", 0, protected or "0")
 		spawnedVeh:setField("absMode", 0, absMode or "")
 	else
 		log('W', 'applyVehSpawn', "Spawning new vehicle "..vehicleName.." from server")
-		spawnedVeh = spawn.spawnVehicle(vehicleName, serialize(vehicleConfig), pos, rot, { autoEnterVehicle=false, vehicleName="multiplayerVehicle", cling=true})
+		spawnedVeh = spawn.spawnVehicle(vehicleName, serialize(vehicleConfig), pos, rot, { autoEnterVehicle=false, vehicleName="multiplayerVehicle", cling=true, centeredPosition = true, removeWhenNoPositionFound = false})
+		if not spawnedVeh then
+			-- upstream 10c7518c (the options above) stops BeamNG deleting the car when no clear spot is found, but
+			-- spawnVehicle still returns nil when it cannot create or set up the car at all (no level, no bounding
+			-- box) -- and :getID() on that nil aborted this handler before the car was ever registered.
+			log('E', 'applyVehSpawn', "spawn.spawnVehicle returned nil for "..vehicleName.." (server id "..event.serverVehicleID..") -- the vehicle was not created")
+			UI.showNotification("Player "..event.playerNickname.."'s vehicle ("..vehicleName..") failed to spawn", event.serverVehicleID.."spawnfail", "warning")
+			return
+		end
 		spawnedVehID = spawnedVeh:getID()
 		spawnedVeh:setField("protected", 0, protected or "0")
 		spawnedVeh:setField("absMode", 0, absMode or "")
@@ -1601,11 +1614,14 @@ local function applyVehEdit(serverID, data)
 			model = vehicleName,
 			config = serialize(vehicleConfig),
 			pos = veh:getPosition(), rot = quat(0,0,1,0) *  quatFromDir(-vec3(veh:getDirectionVector()), vec3(veh:getDirectionVectorUp())), cling = true,
+			removeWhenNoPositionFound = false, -- see applyVehSpawn: BeamNG's default deletes the car on a crowded model swap, and veh is used below
 		}
 
 		veh:setDynDataFieldbyName("autoEnterVehicle", 0, tostring((getPlayerVehicle(0) and getPlayerVehicle(0):getID() == gameVehicleID) or false))
 		log('I', 'applyVehEdit', "Updating vehicle from server "..vehicleName.." with id "..serverID)
-		spawn.setVehicleObject(veh, options)
+		if not spawn.setVehicleObject(veh, options) then
+			log('W', 'applyVehEdit', "spawn.setVehicleObject could not place "..vehicleName.." (server id "..serverID..") -- leaving it for position sync to move")
+		end
 
 		if settings.getValue("licensePlateUsesPlayerName") then
 			core_vehicles.setPlateText(playerName, gameVehicleID)
