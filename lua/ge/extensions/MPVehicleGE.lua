@@ -959,11 +959,15 @@ function Player:new(data)
 
 	if data.role then -- try to apply role received from the server
 		o.role = roleToInfo[data.role]
-		o.role.name = data.role
 	end
+	-- A role the client does not know (roleToInfo[data.role] == nil) used to be indexed straight away
+	-- -- `o.role.name = data.role` on a nil -- which threw inside Player:new, so that player was never
+	-- created at all. Assign the name only once we know which entry we have. Upstream 1222135d.
 	if not o.role then -- fallback to user
 		o.role = roleToInfo['USER']
 		o.role.name = 'USER'
+	else
+		o.role.name = data.role
 	end
 
 	o.isLocal = data.isLocal or false
