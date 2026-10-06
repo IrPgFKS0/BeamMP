@@ -1,6 +1,6 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.22.2-LAN p13h99` · combined host exe `p13h43` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
+**Build:** mod `4.22.2-LAN p13h101` · combined host exe `p13h43` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -45,6 +45,68 @@ a little tuning (see `LAN-TUNING.md`).
 
 ## This release
 
+> **Mod-only drop-in over p13h99** — the exe is unchanged (`p13h43`). Verified in a two-player
+> session on both machines; see "Verification" for exactly what that session exercised.
+
+- **A remote car BeamNG cannot find a clear spot for is no longer deleted (mod-only; no wire
+  change).** When another player spawns, BeamNG's safe-spawn search looks for free space around the
+  spawn point; in 0.39.4 its default when it finds none is to *remove* the vehicle. Until now that
+  path also left the mod with no car to register — it tripped over the missing vehicle with a Lua
+  error — so that player's car was simply missing for you until they respawned. The car is now kept
+  where it was placed, and normal position sync moves it to its real place a few frames later. The
+  upstream project made this change for first spawns (commit 10c7518c); this build also applies it
+  to the two other places the mod places a remote car — a car swapped for another model, and the
+  rarely-used reuse path — which upstream left on the deleting default while still writing to the
+  deleted car. All three placements now log a warning if BeamNG cannot place the car at all, instead
+  of silently carrying on.
+- **What you may notice.** In a genuinely packed spot — a pile-up, a crowded meet, a spawn inside a
+  building — the arriving car can appear overlapping another car or a wall for a moment and get
+  briefly crumpled or flung (nudging whatever it overlapped, possibly your car) before it snaps to
+  its synced position. Before, the same situation left the car invisible to you with an error in the
+  log. Spawns in open space are unaffected: only the first few frames' placement changes.
+- **Hardened after an adversarial review** (this is why it ships as p13h101; the never-published
+  p13h100 is superseded). If BeamNG cannot set another player's car up *at all*, the mod used to leave
+  a flag behind that made your own *next* spawn count as someone else's — it was never sent to the
+  server, so nobody saw it. That flag is now cleared. The failed car is shown as a deleted blob and
+  can be retried from the player list's **Restore**, instead of staying invisible until its owner
+  edited it. And a car's first placement now uses the right reference point for where its position
+  came from (the spawn message vs. live position data), so it lands where the owner's car is rather
+  than up to a car-length off for its first frames.
+- **Two small upstream fixes carried along:** the passenger camera no longer keeps running on a car
+  that has no driver data after it has handed off (it was using a missing node), and a player who
+  arrives with a role this client doesn't know is no longer skipped — they appear with the default
+  role instead of not being created at all.
+
+### Verification
+
+The combined-host exe is unchanged (`p13h43`); this is a drop-in mod update. The spawn change was
+exercised offline against the real module text with a new sandbox harness
+(`tools/ge-guard/spawn_guard.py`): nine scenarios covering a fresh spawn (with and without live
+position data), a model swap and the reuse path, each with "no clear spot" and "BeamNG could not set
+the car up at all", plus the next local spawn and a Restore after a failure. The p13h99 text fails
+eight of them and the unhardened p13h100 text fails four, each on exactly the lines changed. Smoke
+gate: **17 / 17** on the deployed host, first run. (On p13h100 a first gate run failed on the host's *own* car: BeamNG was
+re-indexing three third-party mods that had been repacked that morning and could not read their
+shared parts during the spawn; the previous build's zip and a rerun both passed 17 / 17, so that
+failure was the environment, not the mod.)
+
+**Two-player session (Windows host + Linux client, about 20 minutes): clean.** A remote car spawned
+in each direction — one placed straight from its spawn message, one after 86 s in the spawn queue
+from live position data, so both of the new placement rules ran for real — and the other player's car
+was swapped for a different model three times (helicopter → supercar → SUV → supercar). Zero heals and
+zero rejected position packets all session on both machines, median drift 0.8 m, a steady 30
+updates/s. The one Lua error in the logs came from a third-party SUV mod's lighting script, which
+addresses its car by object id: a model swap keeps the id, so its last queued update landed on the
+new model. It was contained and the new car came up normally; BeamNG's own vehicle replace does the
+same thing.
+
+**Not exercised in that session:** a car arriving in a spot with genuinely no room (BeamNG never had
+to give up its search for a clear spot), the "could not set the car up at all" case, and the Restore
+retry. Those are covered by the offline harness only. If you see a remote car appear overlapping
+something, that is the expected trade-off described above.
+
+## Previous release (p13h99)
+
 > **Linux clients: this is the one to take.** Windows is unaffected by the main fix.
 
 - **The Linux launcher could fail to find BeamNG and quit with a confusing error.** It reported
@@ -78,8 +140,9 @@ build to test.
 
 ## Previous release (p13h98)
 
-> **Not yet verified in a two-player session.** The ghost predictor below only runs when a second
-> player is streaming in, so nothing on one machine can exercise it — see "How this was checked".
+> **Verified in a two-player session after it was first packaged** (both machines, about 20 minutes,
+> zero findings). The ghost predictor below only runs when a second player is streaming in, so
+> nothing on one machine could exercise it — see "How this was checked".
 
 - **The remote-car predictor stopped churning memory (mod-only; no wire change).** Every frame, for
   every other player's car on your screen, the code that smooths and predicts their motion was
