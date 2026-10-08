@@ -297,6 +297,7 @@ onMounted(async () => {
     BEAMMP_DIRECT_ROUTE_NAME,
     BEAMMP_SERVERS_ROUTE_NAME,
     BEAMMP_TILES_ROUTE_NAME,
+    BEAMMP_MAPS_ROUTE_NAME, // LAN: a cold entry (pause-menu card, "/maps") must not bounce to the servers view
   ])
   if (!contentRoutes.has(route.name)) {
     router.replace({ name: BEAMMP_SERVERS_ROUTE_NAME })

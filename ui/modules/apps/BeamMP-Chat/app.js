@@ -274,7 +274,9 @@ async function showChat() {
 	while (chatShown) {
 		// Get the chat and the messages
 		// Copy the variables so it's a pointer
-		var tempMessages = document.getElementById("chat-list").getElementsByTagName("li");
+		var chatList = document.getElementById("chat-list");
+		if (!chatList) return; // LAN: the HUD can be unloaded under this loop (e.g. "/maps" opens the menu) -- stop quietly
+		var tempMessages = chatList.getElementsByTagName("li");
 		for (i = 0; i < tempMessages.length; i++) {
 			chatMessages[i] = tempMessages[i];
 		}
