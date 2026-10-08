@@ -568,7 +568,7 @@ local function onUpdate(dt)
 					log('W', 'onUpdate', 'Ignoring unknown network code: '..tostring(code))
 				end
 
-				if MPDebug then MPDebug.packetReceived(#received) end
+				if MPDebug then MPDebug.packetReceived(#received + 4) end -- +4 = the length header, so 'Net in' KB/s counts the same bytes 'Net out' does (send() counts header+payload)
 			end
 		end
 	end

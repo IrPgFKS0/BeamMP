@@ -269,6 +269,26 @@ local function drawSyncStatsOverlay(dt)
 	ov.timer = ov.timer + (dt or 0)
 	ov.frames = (ov.frames or 0) + 1
 
+	-- Frame-time (main-thread) health, per frame. `dt` is dtReal: the wall-clock length of the frame that
+	-- just ended, which BeamNG does NOT clamp (a 0.76 s frame was seen live), so a stalled frame shows up as
+	-- one long dt. This is the direct measurement of "the screen pauses": the FPS average hides a 0.2 s
+	-- stall every few seconds, Pos applied is per window, and a car's CEF screen log -- the only clock the
+	-- 2026-10-05 investigation had -- can stall on its own. Physics keeps running through a GE stall and the
+	-- netcode's sockets are non-blocking, so this is never a send-rate problem; the ghosts THIS machine
+	-- draws do freeze for the duration.
+	local frameMs = (dt or 0) * 1000
+	ov.clock = (ov.clock or 0) + (dt or 0)
+	if frameMs > (ov.fMaxCur or 0) then ov.fMaxCur = frameMs end
+	if frameMs >= 50 then
+		ov.h50Cur = (ov.h50Cur or 0) + 1
+		if frameMs >= 100 then ov.h100Cur = (ov.h100Cur or 0) + 1 end
+		if ov.lastHitchClock then
+			local gap = ov.clock - ov.lastHitchClock
+			ov.hitchGap = ov.hitchGap and (ov.hitchGap * 0.7 + gap * 0.3) or gap -- smoothed spacing: "every ~2.6 s"
+		end
+		ov.lastHitchClock = ov.clock
+	end
+
 	-- Reset the peak/persistent trackers whenever the send rate is changed, so each tuning step
 	-- (e.g. dropping to 30Hz) gets a fresh "is it still bad?" window instead of carrying old history.
 	local hz = tonumber(settings.getValue("physRateSendHz")) or 30
@@ -278,6 +298,7 @@ local function drawSyncStatsOverlay(dt)
 		ov.fpsPeak, ov.fpsWorst, ov.fpsBadTime = 0, nil, 0
 		ov.driftBadTime, ov.driftWorst, ov.healTotal = 0, nil, 0
 		ov.rejTotal = 0
+		ov.h50Total, ov.h100Total, ov.fMaxWorst, ov.hitchGap, ov.lastHitchClock = 0, 0, 0, nil, nil
 	end
 
 	local synced = 0
@@ -288,17 +309,33 @@ local function drawSyncStatsOverlay(dt)
 	end
 
 	if ov.timer >= 1.0 then
-		ov.sentRate, ov.recvRate = ov.sent, ov.recv
-		ov.sentKB, ov.recvKB = ov.sentB/1000, ov.recvB/1000
+		-- ONE evaluation per window, every count normalised by how long the window really was. The old
+		-- `timer - 1.0` carry-over did two things wrong exactly when it mattered (a stall): a window that
+		-- spanned 1.4 s reported its counts as per-second rates (the 2026-10-05 host log has a row reading
+		-- "in 124 pkt/s" where the steady state is ~90), and any single frame >= 1 s left >= 1 s in the
+		-- timer, so the very next frame was evaluated as a window of its own -- one frame of data read as
+		-- "FPS 1, applied 0/s", tripping fpsBad/applyBad and poisoning the [dropped to N] tails.
+		local win = ov.timer
+		ov.sentRate, ov.recvRate = math.floor(ov.sent / win + 0.5), math.floor(ov.recv / win + 0.5)
+		ov.sentKB, ov.recvKB = ov.sentB / 1000 / win, ov.recvB / 1000 / win
 		ov.sent, ov.recv, ov.sentB, ov.recvB = 0, 0, 0, 0
-		ov.fps = ov.frames; ov.frames = 0
-		ov.applyRate = (positionGE and positionGE.getApplyPosRate and positionGE.getApplyPosRate()) or 0
+		ov.fps = math.floor(ov.frames / win + 0.5); ov.frames = 0
+		local applied = (positionGE and positionGE.getApplyPosRate and positionGE.getApplyPosRate()) or 0
+		ov.applyRate = math.floor(applied / win + 0.5)
 		-- rejected/s: packets the receive path REFUSED (unknown vehicle / malformed pose). Any
 		-- nonzero here is breakage (mismatched mod builds between machines is the classic cause) --
 		-- this row exists because the p13h82 seam rejected 100% of packets while every other row
 		-- looked healthy. Tracked with its own persistent total so a burst is visible after the fact.
-		ov.rejRate = (positionGE and positionGE.getApplyPosRejects and positionGE.getApplyPosRejects()) or 0
-		ov.rejTotal = (ov.rejTotal or 0) + ov.rejRate
+		local rejected = (positionGE and positionGE.getApplyPosRejects and positionGE.getApplyPosRejects()) or 0
+		ov.rejNow = rejected -- the red condition: ANY rejection in this window, however long it was
+		ov.rejRate = math.floor(rejected / win + 0.5)
+		ov.rejTotal = (ov.rejTotal or 0) + rejected
+		-- frame hitches this window (per-frame accounting above)
+		ov.fMax = ov.fMaxCur or 0; ov.fMaxCur = 0
+		ov.h50, ov.h100 = ov.h50Cur or 0, ov.h100Cur or 0; ov.h50Cur, ov.h100Cur = 0, 0
+		ov.h50Total = (ov.h50Total or 0) + ov.h50
+		ov.h100Total = (ov.h100Total or 0) + ov.h100
+		if ov.fMax > (ov.fMaxWorst or 0) then ov.fMaxWorst = ov.fMax end
 		-- Per-second bad-state eval + peak/persistent tracking (badTime in whole seconds).
 		-- "Bad" = a sharp drop below a slowly-decaying baseline of the best recent value, so it
 		-- adapts to the chosen send rate / car count / a genuinely slow machine instead of a fixed line.
@@ -334,13 +371,14 @@ local function drawSyncStatsOverlay(dt)
 			if ov.logTimer >= 15 then
 				ov.logTimer = 0
 				log('I', 'mpSyncHealth', string.format(
-					"%d synced | drift %.1fm, %d heals | in %d pkt/s %.1f KB/s, out %d pkt/s %.1f KB/s | applied %d/s, rejected %d (total %d) | FPS %d",
+					"%d synced | drift %.1fm, %d heals | in %d pkt/s %.1f KB/s, out %d pkt/s %.1f KB/s | applied %d/s, rejected %d (total %d) | FPS %d | frame max %dms, hitches>=50ms %d (total %d, worst %dms)",
 					synced, ov.driftM or 0, ov.healTotal or 0,
 					ov.recvRate or 0, ov.recvKB or 0, ov.sentRate or 0, ov.sentKB or 0,
-					ov.applyRate or 0, ov.rejRate or 0, ov.rejTotal or 0, ov.fps or 0))
+					ov.applyRate or 0, ov.rejRate or 0, ov.rejTotal or 0, ov.fps or 0,
+					ov.fMax or 0, ov.h50 or 0, ov.h50Total or 0, ov.fMaxWorst or 0))
 			end
 		end
-		ov.timer = ov.timer - 1.0
+		ov.timer = 0 -- the window is fully accounted for; a fresh one starts now (see the note at the top of this block)
 	end
 
 	if not showOverlay then return end -- /synclog can run with the overlay hidden; nothing more to draw
@@ -374,14 +412,24 @@ local function drawSyncStatsOverlay(dt)
 	-- [total] tail so a burst that already ended is still visible on the overlay
 	if (ov.rejTotal or 0) > 0 then
 		local rTxt = string.format("Pos REJECTED: %d/s   [total %d]", ov.rejRate or 0, ov.rejTotal or 0)
-		if (ov.rejRate or 0) > 0 then im.TextColored(ov.RED, rTxt) else im.Text(rTxt) end
-		if (ov.rejRate or 0) > 0 then im.TextColored(ov.RED, ">> packets REJECTED: usually mismatched BeamMP builds between machines -- update BOTH from the same release bundle") end
+		if (ov.rejNow or 0) > 0 then im.TextColored(ov.RED, rTxt) else im.Text(rTxt) end
+		if (ov.rejNow or 0) > 0 then im.TextColored(ov.RED, ">> packets REJECTED: usually mismatched BeamMP builds between machines -- update BOTH from the same release bundle") end
 	end
 
 	-- FPS = main-thread health (one core). Red while spiking down; tail persists like above.
 	local fTxt = string.format("FPS: %d", ov.fps or 0)
 	if (ov.fpsBadTime or 0) > 0 then fTxt = fTxt .. string.format("   [dropped to %d, bad %ds total]", ov.fpsWorst or 0, ov.fpsBadTime) end
 	if ov.fpsBad then im.TextColored(ov.RED, fTxt) else im.Text(fTxt) end
+
+	-- Frame hitches = single frames that stalled (dtReal), which the FPS average smooths away. Always shows
+	-- the longest frame of the last window; red when one crossed 100 ms. The tail keeps the count, the worst
+	-- one and how far apart they come -- "a 200 ms frame every ~2.6 s" is the pattern this row exists for.
+	local hTxt = string.format("Frame max: %d ms", ov.fMax or 0)
+	if (ov.h50Total or 0) > 0 then
+		hTxt = hTxt .. string.format("   [hitches >=50ms: %d/s, total %d, worst %d ms%s]", ov.h50 or 0, ov.h50Total,
+			ov.fMaxWorst or 0, ov.hitchGap and string.format(", ~%.1fs apart", ov.hitchGap) or "")
+	end
+	if (ov.h100 or 0) > 0 then im.TextColored(ov.RED, hTxt) else im.Text(hTxt) end
 
 	-- Ghost drift = the actual sync symptom (told-vs-actual). A few metres is the normal predictor
 	-- lead (healthy); red = a correction fired or drift went well past that. [N corrections] = the
@@ -395,6 +443,7 @@ local function drawSyncStatsOverlay(dt)
 	if ov.applyBad and not ov.fpsBad then im.TextColored(ov.RED, ">> relay starving (positions not arriving, FPS is fine): LOWER 'Position send rate' or cut AI/traffic cars") end
 	if ov.fpsBad then im.TextColored(ov.RED, ">> FPS hitch: trim the mod set / AI-traffic / heavy vehicles (LOAD, not the netcode -- a >1s hitch freezes the remote ghosts THIS machine draws)") end
 	if ov.driftBad then im.TextColored(ov.RED, ">> ghost drift/heals: usually a LOAD/FPS hitch (trim mods + AI-traffic) or relay overload (LOWER 'Position send rate') -- never RAISE the rate") end
+	if (ov.h100 or 0) > 0 then im.TextColored(ov.RED, ">> frame hitch: the main thread stalled while physics kept running (the netcode is non-blocking, so not a send-rate problem) -- CEF screens on the seated car, texture/shader loads or GC; try a stock car") end
 	im.End()
 end
 
@@ -433,6 +482,7 @@ M.hideUI				= hideUI
 
 M.packetSent = packetSent
 M.packetReceived = packetReceived
+M.getSyncStats = function() return ov end -- read-only view of the overlay's accumulators for probes (smoke gate, tools/ge-guard)
 M.onInit = function() setExtensionUnloadMode(M, "manual") end
 
 return M
