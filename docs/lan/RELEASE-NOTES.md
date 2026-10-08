@@ -103,7 +103,9 @@ list after the HUD had been unloaded underneath it — harmless (the app was goi
 pre-existing upstream code; p13h104 carries the one-line guard. The bounce described above was seen
 by the host on both cold opens in session 2 (the log shows the server list mounting 0.3–0.5 s after
 the Maps route each time) and is what p13h104 fixes; the switch itself was done from the sidebar's
-Maps button, which was never affected.
+Maps button, which was never affected. With p13h104 the host re-checked the cold open on the Linux client:
+the page opens from the pause menu and stays. A short two-player run on p13h104 (host + client, 4 minutes)
+was clean as well.
 
 **Frame-hitch row, host, both sessions:** every frame of 50 ms or more fell inside a load — boot, the
 join, a level load, the first spawn of a screen-heavy third-party car and its first reload — and

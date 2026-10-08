@@ -9,11 +9,10 @@ already-committed ones remain in history at their tags).
 
 | Release | sha256 |
 |---|---|
-| [`BeamMP-LAN-p13h104.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-release-p13h104) | `39D7FB3E596A1AF723130787ACD0E7F853472479C13161F59AC9717ECE6F469A` |
+| [`BeamMP-LAN-p13h104.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-release-p13h104) | `E79D382A12EACF8EE68C44E5E792AD23FC55928505D0A07636B0070708A29961` |
 | [`BeamMP-LAN-p13h101.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-release-p13h101) (previous 0.39 build) | `16043A211623461DB4CCEE16AD9337174144B35DA1F2BE1A628B9D6C1BC96581` |
 | [`BeamMP-LAN-p13h99.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-release-p13h99) | `6C403345CF426868F1B4984D6CF559570CDCD2D6AF25A86E3014A67E680C7DF8` |
 | [`BeamMP-LAN-p13h98.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-release-p13h98) | `BFD01870CFA5A85163EB473C290BA5A2CF5FB01E9145CF4C8031E9C7C08A046D` |
-| [`BeamMP-LAN-p13h96.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-release-p13h96) | `629688AE7BE135ECD06BF75B872A02E53E422E04630A4983DC3082F6F15D3184` |
 | [`BeamMP-LAN-p13h57.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-0.38-last-good) (0.38 ROLLBACK) | `1B1673CEA703FECC5D5CEB1B594812916E15EEB03BFC8F9DE17F9DC7808B851B` |
 
 **Mod-only drop-in over p13h101 or p13h99** — the exe is unchanged (`p13h43`), so on either of
@@ -33,7 +32,7 @@ only the first Steam installation); p13h99 and later fix that. If you ran any p1
 those reject every remote position packet in multiplayer (remote cars frozen) — update now.
 (Superseded zips and their `lan-release-*` tags are removed as releases roll; the tags kept are
 exactly the ones backing a published release -- currently `lan-release-p13h104`, `lan-release-p13h101`,
-`lan-release-p13h99`, `lan-release-p13h98`, `lan-release-p13h96` and `lan-0.38-last-good` -- which is the set the AGPL
+`lan-release-p13h99`, `lan-release-p13h98` and `lan-0.38-last-good` -- which is the set the AGPL
 source promise needs. Every row in the table above must link a release that still exists, and the
 source offer at the bottom must name a tag `git ls-remote --tags` actually shows.)
 
