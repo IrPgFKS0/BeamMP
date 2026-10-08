@@ -7,6 +7,7 @@ export const BEAMMP_TILES_ROUTE_NAME = "menu.beammp.tiles"
 export const BEAMMP_SERVERS_ROUTE_NAME = "menu.beammp.servers"
 export const BEAMMP_CURRENT_SERVER_ROUTE_NAME = "menu.beammp.current-server"
 export const BEAMMP_DIRECT_ROUTE_NAME = "menu.beammp.direct"
+export const BEAMMP_MAPS_ROUTE_NAME = "menu.beammp.maps" // LAN: seamless map switcher page (replaces the imgui /maps popup)
 
 export const BEAMMP_TEXT_STYLE_MAP = {
   '^0': 'color-0',

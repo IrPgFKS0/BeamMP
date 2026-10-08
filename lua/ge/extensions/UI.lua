@@ -401,44 +401,11 @@ local function renderWindow(dtRaw)
     firstRender = false
 end
 
--- ============ Seamless map switch: interactive /map picker ============
--- An independent imgui popup (works even with the imgui chat menu off, since you're on
--- the Angular chat). Opened by the server's onMapChange/mapList reply when you type /map;
--- clicking a map sends "/map <name>" through chat, which the server intercepts + switches.
-M.mapPickerOpen = false
-M.mapPickerMaps = {}
-
---- @param maps table array of { name=string, title=string, modded=bool }
-local function openMapPicker(maps)
-    M.mapPickerMaps = maps or {}
-    M.mapPickerOpen = true
-end
-
-local function renderMapPicker()
-    if not M.mapPickerOpen then return end
-    imgui.SetNextWindowSize(imgui.ImVec2(320, 420), imgui.Cond_FirstUseEver)
-    local pOpen = imgui.BoolPtr(true)
-    if imgui.Begin("Switch Map##beammpMapPicker", pOpen, imgui.WindowFlags_NoDocking) then
-        imgui.TextWrapped("Click a map to switch the server to it ( * = mod ):")
-        imgui.Separator()
-        if imgui.BeginChild1("beammpMapList", imgui.ImVec2(0, 0), true) then
-            for _, m in ipairs(M.mapPickerMaps) do
-                local label = m.name
-                if m.title and m.title ~= "" and m.title ~= m.name then label = m.title.."  ("..m.name..")" end
-                if m.modded then label = label.."  *" end
-                if imgui.Button(label.."##bmpmap_"..m.name, imgui.ImVec2(-1, 0)) then
-                    if MPGameNetwork and MPGameNetwork.send and MPConfig then
-                        MPGameNetwork.send('C:'..(MPConfig.getNickname() or "Player")..': /map '..m.name)
-                    end
-                    M.mapPickerOpen = false
-                end
-            end
-        end
-        imgui.EndChild() -- 0.39 imgui: unconditional
-    end
-    imgui.End() -- 0.39 imgui: unconditional
-    if not pOpen[0] then M.mapPickerOpen = false end
-end
+-- ============ Seamless map switch ============
+-- The map picker is a page of the 0.39 Vue BeamMP menu since p13h103 (ui/ui-vue/mods/BeamMP/views/
+-- BeamMPMapsView.vue; data + request in MPCoreNetwork.getMapSwitcherState/requestMapSwitch). The imgui
+-- popup that used to live here (openMapPicker/renderMapPicker) is gone -- "/maps" below now raises the
+-- `onBeamMPShowMapPicker` hook through MPGameNetwork.showMapPicker and the Vue entry point opens the view.
 
 
 --- This function is used to load the settings and config of the UI (chat)
@@ -519,6 +486,13 @@ local function chatMessage(rawMessage) -- chat message received (angular)
 	local username = parts[1]
 	parts[1] = ''
 	local msg = string.gsub(message, username..': ', '')
+	-- LAN: the server answers a refused "/map <name>" with a chat line only (admin gating is server-side,
+	-- TServer.cpp HandleMapChatCommand). Surface it to the Vue map switcher as its "denied" phase so the
+	-- view can show the refusal inline instead of the player having to find it in the chat.
+	if username == "Server" and type(msg) == "string" and msg:find("not allowed to change the map", 1, true)
+		and MPCoreNetwork and MPCoreNetwork.emitMapSwitchState then
+		MPCoreNetwork.emitMapSwitchState("denied", nil, msg)
+	end
 	local player = MPVehicleGE.getPlayerByName(username)
 	if player then
         username = username .. player.role.shorttag
@@ -683,13 +657,6 @@ end
 -- This is the main processing thread of BeamMP in the game
 -- @param dt float
 local function onUpdate(dtReal,dtSim,dtRaw) -- 4.22 signature (renderWindow takes dtRaw)
-    -- The map picker is its own popup and must render regardless of the imgui-chat setting,
-    -- but still only in a live session with the imgui context ready. Guarded so a UI hiccup
-    -- can't break the frame.
-    if M.mapPickerOpen and worldReadyState == 2 and initialized and M.canRender and (not MPCoreNetwork or MPCoreNetwork.isMPSession()) then
-        local ok, err = pcall(renderMapPicker)
-        if not ok then log('E', 'renderMapPicker', tostring(err)); M.mapPickerOpen = false end
-    end
     if worldReadyState ~= 2 or not settings.getValue("enableNewChatMenu") or not initialized or not M.canRender or MPCoreNetwork and not MPCoreNetwork.isMPSession() then return end
     renderWindow(dtRaw)
 end
@@ -779,7 +746,6 @@ M.clearPauseMenuModButtons = clearPauseMenuModButtons
 
 M.bringToFront = bringToFront
 M.toggleChat = toggleChat
-M.openMapPicker = openMapPicker -- seamless map switch: interactive /map picker
 
 M.onClientEndMission = onClientEndMission
 M.onExtensionLoaded = onExtensionLoaded

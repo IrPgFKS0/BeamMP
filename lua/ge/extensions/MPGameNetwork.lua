@@ -661,25 +661,14 @@ AddEventHandler("onMapChange", function(data)
 	end
 end, "MPGameNetwork_onMapChange")
 
--- Seamless map switch: build the locally-available map list -- base game AND synced MODDED maps
--- (enumerated via core_levels.getList(); modded ones flagged for the picker) -- and open the
--- interactive picker. Clicking a map sends "/map <name>" to perform the switch. Opened locally by
--- the "/maps" chat command (UI.chatSend); the UI handles the switch now, so there's no server
--- round-trip and no chat-text dump. Still fires on the server's legacy mapList reply (old
--- "/map" / "/map list") for back-compat with older clients.
+-- Seamless map switch: open the Vue map switcher (ui/ui-vue/mods/BeamMP/views/BeamMPMapsView.vue).
+-- The list and the switch request live in MPCoreNetwork (getMapSwitcherState / requestMapSwitch);
+-- this only raises the hook the Vue entry point (index.js) turns into a navigation to the Maps
+-- route. Opened by the "/maps" chat command (UI.chatSend) and still by the server's legacy mapList
+-- reply (old "/map" / "/map list") for back-compat. The imgui popup this used to build was removed in
+-- p13h103 (its "modded" flag was also inverted -- see MPCoreNetwork.buildMapList).
 local function showMapPicker()
-	if not (core_levels and core_levels.getList) then return end
-	local ok, levels = pcall(core_levels.getList)
-	if not ok or type(levels) ~= "table" then return end
-	local picker = {}
-	for _, lvl in ipairs(levels) do
-		local nm = lvl.levelName
-		if nm and nm ~= "" then
-			picker[#picker + 1] = { name = nm, title = lvl.title or lvl.levelName, modded = lvl.modTitle ~= nil }
-		end
-	end
-	table.sort(picker, function(a, b) return a.name:lower() < b.name:lower() end)
-	if UI and UI.openMapPicker then UI.openMapPicker(picker) end
+	guihooks.trigger('onBeamMPShowMapPicker')
 end
 M.showMapPicker = showMapPicker
 

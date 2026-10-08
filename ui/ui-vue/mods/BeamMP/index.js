@@ -2,7 +2,7 @@
 // import bridge and route definitions
 import { useBridge } from "@/bridge"
 import { ROUTE_SOURCE_ID, routeRecords } from "./routes.js"
-import { BEAMMP_ROUTE_NAME } from "./shared/constants.js"
+import { BEAMMP_MAPS_ROUTE_NAME, BEAMMP_ROUTE_NAME } from "./shared/constants.js"
 import { $translate } from "@/services/translation"
 import { ACCENTS } from "@/common/components/base"
 import { openConfirmation } from "@/services/popup"
@@ -73,6 +73,20 @@ async function unregisterRoutes() {
 // convenience ID for for example #3
 const TAB_ID = "beammp"
 let activeBeamMPDialog = null
+
+// LAN: Lua raises `onBeamMPShowMapPicker` for the "/maps" chat command (and the server's legacy mapList
+// reply). The map switcher is a page of the BeamMP menu, so showing it means navigating there -- the same
+// hand-over the pause-menu redirect cards use. English fallback because the fork's strings ship in en-US only.
+function openMapSwitcher() {
+  if (window.bngVue && typeof window.bngVue.gotoGameState === "function") {
+    window.bngVue.gotoGameState(BEAMMP_MAPS_ROUTE_NAME)
+  }
+}
+
+function lanLabel(key, fallback) {
+  const text = $translate.instant(key)
+  return text && text !== key ? text : fallback
+}
 
 async function showBeamMPDialog(options = {}) {
   if (activeBeamMPDialog) return
@@ -252,10 +266,20 @@ export async function onLoad() {
     icon: "globeSimplified",
     componentName: `${MOD_ROOT}/cards/BeamMPPauseServerDetailsRedirect.vue`,
   })
+  // LAN: seamless map switcher -- third rail button; the card redirects to the full-width Maps page
+  await lua.extensions.ui_pause_actions.registerModButton({
+    id: "beammp-pause-maps",
+    tabId: TAB_ID,
+    label: lanLabel("ui.beammp.maps.title", "Maps"),
+    icon: "map",
+    componentName: `${MOD_ROOT}/cards/BeamMPPauseMapsRedirect.vue`,
+  })
+  events.on("onBeamMPShowMapPicker", openMapSwitcher) // LAN: "/maps" chat command -> Maps page
 }
 
 export async function onUnload() {
   events.off("onBeamMPShowVueDialog", showBeamMPDialog)
+  events.off("onBeamMPShowMapPicker", openMapSwitcher) // LAN: map switcher
   events.off("onBeamMPInfo", upsertLanVersionBadge) // LAN version badge cleanup
   removeLanVersionBadge()
   removeEnvSyncBtn()

@@ -35,6 +35,8 @@
         <button class="nav-btn category-favorite" :class="{ active: isServerView('favorites') }" @click="gotoView('favorites')">{{ $tt("ui.common.beammp.favorites") }}</button>
         <button class="nav-btn" :class="{ active: isServerView('recent') }" @click="gotoView('recent')">{{ $tt("ui.common.beammp.recent") }}</button>
         <button class="nav-btn" :class="{ active: route.name === BEAMMP_DIRECT_ROUTE_NAME }" @click="gotoRoute(BEAMMP_DIRECT_ROUTE_NAME)">{{ $tt("ui.common.beammp.direct_connect") }}</button>
+        <!-- LAN: seamless map switcher -- only meaningful inside a session -->
+        <button v-if="inSession" class="nav-btn" :class="{ active: route.name === BEAMMP_MAPS_ROUTE_NAME }" @click="gotoRoute(BEAMMP_MAPS_ROUTE_NAME)">{{ mapsLabel }}</button>
         <!--<button class="nav-btn" :class="{ active: route.name === BEAMMP_TILES_ROUTE_NAME }" @click="gotoRoute(BEAMMP_TILES_ROUTE_NAME)">Tiles</button>-->
 
         <div class="spacer" />
@@ -109,11 +111,13 @@ import {
   BEAMMP_DIRECT_ROUTE_NAME,
   BEAMMP_LAUNCHER_ROUTE_NAME,
   BEAMMP_LOGIN_ROUTE_NAME,
+  BEAMMP_MAPS_ROUTE_NAME, // LAN: map switcher page
   BEAMMP_SERVERS_ROUTE_NAME,
   BEAMMP_TILES_ROUTE_NAME,
   BEAMMP_TOS_ROUTE_NAME,
 } from "../shared/constants.js"
 import { openPrompt } from "@/services/popup" // LAN: name-change prompt
+import { $translate } from "@/services/translation" // LAN: English fallback for the fork's en-US-only strings
 import { useBeamMPState } from "../shared/beammpState.js"
 import BeamMPModal from "../shared/BeamMPModal.vue"
 
@@ -129,6 +133,7 @@ let infobarResizeObserver = null
 const {
   state,
   closeLoadingOverlay,
+  extensionCall, // LAN: map switcher nav entry asks MPCoreNetwork whether we are in a session
   loadFavorites,
   logout,
   openExternal,
@@ -153,6 +158,27 @@ async function changeLanName() {
   if (result === false || result === null || result === undefined) return
   setLanPlayerName(result)
 }
+
+// LAN: seamless map switcher -- its nav entry only shows inside a session (the page is also reached from
+// the pause menu and the "/maps" chat command). Vue allows several onMounted/onBeforeUnmount hooks, so this
+// stays a self-contained block next to the other LAN additions.
+const inSession = ref(false)
+async function refreshInSession() {
+  inSession.value = (await extensionCall("MPCoreNetwork", "isMPSession")) === true
+}
+const mapsLabel = computed(() => {
+  const key = "ui.beammp.maps.title"
+  const text = $translate.instant(key)
+  return text && text !== key ? text : "Maps"
+})
+onMounted(() => {
+  refreshInSession()
+  events.on("onBeamMPServerJoined", refreshInSession)
+})
+onBeforeUnmount(() => {
+  events.off("onBeamMPServerJoined", refreshInSession)
+})
+watch(() => route.name, () => { refreshInSession() })
 
 async function gotoRoute(name) {
   if (route.name === name) return

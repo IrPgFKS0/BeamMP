@@ -7,9 +7,11 @@ import BeamMPTilesView from "./views/BeamMPTilesView.vue"
 import BeamMPServersView from "./views/BeamMPServersView.vue"
 import BeamMPCurrentServerView from "./views/BeamMPCurrentServerView.vue"
 import BeamMPDirectView from "./views/BeamMPDirectView.vue"
+import BeamMPMapsView from "./views/BeamMPMapsView.vue" // LAN: seamless map switcher
 import {
   BEAMMP_CURRENT_SERVER_ROUTE_NAME,
   BEAMMP_DIRECT_ROUTE_NAME,
+  BEAMMP_MAPS_ROUTE_NAME,
   //BEAMMP_HOME_ROUTE_NAME,
   BEAMMP_LAUNCHER_ROUTE_NAME,
   BEAMMP_LOGIN_ROUTE_NAME,
@@ -81,6 +83,13 @@ export const routeRecords = [
         path: "direct",
         name: BEAMMP_DIRECT_ROUTE_NAME,
         component: BeamMPDirectView,
+      },
+      {
+        // LAN: seamless map switcher -- reached in-session from the pause menu's BeamMP tab ("Maps"),
+        // the "/maps" chat command and the sidebar; the view itself asks the player to join a server first otherwise.
+        path: "maps",
+        name: BEAMMP_MAPS_ROUTE_NAME,
+        component: BeamMPMapsView,
       },
     ],
   },
