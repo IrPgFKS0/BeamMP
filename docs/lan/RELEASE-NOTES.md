@@ -1,6 +1,6 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.22.2-LAN p13h101` · combined host exe `p13h43` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
+**Build:** mod `4.22.2-LAN p13h104` · combined host exe `p13h43` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -44,6 +44,75 @@ a little tuning (see `LAN-TUNING.md`).
   cores so the relay/bridge keep up), and in-game **Save all logs (zip)** for support.
 
 ## This release
+
+> **Mod-only drop-in over p13h101 (or p13h99)** — the exe is unchanged (`p13h43`). p13h104 is p13h103
+> plus one fix found when p13h103 was played: its new Maps page bounced back to the server list the
+> first time it was opened from the pause menu or chat. Verified in two two-player sessions on both
+> machines; see "Verification" for exactly what they exercised.
+
+- **Map switching has a proper page in the BeamMP menu.** The seamless map switch (the server's
+  `map` command, a LAN feature since June) used to be driven from a bare pop-up opened by typing
+  `/maps` in chat. It is now a page of the mod's menu: open it from the pause menu's **BeamMP** tab
+  (**Maps**), from the BeamMP menu's sidebar while you are in a session, or still with `/maps` in
+  chat. It lists every map your game can load — stock and the mods the server synced to you — with
+  previews, marks the current one and lets you search. Pick one, confirm, and the page follows the
+  switch live: requested → switching (with the game's own loading text) → done. It also says so
+  clearly when the server refuses (only the host can switch; the page tells non-hosts up front) or
+  when the load fails. The request still travels as the same host-only `/map <name>` chat line, so
+  the server and both exes are untouched and a session mixing this build with the previous one
+  keeps working.
+- **One fix on the way:** the old pop-up marked every *stock* map as a mod (it keyed on a field
+  BeamNG sets on every level); the page uses the game's own "official" flag.
+- **p13h104: the page no longer bounces on a cold open.** In p13h103, opening Maps from the pause menu
+  or with `/maps` showed the page for a moment and then jumped back to the server list (Favorites);
+  only the sidebar button stayed. The BeamMP menu keeps a list of the pages it may open straight into,
+  and the new page was not on it. It is now, and a build check makes sure every future page is too.
+  Also carried: the legacy chat HUD app no longer throws when `/maps` unloads the HUD while the mouse
+  is over the chat (harmless upstream glitch, one-line guard).
+- **Sync-stats overlay: frame-hitch row** (the p13h102 diagnostic build, carried in this one). The
+  overlay (Options → Multiplayer → Show sync stats overlay) now shows the longest frame of the last
+  second and counts frames of 50 ms or more — per second, in total, the worst one and how far apart
+  they come — turning red at 100 ms; `/synclog` writes the same fields to the log. It separates "the
+  game's main thread stalled" from "positions did not arrive" when a session feels like it pauses.
+  The same change fixes an old flaw in the overlay's bookkeeping: after any stall the per-second
+  rates (packets, applies, FPS) were inflated for the following second, and a frame of a second or
+  more produced a bogus "FPS 1" window.
+
+### Verification
+
+The combined-host exe is unchanged (`p13h43`); this is a drop-in mod update. Offline: Lua parse sweep
+41 / 41; a new sandbox harness for the map page's Lua side (`tools/ge-guard/mapswitch_guard.py`, 27
+checks on the real module text: the level list including the stock/mod marker fix, request validation
+and the exact chat line, the host/client hint, the denied / switching / failed transitions, all 39
+exports); `tools/ge-guard/vue_check.py` — `node --check` on all 27 script blocks plus a real Vue
+single-file-component compile of all 20 `.vue` files; and the overlay fix's own harness
+(`tools/ge-guard/overlay_guard.py`, 23 checks; the p13h101 text fails 14). The p13h104 fix has its own
+check (`vue_check.py`'s third layer: every page the menu declares must be on the layout's open-into
+list; the p13h103 text fails it, the fixed text passes). Smoke gate: **17 / 17** on the deployed host,
+first run, for p13h103 and again for p13h104.
+
+**Two two-player sessions (Windows host + Linux client, 2026-10-08).** Session 1 (13 minutes):
+ordinary play with two remote vehicles including an aircraft — zero heals, zero rejected position
+packets, zero spawn failures on either machine. Session 2 (40 minutes): the host opened the Maps page
+from chat and again from the pause menu, and switched the running session from LakeFaroe to Salada
+from the page — the server applied it for both clients, the level loaded in 31 s, both players' cars
+came back and position sync resumed (the client's new car synced 66 s later, after its own load), and
+the session continued until the host left. No Lua errors from the mod in either session. The one error
+logged when the page first opened came from the legacy chat HUD app's fade loop touching its message
+list after the HUD had been unloaded underneath it — harmless (the app was going away) and
+pre-existing upstream code; p13h104 carries the one-line guard. The bounce described above was seen
+by the host on both cold opens in session 2 (the log shows the server list mounting 0.3–0.5 s after
+the Maps route each time) and is what p13h104 fixes; the switch itself was done from the sidebar's
+Maps button, which was never affected.
+
+**Frame-hitch row, host, both sessions:** every frame of 50 ms or more fell inside a load — boot, the
+join, a level load, the first spawn of a screen-heavy third-party car and its first reload — and
+**none while driving**: 5.5 minutes with two remote cars in session 1 and both driving stretches of
+session 2. The host saw no visible pauses in either session, which agrees with the instrument. The
+~0.2 s main-thread stalls every 2–3 s suspected in the p13h102 notes had been inferred from a
+third-party car's screen log; measured directly, they did not occur.
+
+## Previous release (p13h101)
 
 > **Mod-only drop-in over p13h99** — the exe is unchanged (`p13h43`). Verified in a two-player
 > session on both machines; see "Verification" for exactly what that session exercised.
