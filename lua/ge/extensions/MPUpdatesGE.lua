@@ -35,6 +35,30 @@ local positionTickrate = 1/100  -- stock 0.020 (50 Hz) -> 100 Hz
 local trafficTimer = 0
 local trafficTickrate = 1/12    -- 12 Hz for non-driven owned vehicles
 
+-- LAN (p13h105): ONE decision per frame about which owned vehicles ride which clock. The DRIVEN
+-- vehicle (positionGE.getDrivenVehicleID -- the same rule positionGE.tick applies to positions) keeps
+-- the inputs/electrics/powertrain rates below; every OTHER owned vehicle (AI traffic, parked cars, a
+-- towed trailer) is polled for those three on the traffic clock above, in the same frame as its
+-- position. Before this only positions were throttled: with 7 AI traffic cars the host still polled
+-- each one's inputs at 60/s, and those made up most of a client's 230-460 pkt/s (2026-10-10 session,
+-- remote cars jittering on the client while the host was smooth). Persistent tables refilled each
+-- frame -- no per-frame garbage.
+local drivenVehicles, trafficVehicles = {}, {}
+local function partitionOwnVehicles()
+	table.clear(drivenVehicles)
+	table.clear(trafficVehicles)
+	local drivenID = positionGE.getDrivenVehicleID()
+	for serverVehicleID, veh in pairs(MPVehicleGE.getPlayerVehicleObjects(MPConfig.getPlayerServerID())) do
+		if veh then
+			if veh:getID() == drivenID then
+				drivenVehicles[serverVehicleID] = veh
+			else
+				trafficVehicles[serverVehicleID] = veh
+			end
+		end
+	end
+end
+
 local inputsTimer = 0
 local inputsTickrate = 1/60     -- stock 1/30
 
@@ -63,6 +87,7 @@ end
 local function onUpdate(dt)
 	if MPGameNetwork and MPGameNetwork.launcherConnected() then
 		if be:getObjectCount() == 0 then return end
+		partitionOwnVehicles()
 		nodesTimer = nodesTimer + dt
 		if nodesTimer >= nodesTickrate then
 			nodesTimer = (nodesTimer - nodesTickrate) % nodesTickrate
@@ -80,24 +105,30 @@ local function onUpdate(dt)
 				sendTraffic = true
 			end
 			positionGE.tick(sendTraffic) -- Comment this line to disable position synchronization
+			if sendTraffic then
+				-- p13h105: the non-driven vehicles' other streams ride the same clock (see partitionOwnVehicles)
+				MPInputsGE.tick(trafficVehicles)
+				MPElectricsGE.tick(trafficVehicles)
+				MPPowertrainGE.tick(trafficVehicles)
+			end
 		end
 
 		inputsTimer = inputsTimer + dt
 		if inputsTimer >= inputsTickrate then
 			inputsTimer = (inputsTimer - inputsTickrate) % inputsTickrate
-			MPInputsGE.tick() -- Comment this line to disable inputs synchronization
+			MPInputsGE.tick(drivenVehicles) -- Comment this line to disable inputs synchronization (driven car; the rest ride the traffic clock)
 		end
 
 		electricsTimer = electricsTimer + dt
 		if electricsTimer >= electricsTickrate then
 			electricsTimer = (electricsTimer - electricsTickrate) % electricsTickrate
-			MPElectricsGE.tick() -- Comment this line to disable electrics synchronization
+			MPElectricsGE.tick(drivenVehicles) -- Comment this line to disable electrics synchronization (driven car; the rest ride the traffic clock)
 		end
 		
 		powertrainTimer = powertrainTimer + dt
 		if powertrainTimer >= powertrainTickrate then
 			powertrainTimer = (powertrainTimer - powertrainTickrate) % powertrainTickrate
-			MPPowertrainGE.tick() -- Comment this line to disable powertrain synchronization
+			MPPowertrainGE.tick(drivenVehicles) -- Comment this line to disable powertrain synchronization (driven car; the rest ride the traffic clock)
 		end
 		
 		controllerTimer = controllerTimer + dt

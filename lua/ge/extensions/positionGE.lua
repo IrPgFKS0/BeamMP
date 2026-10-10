@@ -163,6 +163,15 @@ end
 
 
 
+-- LAN (p13h105): the vehicle the local player is driving (be:getPlayerVehicle(0)), or -1 for none.
+-- ONE rule for "driven vs the rest": tick() below applies it to positions, MPUpdatesGE to the
+-- inputs/electrics/powertrain polls -- so the streams can never disagree about which car is driven.
+local function getDrivenVehicleID()
+	local ok, av = pcall(function() return be:getPlayerVehicle(0) end)
+	if ok and av then return av:getID() end
+	return -1
+end
+
 --- Called on specified interval by positionGE to simulate our own tick event to collect data.
 -- sendTraffic (passed by MPUpdatesGE) gates the LOW-rate send for NON-driven owned vehicles
 -- (AI/traffic/parked). It is true only at trafficTickrate (~12Hz), NOT every position tick.
@@ -174,9 +183,7 @@ end
 -- its full per-tick rate; only the extra vehicles are rate-limited here.
 local function tick(sendTraffic)
 	local ownMap = MPVehicleGE.getOwnMap() -- Get map of own vehicles
-	local activeID = -1
-	local ok, av = pcall(function() return be:getPlayerVehicle(0) end)
-	if ok and av then activeID = av:getID() end
+	local activeID = getDrivenVehicleID()
 	for i,v in pairs(ownMap) do -- For each own vehicle
 		local veh = be:getObjectByID(i) -- Get vehicle
 		if veh then
@@ -659,6 +666,7 @@ M.getApplyPosRate             = function() local c = applyPosCount; applyPosCoun
 M.getApplyPosRejects          = function() local c = applyPosRejects; applyPosRejects = 0; return c end -- overlay: rejected/s (see applyPos)
 M.getDriftStats               = function() local d, h = wdMaxDrift, wdHealCount; wdMaxDrift, wdHealCount = 0, 0; return d, h end -- overlay: max told-vs-actual (m) + self-heal corrections since last call
 M.tick                        = tick
+M.getDrivenVehicleID          = getDrivenVehicleID -- LAN p13h105: the shared driven-vehicle rule (MPUpdatesGE)
 M.handle                      = handle
 M.sendVehiclePosRot           = sendVehiclePosRot
 M.setPosition                 = setPosition

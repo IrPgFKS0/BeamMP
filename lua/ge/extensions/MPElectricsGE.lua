@@ -17,8 +17,11 @@ local lastElectrics
 
 
 --- Called on specified interval by MPUpdatesGE to simulate our own tick event to collect data.
-local function tick()
-	for i,v in pairs(MPVehicleGE.getPlayerVehicleObjects(MPConfig.getPlayerServerID())) do
+-- LAN (p13h105): `vehicles` = optional { [serverVehicleID] = vehicle } subset to poll. MPUpdatesGE passes
+-- the driven vehicle at this stream's rate and the other owned vehicles (AI traffic, parked, a towed
+-- trailer) on its 12 Hz traffic clock; nil = every owned vehicle (the one-shot full poll on a player join).
+local function tick(vehicles)
+	for i,v in pairs(vehicles or MPVehicleGE.getPlayerVehicleObjects(MPConfig.getPlayerServerID())) do
 		if v then
 			v:queueLuaCommand("if MPElectricsVE then MPElectricsVE.check() end") -- guard: the VE VM may not have loaded its extensions yet (spawn/recover) -- an unguarded call FATALs it
 		end
