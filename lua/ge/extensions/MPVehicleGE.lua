@@ -2510,6 +2510,49 @@ local function removeAllOwnRequest()
 	end
 end
 
+-- LAN (p13h106): BeamNG 0.39's map.tempObjectData() (lua/ge/map.lua) builds a map entry with NO `states`
+-- field -- map.objectData(), the normal path, always sets states = states or emptyTable -- and map.updateGFX
+-- ships map.objects to every vehicle each frame. The traffic AI's isVehicleStopped (vehicle/ai.lua:1859) then
+-- reads v.states.ignitionLevel and that traffic car's Lua FATALs (7x in one 2-player session, 2026-10-10).
+-- The only caller among the game and the server's mods is the third-party turrets mod, which registers its
+-- live missiles and bombs this way. For the session, wrap it: an entry it created without `states` gets an
+-- empty table before the frame's send; map.lua keeps the entry in its objectsCache, so the field persists.
+-- If a BeamNG update starts setting states itself, the wrapper only forwards. Each install builds its own
+-- closure around the function it found, so even if another mod wraps tempObjectData after us, a re-install
+-- (seamless map switch -> post-join again) can only stack a harmless layer -- never a call loop.
+local installedTempObjectDataShim, installedTempObjectDataOriginal
+local tempObjectDataFills = 0 -- entries the shim gave `states` this session (diagnostic: a backstop says when it engages)
+local function installTempObjectDataShim()
+	if not (map and type(map.tempObjectData) == "function") then return end -- guard: engine API churn
+	if map.tempObjectData == installedTempObjectDataShim then return end    -- already in place
+	local original = map.tempObjectData
+	local shim = function(objId, ...)
+		original(objId, ...)
+		local objects = map and map.objects -- read per call: map.loadMap() replaces this table
+		local entry = objects and objects[objId]
+		if type(entry) == "table" and entry.states == nil then
+			entry.states = {}
+			tempObjectDataFills = tempObjectDataFills + 1
+			if tempObjectDataFills <= 3 then -- once per object id (the entry keeps the field); first few named
+				log('I', 'tempObjectDataShim', "gave map object "..tostring(objId).." the missing `states` table (traffic-AI crash guard)")
+			end
+		end
+	end
+	installedTempObjectDataShim, installedTempObjectDataOriginal = shim, original
+	map.tempObjectData = shim
+	log('I', 'tempObjectDataShim', "installed: map.tempObjectData entries without `states` get an empty table (vehicle/ai.lua:1859 crash guard)")
+end
+local function removeTempObjectDataShim()
+	if installedTempObjectDataShim and map and map.tempObjectData == installedTempObjectDataShim then
+		map.tempObjectData = installedTempObjectDataOriginal -- only if nobody wrapped on top of us since
+	end
+	if installedTempObjectDataShim then
+		log('I', 'tempObjectDataShim', "removed; it filled `states` for "..tempObjectDataFills.." map object(s) this session")
+	end
+	installedTempObjectDataShim, installedTempObjectDataOriginal = nil, nil
+	tempObjectDataFills = 0
+end
+
 M.onBeamMPPostJoin = function()
 	-- Re-entrant safe: a seamless map switch calls runPostJoin again with NO Lua reload.
 	-- Only capture+install the core_vehicles overrides once -- otherwise original_* would
@@ -2530,9 +2573,11 @@ M.onBeamMPPostJoin = function()
 	-- On a map switch beginMapRespawn() disarms this so the map re-spawn is authoritative.
 	pendingAutoSpawn = (tonumber(settings.getValue("autoSpawnMode")) or 0) > 0
 	pendingAutoSpawnTimer = 0
+	installTempObjectDataShim() -- LAN p13h106: traffic-AI crash guard (see above); re-entrant on a map switch
 end
 
 M.onBeamMPServerLeave = function() --NOTE: the nil checks are so the function doesn't get set to a nil after a lua reload
+	removeTempObjectDataShim() -- LAN p13h106
 	if original_removeAllExceptCurrent then core_vehicles.removeAllExceptCurrent = original_removeAllExceptCurrent end
 	if original_spawnNewVehicle then core_vehicles.spawnNewVehicle = original_spawnNewVehicle end
 	if original_replaceVehicle then core_vehicles.replaceVehicle = original_replaceVehicle end
