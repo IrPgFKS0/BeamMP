@@ -1,6 +1,6 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.22.2-LAN p13h104` · combined host exe `p13h43` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
+**Build:** mod `4.22.2-LAN p13h106` · combined host exe `p13h43` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -44,6 +44,48 @@ a little tuning (see `LAN-TUNING.md`).
   cores so the relay/bridge keep up), and in-game **Save all logs (zip)** for support.
 
 ## This release
+
+> **Mod-only drop-in over p13h104 (or p13h101 / p13h99)** — the exe is unchanged (`p13h43`). Verified in a
+> two-player session on both machines with AI traffic running and a missile turret firing; see "Verification".
+
+- **AI traffic no longer floods the other players (p13h105).** When the host turns on BeamNG traffic,
+  every traffic car is a remote car for everyone else. Their positions were already sent at a reduced
+  12 updates per second, but their steering/throttle, lights and powertrain still went out at full
+  rate — up to 60 per second per car — and made up most of what the other player received. Now
+  everything about a car you are not driving (traffic, parked cars, a towed trailer) goes out together
+  at 12 per second; the car you drive keeps its full rates. The packet format is unchanged, so players
+  on the previous build are unaffected.
+- **Traffic no longer crashes around missiles and bombs (p13h106).** With the third-party turrets mod,
+  a traffic car whose AI noticed an in-flight missile or bomb could crash and stop driving: the mod
+  registers its munitions through a BeamNG function that leaves out a field the traffic AI expects.
+  During a multiplayer session the mod now fills that field in. It logs under `tempObjectDataShim` —
+  when it installs, the first few objects it fixes, and a total when you leave — and if a BeamNG update
+  fixes the function itself, the patch steps aside.
+
+### Verification
+
+The combined-host exe is unchanged (`p13h43`); this is a drop-in mod update. Offline, two new sandbox
+checks run the real code. The traffic-rate check drives the update loop frame by frame: traffic cars at
+12 per second on every stream, while the driven car and every car's positions stay identical to
+p13h104 (81 checks; the p13h104 code fails 41). The crash-guard check runs BeamNG's own `map.lua`: it
+first reproduces the crash condition, then shows the fix, including a mod that wraps the same function
+and a map switch re-installing the patch (25 checks; the p13h105 code fails 7). Lua parse sweep 41/41,
+smoke gate 17/17 for both builds. (The smoke gate's no-errors check briefly failed on p13h106's own
+patch note, which quoted the crash text; the note no longer quotes it, and the check now ignores the
+mod's own patch-note line while still catching real mod errors.)
+
+**Two-player session (Windows host + Linux client, 2026-10-10):** the host ran 7 traffic cars (2 of
+them police) while the client drove a missile turret. The crash guard fixed two missile entries while
+traffic was active and no traffic car crashed — the session earlier that day had 7 such crashes in 15
+minutes. On the client, each traffic car's positions arrived exactly 12 times a second and the host's own
+car's 29 times; no forced resyncs were needed while traffic ran, and the host's car tracked as well as it
+did in a session without traffic (on average about 2 m off at the worst moment of each 5 seconds, against
+3 m with traffic on p13h104). The client received 190–420 messages a second with 8 of the host's cars,
+about a quarter fewer than that morning's traffic session (on a different map). Traffic cars still jump
+visibly when BeamNG's traffic system relocates one far ahead of the host — that is the traffic system
+moving them, not a sync fault.
+
+## Previous release (p13h104)
 
 > **Mod-only drop-in over p13h101 (or p13h99)** — the exe is unchanged (`p13h43`). p13h104 is p13h103
 > plus one fix found when p13h103 was played: its new Maps page bounced back to the server list the
