@@ -6,7 +6,7 @@
     @mouseleave="isHovered = false"
   >
     <div v-show="!enableNewChatMenu" ref="chatWindowRef" class="chat-window" :style="chatWindowStyle">
-      <ul ref="chatListRef" class="chat-list" :style="chatListStyle">
+      <ul ref="chatListRef" class="chat-list" :class="{ 'chat-list--scrollbar-hidden': !isScrollbarVisible }" :style="chatListStyle">
         <li
           v-for="message in messages"
           :key="message.key"
@@ -19,29 +19,29 @@
         </li>
       </ul>
 
-      <form ref="chatBoxRef" class="chatbox" :style="chatBoxStyle" @submit.prevent="sendChat">
+      <form ref="chatBoxRef" class="chatbox" :style="chatBoxStyle" @submit.prevent="sendChat" @keydown.capture="onInputKeydown">
         <button
-          class="buttons send-button"
-		  id="send-button"
+          class="chat-control-button chat2-send-button"
           type="submit"
           :title="$tt('ui.apps.beammp.chat.send') || 'Send message'"
           :aria-label="$tt('ui.apps.beammp.chat.send') || 'Send message'"
         >
           {{ sendButtonText }}
         </button>
-		<!-- @enter: BngInput preventDefaults the Enter key (so the form @submit never fires) and
-             emits 'enter' instead -- without this, Enter cannot send (upstream #926's known gap) -->
-		<BngInput
-            v-model="inputText"
-            class="chat-input"
-            type="text"
-            :maxlength="500"
-            :show-external-button="false"
-            @enter="sendChat"
+        <input
+          ref="chatInputRef"
+          v-model="inputText"
+          class="chat2-message-input"
+          type="text"
+          maxlength="500"
+          autocomplete="off"
+          placeholder="Chat here"
+          aria-label="BeamMP chat message"
+          @focus="focusChat"
+          @blur="blurChat"
         />
         <button
-		  id="chat-horizontal-button"
-          class="buttons swap-buttons"
+          class="chat-control-button chat2-swap-button"
           type="button"
           :title="$tt('ui.apps.beammp.chat.moveHorizontal') || 'Move chat horizontally'"
           :aria-label="$tt('ui.apps.beammp.chat.moveHorizontal') || 'Move chat horizontally'"
@@ -50,8 +50,7 @@
           ↔
         </button>
         <button
-		  id="chat-vertical-button"
-          class="buttons swap-buttons"
+          class="chat-control-button chat2-swap-button"
           type="button"
           :title="$tt('ui.apps.beammp.chat.moveVertical') || 'Move chat vertically'"
           :aria-label="$tt('ui.apps.beammp.chat.moveVertical') || 'Move chat vertically'"
@@ -67,7 +66,6 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue"
 import { useBridge } from "@/bridge"
-import { BngDropdown, BngInput, ACCENTS } from "@/common/components/base"
 
 const { api, events } = useBridge()
 
@@ -101,6 +99,12 @@ const chatListStyle = computed(() => ({
   marginBottom: chatVertical.value === "top" ? "auto" : "0px",
 }))
 
+const isScrollbarVisible = computed(() => {
+  if (enableNewChatMenu.value || isHovered.value || isFocused.value) return true
+  const latestMessage = messages.value[messages.value.length - 1]
+  return latestMessage ? messageStyle(latestMessage).opacity > 0 : false
+})
+
 const chatBoxStyle = computed(() => ({
   flexDirection: chatHorizontal.value === "right" ? "row-reverse" : "row",
   marginLeft: chatHorizontal.value === "right" ? "auto" : "0px",
@@ -117,31 +121,9 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;")
 }
 
-function isSafeServerHtml(html) {
-  const parser = new DOMParser()
-  const doc = parser.parseFromString(`<div>${html}</div>`, "text/html")
-  const blockedTags = new Set(["script", "iframe", "form", "input", "button", "a"])
-  const elements = doc.body.querySelectorAll("*")
-
-  for (const element of elements) {
-    if (blockedTags.has(element.tagName.toLowerCase())) return false
-    for (const attr of element.attributes) {
-      if (/^(?:on.*|(?:form).*|action)$/i.test(attr.name)) return false
-      if (/javascript:|data:/i.test(attr.value)) return false
-    }
-  }
-  return true
-}
-
 function formatChatMessage(value) {
   const string = String(value ?? "")
-  if (string.startsWith("Server: ")) {
-    const messageContent = string.slice(8)
-    if (messageContent.includes("<") && messageContent.includes(">") && isSafeServerHtml(messageContent)) {
-      return `Server: ${messageContent}`
-    }
-  }
-
+  // Match the Angular app's text-only policy; servers may use BeamMP formatting codes.
   const tokens = string.split(/(\^.)/g)
   const classes = new Set()
   let currentText = ""
@@ -278,7 +260,7 @@ function swapVertical() {
 
 function focusChat() {
   isFocused.value = true
-  api.engineLua("setCEFFocus(true)")
+  // BeamNG manages CEF focus automatically.
 }
 
 function blurChat() {
@@ -300,7 +282,10 @@ function sendChat() {
 }
 
 function onInputKeydown(event) {
+  if (event.isComposing) return
   if (event.key === "ArrowUp") {
+    event.preventDefault()
+    event.stopPropagation()
     inputText.value = lastSentMessage.value
     nextTick(() => {
       const input = chatInputRef.value
@@ -362,8 +347,6 @@ onMounted(() => {
   events.on("onBeamMPClearChatHistory", onClearHistory)
   events.on("SettingsChanged", onSettingsChanged)
 
-  chatInputRef.value?.addEventListener("blur", blurChat)
-
   fadeTimer = window.setInterval(() => {
     nowTick.value = Date.now()
   }, 100)
@@ -375,8 +358,6 @@ onUnmounted(() => {
   events.off("onBeamMPChatMessage", onBeamMPChatMessage)
   events.off("onBeamMPClearChatHistory", onClearHistory)
   events.off("SettingsChanged", onSettingsChanged)
-
-  chatInputRef.value?.removeEventListener("blur", blurChat)
 
   if (fadeTimer) {
     window.clearInterval(fadeTimer)
@@ -423,7 +404,6 @@ onUnmounted(() => {
   overflow-y: auto;
   overflow-wrap: anywhere;
   list-style: none;
-  scrollbar-gutter: stable;
 }
 
 .beammpChat2 .chat-message {
@@ -514,11 +494,12 @@ onUnmounted(() => {
   background-color: rgba(30, 30, 30, 0.4);
 }
 
-.beammpChat2 .chat-input {
+.beammpChat2 .chat2-message-input {
   width: 100%;
   height: 100%;
   min-width: 0;
   flex: 1 1 auto;
+  padding: 0.45rem 0.65rem;
   border: 0;
   outline: 0;
   background: transparent;
@@ -526,11 +507,11 @@ onUnmounted(() => {
   font: inherit;
 }
 
-.beammpChat2 .chat-input::placeholder {
+.beammpChat2 .chat2-message-input::placeholder {
   color: var(--bng-cool-gray-300);
 }
 
-.beammpChat2 .buttons {
+.beammpChat2 .chat-control-button {
   min-width: 2.35rem;
   height: auto;
   margin: 0;
@@ -546,26 +527,26 @@ onUnmounted(() => {
   transition: background-color 100ms ease, color 100ms ease;
 }
 
-.beammpChat2 .buttons:hover,
-.beammpChat2 .buttons:focus-visible {
+.beammpChat2 .chat-control-button:hover,
+.beammpChat2 .chat-control-button:focus-visible {
   outline: 0;
   background: rgba(var(--bng-orange-500-rgb), 0.32);
   color: var(--bng-off-white);
 }
 
-.beammpChat2.ui-style-redesigned .buttons {
+.beammpChat2.ui-style-redesigned .chat-control-button {
   border-left: 0;
   background-color: transparent;
   color: #dddddd;
 }
 
-.beammpChat2.ui-style-redesigned .buttons:hover,
-.beammpChat2.ui-style-redesigned .buttons:focus-visible {
+.beammpChat2.ui-style-redesigned .chat-control-button:hover,
+.beammpChat2.ui-style-redesigned .chat-control-button:focus-visible {
   background-color: rgba(0, 0, 0, 0.2);
   color: #ffffff;
 }
 
-.beammpChat2 .send-button {
+.beammpChat2 .chat2-send-button {
   min-width: 3.7rem;
   border-left: 0;
   border-right: 1px solid rgba(var(--bng-cool-gray-300-rgb), 0.2);
@@ -573,17 +554,17 @@ onUnmounted(() => {
   color: var(--bng-off-white);
 }
 
-.beammpChat2 .send-button:hover,
-.beammpChat2 .send-button:focus-visible {
+.beammpChat2 .chat2-send-button:hover,
+.beammpChat2 .chat2-send-button:focus-visible {
   background: var(--bng-orange-500);
 }
 
-.beammpChat2.ui-style-redesigned .send-button {
+.beammpChat2.ui-style-redesigned .chat2-send-button {
   border-right: 0;
   background: transparent;
 }
 
-.beammpChat2 .swap-buttons {
+.beammpChat2 .chat2-swap-button {
   flex: 0 0 2.35rem;
   padding: 0;
 }
@@ -601,18 +582,28 @@ onUnmounted(() => {
   background: rgba(var(--bng-cool-gray-300-rgb), 0.55);
 }
 
+.beammpChat2 .chat-list--scrollbar-hidden {
+  scrollbar-width: none;
+}
+
+.beammpChat2 .chat-list--scrollbar-hidden::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 @media (max-width: 420px) {
   .beammpChat2 .chat-window {
     font-size: 0.75rem;
   }
 
-  .beammpChat2 .send-button {
+  .beammpChat2 .chat2-send-button {
     min-width: 2.5rem;
     overflow: hidden;
     font-size: 0;
   }
 
-  .beammpChat2 .send-button::before {
+  .beammpChat2 .chat2-send-button::before {
     content: "↗";
     font-size: 1rem;
   }

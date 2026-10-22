@@ -13,8 +13,6 @@ local M = {state={}}
 
 
 local originalGetDriverData
-local originalToggleWalkingMode
-local originalOnVehicleSwitched
 local original_onInstabilityDetected
 local original_markerInteraction_onPreRender
 
@@ -33,31 +31,20 @@ local function modifiedGetDriverData(veh)
 end
 
 
---- Custom walking mode function that handles the getting of the unicycle and handles the deletion of it.
-local function modifiedToggleWalkingMode()
-	local unicycle = (gameplay_walk.getCurrentUnicycle or gameplay_walk.getPlayerUnicycle)() -- renamed getCurrentUnicycle in BeamNG 0.39; fallback keeps 0.38 compat
-	if unicycle ~= nil then
-		local veh = gameplay_walk.getVehicleInFront()
-		if not veh or veh:getJBeamFilename() == "unicycle" then return end
-	end
-	originalToggleWalkingMode()
-	
-	-- If we were in a unicycle and entered a vehicle, delete it so it disappears for other players as well
-	if unicycle ~= nil then
-		unicycle:delete()
-	end
-end
-
---- 0.39: switching vehicles no longer routes through toggleWalkingMode, so hook onVehicleSwitched
---- too -- if we left a unicycle for a real vehicle, delete the unicycle so it also disappears for
---- every other player (upstream 0.39-compat #918).
-local function modifiedOnVehicleSwitched(oldId, newId, player)
-	local unicycle = scenetree.findObjectById(oldId)
+-- 0.40 keeps one unicycle per local player and deactivates it on entering a car.
+-- Delete that inactive local object so the existing destroy event removes it on peers too.
+local function onVehicleActiveChanged(vehicleID, active)
+	if active or not (MPCoreNetwork and MPCoreNetwork.isMPSession()) then return end
+	local mpVehicle = MPVehicleGE.getVehicleByGameID(vehicleID)
+	if mpVehicle and not mpVehicle.isLocal then return end
+	if not (gameplay_walk and gameplay_walk.onSerialize) then return end
 	local walkData = gameplay_walk.onSerialize()
-
-	originalOnVehicleSwitched(oldId, newId, player)
-	if unicycle ~= nil and walkData.unicycleId == oldId then
-		unicycle:delete()
+	for _, unicycleID in pairs(walkData and walkData.unicycleIds or {}) do
+		if unicycleID == vehicleID then
+			local unicycle = getObjectByID(vehicleID)
+			if unicycle then unicycle:delete() end
+			return
+		end
 	end
 end
 
@@ -70,8 +57,7 @@ local function modified_onInstabilityDetected(vid)
 	-- LAN: with instability pausing disabled, the diverging physics would otherwise
 	-- run to NaN and the engine would hard-reset the car back to its SPAWN point
 	-- (the "high-impact collision teleports me to where I started" bug). Instead we
-	-- recover it IN PLACE so it stabilises right where it crashed. Only do this for
-	-- our own vehicles; remote cars are handled by the position sync. Guarded so a
+	-- recover it IN PLACE so it stabilises right where it crashed. Guarded so a
 	-- future BeamNG API change can't break the mod.
 	if not vid then return end
 	local veh = be:getObjectByID(vid)
@@ -125,19 +111,6 @@ local function onUpdate(dt)
 			originalGetDriverData = core_camera.getDriverData
 			core_camera.getDriverData = modifiedGetDriverData
 		end
-		if gameplay_walk then
-			if gameplay_walk.toggleWalkingMode ~= modifiedToggleWalkingMode then
-				log('W', 'onUpdate', 'Setting modifiedToggleWalkingMode')
-				originalToggleWalkingMode = gameplay_walk.toggleWalkingMode
-				gameplay_walk.toggleWalkingMode = modifiedToggleWalkingMode
-			end
-			if gameplay_walk.onVehicleSwitched ~= modifiedOnVehicleSwitched then
-				log('W', 'onUpdate', 'Setting modifiedOnVehicleSwitched')
-				originalOnVehicleSwitched = gameplay_walk.onVehicleSwitched
-				gameplay_walk.onVehicleSwitched = modifiedOnVehicleSwitched
-			end
-		end
-
 		if worldReadyState == 0 then
 			-- Workaround for worldReadyState not being set properly if there are no vehicles
 			serverConnection.onCameraHandlerSetInitial()
@@ -173,7 +146,10 @@ local function runPostJoin()
 	-- no-op and hide the markers; restored in onServerLeave. Toggle-gated (default on)
 	-- so the win can be A/B'd, and fully guarded against a BeamNG API change.
 	if settings.getValue("optimizeMapMarkers") ~= false and gameplay_markerInteraction then
-		original_markerInteraction_onPreRender = gameplay_markerInteraction.onPreRender
+		-- Seamless map switches repeat post-join without unloading this extension.
+		if gameplay_markerInteraction.onPreRender ~= nop then
+			original_markerInteraction_onPreRender = gameplay_markerInteraction.onPreRender
+		end
 		gameplay_markerInteraction.onPreRender = nop
 		if gameplay_markerInteraction.setMarkersVisibleTemporary then
 			gameplay_markerInteraction.setMarkersVisibleTemporary(false)
@@ -187,8 +163,6 @@ end
 local function onServerLeave()
 	if original_onInstabilityDetected then onInstabilityDetected = original_onInstabilityDetected end
 	if originalGetDriverData then core_camera.getDriverData = originalGetDriverData end
-	if originalToggleWalkingMode and gameplay_walk and gameplay_walk.toggleWalkingMode then gameplay_walk.toggleWalkingMode = originalToggleWalkingMode end
-	if originalOnVehicleSwitched and gameplay_walk and gameplay_walk.onVehicleSwitched then gameplay_walk.onVehicleSwitched = originalOnVehicleSwitched end
 	-- restore BeamNG's per-frame marker processing if we disabled it on join
 	if original_markerInteraction_onPreRender and gameplay_markerInteraction then
 		gameplay_markerInteraction.onPreRender = original_markerInteraction_onPreRender
@@ -246,7 +220,7 @@ M.onUpdate          = onUpdate
 M.onWorldReadyState = onWorldReadyState
 M.onBigMapActivated = onBigMapActivated
 M.onDeactivateBigMapCallback = onDeactivateBigMapCallback
--- 0.39.4's stock onInstabilityDetected offers extensions first refusal:
+-- 0.39.4 and 0.40.1's stock onInstabilityDetected offer extensions first refusal:
 --   extensions.hook('onInstabilityDetected', vid, returnData)
 -- and, if unhandled, ghosts + safe-teleports the vehicle -- and DELETES it when it goes
 -- unstable AGAIN within the timer window. The global replacement in runPostJoin no longer
@@ -261,6 +235,7 @@ local function onInstabilityDetectedHook(vid, returnData)
 end
 
 M.onInstabilityDetected = onInstabilityDetectedHook
+M.onVehicleActiveChanged = onVehicleActiveChanged
 M.onBeamMPPostJoin = runPostJoin
 M.onBeamMPServerLeave = onServerLeave
 M.onInit = function() setExtensionUnloadMode(M, "manual") end

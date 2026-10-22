@@ -32,7 +32,8 @@ copy BeamMP\tools\*.bat . && copy BeamMP\tools\*.sh . && copy BeamMP\tools\*.ps1
 | `devenv.bat` | Wrapper that sets up the MSVC env + VS-bundled cmake/ninja and runs its arguments — for ad-hoc builds outside the two scripts above. |
 | `build-linux-docker.sh` | Builds the Linux server + combined binaries in an `ubuntu:24.04` container → `dist/linux/`. First run compiles vcpkg deps (slow); reuses `./.vcpkg-cache` after. |
 | `linux-build-inner.sh` | The container-side half of the Linux build. On Windows hosts, invoke it directly from PowerShell — `docker run --rm -v "<workspace>:/work" -w /work ubuntu:24.04 bash /work/linux-build-inner.sh` — because Git Bash mangles the `-w /work` container paths. |
-| `package_mod.sh` | Reference packer for `BeamMP.zip` (needs `zip`; on Windows use the .NET packer snippet in the docs instead). |
+| `package_mod.py` | Canonical Python 3.9+ mod packer. Run `python BeamMP/tools/package_mod.py` from the workspace, or `python tools/package_mod.py` inside this repo. Checks all required content, stores entries that do not shrink (avoids BeamNG 0.40's equal-size DEFLATE bug), verifies every member/CRC against source bytes, backs up the previous ZIP, then replaces the output atomically. `--verify <zip>` checks an existing archive; add `--mod-dir <source>` to compare its entire contents with source. |
+| `package_mod.sh` | Shell wrapper for the Python packer, usable in either layout; forwards all arguments. No `zip` command required. |
 | `apply-windows-tuning.ps1` | Optional Windows host network/OS tuning (see `docs/lan/LAN-TUNING.md`). |
 | `host/` | Drop-in **hosting** scripts (`start-server.bat`, `pin-cores.ps1` + their README) — these go next to `BeamMP-Combined.exe` in your *server* folder, not the workspace. Also shipped inside the release zip (`../dist/`). |
 

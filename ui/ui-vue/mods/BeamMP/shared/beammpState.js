@@ -525,7 +525,7 @@ async function connectToServer(ip, port, name = "", skipModWarning = false) {
   extensionCommand(
     "MPCoreNetwork",
     "connectToServer",
-    `\"${useIp}\", ${usePort}, \"${name || ""}\", ${skipModWarning ? "true" : "false"}`,
+    `${bridgeApi.serializeToLua(useIp)}, ${usePort}, ${bridgeApi.serializeToLua(name || "")}, ${skipModWarning ? "true" : "false"}`,
   )
 }
 

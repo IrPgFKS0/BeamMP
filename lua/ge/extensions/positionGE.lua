@@ -89,8 +89,11 @@ end
 local function dvSetupVehicle(gameVehicleID)
 	local veh = be:getObjectByID(gameVehicleID)
 	if not veh then return end
-	local sid = MPVehicleGE and MPVehicleGE.getServerVehicleID and MPVehicleGE.getServerVehicleID(gameVehicleID)
-	local isOwn = sid and MPVehicleGE.isOwn and MPVehicleGE.isOwn(gameVehicleID)
+	-- Settings refresh also runs in single-player and before a spawn receives its ID.
+	-- Use the existing optional lookup; a missing mapping is normal at this point.
+	local mpVeh = MPVehicleGE and MPVehicleGE.getVehicleByGameID and MPVehicleGE.getVehicleByGameID(gameVehicleID)
+	local sid = mpVeh and mpVeh.serverVehicleString
+	local isOwn = sid and mpVeh.isLocal
 	if directVehSock and isOwn then
 		if MPCoreNetwork and MPCoreNetwork.send then MPCoreNetwork.send('Va:'..sid) end -- register with the launcher
 		veh:queueLuaCommand("if positionVE and positionVE.setDirectVehicle then positionVE.setDirectVehicle(true, '"..sid.."', "..dvPort..") end")

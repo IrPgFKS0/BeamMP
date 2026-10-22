@@ -2,50 +2,14 @@
 // Licensed under AGPL-3.0 (or later), see <https://www.gnu.org/licenses/>.
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+;(function() {
+
 var app = angular.module('beamng.apps');
 
 let lastSentMessage = "";
 
 let lastMsgId = 0;
 let newChatMenu = false;
-
-// The mod ships DOMPurify (ui/lib/ext/purify.min.js) and loads it with the fire-and-forget
-// dynamic import below -- but that import is ASYNC and nothing awaits it, so any message
-// formatted before it resolves hit "ReferenceError: DOMPurify is not defined" and threw
-// (observed in beamng.log on 0.39, where UI apps reload on their own schedule). Since
-// formatChatMessage is on the path of EVERY displayed line, one early message killed chat
-// rendering. This wrapper uses the real DOMPurify once it has landed and a parser-based
-// fallback before that, so a sanitize call can never throw.
-import('/ui/lib/ext/purify.min.js')
-function beammpSanitize(input) {
-	const str = String(input == null ? '' : input);
-	try {
-		if (typeof DOMPurify !== 'undefined' && DOMPurify && typeof DOMPurify.sanitize === 'function') {
-			return DOMPurify.sanitize(str);
-		}
-		const BAD_TAGS = new Set(['script', 'style', 'iframe', 'object', 'embed', 'link', 'meta', 'base', 'form', 'input', 'button', 'svg', 'math']);
-		const root = document.createElement('div');
-		root.innerHTML = str;
-		const walk = el => {
-			for (const child of Array.from(el.children)) {
-				if (BAD_TAGS.has(child.tagName.toLowerCase())) { child.remove(); continue; }
-				for (const attr of Array.from(child.attributes)) {
-					const n = attr.name.toLowerCase();
-					const v = String(attr.value || '');
-					if (n.startsWith('on') || n === 'srcdoc' || /^\s*(javascript|data|vbscript):/i.test(v)) {
-						child.removeAttribute(attr.name);
-					}
-				}
-				walk(child);
-			}
-		};
-		walk(root);
-		return root.innerHTML;
-	} catch (e) {
-		// never render unsanitized input -- escape everything instead
-		return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-	}
-}
 app.directive('beammpChat', [function () {
 	return {
 		templateUrl: '/ui/modules/apps/BeamMP-Chat/app.html',
@@ -126,8 +90,7 @@ app.controller("BeamMPChatController", ['$scope', 'Settings', function ($scope, 
 	};
 
 	$scope.select = function() {
-		// setCEFFocus(true) removed: BeamNG deprecated it ("doesn't need to be called" -- the engine
-		// now manages UI-app/CEF focus automatically). Kept as a no-op so the ng-click binding stays valid.
+		// LAN: BeamNG manages CEF focus automatically; the engine call is deprecated.
 	};
 
 	function setChatDirection(direction) {
@@ -245,6 +208,11 @@ var chatShown = false;
 var chatShowTime = 3500; // 5000ms
 var chatFadeSteps = 1/30; // 60 steps
 var chatFadeSpeed = 1000 / (1/chatFadeSteps); // 1000ms
+function setChatScrollbarVisible(visible) {
+	const chatlist = document.getElementById("chat-list");
+	if (chatlist) chatlist.classList.toggle("chat-list--scrollbar-hidden", !visible);
+}
+
 async function fadeNode(node) {
 	// Set the node opacity to 1.0
 	node.style.opacity = 1.0;
@@ -262,6 +230,8 @@ async function fadeNode(node) {
 		if (chatShown) return;
 		nodeOpacity = nodeOpacity - chatFadeSteps;
 		node.style.opacity = nodeOpacity;
+		const chatlist = document.getElementById("chat-list");
+		if (chatlist?.lastElementChild === node && nodeOpacity <= 0) setChatScrollbarVisible(false);
 		await sleep(chatFadeSpeed);
 	}
 }
@@ -275,13 +245,14 @@ async function showChat() {
 		// Get the chat and the messages
 		// Copy the variables so it's a pointer
 		var chatList = document.getElementById("chat-list");
-		if (!chatList) return; // LAN: the HUD can be unloaded under this loop (e.g. "/maps" opens the menu) -- stop quietly
+		if (!chatList) return; // LAN: the HUD can unload while this loop awaits (for example /maps).
 		var tempMessages = chatList.getElementsByTagName("li");
 		for (i = 0; i < tempMessages.length; i++) {
 			chatMessages[i] = tempMessages[i];
 		}
 		// Set all messages opacity to 1.0
 		for (var i = 0; i < chatMessages.length; ++i) chatMessages[i].style.opacity = 1.0;
+		setChatScrollbarVisible(true);
 		await sleep(100);
 	}
 	// Once the mouse is not over the chat anymore, we wait before fading
@@ -299,51 +270,28 @@ async function showChat() {
 		for (var i = 0; i < chatMessages.length; ++i) chatMessages[i].style.opacity = chatOpacity;
 		await sleep(chatFadeSpeed);
 	}
+	if (!chatShown) setChatScrollbarVisible(false);
 }
 // -------------------------------------------- CHAT FADING -------------------------------------------- //
 
 // -------------------------------------------- MESSAGE FORMATTING -------------------------------------------- //
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+}
 
 function formatChatMessage(string) {
-    const blockedTags = new Set(['script', 'iframe', 'form', 'input', 'button', 'a']);
-    
-    const dangerousAttributePattern = /^(?:on.*|(?:form).*|action)$/i;
-
-    function isSafeHtml(html) {
-        const div = document.createElement('div');
-        div.innerHTML = html;
-        
-        const elements = div.getElementsByTagName('*');
-        for (let element of elements) {
-            if (blockedTags.has(element.tagName.toLowerCase())) {
-                return false;
-            }
-            
-            for (let attr of element.attributes) {
-                if (dangerousAttributePattern.test(attr.name) || 
-                    /javascript:|data:/i.test(attr.value)) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    if (string.startsWith("Server: ")) {
-        const messageContent = string.substring(8);
-        if (messageContent.includes('<') && messageContent.includes('>')) {
-            if (isSafeHtml(messageContent)) {
-                return "Server: " + messageContent;
-            }
-        }
-    }
 
     let result = '';
     let currentText = '';
     let classes = new Set();
 
-    string = beammpSanitize(string); // 0.39: the game no longer ships DOMPurify (see beammpSanitize)
+    string = escapeHtml(string);
     const tokens = string.split(/(\^.)/g);
 
     const flush = () => {
@@ -472,6 +420,7 @@ function addMessage(msg, time = null) {
 	}
 
 	chatList.appendChild(chatMessageNode);
+	setChatScrollbarVisible(true);
 
 	// Delete oldest chat message if more than 70 messages exist
 	if (chatList.children.length > 70) {
@@ -504,3 +453,4 @@ function onKeyDown(e) {
 		document.getElementById("send-button").click();
 	}
 }
+})();

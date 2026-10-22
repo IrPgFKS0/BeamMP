@@ -113,7 +113,7 @@ local defaultSettings = {
 	unicycleConfigs = getUnicycleConfigs(), unicycleAutoSave = true,
 	--unicycle_pc = nil, -- temp value introduced to share the user selected default unicycle config from the multiplayer.partial ui to MPConfig.setDefaultUnicycle()
 
-	disableInstabilityPausing = true,
+	disableInstabilityPausing = true, -- LAN: retain the recovery-in-place policy
 
 	refreshIngame = false,
 

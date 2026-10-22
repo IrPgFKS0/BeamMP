@@ -1,6 +1,11 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.22.2-LAN p13h106` · combined host exe `p13h43` (Windows + Linux) · **for BeamNG 0.39.x** (validated on 0.39.4)
+**Build:** mod `4.23.1-LAN p13h107` · Windows combined host exe `p13h44` · **for BeamNG 0.40.1**
+
+Local compatibility candidate; two-player validation is pending. The new bundle is
+Windows-only. The mod itself is platform independent, but a new Linux launcher could
+not be built because the existing Docker/WSL installation fails to start. No older
+Linux executable is represented as p13h44.
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -44,6 +49,64 @@ a little tuning (see `LAN-TUNING.md`).
   cores so the relay/bridge keep up), and in-game **Save all logs (zip)** for support.
 
 ## This release
+
+The upstream baseline is BeamMP **v4.23.1** (`d8823214`), integrated with the LAN
+fork's own position predictor, direct socket, 12 Hz traffic scheduling, reliable
+weapons, map switching, and recovery policy preserved.
+
+- Rebuilt the complete stock options page and conditions from installed BeamNG
+  0.40.1, retaining the LAN settings. New game graphics, display and gameplay
+  options remain available while BeamMP is mounted.
+- Updated walking cleanup for the game's per-player unicycle state and config-save
+  wrappers for the new save APIs. Vehicle ownership comes from the authoritative
+  server vehicle ID; lost-spawn recovery remains enabled.
+- Adopted upstream's replacement for the removed vehicle key polling API, independent
+  electrics caches for each owned vehicle, hydraulic beam smoothing, safer mod filename
+  parsing, and chat input/escaping fixes. LAN names, favorite renaming, Direct Connect,
+  and Maps remain available.
+- Fixed a logged single-player mapping error in direct-socket setup. Fixed marker
+  restoration after repeated map switches. Retained the traffic-AI shim from h106:
+  the underlying game issue still exists in installed 0.40.1.
+- Windows launcher p13h44 serializes complete TCP messages across simultaneous senders,
+  including partial socket writes (upstream #271). The combined host's in-memory queue
+  retains its existing behavior; server protocol and standalone server are unchanged.
+- Chat and disconnect messages render as literal text, including Vue expressions,
+  while retaining the supported chat formatting. Connection arguments use the existing
+  Lua serializer.
+- Fixed native icon loading by changing archive compression: BeamNG 0.40 returned
+  compressed bytes for 17 PNG entries whose compressed and original sizes were equal.
+  The packager now stores entries that do not shrink and validates every source byte.
+
+### Verification
+
+Offline compatibility and gameplay guards pass and fail on the relevant h106 code.
+The launcher concurrency guard detects interleaved packets in p13h43 and passes on
+p13h44. The unchanged predictor matches the established guard; traffic scheduling,
+spawn handling, map switching and the traffic-AI shim retain their existing checks.
+Final runtime and package receipts are recorded in `BEAMNG-0.40-UPGRADE.md` in the
+mod's `docs/lan/` directory.
+
+The exact h107 mod and h44 Windows host passed **17/17 real-game smoke checks** on
+BeamNG 0.40.1: join, spawn, driving, direct position/input transport, vehicle reload,
+socket re-registration and live VE modules. All 468 archive entries were compared
+against the live game: 467 matched exactly; the remaining HUD layout correctly came
+from the user's custom layout. All 17 affected images now match their original PNGs.
+CEF fetched both options overrides exactly as packaged, including all seven BeamMP
+categories. The test restored its diagnostic settings and left the permanent server
+configuration unchanged. A real two-player session is still pending.
+
+The original logs did not contain a multiplayer gameplay session on 0.40. Most
+reported errors were third-party vehicle metadata or graphics shutdown errors,
+including runs without BeamMP loaded. The configured Egypt map was unavailable, so
+the smoke test used Gridmap through a temporary copied server config. Third-party
+vehicle assets and the user's permanent map selection were left intact.
+
+The existing smoke harness also required a 0.40 update: its legacy `-tcom` flag
+crashes the stock game before mod loading because `tech_techCore` is absent. It now
+uses the game's shipped local MCP API to run the same assertions. BeamNGpy remains
+available via `--bridge beamngpy` for older game versions.
+
+## Previous release (p13h106)
 
 > **Mod-only drop-in over p13h104 (or p13h101 / p13h99)** — the exe is unchanged (`p13h43`). Verified in a
 > two-player session on both machines with AI traffic running and a missile turret firing; see "Verification".

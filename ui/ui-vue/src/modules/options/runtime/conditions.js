@@ -30,7 +30,7 @@ export default function (deps) {
       return values.userLanguageSelected !== values.languageOS
     },
     richPresenceEnabled(values) {
-      return !!values.richPresence // matches the game 0.39.4 copy: richPresence is a boolean checkbox now ("enable" is the pre-checkbox value -- upstream's copy is stale and permanently disables richPresenceDiscord)
+      return !!values.richPresence
     },
     externalUiEnabled(values) {
       return values.externalUI2 === "enable"
@@ -90,13 +90,28 @@ export default function (deps) {
       return values.openXRuiEnabled
     },
     GraphicAntialiasEnabled(values) {
-      return !!values.GraphicAntialias
+      return values.GraphicAntialiasType !== "off"
+    },
+    GraphicUpscalingSharpnessSupported(values) {
+      return ["dlss", "fsr3", "fsr4", "xess", "fsrCustom", "pssr"].includes(values.GraphicAntialiasType)
     },
     GraphicLightingQualityLowest(values) {
       return values.GraphicLightingQuality === "Lowest"
     },
     GraphicLightingQualityNotLowest(values) {
       return values.GraphicLightingQuality !== "Lowest"
+    },
+    GraphicLightingQualityAdvanced15(values) {
+      return values.GraphicLightingQuality === "High" ||
+             values.GraphicLightingQuality === "Ultra"
+    },
+    SpecularOcclusionAvailable(values) {
+      return (values.GraphicLightingQuality === "High" || values.GraphicLightingQuality === "Ultra") &&
+        values.PostFXSSAOGeneralQuality !== "Off" && values.PostFXSSAOGeneralEnabled !== false
+    },
+    GraphicLightingQualityNotAdvanced15(values) {
+      return values.GraphicLightingQuality !== "High" &&
+             values.GraphicLightingQuality !== "Ultra"
     },
     GraphicShadowsQualityEnabled(values) {
       return values.GraphicLightingQuality !== "Lowest" &&
@@ -106,17 +121,43 @@ export default function (deps) {
       return values.GraphicLightingQuality === "Lowest" ||
              values.GraphicShadowsQuality === "Disabled"
     },
+    GraphicDynReflectionEnabled(values) {
+      return values.GraphicDynReflectionQuality !== "Disabled"
+    },
+    GraphicDynReflectionFacesPerupdateTooBig(values) {
+      return values.GraphicDynReflectionQuality !== "Disabled" &&
+             values.GraphicDynReflectionFacesPerupdate > 2
+    },
     GraphicHDRSupported(values) {
       return values.GraphicHDRSupported
     },
     GraphicHDRUnsupported(values) {
       return !values.GraphicHDRSupported
     },
+    GraphicHDRToggleEnabled(values) {
+      return values.GraphicHDRSupported || values.GraphicHDREnabled
+    },
     GraphicHDREnabled(values) {
       return values.GraphicHDRSupported && values.GraphicHDREnabled
     },
     GraphicHDRisHDR10(values) {
       return values.GraphicHDRSupported && values.GraphicHDREnabled && values.GraphicHDROutputModeName === "HDR10"
+    },
+    PostFXSSRAvailable(values) {
+      return !!values.PostFXSSRAvailable &&
+             (values.GraphicLightingQuality === "High" || values.GraphicLightingQuality === "Ultra")
+    },
+    PostFXSSRNotAvailableSM6(values) {
+      return !values.PostFXSSRAvailable &&
+             (values.GraphicLightingQuality === "High" || values.GraphicLightingQuality === "Ultra")
+    },
+    PostFXSSRNotAvailableLighting(values) {
+      return !!values.PostFXSSRAvailable &&
+             values.GraphicLightingQuality !== "High" && values.GraphicLightingQuality !== "Ultra"
+    },
+    PostFXSSRandLightingNotAvailable(values) {
+      return !values.PostFXSSRAvailable &&
+             values.GraphicLightingQuality !== "High" && values.GraphicLightingQuality !== "Ultra"
     },
     PostFXScreenSpaceShadowsAvailable(values) {
       return values.PostFXScreenSpaceShadowsAvailable &&
@@ -138,20 +179,8 @@ export default function (deps) {
              (values.GraphicLightingQuality === "Lowest" ||
               values.GraphicShadowsQuality === "Disabled")
     },
-    PostFXSSAOGeneralEnabled(values) {
-      return values.PostFXSSAOGeneralEnabled
-    },
     PostFXMotionBlurEnabled(values) {
       return values.PostFXMotionBlurEnabled
-    },
-    GraphicDynReflectionEnabled(values) {
-      return values.GraphicDynReflectionEnabled
-    },
-    GraphicDynReflectionFacesPerupdateTooBig(values) {
-      return values.GraphicDynReflectionFacesPerupdate > 2
-    },
-    GraphicDynMirrorsEnabled(values) {
-      return values.GraphicDynMirrorsEnabled
     },
     GraphicMaxDecalCountTooBig(values) {
       return values.GraphicMaxDecalCount > 10000
@@ -159,14 +188,11 @@ export default function (deps) {
     cameraDriverAllowSeatAdjustments(values) {
       return values.cameraDriverAllowSeatAdjustments
     },
-    enableMissionReplay(values) {
-      return values.enableMissionReplay
-    },
     enableMissionReplayCapModeCount(values) {
-      return values.enableMissionReplay && values.enableMissionReplayCapModes === "count"
+      return values.enableMissionReplayCapModes === "count"
     },
     enableMissionReplayCapModeMaxSize(values) {
-      return values.enableMissionReplay && values.enableMissionReplayCapModes === "maxSize"
+      return values.enableMissionReplayCapModes === "maxSize"
     },
     protocols_outgauge_enabled(values) {
       return values.protocols_outgauge_enabled
@@ -202,9 +228,6 @@ export default function (deps) {
     trafficParkedVehicles(values) {
       return values.trafficParkedVehicles
     },
-    disableDynamicCollision(values) {
-      return values.disableDynamicCollision
-    },
     trafficAmountAuto(values) {
       return values.trafficAmount === 0
     },
@@ -218,10 +241,10 @@ export default function (deps) {
       return values.trafficExtraVehicles && values.trafficExtraAmount > 0
     },
     trafficParkedAmountAuto(values) {
-      return values.trafficParkedVehicles && values.trafficParkedAmount === 0
+      return values.trafficParkedVehicles && values.trafficParkingAmount === 0
     },
     trafficParkedAmountManual(values) {
-      return values.trafficParkedVehicles && values.trafficParkedAmount > 0
+      return values.trafficParkedVehicles && values.trafficParkingAmount > 0
     },
     AudioFmodEnableDebugLogging(values) {
       return values.AudioFmodEnableDebugLogging
@@ -248,30 +271,39 @@ export default function (deps) {
     beammpEnableSpawnQueueEnabled(values) {
         return values.enableSpawnQueue===true
     },
+
     beammpEnableQueueAutoEnabled(values) {
         return values.enableQueueAuto===true
     },
+
     beammpEnableBlobs(values) {
         return values.enableBlobs===true
     },
+
     beammpShowBlobQueued(values) {
         return values.showBlobQueued===true
     },
+
     beammpShowBlobIllegal(values) {
         return values.showBlobIllegal===true
     },
+
     beammpShowBlobDeleted(values) {
         return values.showBlobDeleted===true
     },
+
     beammpNametagsEnabled(values) {
-        return values.hideNameTags===false // key is hideNameTags (capital T) everywhere it is registered/read -- upstream's lowercase copy made this gate permanently false, disabling the whole nametag options group
+        return values.hideNameTags===false
     },
+
     beammpShortenNametagsEnabled(values) {
         return values.shortenNametags===true
     },
+
     beammpShowSpectatorsEnabled(values) {
         return values.showSpectators===true
     },
+
     beammpNameTagFadeEnabled(values) {
         return values.nameTagFadeEnabled===true
     },

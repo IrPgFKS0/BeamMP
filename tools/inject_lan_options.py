@@ -2,15 +2,15 @@
 """Inject (or re-inject) the LAN fork's settings into the Vue options layout.
 
 The fork ships a VFS override of the game's schema-driven options layout at
-ui/ui-vue/src/modules/options/runtime/layout.json (game layout + upstream 4.22's
-"multiplayer" category). This script appends the LAN fork's own settings to that
-multiplayer category. It is IDEMPOTENT: every item it owns carries
+ui/ui-vue/src/modules/options/runtime/layout.json (game layout + upstream's
+"beammp" category family). This script adds the LAN fork's own settings to that
+family. It is IDEMPOTENT: every item it owns carries
 "version": "LAN" and gets stripped before re-inserting, so it can be re-run
 after refreshing the base layout from a new game patch + upstream.
 
 Re-sync procedure on a BeamNG game update (and/or upstream BeamMP sync):
   1. copy the game's new layout.json over ours
-  2. re-insert upstream's multiplayer category (diff upstream/development's copy) --
+  2. re-insert upstream's beammp category family (diff upstream/development's copy) --
      this is what carries NEW upstream settings into the LAN branch
   3. run this script: it re-appends the LAN items AND re-applies the LAN prunes of
      upstream items that are wrong for a LAN build (see LAN_PRUNE_* below)
@@ -173,6 +173,13 @@ def apply_fixups(node):
 # moved inside one).
 LAN_CATEGORY_ID = "beammplan"
 
+# 4.23 removed the upstream instability patch and its setting. The LAN fork still
+# implements this preference, so rebuilding from upstream must retain its control.
+LAN_RETAINED_ADVANCED_ITEMS = [
+    checkbox("disableInstabilityPausing", "ui.options.beammp.disableInstabilityPausing",
+             "ui.options.beammp.disableInstabilityPausing.tooltip"),
+]
+
 
 def lan_category():
     return {
@@ -237,6 +244,14 @@ def main():
             stripped += n - len(c["items"])
             c["items"], sub = prune_tree(c["items"])
             pruned += sub
+
+    advanced = next((c for c in layout["items"] if c.get("categoryId") == "beammpadvanced"), None)
+    if advanced is None:
+        print("ERROR: no beammpadvanced category -- cannot retain the LAN instability option", file=sys.stderr)
+        return 1
+    for item in LAN_RETAINED_ADVANCED_ITEMS:
+        if not any(i.get("setting") == item["setting"] for i in advanced["items"]):
+            advanced["items"].append(dict(item))
 
     last = max(i for i, c in enumerate(layout["items"])
                if str(c.get("categoryId", "")).startswith("beammp"))

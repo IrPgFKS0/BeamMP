@@ -223,6 +223,8 @@ local vehiclesMap = {}
 -- @usage local distanceTo = distanceMap[11171]
 local distanceMap = {}
 
+local missingServerIDLogged = {} -- one diagnostic per object while it awaits server registration
+
 -- decoded vehicle data of all players
 local players_vehicle_configs = {}
 
@@ -255,11 +257,15 @@ function getServerVehicleID(gameVehicleID)
 	end
 
 	if not vehiclesMap[gameVehicleID] or not vehicles[vehiclesMap[gameVehicleID]] then
-		log('E', 'getServerVehicleID', "can't get server id from " .. tostring(gameVehicleID))
-		log('M', 'getServerVehicleID', debug.traceback())
+		if not missingServerIDLogged[gameVehicleID or "nil"] then
+			missingServerIDLogged[gameVehicleID or "nil"] = true
+			log('E', 'getServerVehicleID', "can't get server id from " .. tostring(gameVehicleID))
+			log('M', 'getServerVehicleID', debug.traceback())
+		end
 		return
 	end
 
+	missingServerIDLogged[gameVehicleID] = nil
 	return vehiclesMap[gameVehicleID]
 end
 
@@ -1371,34 +1377,59 @@ core_vehicles.cloneCurrent = function ()
 end
 
 local core_vehicle_partmgmt_saveLocal = extensions.core_vehicle_partmgmt.saveLocal
-local function core_vehicle_partmgmt_saveLocal_overwrite(p1)
+local function core_vehicle_partmgmt_saveLocal_overwrite(...)
 	local vehicle = getPlayerVehicle(0)
-	if vehicle:getField("protected", 0) == "1" then
+	if vehicle and vehicle:getField("protected", 0) == "1" then
 		local title = MPTranslate("ui.beammp.configprotection.save.title", "Vehicle Save Error")
 		local msg = MPTranslate("ui.beammp.configprotection.save.message", "Sorry, you cannot save this vehicle.")
 		guihooks.trigger("toastrMsg", {type="error", title=title, msg=msg})
 		return
 	else
-		core_vehicle_partmgmt_saveLocal(p1)
+		return core_vehicle_partmgmt_saveLocal(...)
 	end
 end
 
-local core_vehicle_partmgmnt_savedefault = extensions.core_vehicle_partmgmt.savedefault
-local function core_vehicle_partmgmnt_savedefault_overwrite(p1)
+-- 0.40's config UI uses these APIs directly, including their structured return values.
+local core_vehicle_partmgmt_saveNewLocalConfig = extensions.core_vehicle_partmgmt.saveNewLocalConfig
+local function core_vehicle_partmgmt_saveNewLocalConfig_overwrite(...)
 	local vehicle = getPlayerVehicle(0)
-	if vehicle:getField("protected", 0) == "1" then
+	if vehicle and vehicle:getField("protected", 0) == "1" then
+		local title = MPTranslate("ui.beammp.configprotection.save.title", "Vehicle Save Error")
+		local msg = MPTranslate("ui.beammp.configprotection.save.message", "Sorry, you cannot save this vehicle.")
+		guihooks.trigger("toastrMsg", {type="error", title=title, msg=msg})
+		return {success = false, reason = "protected"}
+	end
+	return core_vehicle_partmgmt_saveNewLocalConfig(...)
+end
+
+local core_vehicle_partmgmt_saveExistingLocalConfig = extensions.core_vehicle_partmgmt.saveExistingLocalConfig
+local function core_vehicle_partmgmt_saveExistingLocalConfig_overwrite(...)
+	local vehicle = getPlayerVehicle(0)
+	if vehicle and vehicle:getField("protected", 0) == "1" then
+		local title = MPTranslate("ui.beammp.configprotection.save.title", "Vehicle Save Error")
+		local msg = MPTranslate("ui.beammp.configprotection.save.message", "Sorry, you cannot save this vehicle.")
+		guihooks.trigger("toastrMsg", {type="error", title=title, msg=msg})
+		return {success = false, reason = "protected"}
+	end
+	return core_vehicle_partmgmt_saveExistingLocalConfig(...)
+end
+
+local core_vehicle_partmgmnt_savedefault = extensions.core_vehicle_partmgmt.savedefault
+local function core_vehicle_partmgmnt_savedefault_overwrite(...)
+	local vehicle = getPlayerVehicle(0)
+	if vehicle and vehicle:getField("protected", 0) == "1" then
 		local title = MPTranslate("ui.beammp.configprotection.save.title", "Vehicle Save Error")
 		local msg = MPTranslate("ui.beammp.configprotection.save.message", "Sorry, you cannot save this vehicle.")
 		guihooks.trigger("toastrMsg", {type="error", title=title, msg=msg})
 		return
 	else
-		core_vehicle_partmgmnt_savedefault(p1)
+		return core_vehicle_partmgmnt_savedefault(...)
 	end
 end
 
 local gameplay_garageMode_start = gameplay_garageMode.start
 local function gameplay_garageMode_start_overwrite()
-	local vehicle = be:getPlayerVehicle(0)
+	local vehicle = getPlayerVehicle(0)
 	if vehicle and vehicle:getField("protected", 0) == "1" then
 		local title = MPTranslate("ui.beammp.configprotection.save.title", "Vehicle Save Error")
 		local msg = MPTranslate("ui.beammp.configprotection.save.message", "Sorry, you cannot save this vehicle.")
@@ -1433,7 +1464,6 @@ local function applyVehSpawn(event)
 		return
 	end
 
-	local playerServerID = decodedData.pid -- Server ID of the player that sent the vehicle
 	local gameVehicleID  = decodedData.vid -- gameVehicleID of the player that sent the vehicle
 	local vehicleName    = decodedData.jbm -- Vehicle name
 	local vehicleConfig  = decodedData.vcf -- Vehicle config, contains paint data
@@ -1590,7 +1620,8 @@ local function applyVehEdit(serverID, data)
 	local protected       = decodedData.pro
 	local absMode         = decodedData.abs
 
-	local playerName = players[decodedData.pid] and players[decodedData.pid].name or 'Unknown'
+	local owner = vehicles[serverID] and vehicles[serverID]:getOwner()
+	local playerName = owner and owner.name or 'Unknown' -- server-owned mapping, never the payload's pid
 
 	if checkIfVehiclenameInvalid(vehicleName, playerName, vehicles[serverID]) then return end
 
@@ -1765,6 +1796,7 @@ end
 
 
 local function onVehicleDestroyed(gameVehicleID)
+	missingServerIDLogged[gameVehicleID] = nil
 	if MPGameNetwork.launcherConnected() then
 		local vehicle = getVehicleByGameID(gameVehicleID)
 
@@ -1861,6 +1893,8 @@ end
 --============================ ON VEHICLE SWITCHED (CLIENT) ============================
 local function onVehicleSwitched(oldGameVehicleID, newGameVehicleID)
 	extensions.core_vehicle_partmgmt.saveLocal = core_vehicle_partmgmt_saveLocal_overwrite
+	if core_vehicle_partmgmt_saveNewLocalConfig then extensions.core_vehicle_partmgmt.saveNewLocalConfig = core_vehicle_partmgmt_saveNewLocalConfig_overwrite end
+	if core_vehicle_partmgmt_saveExistingLocalConfig then extensions.core_vehicle_partmgmt.saveExistingLocalConfig = core_vehicle_partmgmt_saveExistingLocalConfig_overwrite end
 	extensions.core_vehicle_partmgmt.savedefault = core_vehicle_partmgmnt_savedefault_overwrite
 	extensions.gameplay_garageMode.start = gameplay_garageMode_start_overwrite
 	if MPCoreNetwork.isMPSession() then
@@ -1986,8 +2020,13 @@ local function onServerVehicleSpawned(playerRole, playerNickname, serverVehicleI
 		return
 	end
 
-	local playerServerID = tonumber(decodedData.pid) -- Server ID of the owner
+	-- The server assigns this ID; the peer-supplied pid may be stale or inconsistent.
+	local playerServerID = type(serverVehicleID) == 'string' and tonumber(serverVehicleID:match('^(%d+)%-%d+$'))
 	local gameVehicleID  = tonumber(decodedData.vid) -- remote gameVehicleID
+	if not playerServerID or not gameVehicleID then
+		log('E', 'onServerVehicleSpawned', 'Invalid vehicle IDs for '..tostring(serverVehicleID))
+		return
+	end
 
 	--create player object if this is their first vehicle
 	if not players[playerServerID] or players[playerServerID].name ~= playerNickname then
@@ -1999,7 +2038,7 @@ local function onServerVehicleSpawned(playerRole, playerNickname, serverVehicleI
 		log("I", "onServerVehicleSpawned", "Received a vehicle spawn for player " .. playerNickname .. " with ID " .. serverVehicleID .. ' '..dumpsz(decodedData, 2))
 	end
 
-	if MPConfig.getPlayerServerID() == decodedData.pid then -- If the IDs match it's a local vehicle
+	if MPConfig.getPlayerServerID() == playerServerID then -- If the IDs match it's a local vehicle
 
 		local vehObject =
 			Vehicle:new({gameVehicleID=gameVehicleID, serverVehicleString=serverVehicleID, ownerName=playerNickname, isLocal = true, jbeam=decodedData.jbm})
@@ -2373,6 +2412,7 @@ local pendingMapRespawnTimer = 0
 -- Safe to call before the level's removeAll: onVehicleDestroyed early-returns once an
 -- entry is gone, so it won't double-handle or emit stray delete packets.
 local function clearVehiclesForMapChange()
+	missingServerIDLogged = {}
 	for serverVehicleID, vehicle in pairs(vehicles) do
 		vehicle:delete()
 	end
@@ -3238,6 +3278,7 @@ local function sendPastVehicles()
 end
 
 local function onDisconnect()
+	missingServerIDLogged = {}
 	for playerID, player in pairs(players) do
 		player:delete()
 	end
@@ -3278,12 +3319,13 @@ local function onVehicleReady(gameVehicleID)
 		veh:queueLuaCommand("if MPVehicleVE then MPVehicleVE.setServerID(mime.unb64(\'".. MPHelpers.b64encode(vehiclesMap[gameVehicleID]) .."\')) end")
 	end
 
-	MPGameNetwork.onVehicleReady(gameVehicleID)
 end
 
 
 local function onUIInitialised()
 	extensions.core_vehicle_partmgmt.saveLocal = core_vehicle_partmgmt_saveLocal_overwrite
+	if core_vehicle_partmgmt_saveNewLocalConfig then extensions.core_vehicle_partmgmt.saveNewLocalConfig = core_vehicle_partmgmt_saveNewLocalConfig_overwrite end
+	if core_vehicle_partmgmt_saveExistingLocalConfig then extensions.core_vehicle_partmgmt.saveExistingLocalConfig = core_vehicle_partmgmt_saveExistingLocalConfig_overwrite end
 	extensions.core_vehicle_partmgmt.savedefault = core_vehicle_partmgmnt_savedefault_overwrite
 	extensions.gameplay_garageMode.start = gameplay_garageMode_start_overwrite
 	UI.updateQueue(getQueueCounts())
@@ -3300,7 +3342,15 @@ local function refreshNametagCache()
 	end
 end
 
+local previousProtectConfigFromClone = settings.getValue("protectConfigFromClone", false)
 local function onSettingsChanged()
+	local protectConfigFromClone = settings.getValue("protectConfigFromClone", false)
+	if protectConfigFromClone ~= previousProtectConfigFromClone then
+		for _, vehicle in pairs(vehicles) do
+			if vehicle.isLocal then sendVehicleEdit(vehicle.gameVehicleID) end
+		end
+	end
+	previousProtectConfigFromClone = protectConfigFromClone
 	for playerID,player in pairs(players) do
 		player:onSettingsChanged()
 	end

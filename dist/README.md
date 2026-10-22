@@ -1,6 +1,20 @@
 # BeamMP LAN fork — release downloads
 
-**Current release: `BeamMP-LAN-p13h106.zip`** (mod `4.22.2-LAN p13h106`, combined host exe `p13h43`, **for BeamNG 0.39.x**
+**Local compatibility candidate: `BeamMP-LAN-p13h107-windows.zip`**, mod
+`4.23.1-LAN p13h107`, Windows combined host `p13h44`, for **BeamNG 0.40.1**.
+Passed the 17-check single-machine game smoke gate. Two-player validation remains
+pending; no new hosted release/tag exists. Linux rebuild is blocked by the local
+Docker/WSL installation, so this candidate contains Windows binaries only.
+
+| Local artifact | SHA256 |
+|---|---|
+| `BeamMP-LAN-p13h107-windows.zip` | `6704D27FFDD2CE66045A88EB127C1663038F244A66F666938B07BB8DAEC5B6D8` |
+| Inner `BeamMP.zip` (also workspace `dist/BeamMP-p13h107.zip`) | `BB296BBFC33C0D49CBEB23AF78CD8182166512C1C73DFB74510C67A8BD4702B0` |
+| Windows `BeamMP-Combined.exe` | `1197D8EF58D2BFCD706D9064CA6DE060709AEE8CBA8987BF785365E9F7B856CE` |
+
+See [compatibility and verification record](../docs/lan/BEAMNG-0.40-UPGRADE.md).
+
+**Current published release: `BeamMP-LAN-p13h106.zip`** (mod `4.22.2-LAN p13h106`, combined host exe `p13h43`, **for BeamNG 0.39.x**
 (validated on 0.39.4), Windows + Linux x86-64).
 
 Downloads moved to **[GitHub Releases](https://github.com/IrPgFKS0/BeamMP/releases)** — the zips

@@ -1,5 +1,6 @@
 // BeamMP New UI?
 // import bridge and route definitions
+import { h } from "vue"
 import { useBridge } from "@/bridge"
 import { ROUTE_SOURCE_ID, routeRecords } from "./routes.js"
 import { BEAMMP_MAPS_ROUTE_NAME, BEAMMP_ROUTE_NAME } from "./shared/constants.js"
@@ -88,12 +89,18 @@ function lanLabel(key, fallback) {
   return text && text !== key ? text : fallback
 }
 
+function BeamMPDialogText({ text }) {
+  // Confirmation's string body is compiled as a Vue/BBCode template. Keep server
+  // disconnect reasons in a text vnode, including HTML, {{ expressions }} and BBCode.
+  return h("span", { style: { whiteSpace: "pre-wrap" } }, text)
+}
+
 async function showBeamMPDialog(options = {}) {
   if (activeBeamMPDialog) return
 
   activeBeamMPDialog = openConfirmation(
     options.title || $translate.instant("ui.beammp.mdDialog.disconnectGeneric"),
-    options.text || "",
+    { component: BeamMPDialogText, props: { text: String(options.text ?? "") } },
     [
       {
         label: options.okText || $translate.instant("ui.beammp.mdDialog.returnToMenu"),
