@@ -127,3 +127,125 @@ Remaining: real two-player receive/spawn/hydraulic validation and a rebuilt Linu
 launcher. Neither is claimed by the Windows compatibility candidate. Options controls
 and the alternative Chat2 app were compile/behavior checked but not interactively
 exercised in-game; the default chat/player list did render in the live session.
+
+## Follow-up multiplayer logs: LAN2 high-speed whole-view hitches
+
+User supplied `BeamMP_logs_20261021-145103.zip` (host) and
+`BeamMP_logs_20261021-215214_LAN2.zip` (client). User clarified the whole view hitches
+at higher speed, including single-player and stock cars with all mods enabled.
+This strongly narrows the reported symptom toward local game/rendering/global-mod
+work, rather than requiring a multiplayer transport or remote-predictor failure.
+
+Both machines loaded the exact h107 archive (`bb296bbf` prefix). Host uses h44;
+Linux client still h43. Host's ten active sync-health samples show 29–32 applied
+positions/s, no GE shape/vehicle-ID rejections and no watchdog heals. Only two cars
+are recorded (vivace and sdd_tour); the previous seven-traffic-car mechanism is not
+present. These metrics do not establish network packet loss or whole-screen pacing.
+
+LAN2 current log has no frame-health/profiler records. All 625 error records are
+within startup/catalogue/vehicle loading, ending at 143.826 s; no error records
+thereafter through the live-copied tail at 364.621 s. It contains no Lua fatal or
+log-cap notice. Tourbillon mesh/texture/CarPlay defects are real but do not explain
+the confirmed stock-car symptom. Vulkan/GTX 1070/FSR3 are recorded; GPU frame times,
+VRAM pressure and storage stalls are not. Do not assert a GPU-memory/driver cause
+without measuring one. Older rotated logs belong to 0.39.4/h106 and an earlier
+0.40.1 upgrade/settings session; their errors are not fresh h107 regressions.
+
+**Confirmed diagnostic defect:** MPDebug.onUpdate accepts only `dtReal`; installed
+0.40 `main.lua:998` dispatches `(dtReal, dtSim, dtRaw)`, and
+`core/cameraUpdate.lua:141–142` identifies dtReal as smoothed and dtRaw as wall-clock
+render delta. The hitch counter therefore does not reliably measure individual
+raw spikes, contrary to its comment. The existing overlay guard also supplies
+only one argument, reproducing that mistaken assumption. A read-only counterexample
+using the real module plus existing guard gives h107 zero hitches / 16.67 ms worst
+for a 250 ms raw spike with 16.67 ms smoothed delta; changing only the hook argument
+in memory detects one hitch / 250 ms. No deployed/source diagnostic fix was made
+during this log-only investigation. Existing smoothed-counter evidence must not
+be used to dispute the user's observed freezes.
+
+Next discriminating evidence: stock car on the same stock map/speed with all mods
+disabled, followed by a raw-frame/GPU/VRAM capture if it persists. A future diagnostic
+fix should use dtRaw, retain interval maxima rather than only the last one-second
+sample, and test distinct raw/smoothed inputs. Do not change predictor/send rates
+based on these local-view symptoms.
+
+Archive manifests, complete populations, historical comparison and counterexample
+receipts: workspace `tools/artifacts/mp-session-20261021/`. No source/game settings
+or release archives changed during this investigation (this record is documentation).
+
+## h108 iteration: raw-frame hitch capture (in progress)
+
+User requested the counter correction, enough detail to diagnose high-speed LAN2
+stalls, a hotfix bump and a test package. Target: `4.23.1-LAN p13h108`, unchanged
+Windows h44 / existing Linux h43 launchers. This is a FIX to fork instrumentation
+and an EXTEND of its existing optional capture; no predictor/transport changes.
+
+Design: consume the third onUpdate argument (dtRaw) for frame/window accounting;
+retain all-frame counts at 25/50/100/250 ms and full-interval maxima. Label invalid
+or fallback clock use rather than silently treating smoothed time as raw. Compare
+with the high-resolution wall clock when available. Keep logging default-off under
+logSyncStats, preserve single-player support, reset disabled-time accounting, and
+flush partial summaries before saveLogs or capture shutdown. Frame totals survive
+send-rate adjustments.
+
+Reuse the game's read-only performanceSpatialSnapshot capture for available
+CPU/GPU/wait, frame phases and streaming context; add local vehicle speed/model,
+session and memory context. Detailed hitch records have a configurable rate limit,
+while every qualifying frame is counted and coalesced detail counts are explicit.
+Snapshot reads are confined to detailed records, never healthy per-frame updates;
+missing optional metrics remain labelled unavailable. Do not enable native profilers,
+change graphics settings, submit telemetry, or claim these metrics identify a cause
+without runtime evidence.
+
+Verification: extend the existing real-module overlay guard with distinct smoothed,
+simulation and raw inputs, full-interval retention, burst/coalescing, toggle/flush,
+missing API and invalid-clock cases. Run against exact h107 archive as a negative
+control. Parse changed Lua/JSON, independently review, build once, run the existing
+real-game smoke gate plus live diagnostic checks, then verify the entire archive and
+record exact tested bytes. Preserve the already-resolved uncommitted upstream merge.
+
+### h108 completion (2026-10-22, second session)
+
+The Codex session ended on credits before building. Picked up with the merge still uncommitted; reviewed
+and committed it first (merge 9c16c1db, parents c40f5cf0 + d8823214; launcher p13h44 = 89dfe99), then h108:
+
+- Review of the h108 diff: dtRaw consumption, wall-clock cross-check with labelled fallbacks, 25/50/100/250 ms
+  buckets for every frame, 15-s interval maxima, rate-limited detail records with performanceSpatialSnapshot
+  context (the API and its `capture(level, fps, frameMs, activeGpu, options)` signature confirmed in installed
+  0.40.1), /savelogs flush into mp_state.txt with explicit write/close error handling. overlay_guard.py 56/56 on the
+  tree; the exact h107 archive fails 14 raw-clock checks (negative control).
+- Build 84435704 (package_mod.py, 468 entries) deployed cold; smoke gate 17/17 on 0.40.1; the real game logged the
+  frame session, 6 summaries and 34 detail records with zero clock fallbacks and zero context warnings; the first
+  load frame measured dtRaw 1000 ms against dtReal 266 ms -- the smoothing gap, live.
+- Live instrument check (tools/mp-smoketest/hitch_stall_check.py against a --keep-running session): a controlled
+  250 ms GE busy-loop was recorded as a 268 ms raw frame with dtReal 18 ms, h250 = 1, source dtRaw. The first run
+  exposed a design gap: a 43 ms frame had taken the one-second detail slot and the stall's own record was
+  coalesced, so the interval's worst frame had timing but no context. Reproduced deterministically
+  (--prime-ms 40: FAIL 2/14 on the pre-fix build).
+- Change (fork FIX of its own instrument): a frame that sets a new interval maximum always emits its detail
+  record (`newIntervalMax = true`), bypassing the rate limit; equal or smaller frames inside the window stay
+  coalesced. Cost: at most one extra record per interval start in a sustained-hitch stream. Guard updated with
+  the deterministic counts (R5: the 750 ms new maximum is recorded; R10: 36 details / 964 coalesced over 1000
+  sustained 30 fps frames, was 34 / 966; R11: 100/200/300 ms all recorded under a 0.5 s spacing) -- 58/58 on the
+  tree, the pre-fix build fails R5/R10/R11.
+- Build 75A23A93 (bypass only): gate 17/17 (42 detail records, 10 flagged as new maxima, 0 clock fallbacks). The live
+  positive control then showed a retention gap: `getFrameDiagnosticsText` kept only the LATEST detail, and at the
+  test machine's 30 fps a 33 ms frame qualifies every second, so the stall a /savelogs is taken for is displaced
+  within a second. Change: the snapshot also keeps the session's worst detailed frame (`mpFrameHitchWorst`,
+  reset per logging session); guard R12 extended (59 checks; the 75A23A93 build fails the two R12 checks).
+- Build AB168481: gate 17/17 (101 detail records, 24 flagged as new maxima, 0 clock fallbacks); live check 16/16, BUT the
+  retained worst was the 1000 ms level-load frame (dtRaw clamps there; no player vehicle yet), not the 283 ms driving
+  stall, whose record WAS in the engine log with its context (74 km/h, dtReal 34 ms vs dtRaw 284 ms). A LAN2 /savelogs
+  after a join would have carried the load frame as its worst. First change (build 52725035): also keep the worst
+  detailed frame seen WITH a player vehicle. Gate 17/17, live check 17/18: the in-vehicle worst was the vehicle's own
+  1000 ms SPAWN frame, present with `speedKph` 3912 (the vehicle is created at the origin and placed: a teleport
+  artifact), and the gate's reload frame is 1000 ms with the vehicle at speed 0 -- a vehicle-presence or speed rule
+  cannot separate load frames from driving hitches. Final change: the snapshot keeps, for each of the last 8
+  intervals (two minutes), the exact emitted interval summary with the interval's worst detail record
+  (`mpFrameInterval`, oldest first; the interval's worst frame >= threshold always has a record because new maxima
+  bypass the rate limit; intervals without one carry `worstDetail: null`). 'Reproduce, then /savelogs' lands the
+  driving hitch in one of them with its context whatever else the session loaded. Guard R12 extended (63 checks;
+  52725035 fails the 4 ring checks, AB168481 and earlier fail more); hitch_stall_check.py identifies the stall by
+  frame (summary.worstFrame.sessionSeconds == last ring entry's worstDetail.sessionSeconds) and requires a plausible
+  vehicle speed on it.
+- Final build 528123E3 (468 entries) deployed cold; gate and live positive control results: release notes.

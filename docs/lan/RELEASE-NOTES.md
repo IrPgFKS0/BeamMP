@@ -1,6 +1,6 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.23.1-LAN p13h107` · Windows combined host exe `p13h44` · **for BeamNG 0.40.1**
+**Build:** mod `4.23.1-LAN p13h108` · Windows combined host exe `p13h44` · **for BeamNG 0.40.1**
 
 Local compatibility candidate; two-player validation is pending. The new bundle is
 Windows-only. The mod itself is platform independent, but a new Linux launcher could
@@ -49,6 +49,64 @@ a little tuning (see `LAN-TUNING.md`).
   cores so the relay/bridge keep up), and in-game **Save all logs (zip)** for support.
 
 ## This release
+
+**Mod-only diagnostic update over h107.** The Windows h44 and existing Linux h43
+launchers are unchanged. Replace `BeamMP.zip` on both machines while the game and
+launcher are closed. This build measures the reported high-speed stalls; it does
+not claim to fix their underlying cause.
+
+- Frame accounting uses BeamNG's raw frame delta, rather than its smoothed delta.
+  Full logging intervals retain spike counts and their maximum, including short
+  25–49 ms stalls that the previous 50 ms counter missed.
+- Optional detailed hitch records include speed/vehicle/session context and the
+  game's available CPU/GPU, rendering-phase and texture-streaming measurements.
+  Detailed records are rate-limited; aggregate counters still include every frame
+  and explicitly report coalesced details. A frame that sets a new maximum for its
+  interval always gets its context record, rate limit or not — in a live check a
+  43 ms frame had taken the one-second slot and the 268 ms stall right after it was
+  left with timing only. Native metrics are the latest available readings, not
+  proof that a particular subsystem caused the spike.
+- `/savelogs` flushes pending frame summaries and preserves the latest summary, the
+  latest detailed hitch, the session's worst detailed hitch and, for each of the last
+  eight 15 s intervals (two minutes), the interval summary with its worst detailed hitch
+  in `mp_state.txt`, even while BeamNG's main log is buffered. At 30 fps a 33 ms frame
+  qualifies every second, so the latest record alone would displace the stall the save
+  was taken for, and the session worst is normally a 1000 ms load frame (level load,
+  vehicle spawn or reload) — the per-interval records are where a driving hitch lands.
+  Both archive paths include the state snapshot. Capture also works in single-player.
+  Invalid raw-clock input is labelled explicitly; inactive capture time is excluded.
+
+Verification of the exact h108 zip (SHA256 `528123E3…`): the 17-assert real-game smoke gate
+passed on BeamNG 0.40.1 (join, spawn, driving, direct transport, vehicle reload), and a
+controlled 250 ms stall injected into the game-engine Lua thread of that live session was
+recorded as its interval's worst frame with vehicle context and the CPU/GPU snapshot, while
+the smoothed delta the old counter used read 33 ms for the same frame. The record survived
+`/savelogs` beside the session's 1000 ms load frames (level load, spawn and reload), which
+is exactly the case the per-interval records exist for. A two-player session with h108 is
+still pending; h106 remains the published release.
+
+### LAN2 retest
+
+Enable **Options → Multiplayer → LAN → DEBUG: Log sync health to file**, or type
+`/synclog` in multiplayer chat once to turn capture ON. In single-player, use the
+GE console:
+
+```lua
+settings.setValue("logSyncStats", true)
+```
+
+Drive the same road at the speed that causes the hitch. Capture roughly a minute
+around a reproduction, then use `/savelogs` (multiplayer) or this GE console call:
+
+```lua
+MPConfig.saveLogs()
+```
+
+Turn logging off afterward with `/synclog` or
+`settings.setValue("logSyncStats", false)`. Send the fresh LAN2 bundle; look for
+`mpFrameHitch`, `mpFrameSummary`, and `mpFrameClock` alongside `mpSyncHealth`.
+
+## Previous compatibility candidate (p13h107)
 
 The upstream baseline is BeamMP **v4.23.1** (`d8823214`), integrated with the LAN
 fork's own position predictor, direct socket, 12 Hz traffic scheduling, reliable

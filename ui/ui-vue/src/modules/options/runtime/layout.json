@@ -13970,7 +13970,7 @@
     {
      "version": "LAN",
      "label": "DEBUG: Log sync health to file",
-     "tooltip": "Writes one sync-health line (synced vehicles, ghost drift + self-heals, in/out packet & KB rates, applied/s, FPS) to beamng.log every ~15s, even with the on-screen overlay hidden -- so a /savelogs after an intermittent drift episode captures what happened over time. Same toggle as the /synclog chat command. Default: off.",
+     "tooltip": "Records raw frame-time summaries over complete intervals and rate-limited hitch details with vehicle speed and available rendering/streaming metrics, plus sync health. Works in single-player and multiplayer with the overlay hidden. Use /savelogs after reproducing a hitch; pending frame data is flushed first. Same toggle as /synclog. Default: off.",
      "setting": "logSyncStats",
      "interactive": true,
      "condition_always_off": false,

@@ -126,7 +126,7 @@ LAN_ITEMS = [
     checkbox("profilePosSync", "DEBUG: Profile position sync (LAN)",
              "Logs avg/max/rate timing of the position hot path (applyPos on GE; setVehiclePosRot/updateGFX on VE) to beamng.log every ~5s. For performance debugging -- grep the log for \"posProf\". Turning this OFF auto-zips the logs. Default: off."),
     checkbox("logSyncStats", "DEBUG: Log sync health to file",
-             "Writes one sync-health line (synced vehicles, ghost drift + self-heals, in/out packet & KB rates, applied/s, FPS) to beamng.log every ~15s, even with the on-screen overlay hidden -- so a /savelogs after an intermittent drift episode captures what happened over time. Same toggle as the /synclog chat command. Default: off."),
+             "Records raw frame-time summaries over complete intervals and rate-limited hitch details with vehicle speed and available rendering/streaming metrics, plus sync health. Works in single-player and multiplayer with the overlay hidden. Use /savelogs after reproducing a hitch; pending frame data is flushed first. Same toggle as /synclog. Default: off."),
     text_input("profLogFolder", "DEBUG: Log-bundle folder",
                "Folder name (under your BeamNG user folder) where the zipped log bundle is written. The game can only write inside the user folder, so this is a subfolder there; the success toast shows the full real path so you know exactly where to grab it. Default: BeamMP_logs."),
     button("Save all logs (zip)", "Save all logs (zip)",

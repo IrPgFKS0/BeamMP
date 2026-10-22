@@ -182,7 +182,263 @@ local receivedPacketSize = 0
 
 -- Lightweight always-on sync overlay (separate accumulators so it doesn't fight
 -- the draggable "Network Performance" window above, which resets the counters too).
-local ov = { sent = 0, recv = 0, sentB = 0, recvB = 0, timer = 0, sentRate = 0, recvRate = 0, sentKB = 0, recvKB = 0 }
+local ov = { sent = 0, recv = 0, sentB = 0, recvB = 0, timer = 0, sentRate = 0, recvRate = 0, sentKB = 0, recvKB = 0,
+	h25Total = 0, h50Total = 0, h100Total = 0, h250Total = 0, fMaxWorst = 0, invalidRawTotal = 0, fallbackTotal = 0 }
+
+-- LAN: frame diagnostics belong to the renderer, not the network send-rate experiment.
+-- dtReal is smoothed by BeamNG; only onUpdate's third argument measures the raw frame.
+local fd = { active = false, clock = 0, sequence = 0, recentIntervals = {} }
+-- LAN: 15 s intervals whose summary + worst detailed frame survive in /savelogs' mp_state.txt (two minutes).
+local RETAINED_INTERVALS = 8
+local diagnosticsEnabled, previousWallClock = false, nil
+local snapshotModule, snapshotLoadError
+local unavailableWarnings = {}
+local snapshotOptions = { renderTimingTrackingEnabled = true, sceneComplexityTrackingEnabled = true }
+
+local function finite(value)
+	return type(value) == 'number' and value == value and value ~= math.huge and value ~= -math.huge
+end
+
+local function positive(value)
+	return finite(value) and value > 0
+end
+
+local function milliseconds(value)
+	return finite(value) and value * 1000 or nil
+end
+
+local function newFrameInterval()
+	return { intervalSeconds = 0, frameCount = 0, h25 = 0, h50 = 0, h100 = 0, h250 = 0,
+		maxMs = 0, wallGapMaxMs = 0, invalidRawFrames = 0, fallbackFrames = 0, skippedFrames = 0,
+		detailCount = 0, coalescedDetails = 0 }
+end
+
+-- Optional engine/context reads must never prevent the raw timing record. Failures are
+-- attached to every affected event and warned once, rather than inventing zero metrics.
+local function optionalContext(record, name, reader)
+	local ok, result = false, 'API unavailable'
+	if type(reader) == 'function' then ok, result = pcall(reader) end
+	if ok and result ~= nil then return result end
+	local err = ok and 'API returned no data' or tostring(result)
+	record.contextErrors = record.contextErrors or {}
+	record.contextErrors[name] = err
+	if not unavailableWarnings[name] then
+		unavailableWarnings[name] = true
+		log('W', 'mpFrameContext', name .. ': ' .. err)
+	end
+end
+
+local function captureFrameContext(record, dt)
+	record.readStage = 'onUpdate; latest available engine metrics'
+	record.level = optionalContext(record, 'level', getMissionFilename)
+	record.isMultiplayer = optionalContext(record, 'isMultiplayer', MPCoreNetwork and MPCoreNetwork.isMPSession)
+	record.vehicle = optionalContext(record, 'vehicle', function()
+		if type(getPlayerVehicle) ~= 'function' then error('getPlayerVehicle unavailable') end
+		local vehicle = getPlayerVehicle(0)
+		if not vehicle then return { available = false } end
+		local position = vehicle:getPosition()
+		return { available = true, id = vehicle:getID(), model = vehicle:getJBeamFilename(),
+			speedKph = vehicle:getVelocity():length() * 3.6,
+			position = { x = position.x, y = position.y, z = position.z } }
+	end)
+	if not snapshotModule and not snapshotLoadError then
+		local ok, result = pcall(require, 'ge/extensions/telemetry/performanceSpatialSnapshot')
+		if ok and type(result) == 'table' and type(result.capture) == 'function' then
+			snapshotModule = result
+		else
+			snapshotLoadError = ok and 'capture API unavailable' or tostring(result)
+		end
+	end
+	record.snapshot = optionalContext(record, 'snapshot', function()
+		if not snapshotModule then error(snapshotLoadError) end
+		return snapshotModule.capture(record.level, 1 / dt, dt * 1000, nil, snapshotOptions)
+	end)
+	record.renderMemory = optionalContext(record, 'renderMemory', Engine and Engine.Render and Engine.Render.getMemoryInfo)
+	record.focused = optionalContext(record, 'focused', Engine and Engine.isProgramFocused)
+	record.luaHeapKiB = collectgarbage('count')
+end
+
+local function frameTiming(dt, source, dtReal, dtSim, dtRaw, wallGap)
+	return { frameMs = dt * 1000, source = source, dtRealMs = milliseconds(dtReal),
+		dtSimMs = milliseconds(dtSim), dtRawMs = milliseconds(dtRaw), wallGapMs = milliseconds(wallGap),
+		sessionSeconds = fd.clock }
+end
+
+local function flushFrameDiagnostics(reason)
+	local interval = fd.interval
+	if not fd.active or not interval or (interval.frameCount == 0 and interval.skippedFrames == 0) then return end
+	interval.reason = reason or 'flush'
+	interval.session = fd.sequence
+	interval.sessionSeconds = fd.clock
+	interval.thresholdMs = fd.thresholdMs
+	interval.detailIntervalSeconds = fd.detailIntervalSeconds
+	fd.latestSummaryText = jsonEncode(interval)
+	log('I', 'mpFrameSummary', fd.latestSummaryText)
+	-- LAN: the session's worst detailed frame is usually a load frame (level load, vehicle spawn or reload:
+	-- dtRaw clamps at 1000 ms there), so it would hide the driving hitch a /savelogs is taken for. Keep the
+	-- worst detailed frame of each of the last RETAINED_INTERVALS intervals beside it (both parts are the exact
+	-- emitted JSON; the interval's worst frame >= threshold always has a record: new maxima bypass the limit).
+	fd.recentIntervals[#fd.recentIntervals + 1] = '{"summary":' .. fd.latestSummaryText
+		.. ',"worstDetail":' .. (fd.intervalWorstDetailText or 'null') .. '}'
+	while #fd.recentIntervals > RETAINED_INTERVALS do table.remove(fd.recentIntervals, 1) end
+	fd.intervalWorstDetailText = nil
+	-- Transport values are the latest one-second window; frame values cover the entire
+	-- explicitly stated interval, including hitches that happened between health lines.
+	log('I', 'mpSyncHealth', string.format(
+		"%d synced | drift %.1fm, %d heals | in %d pkt/s %.1f KB/s, out %d pkt/s %.1f KB/s | applied %d/s, rejected %d (total %d) | FPS %d [transport/FPS lastWindow %.3fs] | frame max %dms, hitches>=50ms %d (total %d, worst %dms) [frame interval %.3fs, %d frames]",
+		ov.synced or 0, ov.driftM or 0, ov.healTotal or 0,
+		ov.recvRate or 0, ov.recvKB or 0, ov.sentRate or 0, ov.sentKB or 0,
+		ov.applyRate or 0, ov.rejRate or 0, ov.rejTotal or 0, ov.fps or 0, ov.lastWindowSeconds or 0,
+		interval.maxMs, interval.h50, ov.h50Total or 0, ov.fMaxWorst or 0, interval.intervalSeconds, interval.frameCount))
+	fd.interval = newFrameInterval()
+end
+
+-- BeamNG buffers beamng.log. Keep only the latest emitted summary/detail so
+-- /savelogs can synchronously preserve them in mp_state.txt before gathering logs.
+-- This is a selected snapshot, not another history buffer or a new native capture.
+local function getFrameDiagnosticsText()
+	-- LAN: the latest detail is whatever qualified last (at 30 fps a 33 ms frame every second), so the stall a
+	-- /savelogs was taken for would be displaced within a second; keep the session's worst detailed frame too.
+	-- That worst frame is usually a load frame (level load, vehicle spawn or reload: dtRaw clamps at 1000 ms,
+	-- and a spawn's vehicle context reports a teleport speed), so the worst detailed frame of each of the last
+	-- RETAINED_INTERVALS intervals is listed too, oldest first: 'reproduce, then /savelogs' lands the driving
+	-- hitch in one of them with its context, whatever else the session loaded.
+	local text = '=== BeamMP latest frame diagnostics (selected snapshot, not full history) ===\n'
+		.. 'mpFrameSummary: ' .. (fd.latestSummaryText or 'none captured in this session') .. '\n'
+		.. 'mpFrameHitch: ' .. (fd.latestDetailText or 'none captured in this session') .. '\n'
+		.. 'mpFrameHitchWorst: ' .. (fd.worstDetailText or 'none captured in this session')
+	if #fd.recentIntervals == 0 then
+		text = text .. '\nmpFrameInterval: none captured in this session'
+	else
+		for _, entry in ipairs(fd.recentIntervals) do text = text .. '\nmpFrameInterval: ' .. entry end
+	end
+	return text
+end
+
+local function updateDiagnosticLifecycle(showOverlay, logStats)
+	if logStats ~= fd.active then
+		if fd.active then
+			flushFrameDiagnostics('disabled')
+			log('I', 'mpFrameSession', jsonEncode({ event = 'end', session = fd.sequence, sessionSeconds = fd.clock }))
+		else
+			fd.clock, fd.lastDetailClock = 0, nil
+			fd.latestSummaryText, fd.latestDetailText = nil, nil
+			fd.worstDetailText, fd.worstDetailMs = nil, 0 -- the session's largest detailed frame (see getFrameDiagnosticsText)
+			fd.recentIntervals, fd.intervalWorstDetailText = {}, nil -- per-interval worst records (see getFrameDiagnosticsText)
+			fd.sequence = fd.sequence + 1
+			fd.interval = newFrameInterval()
+			local threshold = tonumber(settings.getValue('frameHitchLogThresholdMs'))
+			local spacing = tonumber(settings.getValue('frameHitchDetailInterval'))
+			fd.thresholdMs = positive(threshold) and threshold or 25
+			fd.detailIntervalSeconds = positive(spacing) and spacing or 1
+			log('I', 'mpFrameSession', jsonEncode({ event = 'start', session = fd.sequence,
+				thresholdMs = fd.thresholdMs, detailIntervalSeconds = fd.detailIntervalSeconds,
+				timing = 'dtRaw; wallGap then dtReal fallback when unavailable' }))
+		end
+		fd.active = logStats
+		previousWallClock = nil -- the independent clock must not include disabled time
+	end
+	local enabled = showOverlay or logStats
+	if enabled ~= diagnosticsEnabled then
+		previousWallClock = nil
+		ov.timer, ov.frames, ov.sent, ov.recv, ov.sentB, ov.recvB = 0, 0, 0, 0, 0, 0
+		ov.fMaxCur, ov.h25Cur, ov.h50Cur, ov.h100Cur, ov.h250Cur = 0, 0, 0, 0, 0
+		ov.lastHitchClock, ov.hitchGap = nil, nil
+		if enabled and positionGE then
+			-- These getters drain counters owned by positionGE. Discard activity while
+			-- diagnostics were off so the first measured window has the right baseline.
+			if positionGE.getApplyPosRate then positionGE.getApplyPosRate() end
+			if positionGE.getApplyPosRejects then positionGE.getApplyPosRejects() end
+			if positionGE.getDriftStats then positionGE.getDriftStats() end
+		end
+		diagnosticsEnabled = enabled
+	end
+	return enabled
+end
+
+local function readFrameTime(dtReal, dtRaw)
+	local wallNow = os.clockhp and os.clockhp()
+	local wallGap = finite(wallNow) and finite(previousWallClock) and (wallNow - previousWallClock) or nil
+	previousWallClock = finite(wallNow) and wallNow or nil
+	if not positive(wallGap) then wallGap = nil end
+	local validRaw = positive(dtRaw)
+	local dt, source = dtRaw, 'dtRaw'
+	if not validRaw then
+		ov.invalidRawTotal = (ov.invalidRawTotal or 0) + 1
+		if fd.active then fd.interval.invalidRawFrames = fd.interval.invalidRawFrames + 1 end
+		if wallGap then dt, source = wallGap, 'wallGapFallback'
+		elseif positive(dtReal) then dt, source = dtReal, 'dtRealFallback'
+		else dt, source = nil, 'unavailable' end
+		if dt then
+			ov.fallbackTotal = (ov.fallbackTotal or 0) + 1
+			if fd.active then fd.interval.fallbackFrames = fd.interval.fallbackFrames + 1 end
+		elseif fd.active then fd.interval.skippedFrames = fd.interval.skippedFrames + 1 end
+	end
+	if source ~= ov.frameSource then
+		if source ~= 'dtRaw' or ov.frameSource then
+			log(source == 'dtRaw' and 'I' or 'W', 'mpFrameClock', jsonEncode({ source = source, previous = ov.frameSource }))
+		end
+		ov.frameSource = source
+	end
+	return dt, source, wallGap
+end
+
+local function recordFrame(dt, source, dtReal, dtSim, dtRaw, wallGap)
+	local frameMs = dt * 1000
+	ov.clock = (ov.clock or 0) + dt
+	ov.fMaxCur = math.max(ov.fMaxCur or 0, frameMs)
+	ov.fMaxWorst = math.max(ov.fMaxWorst or 0, frameMs)
+	-- The fixed buckets always describe the full population, independently of the
+	-- configurable detailed-event threshold and the network send rate.
+	if frameMs >= 25 then ov.h25Cur = (ov.h25Cur or 0) + 1; ov.h25Total = (ov.h25Total or 0) + 1 end
+	if frameMs >= 50 then ov.h50Cur = (ov.h50Cur or 0) + 1; ov.h50Total = (ov.h50Total or 0) + 1 end
+	if frameMs >= 100 then ov.h100Cur = (ov.h100Cur or 0) + 1; ov.h100Total = (ov.h100Total or 0) + 1 end
+	if frameMs >= 250 then ov.h250Cur = (ov.h250Cur or 0) + 1; ov.h250Total = (ov.h250Total or 0) + 1 end
+	if frameMs >= 50 then
+		if ov.lastHitchClock then
+			local gap = ov.clock - ov.lastHitchClock
+			ov.hitchGap = ov.hitchGap and (ov.hitchGap * 0.7 + gap * 0.3) or gap
+		end
+		ov.lastHitchClock = ov.clock
+	end
+	if not fd.active then return end
+	fd.clock = fd.clock + dt
+	local interval = fd.interval
+	interval.intervalSeconds = interval.intervalSeconds + dt
+	interval.frameCount = interval.frameCount + 1
+	if wallGap then interval.wallGapMaxMs = math.max(interval.wallGapMaxMs, wallGap * 1000) end
+	if frameMs >= 25 then interval.h25 = interval.h25 + 1 end
+	if frameMs >= 50 then interval.h50 = interval.h50 + 1 end
+	if frameMs >= 100 then interval.h100 = interval.h100 + 1 end
+	if frameMs >= 250 then interval.h250 = interval.h250 + 1 end
+	local newIntervalMax = frameMs > interval.maxMs
+	if newIntervalMax then
+		interval.maxMs = frameMs
+		interval.worstFrame = frameTiming(dt, source, dtReal, dtSim, dtRaw, wallGap)
+	end
+	if frameMs >= fd.thresholdMs then
+		-- LAN: a frame that sets a new interval maximum always gets its context record, rate limit or not.
+		-- Live check 2026-10-22: a 43 ms frame took the one-second detail slot and the 268 ms stall right
+		-- after it was coalesced, leaving the interval's WORST frame -- the one a stall investigation needs
+		-- the CPU/GPU/streaming context for -- with timing only. Equal-length sustained frames set the
+		-- maximum once, so the bound on detail records per interval is unchanged for them.
+		if newIntervalMax or not fd.lastDetailClock or fd.clock - fd.lastDetailClock + 1e-9 >= fd.detailIntervalSeconds then
+			local record = frameTiming(dt, source, dtReal, dtSim, dtRaw, wallGap)
+			record.session = fd.sequence
+			record.thresholdMs = fd.thresholdMs
+			record.newIntervalMax = newIntervalMax or nil
+			captureFrameContext(record, dt)
+			fd.latestDetailText = jsonEncode(record)
+			if frameMs > (fd.worstDetailMs or 0) then fd.worstDetailMs, fd.worstDetailText = frameMs, fd.latestDetailText end
+			if newIntervalMax then fd.intervalWorstDetailText = fd.latestDetailText end -- this interval's worst, for the ring
+			log('I', 'mpFrameHitch', fd.latestDetailText)
+			fd.lastDetailClock = fd.clock
+			interval.detailCount = interval.detailCount + 1
+		else
+			interval.coalescedDetails = interval.coalescedDetails + 1
+		end
+	end
+end
 
 local function avgData(data)
 	local sum, max = 0, 0
@@ -262,32 +518,15 @@ end
 --- Lightweight always-on overlay: synced (remote) vehicle count + live network
 --- packet/byte rates. Toggle via the "showSyncStats" setting (Options >
 --- Multiplayer > "Show sync stats overlay"). Cheap: one tiny imgui window/frame.
-local function drawSyncStatsOverlay(dt)
+local function drawSyncStatsOverlay(dtReal, dtSim, dtRaw)
 	local showOverlay = settings.getValue("showSyncStats") == true
 	local logStats = settings.getValue("logSyncStats") == true
-	if not showOverlay and not logStats then return end
-	ov.timer = ov.timer + (dt or 0)
+	if not updateDiagnosticLifecycle(showOverlay, logStats) then return end
+	local dt, source, wallGap = readFrameTime(dtReal, dtRaw)
+	if not dt then return end -- no valid clock: counted as skipped, never poison future windows
+	ov.timer = ov.timer + dt
 	ov.frames = (ov.frames or 0) + 1
-
-	-- Frame-time (main-thread) health, per frame. `dt` is dtReal: the wall-clock length of the frame that
-	-- just ended, which BeamNG does NOT clamp (a 0.76 s frame was seen live), so a stalled frame shows up as
-	-- one long dt. This is the direct measurement of "the screen pauses": the FPS average hides a 0.2 s
-	-- stall every few seconds, Pos applied is per window, and a car's CEF screen log -- the only clock the
-	-- 2026-10-05 investigation had -- can stall on its own. Physics keeps running through a GE stall and the
-	-- netcode's sockets are non-blocking, so this is never a send-rate problem; the ghosts THIS machine
-	-- draws do freeze for the duration.
-	local frameMs = (dt or 0) * 1000
-	ov.clock = (ov.clock or 0) + (dt or 0)
-	if frameMs > (ov.fMaxCur or 0) then ov.fMaxCur = frameMs end
-	if frameMs >= 50 then
-		ov.h50Cur = (ov.h50Cur or 0) + 1
-		if frameMs >= 100 then ov.h100Cur = (ov.h100Cur or 0) + 1 end
-		if ov.lastHitchClock then
-			local gap = ov.clock - ov.lastHitchClock
-			ov.hitchGap = ov.hitchGap and (ov.hitchGap * 0.7 + gap * 0.3) or gap -- smoothed spacing: "every ~2.6 s"
-		end
-		ov.lastHitchClock = ov.clock
-	end
+	recordFrame(dt, source, dtReal, dtSim, dtRaw, wallGap)
 
 	-- Reset the peak/persistent trackers whenever the send rate is changed, so each tuning step
 	-- (e.g. dropping to 30Hz) gets a fresh "is it still bad?" window instead of carrying old history.
@@ -298,7 +537,6 @@ local function drawSyncStatsOverlay(dt)
 		ov.fpsPeak, ov.fpsWorst, ov.fpsBadTime = 0, nil, 0
 		ov.driftBadTime, ov.driftWorst, ov.healTotal = 0, nil, 0
 		ov.rejTotal = 0
-		ov.h50Total, ov.h100Total, ov.fMaxWorst, ov.hitchGap, ov.lastHitchClock = 0, 0, 0, nil, nil
 	end
 
 	local synced = 0
@@ -308,6 +546,8 @@ local function drawSyncStatsOverlay(dt)
 		end
 	end
 
+	ov.synced = synced
+
 	if ov.timer >= 1.0 then
 		-- ONE evaluation per window, every count normalised by how long the window really was. The old
 		-- `timer - 1.0` carry-over did two things wrong exactly when it mattered (a stall): a window that
@@ -316,6 +556,7 @@ local function drawSyncStatsOverlay(dt)
 		-- timer, so the very next frame was evaluated as a window of its own -- one frame of data read as
 		-- "FPS 1, applied 0/s", tripping fpsBad/applyBad and poisoning the [dropped to N] tails.
 		local win = ov.timer
+		ov.lastWindowSeconds = win
 		ov.sentRate, ov.recvRate = math.floor(ov.sent / win + 0.5), math.floor(ov.recv / win + 0.5)
 		ov.sentKB, ov.recvKB = ov.sentB / 1000 / win, ov.recvB / 1000 / win
 		ov.sent, ov.recv, ov.sentB, ov.recvB = 0, 0, 0, 0
@@ -332,10 +573,8 @@ local function drawSyncStatsOverlay(dt)
 		ov.rejTotal = (ov.rejTotal or 0) + rejected
 		-- frame hitches this window (per-frame accounting above)
 		ov.fMax = ov.fMaxCur or 0; ov.fMaxCur = 0
-		ov.h50, ov.h100 = ov.h50Cur or 0, ov.h100Cur or 0; ov.h50Cur, ov.h100Cur = 0, 0
-		ov.h50Total = (ov.h50Total or 0) + ov.h50
-		ov.h100Total = (ov.h100Total or 0) + ov.h100
-		if ov.fMax > (ov.fMaxWorst or 0) then ov.fMaxWorst = ov.fMax end
+		ov.h25, ov.h50, ov.h100, ov.h250 = ov.h25Cur or 0, ov.h50Cur or 0, ov.h100Cur or 0, ov.h250Cur or 0
+		ov.h25Cur, ov.h50Cur, ov.h100Cur, ov.h250Cur = 0, 0, 0, 0
 		-- Per-second bad-state eval + peak/persistent tracking (badTime in whole seconds).
 		-- "Bad" = a sharp drop below a slowly-decaying baseline of the best recent value, so it
 		-- adapts to the chosen send rate / car count / a genuinely slow machine instead of a fixed line.
@@ -363,23 +602,10 @@ local function drawSyncStatsOverlay(dt)
 			ov.driftBadTime = (ov.driftBadTime or 0) + 1
 			ov.driftWorst = math.max(ov.driftWorst or 0, md or 0)
 		end
-		-- Optional log trail (/synclog -> logSyncStats): mirror this health line to beamng.log every
-		-- ~15s so a /savelogs after an intermittent drift episode captures what the overlay was showing
-		-- over time. Runs even with the overlay hidden; off by default.
-		if logStats then
-			ov.logTimer = (ov.logTimer or 0) + 1
-			if ov.logTimer >= 15 then
-				ov.logTimer = 0
-				log('I', 'mpSyncHealth', string.format(
-					"%d synced | drift %.1fm, %d heals | in %d pkt/s %.1f KB/s, out %d pkt/s %.1f KB/s | applied %d/s, rejected %d (total %d) | FPS %d | frame max %dms, hitches>=50ms %d (total %d, worst %dms)",
-					synced, ov.driftM or 0, ov.healTotal or 0,
-					ov.recvRate or 0, ov.recvKB or 0, ov.sentRate or 0, ov.sentKB or 0,
-					ov.applyRate or 0, ov.rejRate or 0, ov.rejTotal or 0, ov.fps or 0,
-					ov.fMax or 0, ov.h50 or 0, ov.h50Total or 0, ov.fMaxWorst or 0))
-			end
-		end
 		ov.timer = 0 -- the window is fully accounted for; a fresh one starts now (see the note at the top of this block)
 	end
+
+	if fd.active and fd.interval.intervalSeconds >= 15 then flushFrameDiagnostics("interval") end
 
 	if not showOverlay then return end -- /synclog can run with the overlay hidden; nothing more to draw
 
@@ -421,14 +647,15 @@ local function drawSyncStatsOverlay(dt)
 	if (ov.fpsBadTime or 0) > 0 then fTxt = fTxt .. string.format("   [dropped to %d, bad %ds total]", ov.fpsWorst or 0, ov.fpsBadTime) end
 	if ov.fpsBad then im.TextColored(ov.RED, fTxt) else im.Text(fTxt) end
 
-	-- Frame hitches = single frames that stalled (dtReal), which the FPS average smooths away. Always shows
+	-- Frame hitches use raw frame duration (dtRaw), with a visible fallback if unavailable, which the FPS average smooths away. Always shows
 	-- the longest frame of the last window; red when one crossed 100 ms. The tail keeps the count, the worst
 	-- one and how far apart they come -- "a 200 ms frame every ~2.6 s" is the pattern this row exists for.
-	local hTxt = string.format("Frame max: %d ms", ov.fMax or 0)
+	local hTxt = string.format("Frame max: %d ms (%s)", ov.fMax or 0, ov.frameSource == "dtRaw" and "raw" or tostring(ov.frameSource))
 	if (ov.h50Total or 0) > 0 then
-		hTxt = hTxt .. string.format("   [hitches >=50ms: %d/s, total %d, worst %d ms%s]", ov.h50 or 0, ov.h50Total,
+		hTxt = hTxt .. string.format("   [>=50ms: %d/window, total %d, worst %d ms%s]", ov.h50 or 0, ov.h50Total,
 			ov.fMaxWorst or 0, ov.hitchGap and string.format(", ~%.1fs apart", ov.hitchGap) or "")
 	end
+	hTxt = hTxt .. string.format("   [total >=25/100/250ms: %d/%d/%d]", ov.h25Total or 0, ov.h100Total or 0, ov.h250Total or 0)
 	if (ov.h100 or 0) > 0 then im.TextColored(ov.RED, hTxt) else im.Text(hTxt) end
 
 	-- Ghost drift = the actual sync symptom (told-vs-actual). A few metres is the normal predictor
@@ -443,18 +670,18 @@ local function drawSyncStatsOverlay(dt)
 	if ov.applyBad and not ov.fpsBad then im.TextColored(ov.RED, ">> relay starving (positions not arriving, FPS is fine): LOWER 'Position send rate' or cut AI/traffic cars") end
 	if ov.fpsBad then im.TextColored(ov.RED, ">> FPS hitch: trim the mod set / AI-traffic / heavy vehicles (LOAD, not the netcode -- a >1s hitch freezes the remote ghosts THIS machine draws)") end
 	if ov.driftBad then im.TextColored(ov.RED, ">> ghost drift/heals: usually a LOAD/FPS hitch (trim mods + AI-traffic) or relay overload (LOWER 'Position send rate') -- never RAISE the rate") end
-	if (ov.h100 or 0) > 0 then im.TextColored(ov.RED, ">> frame hitch: the main thread stalled while physics kept running (the netcode is non-blocking, so not a send-rate problem) -- CEF screens on the seated car, texture/shader loads or GC; try a stock car") end
+	if (ov.h100 or 0) > 0 then im.TextColored(ov.RED, ">> frame hitch: enable /synclog, reproduce, then /savelogs for raw timing + rendering/streaming context; timing alone does not identify the cause") end
 	im.End()
 end
 
 --- Draws Imgui playerlist, spawnTeleport and NetworkPerf.
 --- This is the main processing thread of BeamMP in the game
 --- @param dt float
-local function onUpdate(dt)
+local function onUpdate(dtReal, dtSim, dtRaw)
 	drawPlayerList()
 	drawSpawnTeleport()
 	drawNetworkPerf()
-	drawSyncStatsOverlay(dt)
+	drawSyncStatsOverlay(dtReal, dtSim, dtRaw)
 end
 
 
@@ -482,6 +709,8 @@ M.hideUI				= hideUI
 
 M.packetSent = packetSent
 M.packetReceived = packetReceived
+M.flushFrameDiagnostics = flushFrameDiagnostics
+M.getFrameDiagnosticsText = getFrameDiagnosticsText
 M.getSyncStats = function() return ov end -- read-only view of the overlay's accumulators for probes (smoke gate, tools/ge-guard)
 M.onInit = function() setExtensionUnloadMode(M, "manual") end
 

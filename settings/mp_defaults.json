@@ -26,6 +26,8 @@
   "disableInstabilityPausing"   : [ "cloud", true ],
   "showSpectators"              : [ "cloud", true ],
   "showDebugOutput"             : [ "local" ],
+  "frameHitchLogThresholdMs"     : [ "local", 25 ],
+  "frameHitchDetailInterval"     : [ "local", 1 ],
   "enableNewChatMenu"           : [ "cloud", false ],
   "showAdvancedMPOptions"       : [ "cloud" ],
   "launcherPort"                : [ "local", 4444 ],

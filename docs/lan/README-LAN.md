@@ -423,6 +423,38 @@ The mod's logic runs in two LuaJIT VMs:
 - **VE** (one per vehicle): `positionVE`, `nodesVE`, `velocityVE`, `MPInputsVE`,
   `MPElectricsVE`, … — these run on the physics step and send your vehicle's state.
 
+### Capture whole-view hitches (h108+)
+
+Enable **DEBUG: Log sync health to file** in the multiplayer options, or use
+`/synclog` in multiplayer chat. The same capture works in single-player with BeamMP
+mounted: `settings.setValue("logSyncStats", true)` in the GE console.
+
+The counter uses the raw `onUpdate` frame delta. `mpFrameSummary` covers the whole
+capture interval, retaining every frame and the 25/50/100/250 ms buckets;
+`mpFrameHitch` adds speed, vehicle, level/session and available native performance
+metrics. Detailed records are rate-limited and their coalesced count is explicit;
+a frame that sets a new interval maximum is always recorded (`newIntervalMax`), and
+`/savelogs` keeps the session's worst detailed frame (`mpFrameHitchWorst`, normally a load frame) and the worst
+detailed frame of each of the last eight intervals (`mpFrameInterval`, two minutes) beside the latest.
+Two settings tune the capture; they live in `settings.json` (or the GE console via `settings.setValue`), not on the
+options page: `frameHitchLogThresholdMs` (default 25: the raw frame length that counts as a hitch and qualifies for
+a detail record) and `frameHitchDetailInterval` (default 1: seconds between detail records; new interval maxima
+bypass it).
+Missing/fallback clocks are labelled, and native CPU/GPU/streaming values are the
+latest available readings, not a causal diagnosis. Logging does not enable a native
+profiler or alter graphics settings.
+
+Reproduce for about a minute, then `/savelogs` or `MPConfig.saveLogs()` in the GE
+console. The canonical flush hook is `MPDebug.flushFrameDiagnostics(reason)`;
+`MPConfig.saveLogs` calls it before collecting the logs. Disable afterward with
+`/synclog` or `settings.setValue("logSyncStats", false)`. This flushes the remaining
+partial interval too. Capture defaults off; it is separate from position profiling.
+
+The saved `mp_state.txt` also contains the latest detailed hitch and completed
+summary as an explicitly selected snapshot, via `MPDebug.getFrameDiagnosticsText()`.
+Both archive paths include it, preserving those records even when `beamng.log`
+is still buffered. The main log contains the longer capture history.
+
 ### Profile the position-sync hot path (built-in)
 
 The position pipeline is the busiest per-vehicle path and it spans **both** VMs:

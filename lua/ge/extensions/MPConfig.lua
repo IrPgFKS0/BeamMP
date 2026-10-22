@@ -88,7 +88,9 @@ local defaultSettings = {
 	remoteFullProjectiles = false, -- LAN/weapons (default off, CPU saver): a weapon car another player DRIVES always fires full physics projectiles; this forces SPAWNED/AI remote weapon cars to fire full projectiles too instead of a light muzzle+sound replay. CPU-heavy with many guns -- enable only if all machines have headroom. Read GE-side in MPWeaponsGE.handleFire.
 	autoSpawnMode = 0, -- LAN: auto-spawn on join. 0=off, 1=default car, 2=last used car
 	showSyncStats = false, -- LAN: tiny on-screen overlay with synced vehicle count + net packet rates
-	logSyncStats = false, -- LAN: also write the sync-health line to beamng.log every ~15s (review via /savelogs after a drift episode); toggle with /synclog
+	logSyncStats = false, -- LAN: raw frame summaries (~15s) + bounded hitch context; /synclog toggles, /savelogs flushes
+	frameHitchLogThresholdMs = 25, -- LAN: detailed-event threshold, read when /synclog starts; fixed summary buckets still count every frame
+	frameHitchDetailInterval = 1, -- LAN: seconds between expensive hitch-context captures; skipped details are counted, never dropped silently
 	directVehicleSocket = false, -- #245 EXPERIMENTAL (default OFF): own vehicles send POSITION + INPUTS straight to the launcher's direct UDP socket (launcherPort+2), bypassing the VE->GE Lua queue + the GE proxy (the measured send-side funnel). Pairs with the p13h34+ combined/launcher exe; SAFE anywhere -- the mod only leaves the GE path after the launcher ACKS the socket (no ack in 3s = one-shot log + revert), so an old launcher or blocked port can never eat a car silently. Slow-mo velocity scaling is skipped on the direct path (identical at normal speed). A/B against the profiler ('GE sendVehiclePosRot' drops toward 0 when active).
 	allowEnvSync = true, -- LAN/consent (default ON so /syncenv works out of the box): apply environment pushes (/syncenv or the pause-menu button) from other players. Off = incoming pushes are ignored with a short toast naming who tried. Default ON (unlike chase consent) because an env change is mild, reversible and sender-attributed.
 	allowRemoteAIChase = false, -- LAN/consent (default off, opt-in): allow OTHER players' AI/weapon cars to chase ME when I'm their nearest valid target. Your OWN cars chasing is unchanged (AI radial "Chase"); they target yourself + remote players who turned this on. Synced via MPVehicleGE chaseOptIn ('B'/C: relay). UI: "Allow other players' AI cars to chase me".
@@ -479,14 +481,21 @@ local function collectProfilingLogs()
 				n = n + 1
 			end
 		end
+		-- saveLogs closes this synchronous snapshot before invoking this fallback.
+		-- It preserves the latest frame records even while beamng.log is buffered,
+		-- including single-player captures with no connected launcher.
+		if FS:fileExists('/BeamMP_logs/mp_state.txt') then
+			zip:addFile('/BeamMP_logs/mp_state.txt', 'mp_state.txt')
+			n = n + 1
+		end
 		zip:close()
 
 		result = zipPath -- return the FS path; show the real path in the toast/log
 		local realPath = FS:getFileRealPath(zipPath) or zipPath
-		log('I', 'collectProfilingLogs', 'zipped ' .. n .. ' log file(s) -> ' .. tostring(realPath))
+		log('I', 'collectProfilingLogs', 'zipped ' .. n .. ' log/state file(s) -> ' .. tostring(realPath))
 		guihooks.trigger('toastrMsg', {type = (n > 0 and "success" or "warning"), title = "Profiling logs",
-			msg = (n > 0 and (n .. " log file(s) zipped to:\n" .. tostring(realPath))
-			              or "No beamng*.log files found to collect."), config = {timeOut = 9000}})
+			msg = (n > 0 and (n .. " log/state file(s) zipped to:\n" .. tostring(realPath))
+			              or "No beamng*.log or MP state files found to collect."), config = {timeOut = 9000}})
 	end)
 	if not ok then
 		log('E', 'collectProfilingLogs', 'failed: ' .. tostring(err))
@@ -553,6 +562,9 @@ local function buildMpStateText()
 			end
 		end
 	end
+	if MPDebug and MPDebug.getFrameDiagnosticsText then
+		add(tg(MPDebug.getFrameDiagnosticsText, 'Frame diagnostics snapshot unavailable'))
+	end
 	return table.concat(lines, "\n")
 end
 
@@ -582,11 +594,26 @@ end
 -- ("savelogs:<ts>", intercepted there and never forwarded to the server), and also makes the
 -- local beamng*.log zip as a fallback. Both /savelogs and the in-game button call this.
 local function saveLogs()
-	pcall(function()
+	-- Flush the partial frame interval BEFORE either archive can read beamng.log.
+	if MPDebug and MPDebug.flushFrameDiagnostics then MPDebug.flushFrameDiagnostics('savelogs') end
+	local stateSaved, stateError = pcall(function()
 		if not FS:directoryExists("BeamMP_logs") then FS:directoryCreate("BeamMP_logs") end
-		local h = io.open("BeamMP_logs/mp_state.txt", "w")
-		if h then h:write(buildMpStateText()); h:close() end
+		local h, openError = io.open("BeamMP_logs/mp_state.txt", "w")
+		if not h then error('open mp_state.txt: ' .. tostring(openError), 0) end
+		-- Close even when building/writing the snapshot throws. A failed write or
+		-- close must be visible: the archive can otherwise contain an older snapshot.
+		local writeOk, writeResult, writeError = pcall(function() return h:write(buildMpStateText()) end)
+		local closeOk, closeResult, closeError = pcall(function() return h:close() end)
+		local errors = {}
+		if not writeOk or not writeResult then
+			errors[#errors + 1] = 'write mp_state.txt: ' .. tostring(writeOk and writeError or writeResult)
+		end
+		if not closeOk or not closeResult then
+			errors[#errors + 1] = 'close mp_state.txt: ' .. tostring(closeOk and closeError or closeResult)
+		end
+		if #errors > 0 then error(table.concat(errors, '; '), 0) end
 	end)
+	if not stateSaved then log('E', 'saveLogs', 'Latest state snapshot could not be saved: ' .. tostring(stateError)) end
 	local ts = os.date("%Y%m%d-%H%M%S")
 	local triggered = false
 	pcall(function()
@@ -599,8 +626,9 @@ local function saveLogs()
 	local m = triggered
 		and ("Gathering logs -> BeamMP_logs_" .. ts .. ".zip in your BeamMP Launcher folder (BeamNG + launcher + server-if-local).")
 		or ("Launcher not connected -- wrote only a local beamng.log zip (see the BeamMP_logs folder).")
+	if not stateSaved then m = m .. ' Warning: latest state snapshot could not be saved; archived state may be stale.' end
 	log('I', 'saveLogs', m)
-	guihooks.trigger('toastrMsg', { type = "success", title = "BeamMP savelogs", msg = m, config = { timeOut = 9000 } })
+	guihooks.trigger('toastrMsg', { type = stateSaved and "success" or "warning", title = "BeamMP savelogs", msg = m, config = { timeOut = 9000 } })
 end
 
 -- LAN: one-shot environment sync. /syncenv pushes the SENDER'S full environment state

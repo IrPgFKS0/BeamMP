@@ -1,16 +1,17 @@
 # BeamMP LAN fork — release downloads
 
-**Local compatibility candidate: `BeamMP-LAN-p13h107-windows.zip`**, mod
-`4.23.1-LAN p13h107`, Windows combined host `p13h44`, for **BeamNG 0.40.1**.
-Passed the 17-check single-machine game smoke gate. Two-player validation remains
-pending; no new hosted release/tag exists. Linux rebuild is blocked by the local
-Docker/WSL installation, so this candidate contains Windows binaries only.
+**Local test candidate: `BeamMP-LAN-p13h108-windows.zip`**, mod `4.23.1-LAN p13h108`,
+Windows combined host `p13h44`, for **BeamNG 0.40.1**. p13h107 (the upstream 4.23.1 merge, 0.40
+compatibility) plus the raw-frame hitch diagnostics for the LAN2 stall investigation. Smoke gate
+17/17 and a controlled-stall instrument check passed; p13h107 was played in a two-player session
+(0 errors, both machines) but p13h108 itself has not been. No hosted release/tag exists for it.
+Linux binaries are the p13h43 build (Docker is down on the build box); the Windows exe is p13h44.
 
 | Local artifact | SHA256 |
 |---|---|
-| `BeamMP-LAN-p13h107-windows.zip` | `6704D27FFDD2CE66045A88EB127C1663038F244A66F666938B07BB8DAEC5B6D8` |
-| Inner `BeamMP.zip` (also workspace `dist/BeamMP-p13h107.zip`) | `BB296BBFC33C0D49CBEB23AF78CD8182166512C1C73DFB74510C67A8BD4702B0` |
-| Windows `BeamMP-Combined.exe` | `1197D8EF58D2BFCD706D9064CA6DE060709AEE8CBA8987BF785365E9F7B856CE` |
+| `BeamMP-LAN-p13h108-windows.zip` | `D51D96379D51CF9A3776BEEE8DC38A810D59D33CDD755EC8D0BB8CD1571A4F5D` |
+| Inner `BeamMP.zip` (also workspace `dist/BeamMP-p13h108.zip`) | `528123E3FD3C1DB095F580894E6D04ECD2C2D1876677CA2D7645E1B05D71CE25` |
+| Windows `BeamMP-Combined.exe` (p13h44) | `1197D8EF58D2BFCD706D9064CA6DE060709AEE8CBA8987BF785365E9F7B856CE` |
 
 See [compatibility and verification record](../docs/lan/BEAMNG-0.40-UPGRADE.md).
 

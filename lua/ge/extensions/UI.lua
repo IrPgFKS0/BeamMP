@@ -552,7 +552,7 @@ local function chatSend(msg)
 			"/? - this list",
 			"/maps (or /map) - open the interactive map picker; /map <name> asks the server to switch",
 			"/syncenv - push YOUR environment (time of day, weather, wind...) to the other players",
-			"/synclog - toggle sync-health logging to beamng.log (one line every ~15s)",
+			"/synclog - toggle raw frame logging (15s summaries + hitch context, at most once/sec by default)",
 			"/savelogs - bundle ALL logs (game + launcher + server-if-local) into one zip",
 			"/mpstate - print the MP-state snapshot to the console (~) and beamng.log",
 			"/netdebug <off|basic|full> - network debug logging level",
@@ -565,7 +565,7 @@ local function chatSend(msg)
 		local on = not (settings.getValue("logSyncStats") == true)
 		settings.setValue("logSyncStats", on)
 		guihooks.trigger('toastrMsg', { type = "info", title = "BeamMP sync log",
-			msg = on and "Sync-health logging ON -- writes one line to beamng.log every ~15s; grab it with /savelogs"
+			msg = on and "Raw frame logging ON -- 15s summaries + hitch context (at most once/sec by default); reproduce, then /savelogs"
 			           or "Sync-health logging OFF",
 			config = { timeOut = 4500 } })
 		return
