@@ -558,6 +558,15 @@ local function onPreRender(dt)
 		for sid, v in pairs(MPVehicleGE.getVehicles()) do
 			if type(v) == "table" and not v.isLocal and v.rxPos and v.rxRot and v.gameVehicleID then
 				local veh = be:getObjectByID(v.gameVehicleID)
+				-- LAN p13h109: a DEACTIVATED ghost (veh:setActive(0)) runs no VE apply by design, so it is never a
+				-- stalled apply. BeamNG.Earth deactivates remote cars whose owner's world origin it does not know
+				-- yet and still passes their packets through unconverted: snapping such a car to those coordinates
+				-- (a warning every second while its owner drives) is wrong. Forget its movement history so the
+				-- first check after it is activated again starts clean.
+				if veh and not veh:getActive() then
+					v._stallT, v._wdLastA, v._wdLastRx = 0, nil, nil
+					veh = nil
+				end
 				if veh then
 					-- Distance of the ghost from its RECEIVED pose (rxPos = the sender's COG), measured
 					-- against TWO candidate anchors, keeping whichever sits CLOSER to rxPos:

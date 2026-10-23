@@ -325,6 +325,44 @@ Connect view.
 
 ---
 
+## BeamNG.Earth (real-world map, Earth 1.6.0 or newer)
+
+BeamNG.Earth 1.6.0-beta supports BeamMP natively. The fork works with it from mod p13h109 and
+combined host p13h46.
+
+**On the host, once, while the host is stopped:**
+
+1. Get `BeamNG.Earth-BeamMP-Server-<version>.zip` from the Earth release page. A copy of
+   1.6.0-beta, checked against the release digest, is in the workspace `dist/earth/`.
+2. Copy its `Resources/Client/beamng_earth.zip` into `D:\BeamMP Server\Resources\Client\` (a
+   subfolder such as `maps\` works too), and its `Resources/Server/BeamNGEarth/main.lua` to
+   `D:\BeamMP Server\Resources\Server\BeamNGEarth\main.lua`.
+3. Choose the map `/levels/beamng_earth/info.json`: set `Map` in ServerConfig.toml, or switch a
+   running session with the `map /levels/beamng_earth/info.json` console command.
+4. Start the host. Server.log shows `[BeamNG.Earth] plugin loaded` and
+   `Combined host: server plugins see the host's own player at <LAN address>`.
+
+**On every machine:** run the BeamNG.Earth app of the same version as the server package (the
+Windows exe on the host, the Linux AppImage on LAN2) alongside the game, in either order.
+Allow inbound TCP 47621 in each machine's firewall so nearby players share the work of building
+the distant landscape. Without it each machine builds its own, which is slower but works.
+
+**Good to know:**
+
+- The plugin and the Earth zip are harmless on other maps: the plugin's messages are ignored and
+  the Earth mod stays idle outside its level. While the zip is served, every joining player
+  downloads (1 MB) and mounts it.
+- After an Earth update, update the app on both machines and the server package together.
+- Dents sync on demand: Earth asks for a snapshot of a car when another player comes within 2 km
+  or after a crash settles, and BeamMP's own damage message carries it.
+- Earth's own settings set how much it builds. At a mountain spot "View distance: Horizon" (the
+  default) reached 406 km and its first far-field build took 14 minutes; "Fixed" at 20-100 km,
+  and less grass, cut that work. Keep other heavy jobs (builds, encoders) off the host while
+  playing: with two cars in the session they starved the host's physics.
+- If the host's LAN address is detected wrong (a VPN, several network adapters), set
+  `[General] HostAddress = "<LAN address>"` in ServerConfig.toml. The host logs a warning when a
+  player reaches it at a different address.
+
 ## Commands
 
 Two places: typed in the in-game **chat box** (any player), or in the **server console**

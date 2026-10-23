@@ -278,7 +278,7 @@ export async function onLoad() {
     id: "beammp-pause-maps",
     tabId: TAB_ID,
     label: lanLabel("ui.beammp.maps.title", "Maps"),
-    icon: "map",
+    icon: "terrain", // the game's own "Change Level" icon; "map" is an icon group, not an icon (it drew NO ICON)
     componentName: `${MOD_ROOT}/cards/BeamMPPauseMapsRedirect.vue`,
   })
   events.on("onBeamMPShowMapPicker", openMapSwitcher) // LAN: "/maps" chat command -> Maps page

@@ -13,6 +13,12 @@ local serverMods = {} -- multiplayerModName1, multiplayerModName2
 local serverModDisplayNames = {} -- raw mod names for the UI (0.39 Vue current-server view)
 local whitelist = {"multiplayerbeammp", "beammp", "translations"} -- these mods won't be activated or deactivated
 local hasMods = false
+-- LAN p13h109: local mods BeamMP turned off this session because the server serves its own copy of the
+-- same mod as 'multiplayer'..name (e.g. BeamNG.Earth: the app installs beamng_earth, an Earth server
+-- serves beamng_earth.zip). cleanUpSessionMods turns them back on and the served copy off: this build
+-- keeps served copies between sessions, and an active served copy beside the player's own copy mounts
+-- two versions of one mod in single player once the player's tooling turns its copy back on.
+local twinsTurnedOff = {}
 local deactivateMod = core_modmanager.deactivateMod
 
 --TODO: build handler for repo mod downloads
@@ -63,6 +69,8 @@ local function checkMod(mod) --TODO: might have a flaw with repo mods as their n
 		deactivateMod(modname)
 		if mod.dirname == '/mods/multiplayer/' then
 			core_modmanager.deleteMod(modname)
+		elseif isModAllowed('multiplayer'..modname) then
+			twinsTurnedOff[modname] = true -- LAN: the server serves this same mod; ours comes back at leave
 		end
 	elseif modAllowed and not mod.active then
 		log('W', 'checkMod', 'Inactive Mod but Should be Active: '..modname)
@@ -150,12 +158,29 @@ local function cleanUpSessionMods()
 	-- (Trade-off: the mods stay mounted, so they are also active in single
 	-- player. Clear /mods/multiplayer manually if you want them gone, or restore
 	-- the core_modmanager.deleteMod(modname) call to get the original behaviour.)
+	local mods = getModList() or {}
+	-- LAN p13h109: the player's own copies of mods the server also served (twinsTurnedOff): the served
+	-- copy off, the player's copy back on, as it was before the session.
+	for name in pairs(twinsTurnedOff) do
+		local served, own = mods['multiplayer'..name], mods[name]
+		if served and served.active then deactivateMod('multiplayer'..name) end
+		if own and not own.active then core_modmanager.activateMod(name) end
+		log('M', 'cleanUpSessionMods', "LAN build: "..name.." back on, the server's copy of it off")
+	end
+	twinsTurnedOff = {}
 	local count = 0
-	for modname, mod in pairs(getModList()) do
+	for modname, mod in pairs(mods) do
 		if mod.dirname == "/mods/multiplayer/" and modname ~= "multiplayerbeammp" then
 			hasMods = true
 			count = count + 1
 			-- core_modmanager.deleteMod(modname) -- disabled: persist mods between sessions
+			-- LAN p13h109: a served copy left ACTIVE beside the player's own ACTIVE copy of the same mod (a
+			-- start after the player's tooling turned its copy back on): the player's copy wins.
+			local own = mods[modname:sub(#"multiplayer" + 1)]
+			if mod.active and own and own.active and own.dirname ~= "/mods/multiplayer/" then
+				deactivateMod(modname)
+				log('M', 'cleanUpSessionMods', "LAN build: "..modname.." off, the player's own copy of it is active")
+			end
 		end
 	end
 	log('M', "cleanUpSessionMods", "LAN build: keeping "..count.." multiplayer mod(s) (persistent)")

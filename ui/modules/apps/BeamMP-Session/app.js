@@ -171,23 +171,27 @@ app.controller("BeamMPSessionController", ['$scope', '$mdDialog', 'Settings', fu
 
 		var queueCount = queue.editCount + queue.spawnCount;
 		var queueElem = document.getElementById("Session-Queue")
+		if (!queueElem) return; // LAN: a stale instance (its page left with a layout switch) must not throw
 		queueElem.innerHTML = `${queue.spawnCount}|${queue.editCount}`;
 		queueElem.title = `Edits: ${queue.editCount}\nSpawns: ${queue.spawnCount}`; // titles dont work in game :C
 
 	});
 
 	$scope.$on('onBeamMPSetAutoQueueProgress', function (event, progress) {
-		document.getElementById('queue-block').style["background-position"] = progress + "%";
+		const queueBlock = document.getElementById('queue-block');
+		if (queueBlock) queueBlock.style["background-position"] = progress + "%"; // LAN: guarded like onBeamMPSetQueue
 	});
 
 	$scope.$on('onBeamMPSetServerName', function (event, data) {
 		//console.log('Setting status to: ' + sanitizeString(status))
 		const block = document.getElementById('server-name-block');
+		if (!block) return; // LAN: absent when this instance's page is gone (seen after BeamNG.Earth's layout switch)
 
 		if (!data) block.style.display = "none";
 		else {
 			block.style.display = "";
 			const marquee = block.querySelector('.marquee');
+			if (!marquee) return; // LAN
 			const sessionStatus = marquee.querySelectorAll(".session-status");
 			for (let i = 0; i < sessionStatus.length; i++) {
 				sessionStatus[i].innerHTML = formatServerName(data); // DISPLAY SERVER NAME FORMATTING
@@ -200,7 +204,9 @@ app.controller("BeamMPSessionController", ['$scope', '$mdDialog', 'Settings', fu
 	});
 
 	$scope.$on('onBeamMPSetPlayerCount', function (event, count) {
-		document.getElementById("Session-PlayerCount").innerHTML = count;
+		// LAN: guarded -- LAN2 logged this line throwing once a second (46x) when the element was absent
+		const playerCount = document.getElementById("Session-PlayerCount");
+		if (playerCount) playerCount.innerHTML = count;
 	});
 }]);
 

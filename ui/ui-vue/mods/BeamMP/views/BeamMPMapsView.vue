@@ -51,7 +51,7 @@
           >
             <div class="tile-image">
               <BngImage v-if="m.preview" class="preview" :src="m.preview" />
-              <div v-else class="preview preview--none"><BngIcon :type="icons.map" /></div>
+              <div v-else class="preview preview--none"><BngIcon :type="icons.terrain" /></div>
               <span v-if="m.name === snapshot.current" class="badge badge--current">{{ tr("ui.beammp.maps.currentBadge", "Current") }}</span>
               <span class="badge badge--source" :class="{ 'badge--mod': !m.official }">
                 {{ m.official ? tr("ui.beammp.maps.official", "BeamNG") : tr("ui.beammp.maps.mod", "Mod") }}
@@ -65,7 +65,7 @@
 
         <aside v-if="selected" class="panel details">
           <BngImage v-if="selected.preview" class="details-preview" :src="selected.preview" />
-          <div v-else class="details-preview details-preview--none"><BngIcon :type="icons.map" /></div>
+          <div v-else class="details-preview details-preview--none"><BngIcon :type="icons.terrain" /></div>
           <h3>{{ selected.title }}</h3>
           <dl>
             <div><dt>{{ tr("ui.beammp.maps.level", "Level") }}</dt><dd>{{ selected.name }}</dd></div>

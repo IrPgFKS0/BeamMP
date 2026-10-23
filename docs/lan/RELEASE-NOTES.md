@@ -1,11 +1,10 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.23.1-LAN p13h108` · Windows combined host exe `p13h44` · **for BeamNG 0.40.1**
+**Build:** mod `4.23.1-LAN p13h112` · combined host exe `p13h46` · **for BeamNG 0.40.3**
 
-Local compatibility candidate; two-player validation is pending. The new bundle is
-Windows-only. The mod itself is platform independent, but a new Linux launcher could
-not be built because the existing Docker/WSL installation fails to start. No older
-Linux executable is represented as p13h44.
+Release candidate, verified: smoke gate 17/17 and a two-player BeamNG.Earth session on the exact
+p13h112 zip, host p13h46 and the Linux p13h46 launcher. The bundle carries fresh Windows and
+Linux builds of the combined host and the server (p13h46).
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -50,6 +49,112 @@ a little tuning (see `LAN-TUNING.md`).
 
 ## This release
 
+**BeamNG.Earth 1.6.0 multiplayer on the LAN fork, and BeamNG 0.40.3.** BeamNG.Earth 1.6.0-beta
+added native BeamMP support: a server package (a server plugin plus the Earth client mod the
+server sends to every player) and code inside the Earth mod that converts each player's
+position from that player's own world origin into yours. This update makes the fork work with
+it. Replace `BeamMP.zip` on both machines and the launcher on every machine (the combined host
+exe on the host, `linux/BeamMP-Combined` on a Linux client), all while the game and launcher
+are closed. How to set up an Earth session: README-LAN, "BeamNG.Earth".
+
+Mod p13h112 (p13h109's Earth support, p13h110's session-bar fix, p13h111's return to BeamMP's
+own dents code, p13h112's map switcher icon):
+
+- **Dents sync between Earth players.** Earth asks BeamMP for a full-damage snapshot of your
+  car when another player comes within 2 km and after a crash settles. The fork had removed that
+  message together with the old periodic deformation sync. It is back, on demand only, and
+  p13h111 runs it on BeamMP's own snapshot code with only the fixes BeamNG 0.40 needs: a
+  replacement for a rounding helper the game no longer has, one damage callback the game no
+  longer exports skipped, the explicit commit 0.40 needs after loading node positions, and
+  BeamMP's own node and beam count check (it had been left commented out), so a snapshot of an
+  edited car never lands on the old shape. Nothing is sent on a timer, so sessions without
+  Earth are unchanged. Because the code stays BeamMP's, fixes from BeamMP and from Earth merge
+  straight in. (p13h109 and p13h110 used a rewrite of this message; p13h111 drops it, with its
+  once-per-second limit and the `applyRemoteDamageSnapshots` option.)
+- **Cars Earth hides stay where Earth left them.** Earth switches a remote car off while it does
+  not yet know where that player's world is, or while the car is beyond your world. The
+  position watchdog no longer snaps such a car to positions Earth has not converted.
+- **Your own Earth mod comes back after a session.** BeamMP switches off a mod you installed
+  yourself when the server sends its own copy of the same mod: the Earth app installs one, an
+  Earth server sends another. When you leave, the fork now switches your copy back on and the
+  server's copy off, so single player never mounts two Earth versions after an Earth update.
+- **The map switcher has its icon.** The Maps button in the pause menu, and the tiles of maps
+  without a preview picture, showed the game's red NO ICON box: they asked for "map", which in
+  BeamNG 0.40 is a group of icons rather than an icon. They now use the game's own Change Level
+  icon.
+- **The session bar no longer throws an error every second.** After Earth switched the UI
+  layout, LAN2's copy of the BeamMP session bar kept updating a display that was gone and
+  logged an error each second. Its updates now skip a missing display. Upstream BeamMP has the
+  same code.
+
+Combined host p13h46 (it also carries the p13h45 late-join fix for edited cars):
+
+- **The host's address for Earth's shared world building.** Earth's plugin tells each player
+  where the other players' world servers are, using the address the BeamMP server sees for each
+  player. The host's own player joins over an in-memory link and showed as 127.0.0.1, so LAN2
+  was pointed at its own machine for the host's share of the landscape. The host's player now
+  shows as this PC's LAN address, detected automatically or set with `[General] HostAddress` in
+  ServerConfig.toml. If players reach the host at a different address, the host logs one
+  warning naming the setting. The two Earth world servers have not yet been seen sharing work
+  in a session (see Verification); that exchange is between the two Earth apps.
+
+Unchanged: the position path. Earth's conversion hooks the same receive function the fork
+uses, and the guard shows h108 already passed converted positions through correctly.
+
+### Verification
+
+- `tools/ge-guard/earth_guard.py`: 28 checks running the real Earth client code from the 1.6.0
+  server package with the real fork modules, including a check that the two dents files stay
+  BeamMP's text plus marked LAN hunks. h108 fails the watchdog, damage, upstream-shape and
+  mod-manager checks; a mutation that caches the receive function fails the position checks;
+  undoing any one of the six LAN hunks in the dents code fails at least one check.
+- Mod zip p13h111 `95FDA6D1…` (468 entries), verified against the source tree. 17-assert smoke
+  gate on BeamNG 0.40.3: 17 of 17 on the exact p13h111 zip and p13h46 host, Earth's plugin
+  loaded. The two-player session on p13h112 is the third one below.
+- p13h112 `5C4B65A0…` (468 entries) differs from p13h111 only in the three icon names and the
+  version string. `tools/ge-guard/vue_check.py` now checks every icon the menu names against the
+  game's icon registry: it fails on p13h111 (three times "map") and passes on p13h112. Smoke gate:
+  17 of 17 on the exact p13h112 zip and p13h46 host.
+- Every other mod guard passes, and the options and conditions overrides match BeamNG 0.40.3.
+- Server unit tests and builds: both server builds and the combined host compiled; server unit tests 34 of 34 pass (the four
+  socket-timeout cases that hang on Windows excluded), including the new address-choice test.
+- 17-assert smoke gate on BeamNG 0.40.3: 17 of 17 on the exact p13h109 zip and p13h46 host, with Earth's server plugin loaded:
+  Server.log shows `[BeamNG.Earth] plugin loaded`, the host's own player at the auto-detected LAN
+  address and `LAN auth: 'Dad' joined from` that address instead of 127.0.0.1; the client's errors
+  match the h108 gate source for source. (Run on a temporary cold deploy, then rolled back.)
+- Two-player Earth session, 2026-10-23, Windows host and Linux client on p13h109 with host
+  p13h46: the plugin sent the client to the host's place, both machines shared one world origin
+  (the plugin also grouped them for shared world building; whether the two world servers then
+  exchanged work was not recorded), each saw the other's car where it belonged (the host's watchdog
+  measured the remote car within 0.2 m of its converted position), dents went both ways with the
+  rate limit engaging during a crash, a live car edit applied on the client, and neither machine
+  logged an error from the fork's code. The p13h110 session-bar fix came from that session's
+  client log; `tools/ge-guard/session_app_guard.js` fails on the old app with the same errors.
+  A second two-player Earth session ran on the exact p13h110 zip and p13h46 host: the host
+  switched the running session from Utah to Earth with the map switcher, the client joined
+  straight into Earth, each tracked the other's car within 0.2-0.4 m, and neither machine logged
+  a session-bar error (46 before the fix) or any error from the fork's code. The plugin grouped
+  both players for shared world building, but the two world servers never exchanged work: the
+  host's world server reported no group and 0 tiles from or for peers for the whole session.
+  While both cars were present the host fell to 10-25 fps whenever its window was in the
+  background: its physics step took 50-100 ms a frame, with a Linux build running in Docker on
+  the same PC (Caden's machine, same two parked cars, stayed at 60 fps). A retest without the
+  build is pending; details in BEAMNG-EARTH.md.
+- Third two-player Earth session, 2026-10-23 12:01-12:14, on the exact p13h112 zip with host
+  p13h46 and the Linux client on the p13h46 launcher: dents went both ways on BeamMP's own
+  snapshot code (the host applied 3 snapshots of the client's car, the client 9 of the host's;
+  none rejected, none raised, each within one normal frame), the map switch from Utah to Earth
+  worked, 0 self-heals and 0 rejected packets, and neither machine logged an error from the
+  fork's code. No build ran this time; the two-car background case was not repeated (the
+  client's car only spawned at 12:09:48). New: five host freezes while the client's car sat
+  about 3 km away. BeamNG's collision rebuild, which Earth requests whenever its collision
+  changes, took 9-18.7 s each instead of the usual 2 ms, and stopped once the cars were
+  together; the client's mirror-image rebuilds stayed under 33 ms. See BEAMNG-EARTH.md.
+  Not exercised yet: a player joining AFTER a car was edited (the p13h45 late-join fix; covered
+  by the server's unit test and a guard).
+
+## Previous diagnostic update (p13h108)
+
 **Mod-only diagnostic update over h107.** The Windows h44 and existing Linux h43
 launchers are unchanged. Replace `BeamMP.zip` on both machines while the game and
 launcher are closed. This build measures the reported high-speed stalls; it does
@@ -85,7 +190,7 @@ the smoothed delta the old counter used read 33 ms for the same frame. The recor
 is exactly the case the per-interval records exist for. A two-player session with h108 is
 still pending; h106 remains the published release.
 
-### LAN2 retest
+### LAN2 hitch retest
 
 Enable **Options → Multiplayer → LAN → DEBUG: Log sync health to file**, or type
 `/synclog` in multiplayer chat once to turn capture ON. In single-player, use the
