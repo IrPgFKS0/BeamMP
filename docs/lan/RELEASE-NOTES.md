@@ -1,10 +1,12 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.23.1-LAN p13h112` · combined host exe `p13h46` · **for BeamNG 0.40.3**
+**Build:** mod `4.23.1-LAN p13h114` · combined host exe `p13h46` · **for BeamNG 0.40.4**
 
-Release candidate, verified: smoke gate 17/17 and a two-player BeamNG.Earth session on the exact
-p13h112 zip, host p13h46 and the Linux p13h46 launcher. The bundle carries fresh Windows and
-Linux builds of the combined host and the server (p13h46).
+p13h114 adds no mod code over p13h113: it is the build checked against BeamNG 0.40.4 and
+BeamNG.Earth 1.7.1. The 17-check smoke gate passed on this exact zip and host exe on BeamNG 0.40.4,
+and p13h113's code ran in two two-player BeamNG.Earth sessions on 0.40.3 (Earth 1.6.0, then 1.6.1);
+a two-player session on Earth 1.7.1 and 0.40.4 has not been run yet. The host exe is unchanged
+since p13h112 (p13h46; its banner still names BeamNG 0.40.3, which is only text).
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -49,6 +51,27 @@ a little tuning (see `LAN-TUNING.md`).
 
 ## This release
 
+**p13h114: BeamNG 0.40.4 and BeamNG.Earth 1.7.1 (2026-10-29).** The game updated to 0.40.4: the
+fork's options page and conditions overrides match the 0.40.4 files (the layout check passes, the
+conditions file equals the game's apart from the mod's own entries), the API self-check finds all 14
+APIs and the version gate reports compatible, so nothing in the mod changed for it. BeamNG.Earth
+went from 1.6.1 to 1.7.1 in four releases and changed how it uses BeamMP for dents: it no longer
+calls BeamMP's `nodesVE.getNodes` (which raises on 0.40 in upstream BeamMP) but sends its own compact
+damage state (only broken or bent beams) through BeamMP's `nodesGE.sendNodes`, and wraps
+`nodesGE.handle` the way it wraps `positionGE.handle`, applying and repairing damage itself. Both
+reach Earth's code through the fork's dispatch (new guard checks D6-D8 run Earth's real command and
+wrap against the fork's real modules). Earth also fixed, on its side, the three problems the fork's
+sessions had measured: the host's 9-50 s collision rebuilds (ground under far cars now comes in
+128 m pieces, two per frame), the car-hold flicker (a held car keeps its physics, gravity off) and
+the held car vanishing; its shared world building is switched off for now (the 47621 port is gone).
+Earth's app now starts a BeamMP launcher itself by default: see README-LAN, "BeamNG.Earth".
+
+**p13h113: the position watchdog after a game-wide freeze.** The watchdog healed a remote car on the
+first check after a frozen frame: it counted the frozen frame as a sustained stall and snapped a car
+14.7 km in the 2026-10-23 Earth lockup. It now reads the raw frame time, and a check that comes more
+than two intervals late starts its observation over, so a heal needs a full second of on-time checks
+(guard W4; the released p13h112 fails it). The minimap arrow toward other players is light green.
+
 **BeamNG.Earth 1.6.0 multiplayer on the LAN fork, and BeamNG 0.40.3.** BeamNG.Earth 1.6.0-beta
 added native BeamMP support: a server package (a server plugin plus the Earth client mod the
 server sends to every player) and code inside the Earth mod that converts each player's
@@ -57,8 +80,9 @@ it. Replace `BeamMP.zip` on both machines and the launcher on every machine (the
 exe on the host, `linux/BeamMP-Combined` on a Linux client), all while the game and launcher
 are closed. How to set up an Earth session: README-LAN, "BeamNG.Earth".
 
-Mod p13h112 (p13h109's Earth support, p13h110's session-bar fix, p13h111's return to BeamMP's
-own dents code, p13h112's map switcher icon):
+Mod p13h114 (p13h109's Earth support, p13h110's session-bar fix, p13h111's return to BeamMP's
+own dents code, p13h112's map switcher icon, p13h113's watchdog fix and light-green arrow, p13h114's
+0.40.4 / Earth 1.7.1 verification):
 
 - **Dents sync between Earth players.** Earth asks BeamMP for a full-damage snapshot of your
   car when another player comes within 2 km and after a crash settles. The fork had removed that
@@ -103,11 +127,26 @@ uses, and the guard shows h108 already passed converted positions through correc
 
 ### Verification
 
-- `tools/ge-guard/earth_guard.py`: 28 checks running the real Earth client code from the 1.6.0
-  server package with the real fork modules, including a check that the two dents files stay
-  BeamMP's text plus marked LAN hunks. h108 fails the watchdog, damage, upstream-shape and
-  mod-manager checks; a mutation that caches the receive function fails the position checks;
+- `tools/ge-guard/earth_guard.py`: 37 checks running the real Earth client code from the 1.7.1
+  server package (30 with the 1.6.0 and 1.6.1 packages, whose damage contract differs) with the real
+  fork modules: position seam, watchdog (W4 = the p13h113 case), BeamMP's own dents path, Earth 1.7's
+  dents path through the fork's sender and real dispatch, upstream shape of the two dents files, mod
+  manager. h108 fails the watchdog, damage, upstream-shape and mod-manager checks; the released
+  p13h112 fails W4; a mutation that caches the receive functions fails the position checks and D7;
   undoing any one of the six LAN hunks in the dents code fails at least one check.
+- p13h114 `EC272B49…` (468 entries) differs from p13h113 only in the version string, and p13h113
+  from p13h112 in the watchdog change and one colour. Lua parse 42/42; every other guard passes.
+- Single-player BeamNG.Earth 1.7.1 run on BeamNG 0.40.4 with p13h113 (2026-10-29): the fork logged
+  no error, the API self-check found 14 of 14, the version gate reported compatible, and the map
+  switch into Earth worked. The one 41 s collision build was the ranch_3_2025 level's own load (2.5 M
+  triangles), not Earth. Earth's own perf log recorded a 12.6 s Lua hitch during its teleport load and
+  four road-worker stack dumps ("the road workers may be stuck"): Earth's, for its author.
+- Smoke gate on BeamNG 0.40.4 (2026-10-29): 17 of 17 on the exact p13h114 zip and p13h46 host,
+  BeamNG.Earth 1.7.1's server plugin loaded. A single-player run on 0.40.4 with the same zip logged
+  no fork error (API self-check 14 of 14, version gate compatible).
+- Two-player BeamNG.Earth sessions with p13h113 (Windows host, Linux client, BeamNG 0.40.3,
+  2026-10-23): Earth 1.6.0 at 17:30 and Earth 1.6.1 at 18:49; the host's watchdog healed no car in
+  either. A two-player session on Earth 1.7.1 and 0.40.4 has not been run yet.
 - Mod zip p13h111 `95FDA6D1…` (468 entries), verified against the source tree. 17-assert smoke
   gate on BeamNG 0.40.3: 17 of 17 on the exact p13h111 zip and p13h46 host, Earth's plugin
   loaded. The two-player session on p13h112 is the third one below.
@@ -115,7 +154,7 @@ uses, and the guard shows h108 already passed converted positions through correc
   version string. `tools/ge-guard/vue_check.py` now checks every icon the menu names against the
   game's icon registry: it fails on p13h111 (three times "map") and passes on p13h112. Smoke gate:
   17 of 17 on the exact p13h112 zip and p13h46 host.
-- Every other mod guard passes, and the options and conditions overrides match BeamNG 0.40.3.
+- Every other mod guard passes, and the options and conditions overrides match BeamNG 0.40.4.
 - Server unit tests and builds: both server builds and the combined host compiled; server unit tests 34 of 34 pass (the four
   socket-timeout cases that hang on Windows excluded), including the new address-choice test.
 - 17-assert smoke gate on BeamNG 0.40.3: 17 of 17 on the exact p13h109 zip and p13h46 host, with Earth's server plugin loaded:

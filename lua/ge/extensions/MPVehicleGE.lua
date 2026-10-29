@@ -3390,7 +3390,7 @@ function M.onDrawOnMinimap(td)
 	local utils = ui_apps_minimap_utils
 	if not utils or not utils.drawEdgePointer then return end
 	if not minimapPlayerColor then
-		minimapPlayerColor = color(80, 190, 255, 255)
+		minimapPlayerColor = color(144, 238, 144, 255) -- light green (the user, 2026-10-23)
 		minimapPlayerStroke = color(255, 255, 255, 255)
 	end
 	for _, player in pairs(players) do

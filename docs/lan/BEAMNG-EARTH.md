@@ -127,6 +127,96 @@ Earth's comments expect ~20-56 ms); the fork never requests one. Why only the ho
 car, is not known (Windows vs Linux engine, the ghost's model, the ghost outside the terrain block are the open
 candidates). Not exercised again: the host window in the background with two cars (the morning's 10-25 fps case).
 
+## BeamNG.Earth 1.6.1-beta (2026-10-24 check, mod p13h113)
+
+Server package `BeamNG.Earth-BeamMP-Server-1.6.1-beta.zip` (sha256 `75f724fe...0b9f`, matches the release digest; copy
+in the workspace `dist/earth/`; tag `v1.6.1-beta` = `a08461b`). **Compatible:** `earth_guard.py --earth-zip` with it
+passes all 30 checks (position seam, watchdog incl. W4, dents path -- Earth's damage command is unchanged, upstream
+shape, mod manager). Its BeamMP surface is the same as 1.6.0's: AddEventHandler / TriggerServerEvent,
+positionGE.handle, nodesVE.getNodes, MPCoreNetwork.isMPSession, MPVehicleGE.isOwn / getVehicles /
+restorePlayerVehicle, MPConfig.getPlayerServerID, onBeamMPPostJoin / onBeamMPServerLeave; the server plugin uses
+the same five MP.* calls. New in 1.6.1 and reviewed:
+- `simhold.lua`: in a BeamMP session the drop hold / edge guard hold only the player's OWN car (`setActive(0)`)
+  instead of pausing the game (the pause froze everyone's cars). Remote players see that car stop (no packets while
+  held); their watchdog does not heal it (no fresh positions). Watch item: upstream BeamMP's local-spawn echo
+  (`MPVehicleGE.onServerVehicleSpawned`, same code upstream) deletes a local car that is inactive when the server's
+  confirmation arrives -- only possible if a hold starts within the spawn's round trip; log line "Local vehicle
+  ... does not exist anymore".
+- removed remote cars stay removed (restore only for cars deleted while far, at most RESTORE_MAX); damage on join only
+  for damaged cars; the sharing port comes from the plugin (`G.SHARE_PORT`, default 47621); the app reloads the
+  game's Lua when it starts after the game with a just-installed/updated/re-enabled mod (start it before joining,
+  as Earth's notes say).
+**Not changed in 1.6.1:** `terrainpatch.lua` and `collisionfoci.lua` are byte-identical to 1.6.0 and `core.lua` still
+passes `dtReal` to `terrainpatch.update`, so the off-block ground patches and their stale-patch clock -- the host's
+13-50 s collision rebuilds above -- can still occur. Keep players in the same area.
+**Installed on the host 2026-10-23 18:4x** (host stopped): the three package files (client zip `3969F3C7`, plugin
+`A2F54BF4`, README `25E67804`) replaced 1.6.0's, which were byte-identical to the 1.6.0 package and are kept in
+`dist/earth/installed-1.6.0-backup/`. Smoke gate 17/17 on p13h113 with it: Server.log `File
+'Resources/Client/beamng_earth.zip' has been modified, rehashing` and `[BeamNG.Earth] plugin loaded (players share
+world building on TCP port 47621)`; the client downloaded and mounted the new zip. Both machines' Earth apps must
+be 1.6.1 too (the player's app version must match the server's).
+
+## BeamNG.Earth 1.7.1-beta (2026-10-29 check, mod p13h114, BeamNG 0.40.4)
+
+Earth released 1.6.2 (10-24), 1.6.3 (10-26), 1.7.0 (10-28) and 1.7.1 (10-29). Server package
+`BeamNG.Earth-BeamMP-Server-1.7.1-beta.zip` (sha256 `2712368e...7ac2`, matches the release digest; copy in
+`dist/earth/`; tag `v1.7.1-beta` = `8aaf4eb`); the user installed it on the host 2026-10-29 07:04 (client zip
+`3E2F97E7`, plugin `DABD0F78`: both equal the package's). The client zip grew from 99 to 181 entries.
+
+**Compatible with the fork, no mod code change.** `earth_guard.py` (default package now 1.7.1): 37 checks pass; with
+the 1.6.0 / 1.6.1 packages 30. The damage contract changed:
+- 1.6.0-1.6.1 queued BeamMP's own `nodesVE.getNodes()` (the fork's p13h111 hunks make that work on 0.40).
+- 1.6.2+ (`mpsession.lua` DAMAGE_VE): Earth's own vehicle-Lua command lists only the broken or bent beams
+  (`{ nodes = {}, beams = { [cid+1] = { rest, broken, deformation } } }`, tens of KB instead of ~200 KB) and hands
+  it to `nodesGE.sendNodes(json, id)`; the fork's upstream-shaped sender puts it on the wire as 'Xn'. On a peer
+  Earth wraps `nodesGE.handle` (as mpanchor wraps `positionGE.handle`): 'n' packets are kept by Earth (applied
+  once the car is in range, with repairs via RESET_PHYSICS + its own apply that grows dents in over 60 frames;
+  it uses `beamstate.onBeamDeformed or beamstate.beamDeformed` itself), every other code passes through to the
+  fork. The fork's `MPGameNetwork` dispatch looks `nodesGE.handle` up at call time (`['X'] = function(params)
+  nodesGE.handle(params) end`), so the wrap takes effect: guard D7 proves it with the real dispatch, and the
+  `--mutate cached-dispatch` control (which now also caches 'X') fails it. D6 runs Earth's real DAMAGE_VE in the
+  vehicle-Lua stub (6 nodes / 8 beams: one broken, one bent by deformation, one by rest length -> exactly those
+  three listed) and the fork's sender (ONE 'Xn', payload verbatim); D8 shows 'Xg' still runs the fork's path.
+  BeamMP's own getNodes/applyNodes path (D1-D5) stays correct; Earth 1.7 never calls it. A receiver's fork
+  `applyNodes` would reject Earth's compact state by its count check if it ever reached it (it does not).
+- API surface otherwise as before (AddEventHandler/TriggerServerEvent, positionGE.handle, MPCoreNetwork.isMPSession,
+  MPVehicleGE.isOwn/getVehicles/restorePlayerVehicle, MPConfig.getPlayerServerID, onBeamMPPostJoin/ServerLeave);
+  the plugin uses the same five MP.* calls. New: `beammp.lua` re-activates Earth's local mod in
+  onBeamMPServerLeave (the fork's p13h109 twin restore does the same and also switches the served copy off; M1-M4
+  pass), and `earthServers.js` adds a "BeamNG.Earth" category to BeamMP's server browser by importing the
+  fork's `beammpState.js` (`useBeamMPState`, `state.view`, `state.servers` exist), using route names
+  `menu.beammp.servers/direct/current-server/tiles` (all exist in `shared/constants.js`) and the DOM classes
+  `.beammp-route .sidebar .nav-btn`, `.servers-wrap`, `tr.server-row`, `.title-cell .server-title-content` (all
+  present in the fork's views); it lists Earth's public servers from Earth's own list service and swaps BeamMP's
+  list while its view is open; by its own design it does nothing if the page's shape differs. Not yet looked at
+  in-game on the LAN menu.
+
+**Earth fixed what the fork's sessions found** (its release notes, confirmed in the code): `terrainpatch.lua` now
+builds the ground under far cars in 128 m pieces, PIECES_PER_FRAME = 2, cells shared between patches (1.6.2: "Windows
+took 4-26 seconds to take in one big piece"); `simhold.lua` holds the own car by gravity off + velocity zeroed
+instead of `setActive(0)` (the held car vanished); `edgeguard.lua` caps the velocity it acts on to what the car
+really moved (`plausible`, SPEED_SLACK) and never holds inside RESUME_INSIDE_M (the every-frame hold/let-go
+flicker, 5,484 toggles in 22 s on 2026-10-23); shared world building is off from 1.7.0 (`G.SHARE_PORT` gone), so
+the `group none` finding is moot. `core.lua` still passes the smoothed `dtReal` to `terrainpatch.update`, but with
+small pieces the stall it could prolong is gone in principle. Earth's app also starts a BeamMP launcher by
+default from 1.6.2 (`beammpOnLaunch`): README-LAN tells LAN players what to set.
+
+**Single-player run 2026-10-29 07:06-07:16 (host, p13h113, BeamNG 0.40.4.0 build 296339, Earth 1.7.1):** fork
+clean (0 errors, 0 FATAL, API self-check 14/14, version gate compatible, p13h113 banner); joined its own host on
+ranch_3_2025 and switched to Earth at 07:12 (generation 1). The one long static-collision build (40.9 s, 2.5 M
+triangles) was the ranch level's load at 07:10:55, before Earth. Earth's perf log: a 2.7 s hitch (engine Render
+2274 ms) and a 12.6 s "LuaPre" hitch during its teleport load, one 131 ms hitch attributing "beammp 4.4" ms
+(the only BeamMP attribution of the run; "sea+trees 108"), minutes at 30-52 fps while it built, and WARNINGs
+"roads tile ... building for 92 s ... the road workers may be stuck" with four faulthandler thread dumps from its
+`blockworker.py roads_tile` processes: Earth's own (1.7.1's notes ask for exactly that `server.log`). No frame
+diagnostics (logSyncStats off).
+
+**Release check 2026-10-29 (p13h114 zip `EC272B49…`, deployed to both paths, BeamNG 0.40.4):** a single-player
+run 08:02-08:23 on ranch_3_2025 logged no fork error (p13h114 banner, API self-check 14/14, version gate
+compatible). The 17-check smoke gate then passed 17/17 on the same zip and the p13h46 host (08:27-08:29, on Utah,
+Server.log `[BeamNG.Earth] plugin loaded (time real, weather real)`). A two-player session on Earth 1.7.1 is
+still to come.
+
 ## Known limits and observations (not fork defects)
 
 - **Rebase blink.** When either player's origin moves (every 15 km, or a teleport), Earth moves every vehicle
@@ -134,14 +224,102 @@ candidates). Not exercised again: the host window in the background with two car
   the fork's 30 Hz), and its large-error teleport can snap the ghost toward it for a frame. Same predictor
   logic as upstream; watch for it in the two-player test.
 - A player without the Earth app has no origin: their cars stay hidden for everyone (Earth's rule).
-- Shared world building needs inbound TCP 47621 on each machine; otherwise each builds its own. Not yet seen
-  working between the Windows and Linux apps (second and third sessions above).
-- With a second car a few km away, the host's collision rebuilds can take 9-19 s each (third session above);
-  driving together avoids it.
+- Shared world building (Earth 1.6.0-1.6.1, TCP 47621) was never seen working between the Windows and Linux
+  apps (second and third sessions above); Earth switched it off from 1.7.0.
+- With a second car a few km away, the host's collision rebuilds took 9-50 s each on Earth 1.6.0-1.6.1 (third
+  session and the 2026-10-23 lockups above); driving together avoided it. Earth 1.6.2+ builds that ground in
+  128 m pieces; not yet measured here with two players.
 - Upstream 4.23.1 turns the game's MCP off in a session; the fork never adopted that, so the smoke harness
   and Earth's status file keep working.
 
 ## For upstream (not sent)
+
+### Collision review, 2026-10-23 evening (proposal; no runtime changes)
+
+The later h112 / BeamNG 0.40.3 session confirms repeated native collision-build blocking.
+The saved 16:52 session log contains 25 initially fast builds (0.067 s total), followed by
+21 consecutive slow builds (590.531 s total, 15.226–35.886 s each), consuming 99.16% of that
+595.53-second span. The user's quoted first seven total exactly 174.396 s. The preceding
+PhysicsPlugin extraction takes milliseconds; `libbeamng.engine.staticCollision` takes the
+seconds. The log continues advancing, so this establishes severe repeated blocking, not a
+deadlock. The earlier 15:47 session contains 31 slow builds totaling 2004.700 s, max 133.518 s.
+Both stalled sessions have no mpFrame diagnostic records. Snapshots, hashes, full collision
+population and exact line references are preserved in workspace
+`tools/artifacts/earth-collision-review/LOG-FINDINGS.md` and `collision-rebuilds.json`.
+
+The strongest geometry lead is **off-block ground patches**, not exclusively roads/buildings.
+Two `737_100` aircraft spawned before the slowdown. The first `patch_*.cdae` meshes appeared
+immediately before the first long rebuild. Earth's 320 m remote-vehicle island, snapped to
+64 m bounds, commonly produces a 704 m square patch. Its 4 m grid contains exactly 31,329
+vertices / 61,952 triangles: the repeated additions/removals in the native collision log.
+This strongly identifies the extra geometry; it does not yet identify the native algorithm's
+pathological cost. Installed Earth's 48 Lua-tree files match the original 1.6.0 server
+package after CRLF/LF normalization.
+
+**Corrected workaround:** Roads Off clears bridges, buildings and sidewalks but does not
+disable `terrainpatch.update`, its collision requests, or trees. It can remove bridge support
+while leaving this workload running. Keeping vehicles within the same local terrain area is
+the cleaner temporary workaround suggested by the earlier close-versus-separated session;
+it is not a guaranteed cure for every Earth stall.
+
+Proposed bounded changes, classified by owner:
+
+1. **FIX Earth timing:** `terrainpatch.update` advances cleanup, retry and update clocks using
+   smoothed `dtReal`; its intended ten-second obsolete-patch retention can lag wall time during
+   native stalls. Reuse the author's existing `beamngEarth/stopwatch.clock()` for elapsed time.
+   Recompute the currently wanted set before expiry; preserve collision under wanted vehicles
+   and reject obsolete/old-anchor replies. Measure retained patch population and native build
+   time independently. This may reduce overlapping stale geometry; it is not proof that one
+   patch will become cheap.
+   Real release-module replay (`terrainpatch-clock-proof.json`): after 31.1 wall seconds but
+   only 1.2 summed dtReal seconds, the obsolete patch remains and a late reply can recreate its
+   collider. An in-memory-only stopwatch correction removes that patch, preserves the wanted
+   patch, and ignores the late reply. Production Earth files remain unchanged.
+   *Checked independently (2026-10-23 17:2x):* Earth's `core.lua:1591` calls
+   `terrainpatch.update(dtReal, ...)`; `terrainpatch.lua:68` advances its clock by that `dt` and line 90 drops an
+   unwanted patch after `KEEP_S` (10) of it; BeamNG's `dtReal` is smoothed (the fork's p13h108 finding: a 250 ms
+   spike reads 16.7 ms); `stopwatch.clock()` is Earth's own wall clock. The 17:16 lockup log shows the growth this
+   predicts: after 25 normal builds (median 2 ms), 35 back-to-back builds of 15-50 s (median 28.8 s) while the
+   collision set grew from 342k to 717k triangles. Owner: Earth -- not patched in the fork; for Earth's author.
+2. **FIX fork watchdog accounting:** `positionGE.lua` adds the full elapsed frame to `_stallT`
+   on the first qualifying mismatch. Actual h112 module replay shows a single fresh 14,726 m
+   target and one 1.1 s callback immediately trigger a heal, without observing sustained VE
+   failure. Start observation at first mismatch, then require subsequent qualifying fresh-pose
+   observations. The real log contains the matching 14,726 m heal at 497 s, after the first
+   collision stall at 258 s: it can amplify movement/geometry churn, not explain its onset.
+   `watchdog_gap_repro.py` preserves the isolated replay; it does not touch the running game.
+   **Applied in p13h113 (fork-owned):** the watchdog's check clock uses `dtRaw` (BeamNG passes `onPreRender(dtReal,
+   dtSim, dtRaw)`; the smoothed `dtReal` hides a frozen frame), a check more than two intervals late restarts the
+   observation, and the first qualifying check only starts the timer. The 17:16 log's heal at 497.06 s came 0.3 s
+   after a 29.8 s rebuild finished, "14726m off ... for ~1.1s". Guard: `earth_guard.py` W4 (fails on p13h112:
+   a 1.2 s frame heals on the frozen check itself; with a smoothed `dtReal` it heals 0.6 s after the freeze).
+3. **FIX Earth inactive-focus enumeration, separately:** real author-code execution includes
+   an inactive remote ghost as another collision island. Filter inactive vehicles while
+   retaining active remote collision. Latest captured status has `hidden: 0`, so this is not
+   demonstrated as the present stall's cause.
+
+Do not add another generic rebuild debounce: Earth already has 6 s normal / 1 s urgent /
+30 s deletion scheduling and post-terrain-swap suppression. Do not globally disable remote
+ground, replace collision architecture, or coarsen meshes without native performance and
+contact tests. Multiple native TerrainBlocks are not a substitute: the author documents that
+the engine collides only with the first. Anchor transitions also leave fork/smoother/predictor
+cached coordinates uninformed; audit that separately rather than disabling the watchdog.
+
+Verification before claiming resolution: simulated long wall gaps versus smoothed deltas;
+moving-focus boundary crossings and full retained-mesh counts; delayed responses and rebases;
+no ground gaps under active cars; watchdog single-observation negative and real sustained-stall
+positive cases. Then native Windows/Linux comparisons with one fixed patch, overlapping
+patches, stock cars versus aircraft, close versus separated players, with patch keys/bounds,
+active flags, add/remove reasons and native build timings captured. If a single patch remains
+multi-second, preserve a native thread-stack sample and minimal mesh reproduction for Earth /
+BeamNG. No mod/package/settings/process changes were made for this review.
+
+Author baseline: `TecnaGamer/BeamNG.Earth` tag `v1.6.0-beta` (`b4c478d`), specifically
+`terrainpatch.lua`, `collisionfoci.lua`, `roads.lua`, `core.lua`, `stopwatch.lua` and
+`server/terrainpatch.py`. Public issue #190 reports new 1.6 high-speed freezing; it corroborates
+the symptom only, not this specific mechanism or a verified fix.
+
+### Earlier upstream candidates
 
 - BeamMP: `nodesVE.getNodes` raises on 0.40 (`Round` is not a global) and `applyNodes` calls the removed
   `beamstate.beamDeformed`, has its count check commented out and no `commitLoad` — so Earth's dents raise on

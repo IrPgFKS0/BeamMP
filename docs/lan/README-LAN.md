@@ -328,24 +328,38 @@ Connect view.
 ## BeamNG.Earth (real-world map, Earth 1.6.0 or newer)
 
 BeamNG.Earth 1.6.0-beta supports BeamMP natively. The fork works with it from mod p13h109 and
-combined host p13h46.
+combined host p13h46, with Earth 1.6.1-beta (checked against mod p13h113, 2026-10-24) and with
+Earth 1.7.1-beta (checked against mod p13h114 on BeamNG 0.40.4, 2026-10-29).
 
 **On the host, once, while the host is stopped:**
 
-1. Get `BeamNG.Earth-BeamMP-Server-<version>.zip` from the Earth release page. A copy of
-   1.6.0-beta, checked against the release digest, is in the workspace `dist/earth/`.
+1. Get `BeamNG.Earth-BeamMP-Server-<version>.zip` from the Earth release page. Copies of
+   1.6.0-beta, 1.6.1-beta and 1.7.1-beta, each checked against its release digest, are in the
+   workspace `dist/earth/`.
 2. Copy its `Resources/Client/beamng_earth.zip` into `D:\BeamMP Server\Resources\Client\` (a
    subfolder such as `maps\` works too), and its `Resources/Server/BeamNGEarth/main.lua` to
-   `D:\BeamMP Server\Resources\Server\BeamNGEarth\main.lua`.
+   `D:\BeamMP Server\Resources\Server\BeamNGEarth\main.lua`. To update Earth, copy the new
+   version's two files over these while the host is stopped; the server rehashes the zip when it
+   starts, and every player then downloads the new one.
 3. Choose the map `/levels/beamng_earth/info.json`: set `Map` in ServerConfig.toml, or switch a
    running session with the `map /levels/beamng_earth/info.json` console command.
-4. Start the host. Server.log shows `[BeamNG.Earth] plugin loaded` and
-   `Combined host: server plugins see the host's own player at <LAN address>`.
+4. Start the host. Server.log shows `[BeamNG.Earth] plugin loaded` (1.7.x: `plugin loaded (time
+   real, weather real)`) and `Combined host: server plugins see the host's own player at <LAN
+   address>`.
 
 **On every machine:** run the BeamNG.Earth app of the same version as the server package (the
-Windows exe on the host, the Linux AppImage on LAN2) alongside the game, in either order.
-Allow inbound TCP 47621 in each machine's firewall so nearby players share the work of building
-the distant landscape. Without it each machine builds its own, which is slower but works.
+Windows exe on the host, the Linux AppImage on LAN2). Start the BeamMP launcher first and wait
+until the game is up, then start the Earth app, then join: from 1.6.1 the app reloads the game's
+Lua when it finds its mod newly installed, updated or switched back on, which would end a session
+that is already running.
+From Earth 1.6.2 the app also starts a BeamMP launcher itself (its setting *Start BeamMP with
+BeamNG.Earth*, on by default; Earth settings > Multiplayer). On the host turn it off: the host is
+started with `start-server.bat`. On a client either turn it off and start the fork's launcher
+yourself, or point the app's *BeamMP launcher* setting at the fork's launcher binary; left alone it
+looks for, or offers to download, BeamMP's official launcher, which cannot join this fork's host.
+Shared world building (nearby players splitting the work of building the distant landscape, TCP
+47621) existed in Earth 1.6.0-1.6.1 and is switched off from 1.7.0: each machine builds its own
+world, and the port is no longer needed.
 
 **Good to know:**
 
@@ -355,6 +369,11 @@ the distant landscape. Without it each machine builds its own, which is slower b
 - After an Earth update, update the app on both machines and the server package together.
 - Dents sync on demand: Earth asks for a snapshot of a car when another player comes within 2 km
   or after a crash settles, and BeamMP's own damage message carries it.
+- Stay in the same area as the other players with Earth 1.6.0 or 1.6.1: when another player's car
+  is a few kilometres away, Earth builds ground under it, and the host's game could freeze for
+  10-50 s at a time while it rebuilt collision (LAN2 was not affected). Earth 1.6.2 and later build
+  that ground in 128 m pieces, two per frame, which is meant to end those freezes; not yet measured
+  here with two players on 1.7.1.
 - Earth's own settings set how much it builds. At a mountain spot "View distance: Horizon" (the
   default) reached 406 km and its first far-field build took 14 minutes; "Fixed" at 20-100 km,
   and less grass, cut that work. Keep other heavy jobs (builds, encoders) off the host while

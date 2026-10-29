@@ -528,7 +528,7 @@ local wdMaxDrift = 0
 local wdHealCount = 0
 
 --- This function is used to execute smoothed positional updates if enabled
-local function onPreRender(dt)
+local function onPreRender(dt, dtSim, dtRaw)
 	-- tick pos updates per vehicle based on their median pos update interval
 	for serverVehicleID, data in pairs(POSSMOOTHER) do
 		local timedif = data.executed_last:stop()
@@ -549,7 +549,9 @@ local function onPreRender(dt)
 	-- ~5s -- this exposes drift BELOW the 10m heal trigger (the steady-state predictor lag the
 	-- host sees as "losing" a remote car) so we can measure and tune it. Gated on profPosSync so
 	-- normal play stays quiet; the heal path itself runs unconditionally.
-	selfHealClock = selfHealClock + dt
+	-- LAN p13h113: raw frame time. dt (dtReal) is smoothed: a multi-second frozen frame barely moves it, so the
+	-- late-check rule below could not see the freeze.
+	selfHealClock = selfHealClock + (dtRaw or dt)
 	if selfHealClock >= SELFHEAL_INTERVAL then
 		local elapsed = selfHealClock
 		selfHealClock = 0
@@ -564,7 +566,7 @@ local function onPreRender(dt)
 				-- (a warning every second while its owner drives) is wrong. Forget its movement history so the
 				-- first check after it is activated again starts clean.
 				if veh and not veh:getActive() then
-					v._stallT, v._wdLastA, v._wdLastRx = 0, nil, nil
+					v._stallT, v._wdLastA, v._wdLastRx = nil, nil, nil
 					veh = nil
 				end
 				if veh then
@@ -612,8 +614,16 @@ local function onPreRender(dt)
 					-- fullsuv ghost sit out of sync until a manual reset). The rxMoved guard keeps it OFF the tank: a
 					-- tank prediction gap has rxMoved ~0, so it never qualifies -- only a ghost stuck while fresh
 					-- positions keep arriving does.
-					if SELFHEAL_ENABLED and distSq > SELFHEAL_DIST_SQ and moved < FROZEN_MOVE and rxMoved > FROZEN_MOVE then
-						v._stallT = (v._stallT or 0) + elapsed
+					-- LAN p13h113: a check more than two intervals late follows a GAME-WIDE freeze (a frozen frame, e.g. a
+					-- multi-second collision rebuild): every ghost then looks frozen against the packets that queued meanwhile,
+					-- which is not one ghost's stalled apply. Such a check restarts the observation, and the first qualifying
+					-- check only starts the timer, so a heal needs SELFHEAL_STALL_S of consecutive on-time checks. Before, the
+					-- late frame counted whole: one ~1.1 s frame right after a 30 s collision rebuild healed on a single
+					-- observation (a 14.7 km snap in the 2026-10-23 BeamNG.Earth lockup log).
+					if elapsed > 2 * SELFHEAL_INTERVAL then
+						v._stallT = nil
+					elseif SELFHEAL_ENABLED and distSq > SELFHEAL_DIST_SQ and moved < FROZEN_MOVE and rxMoved > FROZEN_MOVE then
+						v._stallT = v._stallT and (v._stallT + elapsed) or 0
 						if v._stallT >= SELFHEAL_STALL_S then -- healed only after a SUSTAINED stall (brief between-apply freezes are the predictor's job, not a snap)
 							local ok = pcall(function()
 								local refNodeID = veh:getRefNodeId()
@@ -628,11 +638,11 @@ local function onPreRender(dt)
 							log('W', 'posWatchdog', string.format(
 								"self-heal: ghost %s was %.0fm off its synced position for ~%.1fs -- forced a GE-direct resync%s",
 								tostring(sid), dist, v._stallT, ok and "" or " (FAILED)"))
-							v._stallT = 0
+							v._stallT = nil
 							wdHealCount = wdHealCount + 1 -- overlay: count corrections
 						end
 					else
-						v._stallT = 0
+						v._stallT = nil
 					end
 					if doDiag then
 						log('I', 'posWatchdog', string.format(
