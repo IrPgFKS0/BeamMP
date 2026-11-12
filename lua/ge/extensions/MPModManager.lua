@@ -112,6 +112,40 @@ local function checkAllMods() --add counters?
 	end
 end
 
+-- LAN p13h115 (option skipLoadedModsOnJoin, default on since p13h116; off = upstream's loop): this build keeps the served mods mounted between
+-- sessions, so at a join nearly every zip in /mods/multiplayer is already mounted, active and unchanged.
+-- Re-adding one makes the game read the zip, raise change events for all its files and rewrite mods/db.json
+-- (~0.3 s each, ~30 s for 100 mods), and re-adding BeamMP.zip itself or a mod with a Vue page reloads every
+-- mod's UI under the server browser (it loses its styles until the loading screen).
+-- True for a zip that needs no re-add: BeamMP itself, or a mod the game's DB has active at this path, still
+-- mounted, with the size and times it had when it was last added.
+local function lanAlreadyLoaded(file)
+	local modname = getModNameFromPath(file)
+	if isModWhitelisted(modname) then return FS:isMounted(file) end
+	local mod = core_modmanager.getModDB and core_modmanager.getModDB(modname)
+	if not mod or not mod.active or mod.fullpath ~= file or not FS:isMounted(file) then return false end
+	local was, now = mod.stat, FS:stat(file)
+	return was ~= nil and now ~= nil and was.filesize == now.filesize and was.modtime == now.modtime and was.createtime == now.createtime
+end
+
+-- LAN p13h115: the game records a zip's stat only when it creates the DB entry, so a zip updated under the same
+-- name (BeamMP.zip, beamng_earth.zip) would never match again. Called right before a re-add, whose own save
+-- of mods/db.json then carries the stat of the file being added.
+-- LAN p13h117: a zip replaced on disk while it is mounted (the launcher's sync of an updated server mod) stays
+-- mounted on the OLD archive, because the game mounts only what is not mounted: the new version's files are
+-- listed but cannot be opened (2026-11-12, beamng_earth.zip: "cannot open /scripts/.../modScript.lua", then
+-- ui/apps.lua:129 on its new app.json). Unmounted here, the re-add mounts the file that is on disk now.
+local function lanBeforeReAdd(file)
+	local mod = core_modmanager.getModDB and core_modmanager.getModDB(getModNameFromPath(file))
+	if not mod or mod.fullpath ~= file then return end
+	local was, now = mod.stat, FS:stat(file)
+	if was and now and FS:isMounted(file) and not (was.filesize == now.filesize and was.modtime == now.modtime and was.createtime == now.createtime) then
+		log('W', 'loadServerMods', "LAN: "..tostring(file).." changed on disk while mounted, mounting the new file")
+		FS:unmount(file)
+	end
+	mod.stat = now
+end
+
 --- Load the Servers mods, these are put in by the BeamMP Launcher
 local function loadServerMods()
 	log('W', 'loadServerMods', 'loadServerMods')
@@ -122,13 +156,25 @@ local function loadServerMods()
 		local amount = #modsDir
         local batchSize = 5
 		local core_modmanager_workOffChangedMod = core_modmanager.workOffChangedMod
+		local lanSkip = settings.getValue("skipLoadedModsOnJoin") and true or false -- LAN p13h115
+		local lanSkipped = 0
         for i = 1, amount, batchSize do
             for j = i, math.min(i + batchSize - 1, amount) do
-                core_modmanager_workOffChangedMod(modsDir[j], 'added')
+                if lanSkip and lanAlreadyLoaded(modsDir[j]) then -- LAN p13h115
+                    lanSkipped = lanSkipped + 1
+                else
+                    if lanSkip then lanBeforeReAdd(modsDir[j]) end
+                    -- LAN p13h117: a raise in the game's re-add (its file-change hooks run inside it) used to end
+                    -- this job, so the map was never requested and the join hung on every machine
+                    local ok, err = pcall(core_modmanager_workOffChangedMod, modsDir[j], 'added')
+                    if not ok then log('E', 'loadServerMods', "LAN: adding "..tostring(modsDir[j]).." raised, the join continues: "..tostring(err)) end
+                end
             end
             job.sleep(0)
         end
-        checkAllMods()
+		if lanSkip then log('M', 'loadServerMods', "LAN: "..lanSkipped.." of "..amount.." multiplayer zip(s) already loaded, "..(amount - lanSkipped).." re-added") end
+        local ok, err = pcall(checkAllMods) -- LAN p13h117: same reason, the map request below must always go out
+        if not ok then log('E', 'loadServerMods', "LAN: checkAllMods raised, the join continues: "..tostring(err)) end
         MPCoreNetwork.requestMap()
     end)
 end

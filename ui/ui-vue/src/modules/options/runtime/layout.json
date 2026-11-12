@@ -13876,6 +13876,31 @@
     },
     {
      "version": "LAN",
+     "label": "Faster join -- skip mods already loaded (LAN)",
+     "tooltip": "When you join, stock BeamMP re-adds every server mod, even the ones that are already loaded from your last session (about 0.3 s each: half a minute with 100 mods), and the server browser briefly loses its styling while it does. ON (default): mods that are already loaded and unchanged on disk are left alone; new or updated mods are still added as before. OFF: stock BeamMP behaviour, every mod is re-added at every join. Takes effect at the next join.",
+     "setting": "skipLoadedModsOnJoin",
+     "interactive": true,
+     "condition_always_off": false,
+     "condition_not_shipping": false,
+     "condition_simplemenu": "",
+     "condition_visible": "",
+     "condition_enabled": "",
+     "itemType": "checkbox",
+     "component": "OptionsCheckbox",
+     "separateLabel": true,
+     "lua": "",
+     "luaOff": "",
+     "valueOn": true,
+     "valueOff": false,
+     "search": [
+      "label",
+      "caption",
+      "tooltip",
+      "setting"
+     ]
+    },
+    {
+     "version": "LAN",
      "label": "LAN fork — diagnostics & debug",
      "tooltip": "",
      "interactive": false,

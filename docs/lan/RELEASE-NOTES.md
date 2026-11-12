@@ -1,12 +1,13 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.23.1-LAN p13h114` · combined host exe `p13h46` · **for BeamNG 0.40.4**
+**Build:** mod `4.23.1-LAN p13h117` · combined host exe `p13h46` · **for BeamNG 0.40.5** (and 0.40.4)
 
-p13h114 adds no mod code over p13h113: it is the build checked against BeamNG 0.40.4 and
-BeamNG.Earth 1.7.1. The 17-check smoke gate passed on this exact zip and host exe on BeamNG 0.40.4,
-and p13h113's code ran in two two-player BeamNG.Earth sessions on 0.40.3 (Earth 1.6.0, then 1.6.1);
-a two-player session on Earth 1.7.1 and 0.40.4 has not been run yet. The host exe is unchanged
-since p13h112 (p13h46; its banner still names BeamNG 0.40.3, which is only text).
+It adds a faster join that skips mods which are already loaded: an option, on by default (p13h115
+built it off by default, p13h116 turned it on); off is upstream's join. p13h117 fixes a join that
+hung on both machines after a served mod was updated. The 17-check smoke gate and a two-player
+session (Windows host, Linux client, the client joining twice) passed on this exact zip on BeamNG
+0.40.5. The host exe is unchanged since p13h112 (p13h46; its banner still
+names BeamNG 0.40.3, which is only text and changes with the next exe build).
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -50,6 +51,28 @@ a little tuning (see `LAN-TUNING.md`).
   cores so the relay/bridge keep up), and in-game **Save all logs (zip)** for support.
 
 ## This release
+
+**p13h117: a join can no longer hang on one mod (2026-11-12).** After BeamNG.Earth's zip was updated on
+the server, the launcher replaced the copy in `mods/multiplayer` while the game still had the old one
+mounted. The game then lists the new version's files but keeps reading the old archive (it mounts a
+zip only when it is not mounted): Earth's new HUD app could not be read, the game raised an error
+inside BeamMP's mod-loading job, the job ended, the map was never requested and the join hung on both
+machines. Upstream's loop has the same unprotected call. Now an error while adding one mod is logged
+and the join continues (with the option on or off), and with the faster join on, a zip that changed on
+disk while mounted is unmounted first so the game mounts the new file.
+
+**p13h115 / p13h116: faster join (option, on by default), BeamNG 0.40.5 (2026-11-12).** This build keeps the
+server's mods loaded between sessions, yet every join re-added every zip in `mods/multiplayer`
+(BeamMP's own join code, unchanged from upstream): for each one the game reads the zip, raises
+change events for all its files and rewrites its 3 MB mod database. With 100 mods that took 30 s,
+and re-adding `BeamMP.zip` itself (or any mod with a menu page, such as BeamNG.Earth's) made the
+game reload every mod's menu code under the server browser, which then showed without its styling
+until the loading screen. New option *Faster join -- skip mods already loaded (LAN)* (Options >
+BeamMP > LAN fork; a setting of each player's own game, not of the server), on by default: a zip that is already mounted, active and unchanged on disk is left
+alone; new, updated, switched-off or unmounted mods are added exactly as before. Off, the join is
+upstream's. Also: upstream #1004 (one Chinese translation line) merged. BeamNG 0.40.5 needed no
+change: none of the game files the mod overrides changed, the version gate reports compatible and
+the API self-check finds all 14.
 
 **p13h114: BeamNG 0.40.4 and BeamNG.Earth 1.7.1 (2026-10-29).** The game updated to 0.40.4: the
 fork's options page and conditions overrides match the 0.40.4 files (the layout check passes, the
@@ -127,6 +150,31 @@ uses, and the guard shows h108 already passed converted positions through correc
 
 ### Verification
 
+- p13h117 `D9DAC075…` (468 entries, verified against the source tree). Live probe in BeamNG 0.40.5 with
+  a throwaway mod: after its zip is replaced while mounted, a file new in that version is unreadable,
+  still unreadable after another re-add (upstream's loop), and readable after unmount + re-add.
+  `modload_guard.py` now has 16 checks (a re-add or checkAllMods that raises: logged, the other zips
+  still added, the map still requested; a zip changed while mounted is unmounted first); the code
+  before p13h115 fails 11. Smoke gate on the exact p13h117 zip: 17 of 17, with the remount taken for
+  real (`beamng_earth.zip changed on disk while mounted, mounting the new file`, 99 of 100 loaded).
+- Two-player session on the exact p13h117 zip (2026-11-12 12:57-13:04, Utah, BeamNG 0.40.5, Windows host
+  and Linux client, the client leaving and joining again): no fork error, no watchdog heal, no rejected
+  position; the host found 100 of 100 mods already loaded (map requested 0.3 s after mod loading began),
+  the client 99 of 100 (0.45 s). Not exercised in that session: the BeamNG.Earth map, and a server mod
+  updated during a real join (covered by the live probe and the guard). New guard
+  `tools/ge-guard/modload_guard.py`, 9 checks running the real MPModManager against a stub of the
+  game's mod database: option off re-adds every zip in order; on, it skips only zips that are active,
+  mounted and unchanged (and BeamMP.zip), still re-adds changed, inactive, unmounted, unknown and
+  moved ones, and records a re-added zip's file stat so the next join skips it. The released p13h114
+  fails 5 of the 9.
+- Smoke gate on BeamNG 0.40.5 (2026-11-12) with the p13h46 host. p13h115, 101 zips in
+  `mods/multiplayer`: option off 17 of 17, mod loading 30.0 s (101 re-added); option on 17 of 17, mod
+  loading 3.0 s (95 skipped; the 6 re-added had out-of-date records in the game's database). Exact
+  p13h116 zip, default settings: 17 of 17, 102 of 102 already loaded, 0.35 s. Not yet run: a
+  two-player session.
+- The smoke harness now polls again when the game does not answer within its 15 s request timeout
+  while the game is still running: one frame at the end of the Utah load with 100 mods outlasted it
+  and failed the first run (the session came up in that same second).
 - `tools/ge-guard/earth_guard.py`: 37 checks running the real Earth client code from the 1.7.1
   server package (30 with the 1.6.0 and 1.6.1 packages, whose damage contract differs) with the real
   fork modules: position seam, watchdog (W4 = the p13h113 case), BeamMP's own dents path, Earth 1.7's

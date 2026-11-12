@@ -217,6 +217,34 @@ compatible). The 17-check smoke gate then passed 17/17 on the same zip and the p
 Server.log `[BeamNG.Earth] plugin loaded (time real, weather real)`). A two-player session on Earth 1.7.1 is
 still to come.
 
+## BeamNG.Earth 1.7.2 to 1.9: checks and the 2026-10-30 two-player session
+
+**Earth 1.7.2-beta** (package sha256 `9502fa01…107c`, matches the release digest; copy in `dist/earth/`):
+`mpanchor.lua` now converts a remote POSITION through latitude / longitude
+(`ours:geodeticToWorld(theirs:worldToGeodetic(p))`; its comment: the rigid move alone landed a car h x D / R off
+the road, 3.9 m at 1650 m with anchors 15 km apart); velocity, angular velocity and rotation keep the rigid
+rotation. The fork passes Earth's value through unchanged; `earth_guard.py` S2 had the rigid formula built in
+and failed by 1.1 m, and now computes the expected position the way the Earth version under test does
+(37 checks pass on 1.7.2 and 1.7.1, 30 on 1.6.x; the cached-dispatch mutation and the released p13h112 still
+fail). **Earth 1.8.1-beta** (served from 2026-11-04) and the build served on 2026-11-12 (files dated 11-08):
+37 checks pass against the served zip; Earth's client-side use of BeamMP is unchanged since 1.7.2, and the
+plugin's new `MP.GetPlayers` / `MP.GetServerVersion` calls exist in the fork's server and are pcall-wrapped.
+
+**Two-player session 2026-10-30 (p13h114 + p13h46 both machines, BeamNG 0.40.4, Earth 1.7.2).** First session
+07:57-08:15 on Utah only: no fork error, no heal, no rejected position on either machine. It ended for the host
+at 08:15:10: the Earth app was started at 08:15:05 and reloaded the game's Lua (`Lua reloaded by the
+BeamNG.Earth app to mount the mod`), which ends a running session. Second session 08:17-08:24: Utah, then
+`map` to Earth at 08:21:31; clean again on both machines. Earth moved the client from its default spot
+(27.99, 86.93) to the host's area and the host put the client's car back on at ground height (`back on at 13, 0,
+z 1346.15 (our ground 1345.55)`). Host: no static-collision build of 1 s or more, one 3.9 s Earth `LuaPre` hitch.
+Linux client: two Earth `slow terrain commit`s of 13.6 s and 9.6 s (render time) right after arriving. Only a few
+minutes on Earth with the cars close together; dents are not visible in the logs (Earth 1.7 logs none). After
+the mid-session reload the host logged 98 `extension unavailable: "beamngEarthReloaded"` while rejoining
+(Earth's injected reload extension; harmless). On the Linux client the Options page had no BeamMP category
+while Earth's *Start BeamMP with BeamNG.Earth* was on; off plus a game restart brought it back (mechanism not
+found in the logs: only the fork's zip was mounted, no served mod overrides the options files, Earth's UI
+does not touch them).
+
 ## Known limits and observations (not fork defects)
 
 - **Rebase blink.** When either player's origin moves (every 15 km, or a teleport), Earth moves every vehicle
