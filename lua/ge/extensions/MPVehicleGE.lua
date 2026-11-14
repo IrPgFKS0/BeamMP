@@ -1190,6 +1190,12 @@ function Vehicle:delete()
 	end
 	if players[self.ownerID] and self.serverVehicleString then players[self.ownerID].vehicles.IDs[self.serverVehicleString] = nil players[self.ownerID].vehicles.objects[self.serverVehicleString] = nil end
 	if self.serverVehicleString then vehicles[self.serverVehicleString] = nil end
+	-- LAN p13h118: forget the game id with the record. The entry used to stay, and the server reuses a freed
+	-- vehicle number: an own vehicle that is inactive at its spawn acknowledgement is unregistered while its
+	-- game object lives on (onServerVehicleSpawned), so after the next own spawn got the same number its game
+	-- id resolved to that NEW vehicle -- isOwn / getServerVehicleID answered for the wrong car, and destroying
+	-- the old object sent 'Od' for the live one (2026-11-13: a pedestrian mod's parked bodies).
+	if self.gameVehicleID and vehiclesMap[self.gameVehicleID] == self.serverVehicleString then vehiclesMap[self.gameVehicleID] = nil end
 
 	players_vehicle_configs[self.serverVehicleString] = nil
 
