@@ -2,13 +2,14 @@
 
 **Build:** mod `4.23.1-LAN p13h119` · combined host exe `p13h46` · **for BeamNG 0.40.5** (and 0.40.4)
 
-p13h119 is a candidate on top of the published p13h117 (two fixes found while adapting third-party mods,
-p13h118 and p13h119 below; smoke gate passed, no two-player session yet). p13h117 adds a faster join that skips mods which are already loaded: an option, on by default (p13h115
-built it off by default, p13h116 turned it on); off is upstream's join. p13h117 fixes a join that
-hung on both machines after a served mod was updated. The 17-check smoke gate and a two-player
-session (Windows host, Linux client, the client joining twice) passed on this exact zip on BeamNG
-0.40.5. The host exe is unchanged since p13h112 (p13h46; its banner still
-names BeamNG 0.40.3, which is only text and changes with the next exe build).
+p13h119 is p13h117 plus two fixes found while adapting third-party mods (p13h118 and p13h119 below). The
+17-check smoke gate passed on this exact zip on BeamNG 0.40.5; no two-player session has been run on it
+yet (the last one ran on p13h117). p13h117 adds a faster join that skips mods which are already loaded: an
+option, on by default (p13h115 built it off by default, p13h116 turned it on); off is upstream's join.
+p13h117 also fixes a join that hung on both machines after a served mod was updated; the smoke gate and a
+two-player session (Windows host, Linux client, the client joining twice) passed on the p13h117 zip. The
+host exe is unchanged since p13h112 (p13h46; its banner still names BeamNG 0.40.3, which is only text and
+changes with the next exe build).
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
