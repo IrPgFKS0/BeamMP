@@ -1,8 +1,9 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.23.1-LAN p13h117` · combined host exe `p13h46` · **for BeamNG 0.40.5** (and 0.40.4)
+**Build:** mod `4.23.1-LAN p13h119` · combined host exe `p13h46` · **for BeamNG 0.40.5** (and 0.40.4)
 
-It adds a faster join that skips mods which are already loaded: an option, on by default (p13h115
+p13h119 is a candidate on top of the published p13h117 (two fixes found while adapting third-party mods,
+p13h118 and p13h119 below; smoke gate passed, no two-player session yet). p13h117 adds a faster join that skips mods which are already loaded: an option, on by default (p13h115
 built it off by default, p13h116 turned it on); off is upstream's join. p13h117 fixes a join that
 hung on both machines after a served mod was updated. The 17-check smoke gate and a two-player
 session (Windows host, Linux client, the client joining twice) passed on this exact zip on BeamNG
@@ -51,6 +52,22 @@ a little tuning (see `LAN-TUNING.md`).
   cores so the relay/bridge keep up), and in-game **Save all logs (zip)** for support.
 
 ## This release
+
+**p13h119: a mod's event handler is no longer kept twice (2026-11-13).** Mods receive server events through
+`AddEventHandler`, and a mod that registers again (each time its script loads, each session) is meant to
+replace its previous handler. When it was the only handler of that event, the old one was kept beside the
+new one, so every such event ran twice: a weather mod started two storms per request. With two or more
+handlers on an event the replacement already worked. Upstream has the same line; it is now unconditional,
+as in `RemoveEventHandler` (one line in `MPGameNetwork.lua`).
+
+**p13h118: a deleted vehicle record forgets its game id (2026-11-13).** BeamMP keeps a table from game
+object id to server vehicle id. Deleting a vehicle's record left its entry behind, and the server hands a
+freed vehicle number to the next spawn. One of your own vehicles that is inactive when the server
+acknowledges its spawn is unregistered while its game object lives on (upstream's rule; mods that park
+helper vehicles hit it, e.g. pedestrian bodies). After your next spawn got the same number, the old
+object's id resolved to the NEW vehicle: `isOwn` and `getServerVehicleID` answered for the wrong car, and
+deleting the old object removed the new, live vehicle from the session. Upstream has the same gap. The
+entry is now removed together with the record (one hunk in `Vehicle:delete`).
 
 **p13h117: a join can no longer hang on one mod (2026-11-12).** After BeamNG.Earth's zip was updated on
 the server, the launcher replaced the copy in `mods/multiplayer` while the game still had the old one
@@ -150,6 +167,17 @@ uses, and the guard shows h108 already passed converted positions through correc
 
 ### Verification
 
+- p13h119 `D9A44DAB…` (468 entries, verified against the source tree). New guard
+  `tools/ge-guard/event_guard.py`, 13 checks on the real MPGameNetwork: a sole handler registered again
+  (by name, and by file as mods do) leaves one entry and one delivery of the new function, also through a
+  server `E` packet; removing it leaves nothing; with several sources each keeps one; the released
+  p13h117 fails 8. Every other guard passes; smoke gate 17 of 17 on the exact zip (BeamNG 0.40.5). Not yet
+  run: a two-player session, the weather mod itself.
+- p13h118 `3EA7FDF4…` (468 entries, verified against the source tree). New guard
+  `tools/ge-guard/idmap_guard.py`, 15 checks on the real MPVehicleGE: the case above end to end (the old
+  id is unknown, no `Od` for the live vehicle, it stays registered), a normal local delete, a server
+  removal and id reuse; the released p13h117 fails 6. Every other guard passes; smoke gate 17 of 17 on the
+  exact zip (BeamNG 0.40.5). Superseded by p13h119, which contains it.
 - p13h117 `D9DAC075…` (468 entries, verified against the source tree). Live probe in BeamNG 0.40.5 with
   a throwaway mod: after its zip is replaced while mounted, a file new in that version is unreadable,
   still unreadable after another re-add (upstream's loop), and readable after unmount + re-add.

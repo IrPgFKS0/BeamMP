@@ -360,9 +360,10 @@ function AddEventHandler(event_name, func, name)
 			patch = true
 			local max = #calls
 			calls[index] = calls[max]
-			if max > 1 then
-				calls[max] = nil
-			end
+			-- LAN p13h119: unconditional, as RemoveEventHandler does. This was `if max > 1 then ... end`, so the
+			-- ONLY handler of an event was never dropped when its source registered again: the old one stayed
+			-- beside the new one and every event was delivered twice (2026-11-13: a weather mod, two storms per request).
+			calls[max] = nil
 			break
 		end
 	end
