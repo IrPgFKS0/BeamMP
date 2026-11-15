@@ -701,15 +701,20 @@ Both are native C++, so the Lua profilers above don't apply:
   because it syncs almost nothing (just a transform); BeamMP syncs **seven** VE modules, so a freeze
   would have to guard every GE→VE apply path — large, error-prone, and untestable here. Not worth it;
   removed. The per-car soft-body sim cost stays inherent — the levers are **car count + FPS**.
-- **`optimizeMapMarkers`** (LAN, **default-on**, ported from Olrosse/BeamMP
-  `minimap_lag_workaround`): BeamNG runs `gameplay_markerInteraction.onPreRender` **every
-  frame** (mission/POI marker raycasts) — a documented FPS sink in MP that's useless for LAN
-  driving (you can't start singleplayer missions in a session anyway). On MP join,
-  [multiplayer.lua](../../lua/ge/extensions/beammp/multiplayer.lua) swaps that hook for
-  `nop` and hides the mission markers; `onServerLeave` restores both. Every engine call is
-  guarded (`if gameplay_markerInteraction then`), so it no-ops safely if a BeamNG API change
-  renames it. Applied once at join — to A/B it, toggle and rejoin. Toggle off ("Optimize map
-  markers") only if you specifically want vanilla freeroam markers in MP.
+- **`optimizeMapMarkers`** (LAN, **default-on**, option *Map markers off in sessions -- performance*;
+  ported from Olrosse/BeamMP `minimap_lag_workaround`): BeamNG runs
+  `gameplay_markerInteraction.onPreRender` **every frame** (gas station, mission and POI markers) — a
+  documented FPS sink in MP. **On:** [multiplayer.lua](../../lua/ge/extensions/beammp/multiplayer.lua) swaps that
+  hook for `nop` and hides the markers. **Off (p13h120):** the game's markers work as in Freeroam — gas
+  stations with their refuel prompt, the points on the big map. For that the stock hook alone is not
+  enough: the game keeps markers only in the game states listed in
+  `gameplay_playmodeMarkers.validPlaymodeMarkersStates` (freeroam, career) and clears them every frame
+  in any other, and a session runs in the state `multiplayer`, so the mod adds that state to the list
+  for the session. Which kinds of marker show is then the game's own Gameplay options (gas stations in
+  Freeroam, mission markers); starting a single-player mission during a session is not supported, so
+  keep the game's mission markers off if you only want gas stations. Applies at once (no rejoin), a
+  setting of each player's own game, and everything is undone when you leave. Every engine call is
+  guarded, so it no-ops safely if a BeamNG API change renames one.
 - **Electrics sync is already optimized** (checked against Olrosse `electrics_cleanup`): our
   [MPElectricsVE.lua](../../lua/vehicle/extensions/BeamMP/MPElectricsVE.lua) already rounds every
   numeric electric (`round2(val, 4)`), sends **only changed** values (diff), and excludes

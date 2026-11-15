@@ -15,6 +15,8 @@ local M = {state={}}
 local originalGetDriverData
 local original_onInstabilityDetected
 local original_markerInteraction_onPreRender
+local addedMarkerState -- LAN p13h120: this module put 'multiplayer' into the game's list of game states that have map markers
+local mapMarkersApplied -- LAN p13h120: the optimizeMapMarkers value applied in this session (nil = not in a session)
 
 
 --- Custom GetDriverData for allowing the getting of the right hand door or not for passenger aspects.
@@ -83,11 +85,91 @@ local function hideAllMissionMarkers()
 end
 
 
+--- LAN p13h120: one switch for BeamNG's own map markers in a session (setting optimizeMapMarkers).
+--- ON (default): no markers. gameplay_markerInteraction.onPreRender becomes a no-op (ported from Olrosse/BeamMP
+--- minimap_lag_workaround: its per-frame marker work is an FPS sink) and the markers are hidden.
+--- OFF: markers as in Freeroam -- gas stations with their refuel prompt, the points on the big map. Leaving the
+--- stock onPreRender in place is not enough for that: the game keeps markers only in the game states listed in
+--- gameplay_playmodeMarkers.validPlaymodeMarkersStates (freeroam and career; playmodeMarkers.lua: "this can be
+--- adjusted to allow other states") and clears them every frame in any other, and a session runs in the state
+--- 'multiplayer'. So that state is added to the list for the session.
+--- Called at post-join and when the setting changes during a session; restoreMapMarkers undoes both at leave.
+--- Every engine call is guarded so a BeamNG API change can't break the mod.
+local function applyMapMarkerMode()
+	if not gameplay_markerInteraction then return end
+	local optimize = settings.getValue("optimizeMapMarkers") ~= false
+	local changedLive = mapMarkersApplied ~= nil and mapMarkersApplied ~= optimize
+	local states = gameplay_playmodeMarkers and gameplay_playmodeMarkers.validPlaymodeMarkersStates
+	if optimize then
+		if addedMarkerState and type(states) == 'table' then states.multiplayer = nil end
+		addedMarkerState = nil
+		-- Seamless map switches repeat post-join without unloading this extension.
+		if gameplay_markerInteraction.onPreRender ~= nop then
+			original_markerInteraction_onPreRender = gameplay_markerInteraction.onPreRender
+		end
+		gameplay_markerInteraction.onPreRender = nop
+		if gameplay_markerInteraction.setMarkersVisibleTemporary then
+			gameplay_markerInteraction.setMarkersVisibleTemporary(false)
+		end
+		hideAllMissionMarkers()
+		if changedLive then
+			-- switched on while markers were live: drop them and an open refuel/mission prompt, as the game
+			-- does itself in a state without markers
+			if gameplay_markerInteraction.closeViewDetailPrompt then gameplay_markerInteraction.closeViewDetailPrompt(true) end
+			if gameplay_playmodeMarkers and gameplay_playmodeMarkers.clear then gameplay_playmodeMarkers.clear() end
+		end
+	else
+		if original_markerInteraction_onPreRender then
+			gameplay_markerInteraction.onPreRender = original_markerInteraction_onPreRender
+			original_markerInteraction_onPreRender = nil
+		end
+		if gameplay_markerInteraction.setMarkersVisibleTemporary then
+			gameplay_markerInteraction.setMarkersVisibleTemporary(true)
+		end
+		if type(states) == 'table' and not states.multiplayer then
+			states.multiplayer = true
+			addedMarkerState = true
+		end
+		if changedLive and gameplay_markerInteraction.setForceReevaluateOpenPrompt then
+			gameplay_markerInteraction.setForceReevaluateOpenPrompt() -- already parked at a pump: offer the prompt
+		end
+	end
+	if changedLive and freeroam_bigMapPoiProvider and freeroam_bigMapPoiProvider.forceSend then
+		freeroam_bigMapPoiProvider.forceSend() -- the big map's point list follows the same game-state list
+	end
+	mapMarkersApplied = optimize
+end
+
+
+--- Undoes applyMapMarkerMode when the session ends.
+local function restoreMapMarkers()
+	-- restore BeamNG's per-frame marker processing if we disabled it on join
+	if original_markerInteraction_onPreRender and gameplay_markerInteraction then
+		gameplay_markerInteraction.onPreRender = original_markerInteraction_onPreRender
+		if gameplay_markerInteraction.setMarkersVisibleTemporary then
+			gameplay_markerInteraction.setMarkersVisibleTemporary(true)
+		end
+		original_markerInteraction_onPreRender = nil
+	end
+	local states = gameplay_playmodeMarkers and gameplay_playmodeMarkers.validPlaymodeMarkersStates
+	if addedMarkerState and type(states) == 'table' then states.multiplayer = nil end
+	addedMarkerState = nil
+	mapMarkersApplied = nil
+end
+
+
+--- The option applies at once: no rejoin needed (p13h120).
+local function onSettingsChanged()
+	if mapMarkersApplied == nil then return end -- not in a session
+	if (settings.getValue("optimizeMapMarkers") ~= false) ~= mapMarkersApplied then applyMapMarkerMode() end
+end
+
+
 --- Called when the Big Map is loaded by the user.
 local function onBigMapActivated() -- don't pause the game when opening the Big Map
 	if MPCoreNetwork and MPCoreNetwork.isMPSession() then
 		simTimeAuthority.pause(false)
-		hideAllMissionMarkers()
+		if mapMarkersApplied ~= false then hideAllMissionMarkers() end -- LAN p13h120: not when the markers are wanted
 	end
 end
 
@@ -95,7 +177,7 @@ end
 --- Called when the Big Map is closed -- re-hide the markers the map re-shows.
 local function onDeactivateBigMapCallback()
 	if MPCoreNetwork and MPCoreNetwork.isMPSession() then
-		hideAllMissionMarkers()
+		if mapMarkersApplied ~= false then hideAllMissionMarkers() end -- LAN p13h120
 	end
 end
 
@@ -140,22 +222,9 @@ local function runPostJoin()
 		onInstabilityDetected = modified_onInstabilityDetected
 	end
 
-	-- Minimap/marker perf (ported from Olrosse/BeamMP minimap_lag_workaround): BeamNG
-	-- runs gameplay_markerInteraction.onPreRender EVERY frame (mission/POI marker
-	-- raycasts), a known FPS sink in MP and useless for LAN driving. Swap it for a
-	-- no-op and hide the markers; restored in onServerLeave. Toggle-gated (default on)
-	-- so the win can be A/B'd, and fully guarded against a BeamNG API change.
-	if settings.getValue("optimizeMapMarkers") ~= false and gameplay_markerInteraction then
-		-- Seamless map switches repeat post-join without unloading this extension.
-		if gameplay_markerInteraction.onPreRender ~= nop then
-			original_markerInteraction_onPreRender = gameplay_markerInteraction.onPreRender
-		end
-		gameplay_markerInteraction.onPreRender = nop
-		if gameplay_markerInteraction.setMarkersVisibleTemporary then
-			gameplay_markerInteraction.setMarkersVisibleTemporary(false)
-		end
-		hideAllMissionMarkers()
-	end
+	-- Map markers (gas stations, mission and POI markers): off for performance by default, or as
+	-- in Freeroam -- setting optimizeMapMarkers, see applyMapMarkerMode. Undone in onServerLeave.
+	applyMapMarkerMode()
 end
 
 
@@ -163,14 +232,7 @@ end
 local function onServerLeave()
 	if original_onInstabilityDetected then onInstabilityDetected = original_onInstabilityDetected end
 	if originalGetDriverData then core_camera.getDriverData = originalGetDriverData end
-	-- restore BeamNG's per-frame marker processing if we disabled it on join
-	if original_markerInteraction_onPreRender and gameplay_markerInteraction then
-		gameplay_markerInteraction.onPreRender = original_markerInteraction_onPreRender
-		if gameplay_markerInteraction.setMarkersVisibleTemporary then
-			gameplay_markerInteraction.setMarkersVisibleTemporary(true)
-		end
-		original_markerInteraction_onPreRender = nil
-	end
+	restoreMapMarkers()
 end
 
 
@@ -238,6 +300,7 @@ M.onInstabilityDetected = onInstabilityDetectedHook
 M.onVehicleActiveChanged = onVehicleActiveChanged
 M.onBeamMPPostJoin = runPostJoin
 M.onBeamMPServerLeave = onServerLeave
+M.onSettingsChanged = onSettingsChanged -- LAN p13h120: optimizeMapMarkers applies live
 M.onInit = function() setExtensionUnloadMode(M, "manual") end
 
 return M

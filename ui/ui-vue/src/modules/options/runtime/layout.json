@@ -13826,8 +13826,8 @@
     },
     {
      "version": "LAN",
-     "label": "Optimize map markers (LAN)",
-     "tooltip": "Disables BeamNG's per-frame mission/POI marker processing while in a multiplayer session -- a known FPS sink that's useless for LAN driving (you can't start singleplayer missions in MP anyway). Restored automatically when you leave. Applied on join, so toggle it then rejoin to compare. Leave on unless you specifically want vanilla freeroam markers. Default: on.",
+     "label": "Map markers off in sessions -- performance (LAN)",
+     "tooltip": "ON (default): BeamNG's own map markers are switched off while you are in a multiplayer session -- gas stations, mission and other points of interest -- which saves the work the game does for them every frame. OFF: they work as in single-player Freeroam: gas stations with their refuel prompt, and the points on the big map. Which kinds show is then up to the game's own Gameplay options (gas stations in Freeroam, mission markers). Starting a single-player mission during a session is not supported, so keep the game's mission markers off if you only want gas stations. A setting of each player's own game; applies at once.",
      "setting": "optimizeMapMarkers",
      "interactive": true,
      "condition_always_off": false,

@@ -1,10 +1,11 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.23.1-LAN p13h119` · combined host exe `p13h46` · **for BeamNG 0.40.5** (and 0.40.4)
+**Build:** mod `4.23.1-LAN p13h120` · combined host exe `p13h46` · **for BeamNG 0.40.5** (and 0.40.4)
 
-p13h119 is p13h117 plus two fixes found while adapting third-party mods (p13h118 and p13h119 below). The
-17-check smoke gate passed on this exact zip on BeamNG 0.40.5; no two-player session has been run on it
-yet (the last one ran on p13h117). p13h117 adds a faster join that skips mods which are already loaded: an
+p13h120 is p13h119 plus one change: the map-marker option now switches gas stations and the other map
+markers both ways (below). The 17-check smoke gate and a check at a gas station in a real session passed on
+this exact zip on BeamNG 0.40.5; no two-player session has been run on it (the last one ran on p13h117).
+p13h119 is p13h117 plus two fixes found while adapting third-party mods (p13h118 and p13h119 below). p13h117 adds a faster join that skips mods which are already loaded: an
 option, on by default (p13h115 built it off by default, p13h116 turned it on); off is upstream's join.
 p13h117 also fixes a join that hung on both machines after a served mod was updated; the smoke gate and a
 two-player session (Windows host, Linux client, the client joining twice) passed on the p13h117 zip. The
@@ -53,6 +54,20 @@ a little tuning (see `LAN-TUNING.md`).
   cores so the relay/bridge keep up), and in-game **Save all logs (zip)** for support.
 
 ## This release
+
+**p13h120: gas stations and map markers in a session are an option that works (2026-11-14).** In a
+session there were no gas stations, no refuel prompt and no points on the big map, on any map. Two things
+caused it: the fork's performance option *Optimize map markers* (on by default) replaces the game's marker
+update with a no-op, and the game itself keeps these markers only in the Freeroam and Career game states
+and clears them every frame in any other (a session runs in the state `multiplayer`). So switching the
+option off changed nothing. The option is now *Map markers off in sessions -- performance* (Options >
+BeamMP > LAN fork) and works both ways: **on** (default) is as before, no markers and none of their
+per-frame work; **off** brings the game's markers back as in Freeroam, by also adding the session's game
+state to the game's own list of states with markers (`gameplay_playmodeMarkers.validPlaymodeMarkersStates`,
+which the game provides for this). It applies at once, without a rejoin, is a setting of each player's own
+game, and is undone when you leave. Which kinds of marker show is the game's own Gameplay options; starting
+a single-player mission during a session is not supported, so keep the game's mission markers off if you
+only want gas stations.
 
 **p13h119: a mod's event handler is no longer kept twice (2026-11-13).** Mods receive server events through
 `AddEventHandler`, and a mod that registers again (each time its script loads, each session) is meant to
@@ -168,6 +183,18 @@ uses, and the guard shows h108 already passed converted positions through correc
 
 ### Verification
 
+- p13h120 `783F3EA8…` (468 entries, verified against the source tree). New guard
+  `tools/ge-guard/markers_guard.py`, 22 checks running the real `beammp/multiplayer.lua` against a stub of
+  the game's two marker modules (modelled on BeamNG 0.40.5): on = no-op and no marker state; off = the
+  game's marker code runs in the `multiplayer` state; switching either way during a session; leaving
+  restores the stock update and the stock state list; an unrelated settings change or a change outside a
+  session touches nothing; a game without these modules raises no error. The released p13h119 fails 8.
+  Every other guard passes; smoke gate 17 of 17 on the exact zip (BeamNG 0.40.5). Live check in a session
+  on Utah (2026-11-14, one player): joined with the option on, no marker state and no prompt; switched off
+  without a rejoin, both Utah gas stations are in the marker list and the prompt "Gas Station / Canyon
+  Fuel / Refuel Vehicle" opens at the pump; Refuel answers "Your vehicle has been completely refuelled";
+  switched on, the prompt closes; off again, it is back; after leaving, the game's state list and marker
+  update are stock again. No error in the game log. Not run: a two-player session.
 - p13h119 `D9A44DAB…` (468 entries, verified against the source tree). New guard
   `tools/ge-guard/event_guard.py`, 13 checks on the real MPGameNetwork: a sole handler registered again
   (by name, and by file as mods do) leaves one entry and one delivery of the new function, also through a
