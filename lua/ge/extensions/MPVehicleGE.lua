@@ -41,6 +41,8 @@ local nextSpawnIsRemote = false
 local spawningRemote = false -- LAN p13h122 (upstream #997): true only while spawn.spawnVehicle runs for a remote vehicle; its onVehicleSpawned hooks may run before it is in vehiclesMap
 local queueToApply = {} -- LAN p13h122 (upstream #997): serverVehicleIDs whose queued spawn/edit is applied one per frame, so a full server's join is not one long freeze
 local queuedForApply = {} -- LAN p13h122: the same IDs as a set, so an ID is never listed twice
+local localOnlyDepth = 0 -- LAN p13h124: > 0 while a mod's runLocalOnly(fn) runs
+local localOnlyIDs = {} -- LAN p13h124: game ids of vehicles spawned inside runLocalOnly: never synced
 local editSyncTimer = 0
 local localCounter = 0
 local vehiclesToSync = {}
@@ -1760,12 +1762,39 @@ end
 -- local events
 
 --============================ ON VEHICLE SPAWNED (CLIENT) ============================
+-- LAN p13h124: public API for client mods. Vehicles spawned while fn runs stay on this PC: they are never sent to
+-- the server, and neither are their later edits or their removal. For things every PC makes on its own from shared
+-- state (a weather mod's debris, a pedestrian mod's bodies), which BeamMP otherwise sends like any car -- and then
+-- drops again when such a piece is inactive at the server's acknowledgement, a round trip that also built them on
+-- every other PC. Scoped and counted, so nothing can stay switched on: an error in fn is re-raised after the count
+-- is restored, and a spawn that never fires the game's hook leaves nothing behind (unlike nextSpawnIsRemote).
+--   MPVehicleGE.runLocalOnly(function() core_vehicles.spawnNewVehicle(...) end)
+--   MPVehicleGE.isLocalOnly(gameVehicleID) -> true for such a vehicle
+local function runLocalOnly(fn, ...)
+	if type(fn) ~= "function" then error("MPVehicleGE.runLocalOnly needs a function", 2) end
+	localOnlyDepth = localOnlyDepth + 1
+	local res = { xpcall(fn, debug.traceback, ...) }
+	localOnlyDepth = localOnlyDepth - 1
+	if not res[1] then error(res[2], 0) end
+	return unpack(res, 2, table.maxn(res))
+end
+
+local function isLocalOnly(gameVehicleID)
+	return localOnlyIDs[gameVehicleID] == true
+end
+
 local function onVehicleSpawned(gameVehicleID)
 
 	if not MPCoreNetwork.isMPSession() then return end -- do nothing if singleplayer
 
 	local veh = be:getObjectByID(gameVehicleID)
 	if not veh then return end -- spawn/despawn race: the object can be gone by the time this engine hook fires
+	-- LAN p13h124: a vehicle a mod spawned inside runLocalOnly stays on this PC (spawn and every later edit). A remote
+	-- spawn is never local-only, even if one were applied while a mod's function runs.
+	if localOnlyDepth > 0 and not nextSpawnIsRemote and not spawningRemote and not getVehicleByGameID(gameVehicleID) then
+		localOnlyIDs[gameVehicleID] = true
+	end
+	if localOnlyIDs[gameVehicleID] then return end
 	local newJbeamName = veh:getJBeamFilename()
 
 	local vehicle = getVehicleByGameID(gameVehicleID)
@@ -1867,6 +1896,7 @@ end
 
 local function onVehicleDestroyed(gameVehicleID)
 	missingServerIDLogged[gameVehicleID] = nil
+	if localOnlyIDs[gameVehicleID] then localOnlyIDs[gameVehicleID] = nil return end -- LAN p13h124: never on the server
 	if MPGameNetwork.launcherConnected() then
 		local vehicle = getVehicleByGameID(gameVehicleID)
 
@@ -2491,6 +2521,7 @@ local pendingMapRespawnTimer = 0
 -- entry is gone, so it won't double-handle or emit stray delete packets.
 local function clearVehiclesForMapChange()
 	missingServerIDLogged = {}
+	localOnlyIDs = {} -- LAN p13h124: the old level's objects are gone
 	clearQueueApply() -- LAN p13h122
 	for serverVehicleID, vehicle in pairs(vehicles) do
 		vehicle:delete()
@@ -3562,6 +3593,8 @@ M.getVehicleByServerID     = getVehicleByServerID     -- takes: string serverVeh
 M.getPlayerByName          = getPlayerByName          -- takes: string name, returns Player
 M.isOwn                    = isOwn                    -- takes: number vehID  returns: bool
 M.isRemote                 = isRemote                 -- takes: number gameVehicleID  returns: bool (LAN p13h122, upstream #997)
+M.runLocalOnly             = runLocalOnly             -- takes: function fn, ...  returns: fn's results; vehicles spawned inside stay on this PC (LAN p13h124)
+M.isLocalOnly              = isLocalOnly              -- takes: number gameVehicleID  returns: bool (LAN p13h124)
 M.getOwnMap                = getOwnMap                -- takes: -      returns: { 'vehid' : true, '23456' : true }
 M.setOwn                   = setOwn                   -- takes: number vehID, bool own
 M.getDistanceMap           = getDistanceMap           -- takes: -      returns: { vehid : distanceinmeters, 123: 56 }
