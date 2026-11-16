@@ -63,7 +63,7 @@ docker run --rm "${PLATFORM_ARG[@]}" -v "$HERE":/work -w /work "$IMAGE" bash -ux
   cmake . -B bin-linux \
     -DCMAKE_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake \
     -DCMAKE_BUILD_TYPE=Release -DBeamMP-Server_ENABLE_LTO=OFF \
-  && cmake --build bin-linux --parallel -t BeamMP-Server \
+  && cmake --build bin-linux --parallel "$(nproc)" -t BeamMP-Server \
   && cp bin-linux/BeamMP-Server /work/dist/linux/BeamMP-Server \
   && echo "SERVER_BUILD_OK" || echo "SERVER_BUILD_FAILED"
 
@@ -82,7 +82,7 @@ docker run --rm "${PLATFORM_ARG[@]}" -v "$HERE":/work -w /work "$IMAGE" bash -ux
   cmake . -B bin-linux \
     -DCMAKE_TOOLCHAIN_FILE=/work/BeamMP-Server/vcpkg/scripts/buildsystems/vcpkg.cmake \
     -DCMAKE_BUILD_TYPE=Release \
-  && cmake --build bin-linux --parallel \
+  && cmake --build bin-linux --parallel "$(nproc)" \
   && cp bin-linux/BeamMP-Launcher /work/dist/linux/BeamMP-Launcher \
   && echo "LAUNCHER_BUILD_OK" || echo "LAUNCHER_BUILD_FAILED"
   set -e

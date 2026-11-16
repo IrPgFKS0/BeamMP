@@ -24,7 +24,7 @@ cmake . -B bin -G Ninja -DCMAKE_BUILD_TYPE=Release -DBeamMP-Server_ENABLE_LTO=ON
   -DVCPKG_TARGET_TRIPLET=x64-windows-static ^
   -DVCPKG_APPLOCAL_DEPS=OFF || goto :build_fail
 echo === BUILD ===
-cmake --build bin --parallel -t BeamMP-Server --config Release || goto :build_fail
+cmake --build bin --parallel %NUMBER_OF_PROCESSORS% -t BeamMP-Server --config Release || goto :build_fail
 echo.
 echo === SERVER BUILD OK  -^>  BeamMP-Server\bin\BeamMP-Server.exe ===
 exit /b 0

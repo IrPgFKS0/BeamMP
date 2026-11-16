@@ -29,7 +29,7 @@ REM APPLOCAL_DEPS=OFF: the static triplet ships no DLLs, and the post-link
 REM applocal.ps1 step dies on the nonexistent vcpkg_installed\...\bin dir
 REM ("The system cannot find the path specified"), failing an otherwise-good link.
 echo === BUILD ===
-cmake --build build --parallel --config Release || goto :build_fail
+cmake --build build --parallel %NUMBER_OF_PROCESSORS% --config Release || goto :build_fail
 echo.
 echo === LAUNCHER/COMBINED BUILD OK  -^>  BeamMP-Launcher\build\BeamMP-Launcher.exe ===
 echo     (rename to BeamMP-Combined.exe and run with --combined)

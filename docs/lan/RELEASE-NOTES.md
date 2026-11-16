@@ -1,8 +1,10 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.23.1-LAN p13h123` · combined host exe `p13h47` · **for BeamNG 0.40.5** (and 0.40.4)
+**Build:** mod `4.23.1-LAN p13h124` · combined host exe `p13h48` · **for BeamNG 0.40.5** (and 0.40.4)
 
-p13h123 is the release after p13h120: four fixes from open upstream pull requests in the mod AND the exe
+p13h124 + exe p13h48 is the release after p13h123 (below): a way for client mods to keep vehicles on one PC, and
+three exe fixes, so it needs BOTH the new `BeamMP.zip` and the new exe (p13h48) on every machine. The smoke gate and a
+two-player session (Windows host, Linux client, both on this zip and exe) passed on BeamNG 0.40.5. p13h123 was the release after p13h120: four fixes from open upstream pull requests in the mod AND the exe
 (p13h121: whole packets from the game, faster mod downloads from a Windows host, shorter mod sync, the mod list
 from memory), other players' vehicles spawning one per frame plus seatless cars and the BeamMP page surviving a
 UI-mod reload (p13h122), and three fixes from an independent review of that (p13h123). It needs BOTH the new
@@ -58,6 +60,31 @@ a little tuning (see `LAN-TUNING.md`).
   cores so the relay/bridge keep up), and in-game **Save all logs (zip)** for support.
 
 ## This release
+
+**p13h124 + exe p13h48 (2026-11-16).**
+
+- **Client mods can keep vehicles on one PC** (mod p13h124). BeamMP sends every vehicle a mod spawns to the server.
+  A weather mod's debris or a pedestrian mod's bodies are made by every PC for itself, so this only cost a round
+  trip: in a 3-minute session the weather mod's debris planks were sent and dropped again 18 times, and the other PC
+  built 10 of them. A mod now wraps such spawns in `MPVehicleGE.runLocalOnly(function() ... end)`: those vehicles,
+  their later edits and their removal are never sent; `MPVehicleGE.isLocalOnly(id)` tells them apart. The scope is
+  counted and restored even when the mod's function errors, so it cannot stay switched on (the private
+  `nextSpawnIsRemote` flag a mod could otherwise poke stays set when a spawn fails early, and the player's NEXT car
+  is then never sent). An own car edited inside the call still syncs. The mod has to call it; nothing changes for
+  mods that don't.
+- **The crash warning counts only new crash reports** (exe). The launcher warned "BeamNG CRASHED during your last
+  session" whenever anything in `temp/crashReports` was newer than its last start, and the game writes into that
+  folder on its own, so the Linux client warned at every start after clean sessions. It now remembers the entries'
+  names and warns only for a new one, naming it.
+- **A combined host started outside its folder uses its own folder** (exe). Started from a shortcut with another
+  "Start in" or a terminal elsewhere, the embedded server wrote a fresh default ServerConfig.toml there and served no
+  mods. If the working folder has no ServerConfig.toml and the exe's folder does, the host now switches to the exe's
+  folder and says so in Launcher.log; otherwise nothing changes.
+- **A clashing name from another machine is refused** (exe, server). With no accounts the name is the identity, and
+  a newcomer with a name already in use kicked the player who was in. Now a newcomer from a different address is
+  refused with a message to pick another name; from the same address (a game that crashed and reconnects) it still
+  replaces the old connection, as before.
+- Build scripts pass the core count explicitly (all cores on Windows and in Docker).
 
 **p13h123: p13h122 after an independent review (2026-11-16).** A remote car whose spawn raised an error inside the
 new per-frame step would have cost that frame's other pre-render hooks and could leave an edit stuck in the queue
@@ -243,6 +270,19 @@ uses, and the guard shows h108 already passed converted positions through correc
 
 ### Verification
 
+- p13h124 + exe p13h48: `remote_spawn_guard.py` 38 checks (+Q13 runLocalOnly: nothing sent for the spawn, its later
+  edit or its removal; results returned; an error re-raised with nothing left switched on; an own car edited inside
+  still syncs). All 14 guards pass. Smoke gate 17 of 17 twice on zip `C1C560AA…` (the second on the final exe
+  `273FE668…`), with the updated gate: it left another agent's running game alone and put settings.json back byte
+  for byte. Live check of the exe: started from an empty folder, the host switched to its own folder (Launcher.log
+  says so), the server loaded its 91 mods, nothing was written to the other folder; a fake new entry in
+  temp/crashReports was named in the warning and an existing `Logs` entry was not. Two-player session 2026-11-16
+  11:55-11:59 (Utah, Windows host and Linux client, both on zip `C1C560AA…` and exe p13h48): no fork error on either
+  machine, no rejected position, no watchdog correction; both found 92 of 92 mods already loaded; each side's car
+  spawned on the other; the Linux client's p13h48 launcher started without the false crash warning (its first start
+  on the new marker, which never warns, so its next starts are the real check). Not tested live: the same-name rule
+  (needs a second machine using a name already in the session); runLocalOnly in a real mod (the weather mod adopts it
+  in its MP7).
 - p13h123: `remote_spawn_guard.py` now 32 checks (+Q12, and Q7 now expects the logged error); each new check fails
   with its fix reverted. The rest as p13h122 below.
   Smoke gate 17 of 17 on zip `3EBE9EA8…` + exe `2D7CF804…`. Two-player session 2026-11-16 10:47-10:50 (Utah, Windows
