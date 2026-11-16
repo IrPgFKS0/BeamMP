@@ -77,7 +77,14 @@ function loadLanPlayerName() {
   }
 }
 
-const state = {
+// LAN p13h122: upstream BeamMP#1022 (open). The game re-evaluates this file whenever it reloads the UI mods (every
+// time a file under /ui/ui-vue/mods/ changes, e.g. when a server mod with a Vue UI is mounted while joining). The
+// state and the event listeners are kept on globalThis so that a fresh copy carries on with the same connection,
+// download progress and server list instead of starting empty while the previous copy's listeners keep updating a
+// state nothing displays any more. (LAN: a key a newer copy of this file adds is filled into the kept state.)
+const shared = globalThis.__beammpUiShared || (globalThis.__beammpUiShared = { state: null, listenersReady: false })
+
+const freshState = {
   isReady: ref(false),
   tosAccepted: ref(localStorage.getItem("tosAccepted") === "true"),
   launcherConnected: ref(false),
@@ -110,6 +117,14 @@ const state = {
   // fast-path always returned "" until the launcher-name seed arrived).
   lanPlayerName: ref(loadLanPlayerName()),
 }
+if (shared.state) {
+  for (const key of Object.keys(freshState)) {
+    if (!(key in shared.state)) shared.state[key] = freshState[key]
+  }
+} else {
+  shared.state = freshState
+}
+const state = shared.state
 
 // LAN: set the name other players see. Persists locally and tells Lua/the launcher.
 function setLanPlayerName(name) {
@@ -125,7 +140,6 @@ function setLanPlayerName(name) {
   return true
 }
 
-let listenersReady = false
 let lastExtensionErrorNotificationAt = 0
 const EXTENSION_ERROR_NOTIFICATION_COOLDOWN_MS = 10000
 const LUA_IDENTIFIER_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/
@@ -628,8 +642,8 @@ function onLoadingInfo(payload) {
 }
 
 function ensureListeners(events) {
-  if (listenersReady) return
-  listenersReady = true
+  if (shared.listenersReady) return
+  shared.listenersReady = true
 
   events.on("onBeamMPServerListReceived", data => readServerList(data))
   events.on("onBeamMPInfo", data => {

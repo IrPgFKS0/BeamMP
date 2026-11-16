@@ -48,8 +48,41 @@ function getKeyState(key)
 end
 
 
+-- LAN p13h122: upstream BeamMP#997 (open), its "things only for your own vehicle" part. NOT taken: its engine
+-- failure limits off for remote engines (changes their simulation on your screen).
+local remoteDisabled = false
+
+-- things the game does for every vehicle that only make sense for your own, turned off on other players' vehicles
+local function disableForRemote()
+	if remoteDisabled then return end
+	remoteDisabled = true
+
+	-- the burnout and odometer stats only check that the AI is off, not that you're in the vehicle, so other players'
+	-- burnouts and distance were added to your own stats. The odometer still counts, part wear uses it
+	local stats = extensions.gameplayStatistic
+	if stats then
+		stats.metricAdd = nop
+		stats.metricSet = nop
+		stats.updateGFX = nil
+		extensions.hookUpdate("updateGFX")
+	end
+	-- recovery points, you can't recover another player's vehicle and their resets come from the server
+	-- (recovery.recoverInPlace, which the fork uses on remote instability, builds its point from the current state)
+	recovery.updateGFX = nop
+
+	-- UI messages sent with guihooks.trigger("Message", ...) from this vehicle's VM (upstream's reason, the stalled
+	-- engine message, goes through guihooks.message / messageForSeatedPlayers on 0.40.5, which call a private copy
+	-- of trigger and are not affected; messageForSeatedPlayers already sends only to players seated in this car)
+	local trigger = guihooks.trigger
+	guihooks.trigger = function(hookName, ...)
+		if hookName == "Message" then return end
+		return trigger(hookName, ...)
+	end
+end
+
 local function setVehicleType(x)
   v.mpVehicleType = x
+  if x == 'R' then disableForRemote() end -- LAN p13h122 (upstream #997)
 end
 
 local function setServerID(id)

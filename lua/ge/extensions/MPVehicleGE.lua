@@ -38,6 +38,9 @@ local oneSecCounter = 0
 local nicknamesAllowed = true
 local onVehicleDestroyedAllowed = true
 local nextSpawnIsRemote = false
+local spawningRemote = false -- LAN p13h122 (upstream #997): true only while spawn.spawnVehicle runs for a remote vehicle; its onVehicleSpawned hooks may run before it is in vehiclesMap
+local queueToApply = {} -- LAN p13h122 (upstream #997): serverVehicleIDs whose queued spawn/edit is applied one per frame, so a full server's join is not one long freeze
+local queuedForApply = {} -- LAN p13h122: the same IDs as a set, so an ID is never listed twice
 local editSyncTimer = 0
 local localCounter = 0
 local vehiclesToSync = {}
@@ -313,6 +316,36 @@ function isOwn(gameVehicleID)
 		gameVehicleID = tonumber(gameVehicleID)
 	end
 	return vehicles[vehiclesMap[gameVehicleID]] and vehicles[vehiclesMap[gameVehicleID]].isLocal == true or false
+end
+
+-- LAN p13h122: upstream BeamMP#1012 (open), as written. BeamNG 0.40's seat system treats a player outside a seat
+-- (e.g. a car with its driver seat removed) as a passenger unless a hook says otherwise; in a session that left
+-- your own seatless vehicles uncontrollable. Your own vehicles get "unrestricted"; other players' vehicles and
+-- any mode already decided are left alone.
+local function onResolveVehiclePresenceMode(query)
+	if not MPCoreNetwork.isMPSession() then return end
+	if query.mode ~= nil then return end
+	if isOwn(query.vehicleId) then
+		query.mode = "unrestricted"
+	end
+end
+
+local function refreshUnseatedLocalPresence(gameVehicleID)
+	if not MPCoreNetwork.isMPSession() or not isOwn(gameVehicleID) then return end
+	if not (gameplay_seatOccupants and gameplay_seatOccupants.getVehiclePresences) then return end -- LAN: guard the engine API (0.40+)
+
+	for _, presence in ipairs(gameplay_seatOccupants.getVehiclePresences(gameVehicleID) or {}) do
+		local playerPresence = gameplay_seatOccupants.getPlayerPresence(presence.player)
+		if presence.unseated and presence.permissionMode == "passenger"
+			and playerPresence and playerPresence.permissionOverride == nil
+			and be:getPlayerVehicleID(presence.player) == gameVehicleID then
+			-- Ownership arrives after spawn; resolve again without a persistent permission override.
+			local success, reason = gameplay_seatOccupants.requestUnseatedPresence(presence.player, gameVehicleID)
+			if not success then
+				log('W', 'refreshUnseatedLocalPresence', "Unable to refresh player "..presence.player.." in vehicle "..gameVehicleID..": "..tostring(reason))
+			end
+		end
+	end
 end
 
 --- Returns a table that contains a list of all Vehicles that are owned by this Client
@@ -832,15 +865,26 @@ local vehicleSimplifiers = {
 		vehicleConfig.mainPartName = newModel
 		return newModel
 	end,
-	sunburst = function(vehicleConfig)
+	sunburst2 = function(vehicleConfig) -- LAN p13h122 (upstream #997): the sunburst was replaced by the sunburst2 (0.40 ships only sunburst2 and simple_traffic_sunburst2*), the old simple_traffic_sunburst parts are gone too
 		local parts = vehicleConfig.parts
 		local newModel = "simple_traffic"
 
-		parts.simple_traffic_model = "simple_traffic_sunburst"
-		parts.simple_traffic_sunburst_bumper_F = parts.sunburst_bumper_F == "" and "" or nil
-		parts.simple_traffic_sunburst_bumper_R = parts.sunburst_bumper_R == "" and "" or nil
-		parts.simple_traffic_sunburst_hood = parts.sunburst_hood == "" and "" or nil
-		parts.simple_traffic_sunburst_trunk = parts.sunburst_trunk == "" and "" or nil
+		local isWagon = parts.sunburst2_body == "sunburst2_body_wagon"
+		local body = isWagon and "wagon" or "sedan"
+
+		-- the simple traffic trims are standard, sport (scooped hood / spoiler), wide and aero (wide with a spoiler)
+		local fender = parts.sunburst2_fender_L or ""
+		local spoiler = parts["sunburst2_spoiler_" .. body] or ""
+		local isWide = string.find(fender, "_wide") ~= nil or string.find(fender, "_cut") ~= nil
+		local isSport = spoiler ~= "" or string.find(parts.sunburst2_hood or "", "_scooped") ~= nil
+		local trim = isWide and (spoiler ~= "" and "aero" or "wide") or (isSport and "sport" or "standard")
+
+		parts.simple_traffic_model = isWagon and "simple_traffic_sunburst2_wagon" or "simple_traffic_sunburst2"
+		parts["simple_traffic_sunburst2_trim_" .. body] = "simple_traffic_sunburst2_trim_" .. body .. "_" .. trim
+		parts.simple_traffic_sunburst2_bumper_F = parts.sunburst2_bumper_F == "" and "" or nil
+		parts.simple_traffic_sunburst2_bumper_R = parts.sunburst2_bumper_R == "" and "" or nil
+		parts.simple_traffic_sunburst2_hood = parts.sunburst2_hood == "" and "" or nil
+		parts.simple_traffic_sunburst2_trunk = parts[isWagon and "sunburst2_tailgate_wagon" or "sunburst2_trunk_sedan"] == "" and "" or nil
 
 		vehicleConfig.model = newModel
 		vehicleConfig.mainPartName = newModel
@@ -1268,6 +1312,20 @@ local function getQueueCounts()
 	return spawns, edits, queuedPlayers
 end
 
+-- LAN p13h122 (upstream #997, with a set so an ID is listed once): a queued spawn/edit is applied in a later frame,
+-- one vehicle per frame (applyNextQueuedVehicle in onPreRenderHousekeeping). Joining a full server delivers every
+-- vehicle at once; applying them all in one frame was one long freeze.
+local function scheduleQueueApply(serverVehicleID)
+	if queuedForApply[serverVehicleID] then return end
+	queuedForApply[serverVehicleID] = true
+	table.insert(queueToApply, serverVehicleID)
+end
+
+local function clearQueueApply()
+	queueToApply = {}
+	queuedForApply = {}
+end
+
 
 
 -- sending section
@@ -1523,7 +1581,13 @@ local function applyVehSpawn(event)
 		-- initial-node bounding-box centre that centeredPosition=true aligns to pos -- far closer than the refnode.
 		-- Upstream 10c7518c passes true unconditionally, which shifts a refnode-origin spawn by (bbox centre -
 		-- refnode) until the first position packet lands. removeWhenNoPositionFound=false: see the reuse branch.
-		spawnedVeh = spawn.spawnVehicle(vehicleName, serialize(vehicleConfig), pos, rot, { autoEnterVehicle=false, vehicleName="multiplayerVehicle", cling=true, centeredPosition = posIsStreamed, removeWhenNoPositionFound = false})
+		-- LAN p13h122 (upstream #997): spawningRemote marks this spawn for isRemote() while the game's own
+		-- onVehicleSpawned hooks run; xpcall so a raise inside spawnVehicle cannot leave it set (re-raised as before).
+		spawningRemote = true
+		local spawnOk, spawnResult = xpcall(spawn.spawnVehicle, debug.traceback, vehicleName, serialize(vehicleConfig), pos, rot, { autoEnterVehicle=false, vehicleName="multiplayerVehicle", cling=true, centeredPosition = posIsStreamed, removeWhenNoPositionFound = false})
+		spawningRemote = false
+		if not spawnOk then error(spawnResult, 0) end
+		spawnedVeh = spawnResult
 		if not spawnedVeh then
 			-- nil only when BeamNG could not SET THE CAR UP at all (no vehicle object, no level MissionGroup, no node
 			-- bounding box) -- the "no clear spot" case keeps the car and returns it. Before p13h100 this was
@@ -2065,6 +2129,8 @@ local function onServerVehicleSpawned(playerRole, playerNickname, serverVehicleI
 		if not veh or not veh:getActive() then
 			log("W", "onServerVehicleSpawned", "Local vehicle "..gameVehicleID.." does not exist anymore, triggering delete event for server vehicle "..serverVehicleID)
 			onVehicleDestroyed(gameVehicleID)
+		else
+			refreshUnseatedLocalPresence(gameVehicleID) -- LAN p13h122 (upstream #1012)
 		end
 
 	elseif vehicles[serverVehicleID] and vehicles[serverVehicleID].remoteVehID == gameVehicleID then
@@ -2102,10 +2168,11 @@ local function onServerVehicleSpawned(playerRole, playerNickname, serverVehicleI
 			UI.updateQueue(getQueueCounts())
 			UI.showNotification('Spawn received and queued for '..playerNickname, ''..playerNickname..''..serverVehicleID..'spawn', icon)
 		else
-			log("I", "onServerVehicleSpawned", "Queue disabled, spawning vehicle now")
+			log("I", "onServerVehicleSpawned", "Queue disabled, spawning vehicle next frame")
 
-			applyVehSpawn(eventdata)
-			UI.updateQueue(0, 0)
+			-- LAN p13h122 (upstream #997): still one per frame, joining a full server sends every vehicle at once
+			vehicles[serverVehicleID].spawnQueue = eventdata
+			scheduleQueueApply(serverVehicleID)
 		end
 	end
 end
@@ -2145,6 +2212,11 @@ local function onServerVehicleEdited(serverID, data)
 		local playerNickname = owner and owner.name or "unknown"
 		UI.updateQueue(getQueueCounts())
 		UI.showNotification('Edit received and queued for '..playerNickname, ''..playerNickname..''..serverID..'edit', 'build')
+	elseif vehicles[serverID].spawnQueue then
+		-- LAN p13h122: the spawn of this vehicle is still waiting for its frame (one per frame, upstream #997):
+		-- an edit applied now would hit a car that does not exist yet. applyVehicleQueues applies spawn, then edit.
+		vehicles[serverID].editQueue = data
+		scheduleQueueApply(serverID)
 	else
 		local currentVeh = getPlayerVehicle(0) -- Camera fix
 
@@ -2271,12 +2343,12 @@ local function onServerVehicleColorChanged(serverVehicleID, data)
             local decodedData = jsonDecode(vehicle.spawnQueue.data)
             decodedData.vcf.paints = jsonDecode(data)
             vehicle.spawnQueue.data = jsonEncode(decodedData)
-			queueWaiting = true
+			if not queuedForApply[serverVehicleID] then queueWaiting = true end -- LAN p13h122: a car only waiting for its frame is not in the user queue
         elseif vehicle.editQueue then
             local decodedData = jsonDecode(vehicle.editQueue)
             decodedData.vcf.paints = jsonDecode(data)
             vehicle.editQueue = jsonEncode(decodedData)
-			queueWaiting = true
+			if not queuedForApply[serverVehicleID] then queueWaiting = true end -- LAN p13h122: see above
         end
 
         local deletedVehicleData = players_vehicle_configs[serverVehicleID]
@@ -2419,6 +2491,7 @@ local pendingMapRespawnTimer = 0
 -- entry is gone, so it won't double-handle or emit stray delete packets.
 local function clearVehiclesForMapChange()
 	missingServerIDLogged = {}
+	clearQueueApply() -- LAN p13h122
 	for serverVehicleID, vehicle in pairs(vehicles) do
 		vehicle:delete()
 	end
@@ -2877,19 +2950,35 @@ local function applyVehicleQueues(serverVehicleID, vehicle)
 	end
 end
 
+-- LAN p13h122 (upstream #997): the vehicles queued now are applied one per frame (applyNextQueuedVehicle),
+-- anything queued after this waits for the next apply
 local function applyQueuedEvents()
-	local queueChanged = false
 	for serverVehicleID, vehicle in pairs(vehicles) do
 		if vehicle.spawnQueue or vehicle.editQueue then
-			applyVehicleQueues(serverVehicleID, vehicle)
-			queueChanged = true
+			scheduleQueueApply(serverVehicleID)
 		end
-	end
-	if queueChanged then
-		UI.updateQueue(getQueueCounts())
 	end
 	queueWaiting = false
 	--if currentVeh then be:enterVehicle(0, currentVeh) print("entered "..currentVeh:getJBeamFilename()) end -- Camera fix
+end
+
+-- LAN p13h122 (upstream #997): one scheduled vehicle per frame. An ID whose record was removed meanwhile, or
+-- whose queue is already empty, is skipped. An error while applying is logged here (LAN): it used to surface in the
+-- packet handler, and from onPreRender it would cost the frame's other pre-render hooks; an edit still pending
+-- behind a failed spawn is scheduled again (applyVehEdit can rebuild the car from it).
+local function applyNextQueuedVehicle()
+	local serverVehicleID = table.remove(queueToApply, 1)
+	if not serverVehicleID then return end
+	queuedForApply[serverVehicleID] = nil
+	local vehicle = vehicles[serverVehicleID]
+	if vehicle and (vehicle.spawnQueue or vehicle.editQueue) then
+		local ok, err = xpcall(applyVehicleQueues, debug.traceback, serverVehicleID, vehicle)
+		if not ok then
+			log('E', 'applyNextQueuedVehicle', 'applying the queued spawn/edit of '..serverVehicleID..' failed: '..tostring(err))
+			if vehicles[serverVehicleID] and vehicles[serverVehicleID].editQueue then scheduleQueueApply(serverVehicleID) end
+		end
+		UI.updateQueue(getQueueCounts())
+	end
 end
 
 local function applyPlayerQueues(playerID)
@@ -2946,6 +3035,30 @@ end
 -- ("function at line ... has more than 60 upvalues" makes the WHOLE file fail to load). The
 -- two halves are independent -- timers/auto-spawn/chase here, the nametag+blob render loop
 -- there -- so each counts its own upvalues and both sit well under the ceiling.
+--- Returns true if the vehicle is another player's, including while it's being spawned (LAN p13h122, upstream #997).
+-- @tparam number gameVehicleID
+-- @treturn boolean
+local function isRemote(gameVehicleID)
+	if spawningRemote then return true end
+	local vehicle = getVehicleByGameID(gameVehicleID)
+	return vehicle ~= nil and not vehicle.isLocal
+end
+
+-- LAN p13h122 (upstream #997): the game reloads your input bindings from disk on every vehicle spawn
+-- (core_input_bindings.onVehicleSpawned -> getAllBindings); other players' vehicles (and their edits) don't change
+-- your bindings. Your own spawns, and everything outside a session, still reload.
+local function skipRemoteBindingsReload()
+	local bindings = core_input_bindings
+	if not bindings or not bindings.onVehicleSpawned or bindings.beammpSkipsRemote then return end
+	local onVehicleSpawned = bindings.onVehicleSpawned
+	bindings.onVehicleSpawned = function(gameVehicleID, ...)
+		if MPCoreNetwork and MPCoreNetwork.isMPSession() and MPVehicleGE and MPVehicleGE.isRemote and MPVehicleGE.isRemote(gameVehicleID) then return end
+		return onVehicleSpawned(gameVehicleID, ...)
+	end
+	bindings.beammpSkipsRemote = true
+	extensions.hookUpdate("onVehicleSpawned")
+end
+
 local function onPreRenderHousekeeping(dt)
 	if MPGameNetwork and MPGameNetwork.launcherConnected() then
 		-- LAN: deferred auto-spawn of the default/last car after joining, unless the
@@ -2984,6 +3097,8 @@ local function onPreRenderHousekeeping(dt)
 		end
 
 		if not hasInitBlobColors then initBlobColors() end -- #838: parsed once, re-parsed on settings change
+
+		applyNextQueuedVehicle() -- LAN p13h122 (upstream #997): one queued vehicle per frame (here, not in onPreRender: its upvalue budget)
 	end
 end
 
@@ -3285,6 +3400,8 @@ end
 
 local function onDisconnect()
 	missingServerIDLogged = {}
+	clearQueueApply() -- LAN p13h122
+	spawningRemote = false
 	for playerID, player in pairs(players) do
 		player:delete()
 	end
@@ -3427,6 +3544,7 @@ M.handle                   = handle
 M.onVehicleSpawned         = onVehicleSpawned
 M.onVehicleDestroyed       = onVehicleDestroyed
 M.onVehicleSwitched        = onVehicleSwitched
+M.onResolveVehiclePresenceMode = onResolveVehiclePresenceMode -- LAN p13h122 (upstream #1012)
 M.onVehicleResetted        = onVehicleResetted
 M.onVehicleColorChanged    = onVehicleColorChanged
 M.onPlayerLeft             = onPlayerLeft
@@ -3443,6 +3561,7 @@ M.getVehicleByGameID       = getVehicleByGameID       -- takes: number gameID, r
 M.getVehicleByServerID     = getVehicleByServerID     -- takes: string serverVehicleID, returns Vehicle
 M.getPlayerByName          = getPlayerByName          -- takes: string name, returns Player
 M.isOwn                    = isOwn                    -- takes: number vehID  returns: bool
+M.isRemote                 = isRemote                 -- takes: number gameVehicleID  returns: bool (LAN p13h122, upstream #997)
 M.getOwnMap                = getOwnMap                -- takes: -      returns: { 'vehid' : true, '23456' : true }
 M.setOwn                   = setOwn                   -- takes: number vehID, bool own
 M.getDistanceMap           = getDistanceMap           -- takes: -      returns: { vehid : distanceinmeters, 123: 56 }
@@ -3477,7 +3596,7 @@ M.onSettingsChanged        = onSettingsChanged        -- takes: -
 M.handleChaseOptIn         = handleChaseOptIn          -- takes: "<playerServerID>:<0|1>" -- AI-chase opt-in, routed from MPWeaponsGE 'B'/C:
 M.getRoleInfoTable         = getRoleInfoTable
 M.sendPendingVehicleEdits  = sendPendingVehicleEdits  -- takes: -
-M.onInit = function() setExtensionUnloadMode(M, "manual") end
+M.onInit = function() setExtensionUnloadMode(M, "manual") skipRemoteBindingsReload() end -- LAN p13h122: bindings skip (upstream #997)
 
 local function depricationWarning(oldFnName, replacementName)
 	local msg = "Deprecated function! Please update your code to use " .. tostring(replacementName)

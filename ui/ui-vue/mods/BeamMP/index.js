@@ -49,6 +49,8 @@ function toLuaRoutes(records) {
 }
 
 // Register the Vue matcher first, then expose the same route to Lua navigation.
+// Both calls replace an earlier registration of ROUTE_SOURCE_ID in place, without navigating,
+// so this is also how a reloaded copy of this file takes over the routes (see onUnload).
 async function registerRoutes() {
   window.bngRoutes.add([{ path: ROUTE_SOURCE_ID, routes: routeRecords }])
   const result = await lua.extensions.ui_router_routeManager.registerModRoutes(
@@ -60,6 +62,36 @@ async function registerRoutes() {
     console.error("Failed to register BeamMP route", result?.errors)
   }
   return result
+}
+
+// LAN p13h122: upstream BeamMP#1022 (open), as written.
+// The game re-runs this file (onUnload of the old copy, then onLoad of the new one) every time a file under
+// /ui/ui-vue/mods/ changes, e.g. when a server mod with a Vue UI is mounted while joining. Removing the routes
+// there would throw the player off the BeamMP page (and its download overlay) back to the main menu:
+// bngRoutes.remove() replaces the active route with "/" and unregisterModRoutes() falls back to "menu".
+// So the routes are only removed when BeamMP's UI is really gone; on a reload, onLoad re-registers them in place.
+async function isBeamMPUiStillInstalled() {
+  try {
+    const mods = await lua.extensions.ui_uiMods.getVueMods()
+    const files = mods?.[MOD_ROOT.split("/").pop()]?.files
+    return Array.isArray(files) && files.some(file => file.toLowerCase() === "/index.js")
+  } catch (err) {
+    console.error("BeamMP: could not check whether the UI mod is still installed", err)
+    return false
+  }
+}
+
+// After such a reload, the BeamMP page on screen is still the previous copy's component, and the game removed its
+// styles when it recompiled this mod (the new copy gets new scoped style ids), which leaves the page unstyled.
+// Navigating to the same place again rebuilds it from the components onLoad just registered.
+async function rebuildActiveBeamMPPage() {
+  const current = vueRouter.currentRoute.value
+  if (!current?.name || !String(current.name).startsWith(BEAMMP_ROUTE_NAME)) return
+  try {
+    await vueRouter.replace({ path: current.fullPath, force: true })
+  } catch (err) {
+    console.error("BeamMP: could not rebuild the BeamMP page after a UI reload", err)
+  }
 }
 
 // Remove the Vue matcher first so navigation cannot target a stale component.
@@ -282,6 +314,9 @@ export async function onLoad() {
     componentName: `${MOD_ROOT}/cards/BeamMPPauseMapsRedirect.vue`,
   })
   events.on("onBeamMPShowMapPicker", openMapSwitcher) // LAN: "/maps" chat command -> Maps page
+
+  // LAN p13h122 (upstream #1022): on a reload of the UI mods, show the BeamMP page again with this copy's components
+  if (routeResult?.success) await rebuildActiveBeamMPPage()
 }
 
 export async function onUnload() {
@@ -295,8 +330,8 @@ export async function onUnload() {
   events.off("MainMenuButtons", addBeamMPMainMenuButton)
   events.emit("BroadcastMainMenuButtons") // poke buttons to update
 
-  // remove the standalone route
-  await unregisterRoutes()
+  // remove the standalone route, unless this is only a reload of the UI mods (see isBeamMPUiStillInstalled; upstream #1022)
+  if (!(await isBeamMPUiStillInstalled())) await unregisterRoutes()
 
   // you can unregister buttons manually at any time like so:
   // await lua.extensions.ui_pause_actions.unregisterModButton("annas-toolbox-workshop")
