@@ -98,8 +98,18 @@ end
 --- The mods json object which the game manages.
 -- @return table mods The mods according to the game managed db
 local function getModList()
+	-- LAN p13h121: upstream BeamMP#1027 (open), its getModList part as written (its deferred db.json writes are
+	-- not taken). The mod manager's in-memory list is always current and avoids re-reading and parsing db.json,
+	-- which is large with many mods. The copy keeps callers that switch mods off while iterating safe.
+	if core_modmanager and core_modmanager.getMods and core_modmanager.isReady and core_modmanager.isReady() then
+		local mods = {}
+		for modname, mod in pairs(core_modmanager.getMods()) do
+			mods[modname] = mod
+		end
+		return mods
+	end
 	local modsDB = jsonReadFile("mods/db.json")
-	return modsDB.mods
+	return modsDB and modsDB.mods or {}
 end
 
 local waitForFilesChanged = false
