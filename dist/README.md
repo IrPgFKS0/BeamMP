@@ -1,6 +1,6 @@
 # BeamMP LAN fork — release downloads
 
-**Current published release: `BeamMP-LAN-p13h123.zip`** (mod `4.23.1-LAN p13h123`, combined host exe `p13h47`, **for BeamNG 0.40.5**
+**Current published release: `BeamMP-LAN-p13h124.zip`** (mod `4.23.1-LAN p13h124`, combined host exe `p13h48`, **for BeamNG 0.40.5**
 and 0.40.4, Windows + Linux x86-64). On BeamNG 0.39.x stay on `BeamMP-LAN-p13h106.zip`.
 
 Downloads moved to **[GitHub Releases](https://github.com/IrPgFKS0/BeamMP/releases)** — the zips
@@ -9,8 +9,9 @@ already-committed ones remain in history at their tags).
 
 | Release | sha256 |
 |---|---|
-| [`BeamMP-LAN-p13h123.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-release-p13h123) | `3F87BF116C93482047AF0AE4BB10B33B100AF59CB7C4F858131F5CA2CCB7A040` |
-| [`BeamMP-LAN-p13h120.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-release-p13h120) (previous 0.40 build) | `A8C88395ABE7A3B4A6948C7A916C834E8DBB84450EAED27D12BC462B0B2F7F89` |
+| [`BeamMP-LAN-p13h124.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-release-p13h124) | `BEA48757E1959394DFFCFD496ED69F37244E5D468581A9B93B0590D3DA041AC8` |
+| [`BeamMP-LAN-p13h123.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-release-p13h123) (previous 0.40 build) | `3F87BF116C93482047AF0AE4BB10B33B100AF59CB7C4F858131F5CA2CCB7A040` |
+| [`BeamMP-LAN-p13h120.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-release-p13h120) (earlier 0.40 build) | `A8C88395ABE7A3B4A6948C7A916C834E8DBB84450EAED27D12BC462B0B2F7F89` |
 | [`BeamMP-LAN-p13h119.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-release-p13h119) (earlier 0.40 build) | `0849B3738B78F265D250E5271F814E7FAEB0256593035F1F754A8248FB5FA3F5` |
 | [`BeamMP-LAN-p13h117.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-release-p13h117) (earlier 0.40 build) | `9D58A4AE5618F446A00106BC519E9ABB7636BB5DECE7B0C32DCC2AC73A600947` |
 | [`BeamMP-LAN-p13h114.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-release-p13h114) (earlier 0.40 build) | `4C4EE7960131EE4BC86ED137E857C1EEE47C8FB2BCCFCCE7DB23D5906ADAD8F9` |
@@ -22,12 +23,16 @@ already-committed ones remain in history at their tags).
 | [`BeamMP-LAN-p13h98.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-release-p13h98) | `BFD01870CFA5A85163EB473C290BA5A2CF5FB01E9145CF4C8031E9C7C08A046D` |
 | [`BeamMP-LAN-p13h57.zip`](https://github.com/IrPgFKS0/BeamMP/releases/tag/lan-0.38-last-good) (0.38 ROLLBACK) | `1B1673CEA703FECC5D5CEB1B594812916E15EEB03BFC8F9DE17F9DC7808B851B` |
 
-**Update BOTH files on every machine: `BeamMP.zip` and the exe.** p13h123 has a new launcher/host exe (p13h47,
-Windows `BeamMP-Combined.exe` sha256 `2D7CF8044B37D64D026A37997928DBEEF13E072333D1F7028E431278A4134935`, Linux `linux/BeamMP-Combined` sha256
-`480B53893A0218867F5BB17DCA604333415B30B8887E23B0A644E279FA59DC2C`), so every machine runs the matching pair (the host `windows/BeamMP-Combined.exe`, a Linux
+**Update BOTH files on every machine: `BeamMP.zip` and the exe.** p13h124 has a new launcher/host exe (p13h48,
+Windows `BeamMP-Combined.exe` sha256 `273FE668F3BC2E73EE2F78F9398CE1A77F7132625E5DC06A82518633AD31BD7E`, Linux `linux/BeamMP-Combined` sha256
+`133927C120A5ED3D35DDF3DDC7C868B35FC016C6F95B7F7C086EA9B5C1F15A06`), so every machine runs the matching pair (the host `windows/BeamMP-Combined.exe`, a Linux
 client `linux/BeamMP-Combined`). New mod `BeamMP.zip` sha256
-`3EBE9EA8CC5873A426945AB59E08B1BD153627C489E006F5E0C406947E516F45`.
-New since p13h120: other players' cars spawn one per frame instead of all in one frame when you join a busy
+`C1C560AAE0D5A756455C1C0880F4B18C4820781A2ED1A0DB59E57CF5AC133B25`.
+New in p13h124: client mods can keep vehicles on one PC (`MPVehicleGE.runLocalOnly`, for a weather mod's debris or
+a pedestrian mod's bodies, which used to be sent to the other PCs and dropped again); the launcher's crash warning
+counts only new crash reports (the Linux client warned at every start); a combined host started outside its folder
+uses its own folder; a clashing name from another machine is refused instead of kicking the player who is in.
+From p13h123: other players' cars spawn one per frame instead of all in one frame when you join a busy
 server; their burnouts and distance no longer go into your own stats; your own car with its driver seat removed can
 be driven; the BeamMP page survives the game reloading UI mods during a join; the launcher reads whole packets from
 the game (a cut-short read used to corrupt large vehicle data); a Windows host sends mods in 4 MB pieces (upstream
@@ -41,7 +46,7 @@ start the Earth app while you are in a session, and keep its *Start BeamMP with 
 only the first Steam installation); p13h99 and later fix that. If you ran any p13h82–p13h85 build:
 those reject every remote position packet in multiplayer (remote cars frozen) — update now.
 (Superseded zips and their `lan-release-*` tags are removed as releases roll; the tags kept are
-exactly the ones backing a published release -- currently `lan-release-p13h123`, `lan-release-p13h120`, `lan-release-p13h119`, `lan-release-p13h117`, `lan-release-p13h114`, `lan-release-p13h112`,
+exactly the ones backing a published release -- currently `lan-release-p13h124`, `lan-release-p13h123`, `lan-release-p13h120`, `lan-release-p13h119`, `lan-release-p13h117`, `lan-release-p13h114`, `lan-release-p13h112`,
 `lan-release-p13h106`, `lan-release-p13h104`, `lan-release-p13h101`,
 `lan-release-p13h99`, `lan-release-p13h98` and `lan-0.38-last-good` -- which is the set the AGPL
 source promise needs. Every row in the table above must link a release that still exists, and the
@@ -68,7 +73,7 @@ Everyone in a session should run the matching `BeamMP.zip` **and** matching exe 
 
 Binaries are built from the `lan` branches of this repo and the companion repos
 ([BeamMP-Launcher](https://github.com/IrPgFKS0/BeamMP-Launcher),
-[BeamMP-Server](https://github.com/IrPgFKS0/BeamMP-Server)) at tag `lan-release-p13h123`
+[BeamMP-Server](https://github.com/IrPgFKS0/BeamMP-Server)) at tag `lan-release-p13h124`
 (AGPL-3.0-or-later — complete corresponding source at those tags).
 
 > Zips live on GitHub Releases as of 2026-08-13; this README stays the checksum ledger.
