@@ -1,16 +1,20 @@
 # BeamMP LAN Fork — Release
 
-**Build:** mod `4.23.1-LAN p13h120` · combined host exe `p13h46` · **for BeamNG 0.40.5** (and 0.40.4)
+**Build:** mod `4.23.1-LAN p13h123` · combined host exe `p13h47` · **for BeamNG 0.40.5** (and 0.40.4)
 
-p13h120 is p13h119 plus one change: the map-marker option now switches gas stations and the other map
+p13h123 is the release after p13h120: four fixes from open upstream pull requests in the mod AND the exe
+(p13h121: whole packets from the game, faster mod downloads from a Windows host, shorter mod sync, the mod list
+from memory), other players' vehicles spawning one per frame plus seatless cars and the BeamMP page surviving a
+UI-mod reload (p13h122), and three fixes from an independent review of that (p13h123). It needs BOTH the new
+`BeamMP.zip` and the new exe (p13h47) on every machine. The 17-check smoke gate and a two-player session (Windows
+host, Linux client, both on this zip and exe p13h47) passed on BeamNG 0.40.5 (see Verification). p13h120 is p13h119 plus one change: the map-marker option now switches gas stations and the other map
 markers both ways (below). The 17-check smoke gate and a check at a gas station in a real session passed on
 this exact zip on BeamNG 0.40.5; no two-player session has been run on it (the last one ran on p13h117).
 p13h119 is p13h117 plus two fixes found while adapting third-party mods (p13h118 and p13h119 below). p13h117 adds a faster join that skips mods which are already loaded: an
 option, on by default (p13h115 built it off by default, p13h116 turned it on); off is upstream's join.
 p13h117 also fixes a join that hung on both machines after a served mod was updated; the smoke gate and a
 two-player session (Windows host, Linux client, the client joining twice) passed on the p13h117 zip. The
-host exe is unchanged since p13h112 (p13h46; its banner still names BeamNG 0.40.3, which is only text and
-changes with the next exe build).
+host exe was unchanged from p13h112 (p13h46) until p13h121's p13h47, whose banner now names BeamNG 0.40.5.
 
 A LAN-focused fork of [BeamMP](https://beammp.com) for BeamNG.drive. It runs the
 server and your game together in **one process** ("combined host"), tunes position
@@ -54,6 +58,62 @@ a little tuning (see `LAN-TUNING.md`).
   cores so the relay/bridge keep up), and in-game **Save all logs (zip)** for support.
 
 ## This release
+
+**p13h123: p13h122 after an independent review (2026-11-16).** A remote car whose spawn raised an error inside the
+new per-frame step would have cost that frame's other pre-render hooks and could leave an edit stuck in the queue
+count; the error is now logged, the next car still spawns, and a pending edit is tried again. A paint change for a
+car that is only waiting for its frame no longer switches on the spawn-queue display (progress bar, free camera
+when on foot) with the queue setting off. The VE comment about blocked "Message" hooks now says what it blocks.
+Known and left as upstream has it: with the queue off the "spawns queued" counter can flash during a big join; with
+`queueSkipUnicycle` a car edit for a unicycle that is still waiting is applied with its spawn.
+
+**p13h122: other players' vehicles, seatless cars, the BeamMP page (2026-11-16).** From open upstream pull
+requests, adapted to this fork.
+
+- **A full server's cars spawn one per frame** (upstream BeamMP #997). A vehicle received from the server was
+  spawned inside the packet handler, so joining a server with many cars spawned them all in one frame (one long
+  freeze). Each is now spawned in a later frame, one per frame, in arrival order; the same when you release the
+  spawn queue. An edit that arrives before its car is spawned waits behind the spawn (fork addition).
+- **Other players' cars no longer feed your own statistics** (#997): the game added their burnouts and distance
+  to yours. Their recovery-point recording is off (their resets come from the server; this fork's in-place
+  recovery of an unstable remote car does not use those points), and their "engine stalled" UI message, sent
+  every frame, no longer reaches you. NOT taken from #997: switching off engine-failure limits on other players'
+  engines.
+- **Your key bindings are not reloaded from disk for every remote spawn** (#997); your own spawns still reload them.
+- **Simplified traffic for the sunburst2** (#997). The option to show remote cars as simplified traffic models
+  still had a rule for the old sunburst, which BeamNG 0.40 no longer ships; the sunburst2 (sedan and wagon, four
+  trims) now gets its simplified model.
+- **Your own car without a driver seat can be driven** (upstream #1012). BeamNG 0.40's seat system treated you as a
+  passenger in your own seatless car in a session. Other players' cars and passenger seats are unchanged.
+- **The BeamMP page survives a UI-mod reload during a join** (upstream #1022). When a server mod with a Vue UI is
+  mounted, the game reloads every UI mod; the BeamMP page lost its styles, the player was sent back to the main
+  menu, and the connection state was reset. None of this host's current served mods has a Vue UI, so this only
+  matters when such a mod is added (BeamNG.Earth had one).
+
+**p13h121: four fixes from open upstream pull requests (2026-11-16).** Each is taken as upstream wrote it,
+so a later upstream merge brings no conflict, and each was checked against this fork's code first.
+
+- **The launcher reads whole packets from the game** (upstream BeamMP-Launcher #273). Every packet from the
+  game is a 4-byte length and then that many bytes; the launcher asked for it in one read and took whatever
+  arrived as the whole packet. A read may return early (common under Wine, possible natively): the server
+  then got a packet with a tail of zero bytes, and the launcher read the next length from the middle of the
+  old packet. Upstream saw it kick a player on every trailer attach (vehicle data over ~8 KB). The launcher
+  already read the server side this way; now the game side too.
+- **Faster mod downloads from a Windows host** (upstream BeamMP-Server #507, its download part). Without
+  Linux's `sendfile`, the server read each mod into one buffer of up to 125 MB and seeked to every piece;
+  it now reads 4 MB pieces in order, with a 4 MB socket send buffer, and stops cleanly if the file cannot be
+  read. Upstream measured LAN downloads from a Windows server going from ~220 to ~4950 Mbit/s. This is what a
+  Linux client downloading from this Windows host uses. The fork's own send lock still covers the whole file.
+  Not taken from #507: its decompression rewrite (the fork fixed the same growth bug differently in p13h29).
+- **Shorter mod sync at join** (upstream BeamMP #1028). The launcher places one mod, then waits for the game
+  to ask for the loading status, which it did every 0.1 s; it now asks about once a frame. Upstream measured
+  62 s to 55 s for 407 cached mods. With this fork's faster join (p13h117) most mods are already skipped, so
+  the gain here is mainly for mods that are actually added.
+- **The mod list is read from the game's memory** (upstream BeamMP #1027, its first half). BeamMP re-read and
+  parsed `mods/db.json` (2.6 MB with this host's ~100 mods) at each join and leave; it now uses the mod
+  manager's own list once that is ready, and `db.json` only before. A missing `db.json` no longer raises an
+  error. Not taken from #1027: holding the game's `db.json` writes and UI updates during a join (it replaces
+  two global functions for the duration; higher risk, measured gain not yet known here).
 
 **p13h120: gas stations and map markers in a session are an option that works (2026-11-14).** In a
 session there were no gas stations, no refuel prompt and no points on the big map, on any map. Two things
@@ -183,6 +243,40 @@ uses, and the guard shows h108 already passed converted positions through correc
 
 ### Verification
 
+- p13h123: `remote_spawn_guard.py` now 32 checks (+Q12, and Q7 now expects the logged error); each new check fails
+  with its fix reverted. The rest as p13h122 below.
+  Smoke gate 17 of 17 on zip `3EBE9EA8…` + exe `2D7CF804…`. Two-player session 2026-11-16 10:47-10:50 (Utah, Windows
+  host and Linux client, BOTH on this zip and exe p13h47, so the whole-packet read ran on both sides): no fork error
+  on either machine, no rejected position, no watchdog correction; the client found 92 of 92 mods already loaded;
+  the client's T-80UD spawned on the host and the host's vivace on the client through the one-per-frame path (the
+  vivace 18.7 m off for the first seconds after spawning, then within 4 m). The weather mod (AWS 1.7.0-dev1-MP6)
+  spawned debris planks as the host's own vehicles and switched them off, so they were synced and dropped again 18
+  times (also seen on p13h121); on the client 8 of the 18 were removed before their frame came and never built.
+  Not exercised: a seatless car, a UI-mod reload, several cars joining at once.
+- p13h122 (candidate): new guard `tools/ge-guard/remote_spawn_guard.py`, 29 checks on the real MPVehicleGE /
+  MPVehicleVE (one spawn per frame and in order, edit behind its spawn, removed or disconnected while waiting,
+  isRemote during the spawn's own hooks and after a raise, bindings reload skipped only for remote spawns, seat
+  presence, the sunburst2 model, the VE remote-only switches); the released p13h120 fails 15. The shared spawn
+  sandbox now lets frames pass after each packet (spawn_guard, idmap_guard, latejoin_edit_guard and
+  gameplay040_guard pass on p13h122 and still pass on p13h120). All 14 guards pass; Lua parse; `node --check` on
+  index.js, beammpState.js and BeamMPMain.vue's script. onPreRender 26 / onPreRenderHousekeeping 13 upvalues (limit
+  60). Smoke gate 17 of 17 on zip `8D502AD8…` + exe p13h47, and the Linux client joined that gate session
+  (2026-11-16 10:34, ~1 min, both on this zip, client launcher still p13h46): each side's remote car went through the
+  new one-per-frame path without error (host: Caden's wendover; client: the host's car, spawned 3.8 s after its
+  packet), the host's edit reached the client queued and was applied 1 s later, the ghost then tracked within 1 m.
+  Its only larger offsets: 46 m just after it spawned while the host's AI car was driving (gone within 10 s, no
+  heal needed) and two 1 s pauses while the host reloaded its car. PENDING: a real two-player session with several
+  cars, a seatless car, a UI-mod reload.
+- p13h121 (candidate): `modload_guard.py` now has 20 checks; the new four (the mod list from the game's memory,
+  no `db.json` read during a whole join, `db.json` before the mod manager is ready, an empty list instead of an
+  error without `db.json`) — the released p13h120 fails 3. The BeamNG.Earth twin-mod checks pass with the list
+  coming from memory. Every other guard passes. Exe p13h47 built (Windows); smoke gate 17 of 17 on mod zip
+  `C0FAEE72…` + exe `2D7CF804…` (BeamNG 0.40.5). Two-player session 2026-11-16 10:20-10:23 (Utah, Windows host on
+  this zip + exe, Linux client on this zip but still the p13h46 launcher): no fork error and no rejected position on
+  either machine, no watchdog heal; the host found 92 of 92 mods already loaded (0.3 s), the client re-added the two
+  mods updated on the server and remounted both; the client downloaded them from the host at 71.1 MB in 253 ms
+  (~2.2 Gbit/s; no measurement on the old server code to compare). Not exercised: the launcher fix on the Linux
+  client (it ran p13h46), a long session, large vehicles.
 - p13h120 `783F3EA8…` (468 entries, verified against the source tree). New guard
   `tools/ge-guard/markers_guard.py`, 22 checks running the real `beammp/multiplayer.lua` against a stub of
   the game's two marker modules (modelled on BeamNG 0.40.5): on = no-op and no marker state; off = the
